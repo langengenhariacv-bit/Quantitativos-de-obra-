@@ -1,0 +1,707 @@
+{
+  "frozen_at": "2026-09-27",
+  "description": "Base fixa de 100 plantas online para regressão do leitor do LANG Quantitativos.",
+  "note": "Inclui 30 exemplos modernos/diversos e 70 exemplos públicos, mantendo explicitamente o caso histórico de Pompeia como edge case.",
+  "items": [
+    {
+      "id": 1,
+      "name": "Hangzhou 3 quartos",
+      "kind": "P/B cotada",
+      "url": "https://imgpicture.kan3721.com/221128013800_thumb.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 2,
+      "name": "Edifício multifamiliar colorido",
+      "kind": "multifamiliar",
+      "url": "https://i.archi.ru/i/650/235527.png",
+      "source": "internet-static"
+    },
+    {
+      "id": 3,
+      "name": "Lagom residencial com garagem",
+      "kind": "P/B mobiliada",
+      "url": "https://static.wixstatic.com/media/860bee_a80eb8e49f104cdeb26f59818a85bdae~mv2.jpg/v1/fill/w_2500%2Ch_2777%2Cal_c/860bee_a80eb8e49f104cdeb26f59818a85bdae~mv2.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 4,
+      "name": "Imobiliária colorida",
+      "kind": "marketing",
+      "url": "https://lid.zoocdn.com/u/1024/768/a0577c1b6b507a34f811e8e385ebc4f7e19a7e40.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 5,
+      "name": "Duplex simétrico",
+      "kind": "duplex P/B",
+      "url": "https://images.squarespace-cdn.com/content/v1/678844c055cd445561eb0942/de015f7b-4f6a-400e-acc5-cf78084b6419/MSCAN5220-1BX%2B%28Canton-duplex%29.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 6,
+      "name": "Casa moderna em L",
+      "kind": "P/B mobiliada",
+      "url": "https://hitech-house.com/application/files/2215/2378/6037/bower-barwon-plan.jpeg",
+      "source": "internet-static"
+    },
+    {
+      "id": 7,
+      "name": "Prancha com carimbo 1:50",
+      "kind": "prancha técnica",
+      "url": "https://khamsat.hsoubcdn.com/images/profiles/992519/a8704483da4e52c974953edd09577573.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 8,
+      "name": "ProcessOn colorida",
+      "kind": "colorida cotada",
+      "url": "https://pocdn.processon.com/admin/knowledge/article_content_img/66f140f0f8e22204bf981aed.png",
+      "source": "internet-static"
+    },
+    {
+      "id": 9,
+      "name": "Apartamento Aparna",
+      "kind": "P/B escala",
+      "url": "https://coohom-biz-sg-s3.coohom.com/ins/static/case/kitchen-gallery-balcony-floorplan-1765430417791544100.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 10,
+      "name": "Casa dois pavimentos imobiliária",
+      "kind": "P/B dois pavimentos",
+      "url": "https://lc.zoocdn.com/0de9474c63fd1c243bb3db9bbb4572db10e33729.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 11,
+      "name": "Apartamento colorido IA layout",
+      "kind": "colorida",
+      "url": "https://floordesign.ai/nuxt_img/floor-plan-generator/generator-style-colored.webp",
+      "source": "internet-static"
+    },
+    {
+      "id": 12,
+      "name": "Casa moderna 180 m²",
+      "kind": "P/B complexa",
+      "url": "https://optimumhouse.ru/history-projects/floors/mikea-x-v3.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 13,
+      "name": "Bungalow imobiliária",
+      "kind": "P/B espessa",
+      "url": "https://greenhouseos-media.s3.eu-west-2.amazonaws.com/00DQH000007lqC12AI/a0dWS000006PO5cYAG/467c6d/60_manor_road-high.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 14,
+      "name": "Casa africana 3 quartos",
+      "kind": "P/B cotada",
+      "url": "https://4.bp.blogspot.com/--5xqY0vhfP0/V0BfD1IJPbI/AAAAAAAAelQ/pWND2zk1lPYhvCd9VWLkKjWB1OZ4s5rnQCLcB/s1600/ra4.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 15,
+      "name": "Apartamento hachurado",
+      "kind": "hachuras/cotas",
+      "url": "https://i.pinimg.com/736x/26/24/ee/2624eec9fcb01e358ef81e8070b1ef22.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 16,
+      "name": "Sobrado brasileiro 5x25",
+      "kind": "Brasil cotada",
+      "url": "https://www.gaprojetos.com/assets/site/uploader/projetos/1000a/planta_com_medidas_-PLOT-A4_page-0001.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 17,
+      "name": "Casa brasileira 3 quartos",
+      "kind": "Brasil mobiliada",
+      "url": "https://i.pinimg.com/736x/75/b7/bd/75b7bd0e24abf3f6a6322b3134288263.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 18,
+      "name": "Apartamento A2 técnico",
+      "kind": "Brasil técnico",
+      "url": "https://imgv2-2-f.scribdassets.com/img/document/931688771/original/392c32c2e9/1?v=1",
+      "source": "internet-static"
+    },
+    {
+      "id": 19,
+      "name": "Casa Metricon 4 quartos",
+      "kind": "P/B mobiliada",
+      "url": "https://files.openlot.com.au/p/home_stock/Lot%20238%20Westringia%20Approach%20by%20Metricon%20Homes___6902_floorplan_1725970020.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 20,
+      "name": "Ranch 1400 sq ft",
+      "kind": "P/B densa",
+      "url": "https://i.pinimg.com/originals/01/b2/e4/01b2e413cfc774006d4a00a9a3315c2d.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 21,
+      "name": "UNCW 3 quartos",
+      "kind": "P/B fina",
+      "url": "https://uncw.edu/media/images/application-assets/housing/village-3-br-notpad-housing.png",
+      "source": "internet-static"
+    },
+    {
+      "id": 22,
+      "name": "Casa MCMV compacta",
+      "kind": "P/B imobiliária",
+      "url": "https://i.pinimg.com/originals/25/b3/74/25b374e105cd3a1ed9442578579c83ae.png",
+      "source": "internet-static"
+    },
+    {
+      "id": 23,
+      "name": "Casa com pátio central",
+      "kind": "curvas/pátio",
+      "url": "https://i.pinimg.com/736x/82/c9/d1/82c9d1a8abeeba993a5dfc25dabe5108.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 24,
+      "name": "Casa em U",
+      "kind": "U complexa",
+      "url": "https://i.pinimg.com/originals/97/e4/1f/97e41f01df188685ed643ac2d57bca7c.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 25,
+      "name": "Casa modular 64 m²",
+      "kind": "P/B escala gráfica",
+      "url": "https://optim.tildacdn.net/tild3437-6633-4035-b731-633266336133/-/format/webp/7.jpg.webp",
+      "source": "internet-static"
+    },
+    {
+      "id": 26,
+      "name": "Split level",
+      "kind": "níveis",
+      "url": "https://hel1.your-objectstorage.com/old-web/remodelai/seo1/split-level-house-floor-plans/5.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 27,
+      "name": "Garagem + apartamento",
+      "kind": "dois desenhos",
+      "url": "https://i.ebayimg.com/images/g/kTgAAOSwLF1X-jrj/s-l1200.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 28,
+      "name": "Prancha universitária A1",
+      "kind": "carimbo/cotas",
+      "url": "https://website-assets.studocu.com/img/document_thumbnails/da624d7c2555a882cd0ec4c68dbf1a1f/thumb_1200_848.png",
+      "source": "internet-static"
+    },
+    {
+      "id": 29,
+      "name": "Bungalow 6,5x8,5",
+      "kind": "colorida fina",
+      "url": "https://i0.wp.com/prohomedecors.com/wp-content/uploads/2020/06/Small-Bungalow-6.5x8.5-meter-22x28-feet.jpg?resize=640%2C512&ssl=1",
+      "source": "internet-static"
+    },
+    {
+      "id": 30,
+      "name": "Casa 2 quartos 42m²",
+      "kind": "P/B verde/cotas",
+      "url": "https://i.pinimg.com/736x/e1/a5/db/e1a5dbc84d9fc10b706521f08ae66c94.jpg",
+      "source": "internet-static"
+    },
+    {
+      "id": 31,
+      "name": "Commons — Floor plan 1.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/18/Floor_plan_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 32,
+      "name": "Commons — 48 and 50 King Street (Houses), New York, New York County, NY HABS NY,31-NEYO,21- (sheet 3 of 8).png",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fe/48_and_50_King_Street_%28Houses%29%2C_New_York%2C_New_York_County%2C_NY_HABS_NY%2C31-NEYO%2C21-_%28sheet_3_of_8%29.png/1280px-48_and_50_King_Street_%28Houses%29%2C_New_York%2C_New_York_County%2C_NY_HABS_NY%2C31-NEYO%2C21-_%28sheet_3_of_8%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 33,
+      "name": "Commons — 77 of 'Deutsche Volkskunde ... Mit siebzehn Abbildungen und einer Karte' (11294592355).jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/ff/77_of_%27Deutsche_Volkskunde_..._Mit_siebzehn_Abbildungen_und_einer_Karte%27_%2811294592355%29.jpg/1280px-77_of_%27Deutsche_Volkskunde_..._Mit_siebzehn_Abbildungen_und_einer_Karte%27_%2811294592355%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 34,
+      "name": "Commons — Haj Al-Safi House Khartoum North Sudan 1968 Designed by Abdel-Moneim Mustafa and Abdel Wahad and Abboud Ground Floor Plan.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/45/Haj_Al-Safi_House_Khartoum_North_Sudan_1968_Designed_by_Abdel-Moneim_Mustafa_and_Abdel_Wahad_and_Abboud_Ground_Floor_Plan.jpg/1280px-Haj_Al-Safi_House_Khartoum_North_Sudan_1968_Designed_by_Abdel-Moneim_Mustafa_and_Abdel_Wahad_and_Abboud_Ground_Floor_Plan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 35,
+      "name": "Commons — Arlington House First Floor Plan.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1f/Arlington_House_First_Floor_Plan.jpg/1280px-Arlington_House_First_Floor_Plan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 36,
+      "name": "Commons — Floor plan of the House of the Greek Epigrams Pompeii (V 1,18).jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3f/Floor_plan_of_the_House_of_the_Greek_Epigrams_Pompeii_%28V_1%2C18%29.jpg/1280px-Floor_plan_of_the_House_of_the_Greek_Epigrams_Pompeii_%28V_1%2C18%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 37,
+      "name": "Commons — Haj Al-Safi House Khartoum North Sudan 1968 Designed by Abdel-Moneim Mustafa and Abdel Wahad and Abboud - Plan.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Haj_Al-Safi_House_Khartoum_North_Sudan_1968_Designed_by_Abdel-Moneim_Mustafa_and_Abdel_Wahad_and_Abboud_-_Plan.jpg/1280px-Haj_Al-Safi_House_Khartoum_North_Sudan_1968_Designed_by_Abdel-Moneim_Mustafa_and_Abdel_Wahad_and_Abboud_-_Plan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 38,
+      "name": "Commons — Drawing, Alternate Scheme for Ground Floor Plan of a Country House, ca. 1781 (CH 18449353-2).jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cb/Drawing%2C_Alternate_Scheme_for_Ground_Floor_Plan_of_a_Country_House%2C_ca._1781_%28CH_18449353-2%29.jpg/1280px-Drawing%2C_Alternate_Scheme_for_Ground_Floor_Plan_of_a_Country_House%2C_ca._1781_%28CH_18449353-2%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 39,
+      "name": "Commons — 26 of 'Sveriges Historia från äldsta tid till våra dagar, etc' (11070743176).jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/85/26_of_%27Sveriges_Historia_fr%C3%A5n_%C3%A4ldsta_tid_till_v%C3%A5ra_dagar%2C_etc%27_%2811070743176%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 40,
+      "name": "Commons — Drawing of the First Floor Plan-- Amoureaux House in Ste Genevieve MO.png",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Drawing_of_the_First_Floor_Plan--_Amoureaux_House_in_Ste_Genevieve_MO.png/1280px-Drawing_of_the_First_Floor_Plan--_Amoureaux_House_in_Ste_Genevieve_MO.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 41,
+      "name": "Commons — Insula Block with (L to R) Plans of the House of the Centaur, plans of the House of the Dioscuri, and plans of the House of Cn Caetronius Eutychus Pompeii (Overbeck-Mau 1884)).png",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/6/62/Insula_Block_with_%28L_to_R%29_Plans_of_the_House_of_the_Centaur%2C_plans_of_the_House_of_the_Dioscuri%2C_and_plans_of_the_House_of_Cn_Caetronius_Eutychus_Pompeii_%28Overbeck-Mau_1884%29%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 42,
+      "name": "Commons — Hall and parlor house floor plan.png",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Hall_and_parlor_house_floor_plan.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 43,
+      "name": "Commons — Anonymous - Fortified House with Four Octagonal Courts, Ground Floor Plan - B1975.2.492 - Yale Center for British Art.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8a/Anonymous_-_Fortified_House_with_Four_Octagonal_Courts%2C_Ground_Floor_Plan_-_B1975.2.492_-_Yale_Center_for_British_Art.jpg/1280px-Anonymous_-_Fortified_House_with_Four_Octagonal_Courts%2C_Ground_Floor_Plan_-_B1975.2.492_-_Yale_Center_for_British_Art.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 44,
+      "name": "Commons — 24 of 'Hardships made easy. Domestic hardships. Hardships in travel. Hardships abroad. Illustrated' (11047416846).jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/43/24_of_%27Hardships_made_easy._Domestic_hardships._Hardships_in_travel._Hardships_abroad._Illustrated%27_%2811047416846%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 45,
+      "name": "Commons — Apartment plan-Space Settlements A Design Study.png",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Apartment_plan-Space_Settlements_A_Design_Study.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 46,
+      "name": "Commons — 193 of 'Christians under the Crescent in Asia. (With illustrations.)' (11072251103).jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/1c/193_of_%27Christians_under_the_Crescent_in_Asia._%28With_illustrations.%29%27_%2811072251103%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 47,
+      "name": "Commons — Ashby St Ledgers First Floor Plan Lutyens Houses and Gardens 1913 Page204.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Ashby_St_Ledgers_First_Floor_Plan_Lutyens_Houses_and_Gardens_1913_Page204.jpg/1280px-Ashby_St_Ledgers_First_Floor_Plan_Lutyens_Houses_and_Gardens_1913_Page204.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 48,
+      "name": "Commons — A depiction of housing plan.JPG",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/A_depiction_of_housing_plan.JPG/1280px-A_depiction_of_housing_plan.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 49,
+      "name": "Commons — Generic Double House Plan.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c2/Generic_Double_House_Plan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 50,
+      "name": "Commons — First Floor Plan - Bryan Lathrop House, 120 East Bellevue Place, Chicago, Cook County, IL HABS ILL,16-CHIG,40- (sheet 2 of 16).png",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c9/First_Floor_Plan_-_Bryan_Lathrop_House%2C_120_East_Bellevue_Place%2C_Chicago%2C_Cook_County%2C_IL_HABS_ILL%2C16-CHIG%2C40-_%28sheet_2_of_16%29.png/1280px-First_Floor_Plan_-_Bryan_Lathrop_House%2C_120_East_Bellevue_Place%2C_Chicago%2C_Cook_County%2C_IL_HABS_ILL%2C16-CHIG%2C40-_%28sheet_2_of_16%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 51,
+      "name": "Commons — Frederick C. Robie House, Woodlawn Avenue and 58th Street, Hyde Park, Chicago, IL.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL.jpg/1280px-Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 52,
+      "name": "Commons — Garage, Frederick C. Robie House, Woodlawn Avenue and 58th Street, Hyde Park, Chicago, IL.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/93/Garage%2C_Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL.jpg/1280px-Garage%2C_Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 53,
+      "name": "Commons — First Floor Plan of Government House, Brisbane, c 1940.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/First_Floor_Plan_of_Government_House%2C_Brisbane%2C_c_1940.jpg/1280px-First_Floor_Plan_of_Government_House%2C_Brisbane%2C_c_1940.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 54,
+      "name": "Commons — Ground Floor Plan, Charlton House, Wiltshire MET MM36987.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/Ground_Floor_Plan%2C_Charlton_House%2C_Wiltshire_MET_MM36987.jpg/1280px-Ground_Floor_Plan%2C_Charlton_House%2C_Wiltshire_MET_MM36987.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 55,
+      "name": "Commons — Dariush Borbor (Architect and Urban Planner), House Nahavandi, First Floor Plan, Tehran, 196.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Dariush_Borbor_%28Architect_and_Urban_Planner%29%2C_House_Nahavandi%2C_First_Floor_Plan%2C_Tehran%2C_196.jpg/1280px-Dariush_Borbor_%28Architect_and_Urban_Planner%29%2C_House_Nahavandi%2C_First_Floor_Plan%2C_Tehran%2C_196.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 56,
+      "name": "Commons — Dariush Borbor (Architect and Urban Planner), House Nahavandi, Ground Floor Plan, Tehran, 1965.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f0/Dariush_Borbor_%28Architect_and_Urban_Planner%29%2C_House_Nahavandi%2C_Ground_Floor_Plan%2C_Tehran%2C_1965.jpg/1280px-Dariush_Borbor_%28Architect_and_Urban_Planner%29%2C_House_Nahavandi%2C_Ground_Floor_Plan%2C_Tehran%2C_1965.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 57,
+      "name": "Commons — Floor plan2.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/36/Floor_plan2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 58,
+      "name": "Commons — Gate, Frederick C. Robie House, Woodlawn Avenue and 58th Street, Hyde Park, Chicago, IL - 54213530451.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Gate%2C_Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL_-_54213530451.jpg/1280px-Gate%2C_Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL_-_54213530451.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 59,
+      "name": "Commons — House of the Ceii (Pompeii Regio I 6,15) Floor Plan.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ee/House_of_the_Ceii_%28Pompeii_Regio_I_6%2C15%29_Floor_Plan.jpg/1280px-House_of_the_Ceii_%28Pompeii_Regio_I_6%2C15%29_Floor_Plan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 60,
+      "name": "Commons — House of Achilles Floor Plan (Ground Floor only) in Pompeii (IX 5,2).jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/1e/House_of_Achilles_Floor_Plan_%28Ground_Floor_only%29_in_Pompeii_%28IX_5%2C2%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 61,
+      "name": "Commons — First Floor Plan and Cornice Details - Barela-Reynolds House, Calle Principal, Mesilla, Dona Ana County, NM HABS NM-205 (sheet 4 of 8).png",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/First_Floor_Plan_and_Cornice_Details_-_Barela-Reynolds_House%2C_Calle_Principal%2C_Mesilla%2C_Dona_Ana_County%2C_NM_HABS_NM-205_%28sheet_4_of_8%29.png/1280px-First_Floor_Plan_and_Cornice_Details_-_Barela-Reynolds_House%2C_Calle_Principal%2C_Mesilla%2C_Dona_Ana_County%2C_NM_HABS_NM-205_%28sheet_4_of_8%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 62,
+      "name": "Commons — Frederick C. Robie House, Woodlawn Avenue and 58th Street, Hyde Park, Chicago, IL - 54213859904.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL_-_54213859904.jpg/1280px-Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL_-_54213859904.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 63,
+      "name": "Commons — A model tenement house. 224-226 Avenue B; Plan of first floor; Plan of upper floors (NYPL b12647274-465717).jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/A_model_tenement_house._224-226_Avenue_B%3B_Plan_of_first_floor%3B_Plan_of_upper_floors_%28NYPL_b12647274-465717%29.jpg/1280px-A_model_tenement_house._224-226_Avenue_B%3B_Plan_of_first_floor%3B_Plan_of_upper_floors_%28NYPL_b12647274-465717%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 64,
+      "name": "Commons — Ground Floor Plan of Government House, Brisbane, c 1940.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/df/Ground_Floor_Plan_of_Government_House%2C_Brisbane%2C_c_1940.jpg/1280px-Ground_Floor_Plan_of_Government_House%2C_Brisbane%2C_c_1940.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 65,
+      "name": "Commons — Burlington House 1st floor Samuel Ware c.1815-18 edited.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/7e/Burlington_House_1st_floor_Samuel_Ware_c.1815-18_edited.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 66,
+      "name": "Commons — 20 St James's Square ground.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/bd/20_St_James%27s_Square_ground.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 67,
+      "name": "Commons — Gundang's house diagram.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/e3/Gundang%27s_house_diagram.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 68,
+      "name": "Commons — Floor plan of the Ancient Greek \"House of Kerdon\" at Delos.png",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/fd/Floor_plan_of_the_Ancient_Greek_%22House_of_Kerdon%22_at_Delos.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 69,
+      "name": "Commons — First Floor Plan - Charles Goodnight Ranch House, Goodnight, Armstrong County, TX HABS TX-3529 (sheet 2 of 9).png",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/First_Floor_Plan_-_Charles_Goodnight_Ranch_House%2C_Goodnight%2C_Armstrong_County%2C_TX_HABS_TX-3529_%28sheet_2_of_9%29.png/1280px-First_Floor_Plan_-_Charles_Goodnight_Ranch_House%2C_Goodnight%2C_Armstrong_County%2C_TX_HABS_TX-3529_%28sheet_2_of_9%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 70,
+      "name": "Commons — Frederick C. Robie House, Woodlawn Avenue and 58th Street, Hyde Park, Chicago, IL - 54214021035.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL_-_54214021035.jpg/1280px-Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL_-_54214021035.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 71,
+      "name": "Commons — 5 rue de la Tour-des-Dames (Paris) - plan.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c4/5_rue_de_la_Tour-des-Dames_%28Paris%29_-_plan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 72,
+      "name": "Commons — Dariush Borbor (Architect and Urban Planner), House Extension, Mousavizadeh, Ground Floor Plan, Tehran, 1974.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/23/Dariush_Borbor_%28Architect_and_Urban_Planner%29%2C_House_Extension%2C_Mousavizadeh%2C_Ground_Floor_Plan%2C_Tehran%2C_1974.jpg/1280px-Dariush_Borbor_%28Architect_and_Urban_Planner%29%2C_House_Extension%2C_Mousavizadeh%2C_Ground_Floor_Plan%2C_Tehran%2C_1974.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 73,
+      "name": "Commons — Floor Plan of the House of L Caecilius Jucundus, Pompeii V 1,26.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/81/Floor_Plan_of_the_House_of_L_Caecilius_Jucundus%2C_Pompeii_V_1%2C26.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 74,
+      "name": "Commons — Frederick C. Robie House, Woodlawn Avenue and 58th Street, Hyde Park, Chicago, IL - 54214023795.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/09/Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL_-_54214023795.jpg/1280px-Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL_-_54214023795.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 75,
+      "name": "Commons — First Floor Plan, Reynolda House - DPLA - a09123c61c9bc893c6c00a68369acbb1.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/First_Floor_Plan%2C_Reynolda_House_-_DPLA_-_a09123c61c9bc893c6c00a68369acbb1.jpg/1280px-First_Floor_Plan%2C_Reynolda_House_-_DPLA_-_a09123c61c9bc893c6c00a68369acbb1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 76,
+      "name": "Commons — 48 and 50 King Street (Houses), New York, New York County, NY HABS NY,31-NEYO,21- (sheet 2 of 8).png",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/48_and_50_King_Street_%28Houses%29%2C_New_York%2C_New_York_County%2C_NY_HABS_NY%2C31-NEYO%2C21-_%28sheet_2_of_8%29.png/1280px-48_and_50_King_Street_%28Houses%29%2C_New_York%2C_New_York_County%2C_NY_HABS_NY%2C31-NEYO%2C21-_%28sheet_2_of_8%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 77,
+      "name": "Commons — Floor Plan for the House of Orpheus Pompeii VI 14,20.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Floor_Plan_for_the_House_of_Orpheus_Pompeii_VI_14%2C20.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 78,
+      "name": "Commons — Hallway Windows, Frederick C. Robie House, Woodlawn Avenue and 58th Street, Hyde Park, Chicago, IL.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Hallway_Windows%2C_Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL.jpg/1280px-Hallway_Windows%2C_Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 79,
+      "name": "Commons — First Floor Plan, Ground Floor Plan, and Roof Plan - Obici House, Carriage House, 1400 Sleepy Hole Road, Suffolk, Suffolk, VA HABS VA-1438-A (sheet 1 of 2).png",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/15/First_Floor_Plan%2C_Ground_Floor_Plan%2C_and_Roof_Plan_-_Obici_House%2C_Carriage_House%2C_1400_Sleepy_Hole_Road%2C_Suffolk%2C_Suffolk%2C_VA_HABS_VA-1438-A_%28sheet_1_of_2%29.png/1280px-First_Floor_Plan%2C_Ground_Floor_Plan%2C_and_Roof_Plan_-_Obici_House%2C_Carriage_House%2C_1400_Sleepy_Hole_Road%2C_Suffolk%2C_Suffolk%2C_VA_HABS_VA-1438-A_%28sheet_1_of_2%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 80,
+      "name": "Commons — Douglas Snelling (Architect) 'Four-courters house,' St Ives, NSW, Floor Plan (Architecture and Arts, 14, September 1954, page 24).jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Douglas_Snelling_%28Architect%29_%27Four-courters_house%2C%27_St_Ives%2C_NSW%2C_Floor_Plan_%28Architecture_and_Arts%2C_14%2C_September_1954%2C_page_24%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 81,
+      "name": "Commons — Hallway, Frederick C. Robie House, Woodlawn Avenue and 58th Street, Hyde Park, Chicago, IL - 54213887063.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/30/Hallway%2C_Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL_-_54213887063.jpg/1280px-Hallway%2C_Frederick_C._Robie_House%2C_Woodlawn_Avenue_and_58th_Street%2C_Hyde_Park%2C_Chicago%2C_IL_-_54213887063.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 82,
+      "name": "Commons — Gyoka House Layout.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Gyoka_House_Layout.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 83,
+      "name": "Commons — Benin House Plan.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/00/Benin_House_Plan.jpg/1280px-Benin_House_Plan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 84,
+      "name": "Commons — 2 Dariush Borbor (Architect and Urban Planner), House Gharagozlou Ground Floor Plan, Latgah Village, Hamadan, 1967.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d9/2_Dariush_Borbor_%28Architect_and_Urban_Planner%29%2C_House_Gharagozlou_Ground_Floor_Plan%2C_Latgah_Village%2C_Hamadan%2C_1967.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 85,
+      "name": "Commons — Architect and engineer (1935) (14595455810).jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Architect_and_engineer_%281935%29_%2814595455810%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 86,
+      "name": "Commons — Bodisco House, 3322 O Street, Northwest, Washington, District of Columbia, DC HABS DC,GEO,38- (sheet 2 of 3).png",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Bodisco_House%2C_3322_O_Street%2C_Northwest%2C_Washington%2C_District_of_Columbia%2C_DC_HABS_DC%2CGEO%2C38-_%28sheet_2_of_3%29.png/1280px-Bodisco_House%2C_3322_O_Street%2C_Northwest%2C_Washington%2C_District_of_Columbia%2C_DC_HABS_DC%2CGEO%2C38-_%28sheet_2_of_3%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 87,
+      "name": "Commons — Clifford O. Reid Architect S Type House S TYPE RESIDENCE LA FIRST FLOOR PLAN.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Clifford_O._Reid_Architect_S_Type_House_S_TYPE_RESIDENCE_LA_FIRST_FLOOR_PLAN.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 88,
+      "name": "Commons — CHAS DANIELS HOUSE PLANS FL1.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/eb/CHAS_DANIELS_HOUSE_PLANS_FL1.jpg/1280px-CHAS_DANIELS_HOUSE_PLANS_FL1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 89,
+      "name": "Commons — 3 Dariush Borbor (Architect and Urban Planner), House Honary, First Floor Plan, Tehran, 1968.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/3_Dariush_Borbor_%28Architect_and_Urban_Planner%29%2C_House_Honary%2C_First_Floor_Plan%2C_Tehran%2C_1968.jpg/1280px-3_Dariush_Borbor_%28Architect_and_Urban_Planner%29%2C_House_Honary%2C_First_Floor_Plan%2C_Tehran%2C_1968.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 90,
+      "name": "Commons — 178 Central Street Somerville MA.png",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c9/178_Central_Street_Somerville_MA.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 91,
+      "name": "Commons — 74 of 'Deutsche Volkskunde ... Mit siebzehn Abbildungen und einer Karte' (11153061084).jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/13/74_of_%27Deutsche_Volkskunde_..._Mit_siebzehn_Abbildungen_und_einer_Karte%27_%2811153061084%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 92,
+      "name": "Commons — Burlington House ground floor plan by Samuel Ware in connection with remodelling of 1815-18 edited.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d0/Burlington_House_ground_floor_plan_by_Samuel_Ware_in_connection_with_remodelling_of_1815-18_edited.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 93,
+      "name": "Commons — First Floor Plan - E. Fay and Gus Jones House, 1330 North Hillcrest Avenue, Fayetteville, Washington County, AR HABS AR-52 (sheet 3 of 23).png",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e9/First_Floor_Plan_-_E._Fay_and_Gus_Jones_House%2C_1330_North_Hillcrest_Avenue%2C_Fayetteville%2C_Washington_County%2C_AR_HABS_AR-52_%28sheet_3_of_23%29.png/1280px-First_Floor_Plan_-_E._Fay_and_Gus_Jones_House%2C_1330_North_Hillcrest_Avenue%2C_Fayetteville%2C_Washington_County%2C_AR_HABS_AR-52_%28sheet_3_of_23%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 94,
+      "name": "Commons — First story floor plan.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/ca/First_story_floor_plan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 95,
+      "name": "Commons — 54 Queen Street floor plans.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ae/54_Queen_Street_floor_plans.jpg/1280px-54_Queen_Street_floor_plans.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 96,
+      "name": "Commons — House of Jason Floor Plan (Ground Floor only) Pompeii IX 5,18.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/0/07/House_of_Jason_Floor_Plan_%28Ground_Floor_only%29_Pompeii_IX_5%2C18.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 97,
+      "name": "Commons — House of Pygmeii Floor Plan (Ground Floor only) in Pompeii (IX 5,9).jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/b3/House_of_Pygmeii_Floor_Plan_%28Ground_Floor_only%29_in_Pompeii_%28IX_5%2C9%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 98,
+      "name": "Commons — 1924 A. Ventura GR 3302.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/91/1924_A._Ventura_GR_3302.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "source": "commons"
+    },
+    {
+      "id": 99,
+      "name": "Commons — First Floor Plan - Hantz House, 855 Fairview Drive, Fayetteville, Washington County, AR HABS AR-54 (sheet 4 of 12).png",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/50/First_Floor_Plan_-_Hantz_House%2C_855_Fairview_Drive%2C_Fayetteville%2C_Washington_County%2C_AR_HABS_AR-54_%28sheet_4_of_12%29.png/1280px-First_Floor_Plan_-_Hantz_House%2C_855_Fairview_Drive%2C_Fayetteville%2C_Washington_County%2C_AR_HABS_AR-54_%28sheet_4_of_12%29.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    },
+    {
+      "id": 100,
+      "name": "Commons — Ashby St Ledgers Ground Floor Plan Lutyens Houses and Gardens 1913 Page205.jpg",
+      "kind": "Wikimedia Commons",
+      "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c5/Ashby_St_Ledgers_Ground_Floor_Plan_Lutyens_Houses_and_Gardens_1913_Page205.jpg/1280px-Ashby_St_Ledgers_Ground_Floor_Plan_Lutyens_Houses_and_Gardens_1913_Page205.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "source": "commons"
+    }
+  ]
+}
