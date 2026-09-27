@@ -54,7 +54,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
     <main>
       <section id="view-novo" class="view active">
-        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF ou imagem e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">v4.2 • leitura híbrida 30-modelos</span></div>
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF ou imagem e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">v4.3 • leitura híbrida 100-modelos</span></div>
         <div class="card">
           <h2>Dados da obra</h2>
           <div class="grid g3">
@@ -221,7 +221,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
           </div>
         </div>
       </section>
-      <div class="footer">LANG Quantitativos • versão 4.2 • leitura híbrida e regressão com 30 plantas</div>
+      <div class="footer">LANG Quantitativos • versão 4.3 • leitura híbrida e regressão com 100 plantas</div>
     </main>
   </div>
 </div>
@@ -803,7 +803,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
       const positions=cluster.map(r=>r.pos).sort((a,b)=>a-b),minP=positions[0],maxP=positions[positions.length-1],thick=maxP-minP+1,center=positions[Math.floor(positions.length/2)];
       const aa=cluster.map(r=>r.a).sort((a,b)=>a-b),bb=cluster.map(r=>r.b).sort((a,b)=>a-b),a=aa[Math.floor(aa.length/2)],b=bb[Math.floor(bb.length/2)],len=b-a+1;
       const nearEdge=center<(axis==='h'?roi.y0:roi.x0)+edgeMargin||center>(axis==='h'?roi.y1:roi.x1)-edgeMargin;
-      const stable=cluster.length>=2||thick>=3,wallLike=len>=minLen&&stable&&thick<=Math.max(55,crossSpan*.045)&&len/Math.max(1,thick)>=3;
+      const stable=cluster.length>=2||thick>=3||len>=minLen*2.25,wallLike=len>=minLen&&stable&&thick<=Math.max(55,crossSpan*.045)&&len/Math.max(1,thick)>=3;
       if(wallLike&&!nearEdge)out.push({axis,pos:center,a,b,len,thick,count:cluster.length,rawCount:cluster.length});
     }
     return out;
@@ -836,11 +836,11 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     for(let i=0;i<segments.length;i++){if(seen[i])continue;const stack=[i],ids=[],seenLocal=new Set();seen[i]=1;while(stack.length){const n=stack.pop();ids.push(n);for(const q of adj[n])if(!seen[q]){seen[q]=1;stack.push(q)}}components.push({ids,length:ids.reduce((s,k)=>s+segments[k].len,0),nodes:ids.length})}
     components.sort((a,b)=>b.length-a.length);const largest=components[0]?.length||1,acceptedIds=new Set();
     for(const comp of components){
-      const connectedEnough=comp.nodes>=3||comp.length>=largest*.30;
-      if(comp===components[0]||((comp.length>=largest*.15||comp.nodes>=5)&&connectedEnough))for(const id of comp.ids)acceptedIds.add(id);
+      const connectedEnough=comp.nodes>=2||comp.length>=largest*.22;
+      if(comp===components[0]||((comp.length>=largest*.08||comp.nodes>=3)&&connectedEnough))for(const id of comp.ids)acceptedIds.add(id);
     }
     const accepted=[],uncertain=[];
-    segments.forEach((r,i)=>{const degree=adj[i].length,thicknessScore=Math.min(1,r.thick/5),lengthScore=Math.min(1,r.len/Math.max(1,Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.12)),score=.42*thicknessScore+.28*lengthScore+.30*Math.min(1,degree/2);r.score=score;r.connections=degree;(acceptedIds.has(i)&&score>=.32?accepted:uncertain).push(r)});
+    segments.forEach((r,i)=>{const degree=adj[i].length,thicknessScore=Math.min(1,r.thick/5),lengthScore=Math.min(1,r.len/Math.max(1,Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.12)),score=.42*thicknessScore+.28*lengthScore+.30*Math.min(1,degree/2);r.score=score;r.connections=degree;(acceptedIds.has(i)&&score>=.28&&(degree>0||r.thick>=3)?accepted:uncertain).push(r)});
     return{accepted,uncertain,components,adj};
   }
   function paintWallDetection(w,h,accepted,uncertain){
