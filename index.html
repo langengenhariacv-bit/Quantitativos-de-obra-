@@ -839,8 +839,17 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
       const connectedEnough=comp.nodes>=2||comp.length>=largest*.22;
       if(comp===components[0]||((comp.length>=largest*.08||comp.nodes>=3)&&connectedEnough))for(const id of comp.ids)acceptedIds.add(id);
     }
-    const accepted=[],uncertain=[];
+    let accepted=[],uncertain=[];
     segments.forEach((r,i)=>{const degree=adj[i].length,thicknessScore=Math.min(1,r.thick/5),lengthScore=Math.min(1,r.len/Math.max(1,Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.12)),score=.42*thicknessScore+.28*lengthScore+.30*Math.min(1,degree/2);r.score=score;r.connections=degree;(acceptedIds.has(i)&&score>=.28&&(degree>0||r.thick>=3)?accepted:uncertain).push(r)});
+    if(!accepted.length&&uncertain.length>=6){
+      const minDim=Math.min(roi.x1-roi.x0,roi.y1-roi.y0),strong=uncertain.filter(r=>r.thick>=3&&r.len>=minDim*.055);
+      if(strong.length>=4){
+        let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+        for(const r of strong){if(r.axis==='h'){minX=Math.min(minX,r.a);maxX=Math.max(maxX,r.b);minY=Math.min(minY,r.pos);maxY=Math.max(maxY,r.pos)}else{minX=Math.min(minX,r.pos);maxX=Math.max(maxX,r.pos);minY=Math.min(minY,r.a);maxY=Math.max(maxY,r.b)}}
+        const coverage=Math.sqrt(Math.max(0,((maxX-minX)/(roi.x1-roi.x0))*((maxY-minY)/(roi.y1-roi.y0))));
+        if(coverage>=.32){const set=new Set(strong);accepted=strong;uncertain=uncertain.filter(r=>!set.has(r));}
+      }
+    }
     return{accepted,uncertain,components,adj};
   }
   function paintWallDetection(w,h,accepted,uncertain){
