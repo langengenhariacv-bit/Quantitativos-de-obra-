@@ -721,28 +721,59 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     }
     return grown;
   }
+  function imagePageBounds(data,w,h){
+    const row=[];for(let y=0;y<h;y++){let light=0;for(let x=0;x<w;x+=2){const i=(y*w+x)*4,l=(data[i]*.299+data[i+1]*.587+data[i+2]*.114);if(l>205)light++}row[y]=light/Math.ceil(w/2)}
+    const col=[];for(let x=0;x<w;x++){let light=0;for(let y=0;y<h;y+=2){const i=(y*w+x)*4,l=(data[i]*.299+data[i+1]*.587+data[i+2]*.114);if(l>205)light++}col[x]=light/Math.ceil(h/2)}
+    function longest(arr,minRatio){let bs=0,be=arr.length-1,s=-1,best=0;for(let i=0;i<=arr.length;i++){const on=i<arr.length&&arr[i]>=minRatio;if(on&&s<0)s=i;if(!on&&s>=0){if(i-s>best){best=i-s;bs=s;be=i-1}s=-1}}return[bs,be,best]}
+    const ry=longest(row,.22),rx=longest(col,.22);let x0=rx[0],x1=rx[1]+1,y0=ry[0],y1=ry[1]+1;
+    if((x1-x0)*(y1-y0)<w*h*.25)return{x0:0,y0:0,x1:w,y1:h};
+    const mx=Math.max(2,Math.round((x1-x0)*.005)),my=Math.max(2,Math.round((y1-y0)*.005));
+    return{x0:Math.min(x1-1,x0+mx),y0:Math.min(y1-1,y0+my),x1:Math.max(x0+1,x1-mx),y1:Math.max(y0+1,y1-my)};
+  }
+  function imageDarkMask(data,w,h,roi){
+    const gray=[];for(let y=roi.y0;y<roi.y1;y+=3)for(let x=roi.x0;x<roi.x1;x+=3){const i=(y*w+x)*4;gray.push(data[i]*.299+data[i+1]*.587+data[i+2]*.114)}gray.sort((a,b)=>a-b);
+    const p20=gray[Math.floor(gray.length*.20)]||0,p50=gray[Math.floor(gray.length*.50)]||128,p85=gray[Math.floor(gray.length*.85)]||230;
+    const threshold=Math.max(55,Math.min(185,Math.round(Math.min(p50*.72,p20+75,p85-45))));
+    const mask=new Uint8Array(w*h);for(let y=roi.y0;y<roi.y1;y++)for(let x=roi.x0;x<roi.x1;x++){const i=(y*w+x)*4,l=data[i]*.299+data[i+1]*.587+data[i+2]*.114;if(l<threshold)mask[y*w+x]=1}
+    return{mask,threshold};
+  }
+  function scanRuns(mask,w,h,roi,axis,minLen){
+    const runs=[],outer=axis==='h'?[roi.y0,roi.y1]:[roi.x0,roi.x1],inner=axis==='h'?[roi.x0,roi.x1]:[roi.y0,roi.y1];
+    for(let o=outer[0];o<outer[1];o++){let s=-1,last=-99,gaps=0;for(let i=inner[0];i<=inner[1];i++){const x=axis==='h'?i:o,y=axis==='h'?o:i,on=i<inner[1]&&mask[y*w+x];if(on){if(s<0)s=i;last=i;gaps=0}else if(s>=0){gaps++;if(gaps>1){const e=last;if(e-s+1>=minLen)runs.push({pos:o,a:s,b:e,len:e-s+1});s=-1;last=-99;gaps=0}}} }
+    return runs;
+  }
+  function clusterWallRuns(runs,roi,axis,minLen){
+    if(!runs.length)return[];runs.sort((a,b)=>a.pos-b.pos||a.a-b.a);const used=new Uint8Array(runs.length),out=[],span=axis==='h'?(roi.y1-roi.y0):(roi.x1-roi.x0),edgeMargin=Math.max(5,span*.018),maxGap=Math.max(5,Math.round(span*.008));
+    for(let i=0;i<runs.length;i++){if(used[i])continue;const cluster=[runs[i]];used[i]=1;let changed=true;while(changed){changed=false;for(let j=i+1;j<runs.length;j++){if(used[j])continue;for(const r of cluster){if(Math.abs(runs[j].pos-r.pos)>maxGap)continue;const ov=Math.max(0,Math.min(r.b,runs[j].b)-Math.max(r.a,runs[j].a)+1),ratio=ov/Math.max(1,Math.min(r.len,runs[j].len));if(ratio>.72&&Math.abs(r.len-runs[j].len)<Math.max(18,r.len*.35)){used[j]=1;cluster.push(runs[j]);changed=true;break}}}}
+      const positions=cluster.map(r=>r.pos),minP=Math.min(...positions),maxP=Math.max(...positions),thick=maxP-minP+1;
+      const aa=cluster.map(r=>r.a).sort((a,b)=>a-b),bb=cluster.map(r=>r.b).sort((a,b)=>a-b),a=aa[Math.floor(aa.length/2)],b=bb[Math.floor(bb.length/2)],len=b-a+1;
+      const center=(minP+maxP)/2,nearEdge=center<(axis==='h'?roi.y0:roi.x0)+edgeMargin||center>(axis==='h'?roi.y1:roi.x1)-edgeMargin;
+      const stable=cluster.length>=2||thick>=3,wallLike=len>=minLen&&stable&&thick<=Math.max(45,span*.04)&&len/Math.max(1,thick)>=4;
+      if(wallLike&&!nearEdge)out.push({axis,pos:center,a,b,len,thick,count:cluster.length});
+    }
+    return out;
+  }
+  function detectImageWallGeometry(data,w,h){
+    const roi=imagePageBounds(data,w,h),dm=imageDarkMask(data,w,h,roi),minLen=Math.max(18,Math.round(Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.018));
+    const hr=clusterWallRuns(scanRuns(dm.mask,w,h,roi,'h',minLen),roi,'h',minLen),vr=clusterWallRuns(scanRuns(dm.mask,w,h,roi,'v',minLen),roi,'v',minLen);
+    const filtered=[];for(const r of [...hr,...vr]){let connected=0;for(const q of [...hr,...vr]){if(r===q||r.axis===q.axis)continue;if(r.axis==='h'){if(q.pos>=r.a-5&&q.pos<=r.b+5&&r.pos>=q.a-5&&r.pos<=q.b+5)connected++}else{if(r.pos>=q.a-5&&r.pos<=q.b+5&&q.pos>=r.a-5&&q.pos<=r.b+5)connected++}}if(connected||r.thick>=4)filtered.push(r)}
+    const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.lineCap='square';ctx.strokeStyle='rgba(22,113,185,.78)';
+    for(const r of filtered){ctx.lineWidth=Math.max(3,Math.min(8,r.thick*.6));ctx.beginPath();if(r.axis==='h'){ctx.moveTo(r.a,r.pos);ctx.lineTo(r.b,r.pos)}else{ctx.moveTo(r.pos,r.a);ctx.lineTo(r.pos,r.b)}ctx.stroke()}
+    return{roi,threshold:dm.threshold,runs:filtered,maskCanvas:canvas,lengthPx:filtered.reduce((s,r)=>s+r.len,0),horizontal:filtered.filter(r=>r.axis==='h').length,vertical:filtered.filter(r=>r.axis==='v').length};
+  }
   async function estimateWallsFromPdf(){
     state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallConfidence='';state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='Leitura raster validada';state.autoWallLayers=[];
     if(!state.pdf&&!state.image){renderAutoRead();return}
     if(state.image){
       const img=state.image,scale=imageDisplayScale(img),cw=Math.max(1,Math.round((img.naturalWidth||img.width)*scale)),ch=Math.max(1,Math.round((img.naturalHeight||img.height)*scale)),canvas=document.createElement('canvas');
       canvas.width=cw;canvas.height=ch;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#fff';ctx.fillRect(0,0,cw,ch);ctx.drawImage(img,0,0,cw,ch);
-      const data=ctx.getImageData(0,0,cw,ch).data,roi={x0:0,y0:0,x1:cw,y1:ch},hist=new Uint32Array(256);
-      for(let y=0;y<ch;y++)for(let x=0;x<cw;x++){const i=(y*cw+x)*4,r=data[i],g=data[i+1],b=data[i+2];if(Math.abs(r-g)<=8&&Math.abs(g-b)<=8&&r>=35&&r<=220)hist[r]++}
-      const ranked=[];for(let v=35;v<=220;v++)if(hist[v])ranked.push([hist[v],v]);ranked.sort((a,b)=>b[0]-a[0]);
-      const candidates=[];for(const pair of ranked){const v=pair[1];if(candidates.every(x=>Math.abs(x-v)>3))candidates.push(v);if(candidates.length>=12)break}
-      const minRun=Math.max(8,Math.round(Math.min(cw,ch)*.006));let bestLevel=0,bestScore=0;
-      for(const v of candidates){const score=wallToneScore(data,cw,ch,roi,v,minRun);if(score>bestScore){bestScore=score;bestLevel=v}}
-      if(bestLevel){
-        const keep=buildWallMask(data,cw,ch,roi,bestLevel,minRun);let wallPixels=0;const maskCanvas=document.createElement('canvas');maskCanvas.width=cw;maskCanvas.height=ch;const mctx=maskCanvas.getContext('2d'),out=mctx.createImageData(cw,ch);
-        for(let i=0;i<keep.length;i++)if(keep[i]){wallPixels++;const j=i*4;out.data[j]=22;out.data[j+1]=113;out.data[j+2]=185;out.data[j+3]=155}
-        mctx.putImageData(out,0,0);state.autoWallMasks[1]=maskCanvas;state.autoWallTone=bestLevel;
-        const ratio=wallPixels/Math.max(1,cw*ch);state.autoWallConfidence=ratio>.012?'boa':ratio>.004?'moderada':'baixa';
-        if(state.metersPerPixel){state.autoWallFootprint=wallPixels*state.metersPerPixel*state.metersPerPixel;state.autoWallLength=state.autoWallFootprint/brickFinishedThickness()+state.openings.reduce((s,o)=>s+o.qty*o.w,0)}
-      }
-      state.autoWallMethod=state.metersPerPixel?'Leitura raster de imagem calibrada':'Leitura raster de imagem — falta calibrar escala';state.autoWallLayers=[];renderAutoRead();drawAutoWallMask();return;
-    }
-    const renderScale=.82;let footprint=0,pagesUsed=0,quality=[],bestTones=[];
+      const data=ctx.getImageData(0,0,cw,ch).data,det=detectImageWallGeometry(data,cw,ch);state.autoWallMasks[1]=det.maskCanvas;
+      if(state.metersPerPixel&&det.lengthPx>0){state.autoWallLength=det.lengthPx*state.metersPerPixel+state.openings.reduce((s,o)=>s+o.qty*o.w,0);state.autoWallFootprint=state.autoWallLength*brickFinishedThickness()}
+      else{state.autoWallLength=0;state.autoWallFootprint=0}
+      state.autoWallTone=det.threshold;state.autoWallMethod=state.metersPerPixel?'Imagem P/B calibrada — linhas estruturais filtradas':'Imagem P/B — paredes detectadas; falta calibrar escala';state.autoWallLayers=[];
+      const n=det.runs.length;state.autoWallConfidence=n>=12?'boa':n>=5?'moderada':n?'baixa':'não detectada';
+      renderAutoRead();drawAutoWallMask();return;
+    }    const renderScale=.82;let footprint=0,pagesUsed=0,quality=[],bestTones=[];
     for(let p=1;p<=state.pdf.numPages;p++){
       const txt=state.pageTexts[p-1]||'';if(!/planta\s+baixa/i.test(txt))continue;
       const page=await state.pdf.getPage(p),vp=page.getViewport({scale:renderScale}),canvas=document.createElement('canvas');canvas.width=Math.ceil(vp.width);canvas.height=Math.ceil(vp.height);
