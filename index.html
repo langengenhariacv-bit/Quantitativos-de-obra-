@@ -291,7 +291,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
     ['q_elevador','Elevadores','un.','25. Transporte vertical','elevador',false],['q_limpeza','Limpeza pós-obra','m²','26. Serviços finais','limpezaFinal',false]
   ];
   const defaultScope=new Set(componentCatalog.flatMap(g=>g.items.map(i=>i[0])));
-  const state={pdf:null,image:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],pageScales:{},confirmed:false,autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
+  const state={pdf:null,image:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],pageScales:{},confirmed:false,autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],autoWallDiagnostics:{},materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
   let autosaveTimer;
 
   function fmt(n,d=2){return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})}
@@ -738,56 +738,119 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     return grown;
   }
   function imagePageBounds(data,w,h){
-    const row=[];for(let y=0;y<h;y++){let light=0;for(let x=0;x<w;x+=2){const i=(y*w+x)*4,l=(data[i]*.299+data[i+1]*.587+data[i+2]*.114);if(l>205)light++}row[y]=light/Math.ceil(w/2)}
-    const col=[];for(let x=0;x<w;x++){let light=0;for(let y=0;y<h;y+=2){const i=(y*w+x)*4,l=(data[i]*.299+data[i+1]*.587+data[i+2]*.114);if(l>205)light++}col[x]=light/Math.ceil(h/2)}
-    function longest(arr,minRatio){let bs=0,be=arr.length-1,s=-1,best=0;for(let i=0;i<=arr.length;i++){const on=i<arr.length&&arr[i]>=minRatio;if(on&&s<0)s=i;if(!on&&s>=0){if(i-s>best){best=i-s;bs=s;be=i-1}s=-1}}return[bs,be,best]}
-    const ry=longest(row,.22),rx=longest(col,.22);let x0=rx[0],x1=rx[1]+1,y0=ry[0],y1=ry[1]+1;
-    if((x1-x0)*(y1-y0)<w*h*.25)return{x0:0,y0:0,x1:w,y1:h};
-    const mx=Math.max(2,Math.round((x1-x0)*.005)),my=Math.max(2,Math.round((y1-y0)*.005));
+    const step=Math.max(1,Math.floor(Math.max(w,h)/1200)),row=new Float32Array(h),col=new Float32Array(w);
+    for(let y=0;y<h;y+=step){let light=0,n=0;for(let x=0;x<w;x+=step){const i=(y*w+x)*4,l=data[i]*.299+data[i+1]*.587+data[i+2]*.114;if(l>205)light++;n++}row[y]=n?light/n:0}
+    for(let x=0;x<w;x+=step){let light=0,n=0;for(let y=0;y<h;y+=step){const i=(y*w+x)*4,l=data[i]*.299+data[i+1]*.587+data[i+2]*.114;if(l>205)light++;n++}col[x]=n?light/n:0}
+    function longest(arr,minRatio){let bs=0,be=arr.length-1,s=-1,best=0;for(let i=0;i<=arr.length;i++){const on=i<arr.length&&arr[i]>=minRatio;if(on&&s<0)s=i;if((!on||i===arr.length)&&s>=0){if(i-s>best){best=i-s;bs=s;be=i-1}s=-1}}return[bs,be,best]}
+    const ry=longest(row,.20),rx=longest(col,.20);let x0=rx[0],x1=rx[1]+1,y0=ry[0],y1=ry[1]+1;
+    if((x1-x0)*(y1-y0)<w*h*.20)return{x0:0,y0:0,x1:w,y1:h};
+    const mx=Math.max(2,Math.round((x1-x0)*.004)),my=Math.max(2,Math.round((y1-y0)*.004));
     return{x0:Math.min(x1-1,x0+mx),y0:Math.min(y1-1,y0+my),x1:Math.max(x0+1,x1-mx),y1:Math.max(y0+1,y1-my)};
   }
+  function otsuThreshold(gray,hist){
+    let total=gray.length,sum=0;for(let i=0;i<256;i++)sum+=i*hist[i];
+    let sumB=0,wB=0,best=0,max=-1;
+    for(let t=0;t<256;t++){wB+=hist[t];if(!wB)continue;const wF=total-wB;if(!wF)break;sumB+=t*hist[t];const mB=sumB/wB,mF=(sum-sumB)/wF,v=wB*wF*(mB-mF)*(mB-mF);if(v>max){max=v;best=t}}
+    return best;
+  }
   function imageDarkMask(data,w,h,roi){
-    const gray=[];for(let y=roi.y0;y<roi.y1;y+=3)for(let x=roi.x0;x<roi.x1;x+=3){const i=(y*w+x)*4;gray.push(data[i]*.299+data[i+1]*.587+data[i+2]*.114)}gray.sort((a,b)=>a-b);
-    const p20=gray[Math.floor(gray.length*.20)]||0,p50=gray[Math.floor(gray.length*.50)]||128,p85=gray[Math.floor(gray.length*.85)]||230;
-    const threshold=Math.max(55,Math.min(185,Math.round(Math.min(p50*.72,p20+75,p85-45))));
-    const mask=new Uint8Array(w*h);for(let y=roi.y0;y<roi.y1;y++)for(let x=roi.x0;x<roi.x1;x++){const i=(y*w+x)*4,l=data[i]*.299+data[i+1]*.587+data[i+2]*.114;if(l<threshold)mask[y*w+x]=1}
-    return{mask,threshold};
+    const rw=roi.x1-roi.x0,rh=roi.y1-roi.y0,gray=new Uint8Array(rw*rh),hist=new Uint32Array(256);let k=0;
+    for(let y=roi.y0;y<roi.y1;y++)for(let x=roi.x0;x<roi.x1;x++){const i=(y*w+x)*4,l=Math.max(0,Math.min(255,Math.round(data[i]*.299+data[i+1]*.587+data[i+2]*.114)));gray[k++]=l;hist[l]++}
+    const otsu=otsuThreshold(gray,hist),sorted=Array.from(gray.filter((_,i)=>i%Math.max(1,Math.floor(gray.length/50000))===0)).sort((a,b)=>a-b);
+    const p15=sorted[Math.floor(sorted.length*.15)]||0,p50=sorted[Math.floor(sorted.length*.50)]||128,p90=sorted[Math.floor(sorted.length*.90)]||240;
+    const global=Math.max(45,Math.min(205,Math.round(Math.min(Math.max(otsu,55),p50*.82,p90-28))));
+    const mask=new Uint8Array(w*h),integral=new Uint32Array((rw+1)*(rh+1));
+    for(let yy=0;yy<rh;yy++){let rs=0;for(let xx=0;xx<rw;xx++){const v=gray[yy*rw+xx];rs+=v;integral[(yy+1)*(rw+1)+xx+1]=integral[yy*(rw+1)+xx+1]+rs}}
+    const rad=Math.max(8,Math.round(Math.min(rw,rh)*.012));
+    for(let yy=0;yy<rh;yy++)for(let xx=0;xx<rw;xx++){
+      const x0=Math.max(0,xx-rad),x1=Math.min(rw-1,xx+rad),y0=Math.max(0,yy-rad),y1=Math.min(rh-1,yy+rad);
+      const A=integral[y0*(rw+1)+x0],B=integral[y0*(rw+1)+x1+1],C=integral[(y1+1)*(rw+1)+x0],D=integral[(y1+1)*(rw+1)+x1+1],mean=(D-B-C+A)/((x1-x0+1)*(y1-y0+1));
+      const v=gray[yy*rw+xx],local=Math.max(35,mean-26),dark=v<global||v<local;
+      if(dark)mask[(roi.y0+yy)*w+roi.x0+xx]=1;
+    }
+    return{mask,threshold:global,otsu,p15,p50,p90};
   }
   function scanRuns(mask,w,h,roi,axis,minLen){
-    const runs=[],outer=axis==='h'?[roi.y0,roi.y1]:[roi.x0,roi.x1],inner=axis==='h'?[roi.x0,roi.x1]:[roi.y0,roi.y1];
-    for(let o=outer[0];o<outer[1];o++){let s=-1,last=-99,gaps=0;for(let i=inner[0];i<=inner[1];i++){const x=axis==='h'?i:o,y=axis==='h'?o:i,on=i<inner[1]&&mask[y*w+x];if(on){if(s<0)s=i;last=i;gaps=0}else if(s>=0){gaps++;if(gaps>1){const e=last;if(e-s+1>=minLen)runs.push({pos:o,a:s,b:e,len:e-s+1});s=-1;last=-99;gaps=0}}} }
+    const runs=[],outer=axis==='h'?[roi.y0,roi.y1]:[roi.x0,roi.x1],inner=axis==='h'?[roi.x0,roi.x1]:[roi.y0,roi.y1],gapAllowance=Math.max(1,Math.round(minLen*.035));
+    for(let o=outer[0];o<outer[1];o++){let s=-1,last=-99,gaps=0;for(let i=inner[0];i<=inner[1];i++){const x=axis==='h'?i:o,y=axis==='h'?o:i,on=i<inner[1]&&mask[y*w+x];if(on){if(s<0)s=i;last=i;gaps=0}else if(s>=0){gaps++;if(gaps>gapAllowance){const e=last;if(e-s+1>=minLen)runs.push({pos:o,a:s,b:e,len:e-s+1});s=-1;last=-99;gaps=0}}}}
     return runs;
   }
   function clusterWallRuns(runs,roi,axis,minLen){
-    if(!runs.length)return[];runs.sort((a,b)=>a.pos-b.pos||a.a-b.a);const used=new Uint8Array(runs.length),out=[],span=axis==='h'?(roi.y1-roi.y0):(roi.x1-roi.x0),edgeMargin=Math.max(5,span*.018),maxGap=Math.max(5,Math.round(span*.008));
-    for(let i=0;i<runs.length;i++){if(used[i])continue;const cluster=[runs[i]];used[i]=1;let changed=true;while(changed){changed=false;for(let j=i+1;j<runs.length;j++){if(used[j])continue;for(const r of cluster){if(Math.abs(runs[j].pos-r.pos)>maxGap)continue;const ov=Math.max(0,Math.min(r.b,runs[j].b)-Math.max(r.a,runs[j].a)+1),ratio=ov/Math.max(1,Math.min(r.len,runs[j].len));if(ratio>.72&&Math.abs(r.len-runs[j].len)<Math.max(18,r.len*.35)){used[j]=1;cluster.push(runs[j]);changed=true;break}}}}
-      const positions=cluster.map(r=>r.pos),minP=Math.min(...positions),maxP=Math.max(...positions),thick=maxP-minP+1;
+    if(!runs.length)return[];runs.sort((a,b)=>a.pos-b.pos||a.a-b.a);
+    const used=new Uint8Array(runs.length),out=[],crossSpan=axis==='h'?(roi.y1-roi.y0):(roi.x1-roi.x0),edgeMargin=Math.max(5,crossSpan*.012),maxBand=Math.max(5,Math.round(crossSpan*.010));
+    for(let i=0;i<runs.length;i++){
+      if(used[i])continue;const cluster=[runs[i]];used[i]=1;let changed=true;
+      while(changed){changed=false;for(let j=i+1;j<runs.length;j++){if(used[j])continue;for(const r of cluster){if(Math.abs(runs[j].pos-r.pos)>maxBand)continue;const ov=Math.max(0,Math.min(r.b,runs[j].b)-Math.max(r.a,runs[j].a)+1),ratio=ov/Math.max(1,Math.min(r.len,runs[j].len));if(ratio>.68&&Math.abs(r.len-runs[j].len)<Math.max(24,r.len*.42)){used[j]=1;cluster.push(runs[j]);changed=true;break}}}}
+      const positions=cluster.map(r=>r.pos).sort((a,b)=>a-b),minP=positions[0],maxP=positions[positions.length-1],thick=maxP-minP+1,center=positions[Math.floor(positions.length/2)];
       const aa=cluster.map(r=>r.a).sort((a,b)=>a-b),bb=cluster.map(r=>r.b).sort((a,b)=>a-b),a=aa[Math.floor(aa.length/2)],b=bb[Math.floor(bb.length/2)],len=b-a+1;
-      const center=(minP+maxP)/2,nearEdge=center<(axis==='h'?roi.y0:roi.x0)+edgeMargin||center>(axis==='h'?roi.y1:roi.x1)-edgeMargin;
-      const stable=cluster.length>=2||thick>=3,wallLike=len>=minLen&&stable&&thick<=Math.max(45,span*.04)&&len/Math.max(1,thick)>=4;
-      if(wallLike&&!nearEdge)out.push({axis,pos:center,a,b,len,thick,count:cluster.length});
+      const nearEdge=center<(axis==='h'?roi.y0:roi.x0)+edgeMargin||center>(axis==='h'?roi.y1:roi.x1)-edgeMargin;
+      const stable=cluster.length>=2||thick>=3,wallLike=len>=minLen&&stable&&thick<=Math.max(55,crossSpan*.045)&&len/Math.max(1,thick)>=3.5;
+      if(wallLike&&!nearEdge)out.push({axis,pos:center,a,b,len,thick,count:cluster.length,rawCount:cluster.length});
     }
     return out;
   }
-  function detectImageWallGeometry(data,w,h){
-    const roi=imagePageBounds(data,w,h),dm=imageDarkMask(data,w,h,roi),minLen=Math.max(18,Math.round(Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.018));
-    const hr=clusterWallRuns(scanRuns(dm.mask,w,h,roi,'h',minLen),roi,'h',minLen),vr=clusterWallRuns(scanRuns(dm.mask,w,h,roi,'v',minLen),roi,'v',minLen);
-    const filtered=[];for(const r of [...hr,...vr]){let connected=0;for(const q of [...hr,...vr]){if(r===q||r.axis===q.axis)continue;if(r.axis==='h'){if(q.pos>=r.a-5&&q.pos<=r.b+5&&r.pos>=q.a-5&&r.pos<=q.b+5)connected++}else{if(r.pos>=q.a-5&&r.pos<=q.b+5&&q.pos>=r.a-5&&q.pos<=r.b+5)connected++}}if(connected||r.thick>=4)filtered.push(r)}
-    const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.lineCap='square';ctx.strokeStyle='rgba(22,113,185,.78)';
-    for(const r of filtered){ctx.lineWidth=Math.max(3,Math.min(8,r.thick*.6));ctx.beginPath();if(r.axis==='h'){ctx.moveTo(r.a,r.pos);ctx.lineTo(r.b,r.pos)}else{ctx.moveTo(r.pos,r.a);ctx.lineTo(r.pos,r.b)}ctx.stroke()}
-    return{roi,threshold:dm.threshold,runs:filtered,maskCanvas:canvas,lengthPx:filtered.reduce((s,r)=>s+r.len,0),horizontal:filtered.filter(r=>r.axis==='h').length,vertical:filtered.filter(r=>r.axis==='v').length};
+  function mergeCollinearWallSegments(list,roi,mpp){
+    const result=[],groups={h:[],v:[]};for(const r of list)groups[r.axis].push({...r});
+    const minDim=Math.min(roi.x1-roi.x0,roi.y1-roi.y0),gapMax=mpp?Math.max(10,Math.min(minDim*.07,1.80/mpp)):minDim*.055,posTol=Math.max(3,minDim*.006);
+    for(const axis of ['h','v']){
+      const arr=groups[axis].sort((a,b)=>a.pos-b.pos||a.a-b.a),used=new Uint8Array(arr.length);
+      for(let i=0;i<arr.length;i++){if(used[i])continue;let cur={...arr[i]};used[i]=1;let changed=true;
+        while(changed){changed=false;for(let j=i+1;j<arr.length;j++){if(used[j])continue;const q=arr[j];if(Math.abs(q.pos-cur.pos)>posTol)continue;const gap=Math.max(q.a-cur.b,cur.a-q.b,0);const overlap=Math.max(0,Math.min(cur.b,q.b)-Math.max(cur.a,q.a));if(gap<=gapMax||overlap>0){const w1=cur.len,w2=q.len;cur.pos=(cur.pos*w1+q.pos*w2)/(w1+w2);cur.a=Math.min(cur.a,q.a);cur.b=Math.max(cur.b,q.b);cur.len=cur.b-cur.a+1;cur.thick=Math.max(cur.thick,q.thick);cur.count+=q.count;used[j]=1;changed=true}}}
+        result.push(cur);
+      }
+    }
+    return result;
   }
+  function wallSegmentsConnected(a,b,tol){
+    if(a.axis!==b.axis){
+      const h=a.axis==='h'?a:b,v=a.axis==='v'?a:b;
+      return v.pos>=h.a-tol&&v.pos<=h.b+tol&&h.pos>=v.a-tol&&h.pos<=v.b+tol;
+    }
+    if(a.axis==='h'){if(Math.abs(a.pos-b.pos)>tol)return false;return Math.max(a.a,b.a)<=Math.min(a.b,b.b)+tol*2}
+    if(Math.abs(a.pos-b.pos)>tol)return false;return Math.max(a.a,b.a)<=Math.min(a.b,b.b)+tol*2;
+  }
+  function structuralWallComponents(segments,roi){
+    if(!segments.length)return{accepted:[],uncertain:[]};
+    const tol=Math.max(4,Math.round(Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.008)),adj=segments.map(()=>[]);
+    for(let i=0;i<segments.length;i++)for(let j=i+1;j<segments.length;j++)if(wallSegmentsConnected(segments[i],segments[j],tol)){adj[i].push(j);adj[j].push(i)}
+    const seen=new Uint8Array(segments.length),components=[];
+    for(let i=0;i<segments.length;i++){if(seen[i])continue;const stack=[i],ids=[],seenLocal=new Set();seen[i]=1;while(stack.length){const n=stack.pop();ids.push(n);for(const q of adj[n])if(!seen[q]){seen[q]=1;stack.push(q)}}components.push({ids,length:ids.reduce((s,k)=>s+segments[k].len,0),nodes:ids.length})}
+    components.sort((a,b)=>b.length-a.length);const largest=components[0]?.length||1,acceptedIds=new Set();
+    for(const comp of components){
+      const connectedEnough=comp.nodes>=3||comp.length>=largest*.32;
+      if(comp===components[0]||((comp.length>=largest*.16||comp.nodes>=5)&&connectedEnough))for(const id of comp.ids)acceptedIds.add(id);
+    }
+    const accepted=[],uncertain=[];
+    segments.forEach((r,i)=>{const degree=adj[i].length,thicknessScore=Math.min(1,r.thick/5),lengthScore=Math.min(1,r.len/Math.max(1,Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.12)),score=.42*thicknessScore+.28*lengthScore+.30*Math.min(1,degree/2);r.score=score;r.connections=degree;(acceptedIds.has(i)&&score>=.34?accepted:uncertain).push(r)});
+    return{accepted,uncertain,components,adj};
+  }
+  function paintWallDetection(w,h,accepted,uncertain){
+    const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.lineCap='square';
+    for(const r of uncertain){ctx.strokeStyle='rgba(224,138,26,.48)';ctx.lineWidth=Math.max(2,Math.min(6,r.thick*.45));ctx.beginPath();if(r.axis==='h'){ctx.moveTo(r.a,r.pos);ctx.lineTo(r.b,r.pos)}else{ctx.moveTo(r.pos,r.a);ctx.lineTo(r.pos,r.b)}ctx.stroke()}
+    for(const r of accepted){ctx.strokeStyle='rgba(22,113,185,.82)';ctx.lineWidth=Math.max(3,Math.min(9,r.thick*.62));ctx.beginPath();if(r.axis==='h'){ctx.moveTo(r.a,r.pos);ctx.lineTo(r.b,r.pos)}else{ctx.moveTo(r.pos,r.a);ctx.lineTo(r.pos,r.b)}ctx.stroke()}
+    return canvas;
+  }
+  function detectImageWallGeometry(data,w,h,roiOverride=null,mpp=0){
+    const roi=roiOverride||imagePageBounds(data,w,h),dm=imageDarkMask(data,w,h,roi),minDim=Math.min(roi.x1-roi.x0,roi.y1-roi.y0),minLen=Math.max(16,Math.round(minDim*.014));
+    const hr=clusterWallRuns(scanRuns(dm.mask,w,h,roi,'h',minLen),roi,'h',minLen),vr=clusterWallRuns(scanRuns(dm.mask,w,h,roi,'v',minLen),roi,'v',minLen);
+    const merged=mergeCollinearWallSegments([...hr,...vr],roi,mpp),graph=structuralWallComponents(merged,roi),accepted=graph.accepted,uncertain=graph.uncertain;
+    const maskCanvas=paintWallDetection(w,h,accepted,uncertain),acceptedLength=accepted.reduce((s,r)=>s+r.len,0),candidateLength=merged.reduce((s,r)=>s+r.len,0);
+    const connected=accepted.filter(r=>r.connections>0).length,quality=accepted.length?Math.max(0,Math.min(1,.48*(acceptedLength/Math.max(1,candidateLength))+.30*(connected/accepted.length)+.22*Math.min(1,accepted.length/14))):0;
+    return{roi,threshold:dm.threshold,otsu:dm.otsu,runs:accepted,accepted,uncertain,maskCanvas,lengthPx:acceptedLength,candidateLengthPx:candidateLength,horizontal:accepted.filter(r=>r.axis==='h').length,vertical:accepted.filter(r=>r.axis==='v').length,quality,components:graph.components||[]};
+  }
+
   async function estimateWallsFromPdf(){
-    state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallConfidence='';state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='Leitura raster preliminar';state.autoWallLayers=[];
+    state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallConfidence='';state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='Leitura raster preliminar';state.autoWallLayers=[];state.autoWallDiagnostics={};
     if(!state.pdf&&!state.image){renderAutoRead();return}
     if(state.image){
       const img=state.image,scale=imageDisplayScale(img),cw=Math.max(1,Math.round((img.naturalWidth||img.width)*scale)),ch=Math.max(1,Math.round((img.naturalHeight||img.height)*scale)),canvas=document.createElement('canvas');
       canvas.width=cw;canvas.height=ch;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#fff';ctx.fillRect(0,0,cw,ch);ctx.drawImage(img,0,0,cw,ch);
-      const data=ctx.getImageData(0,0,cw,ch).data,det=detectImageWallGeometry(data,cw,ch);state.autoWallMasks[1]=det.maskCanvas;
-      if(state.metersPerPixel&&det.lengthPx>0){state.autoWallLength=det.lengthPx*state.metersPerPixel+state.openings.reduce((s,o)=>s+o.qty*o.w,0);state.autoWallFootprint=state.autoWallLength*brickFinishedThickness()}
+      const data=ctx.getImageData(0,0,cw,ch).data,det=detectImageWallGeometry(data,cw,ch,null,state.metersPerPixel||0);state.autoWallMasks[1]=det.maskCanvas;
+      if(state.metersPerPixel&&det.lengthPx>0){state.autoWallLength=det.lengthPx*state.metersPerPixel;state.autoWallFootprint=state.autoWallLength*brickFinishedThickness()}
       else{state.autoWallLength=0;state.autoWallFootprint=0}
-      state.autoWallTone=det.threshold;state.autoWallMethod=state.metersPerPixel?'Imagem P/B calibrada — linhas estruturais filtradas':'Imagem P/B — paredes detectadas; falta calibrar escala';state.autoWallLayers=[];
-      const n=det.runs.length;state.autoWallConfidence=n?'baixa':'não detectada';
+      state.autoWallTone=det.threshold;state.autoWallMethod=state.metersPerPixel?'Imagem calibrada — leitura estrutural multietapas':'Imagem — paredes detectadas; falta calibrar escala';state.autoWallLayers=[];
+      state.autoWallDiagnostics={accepted:det.accepted.length,uncertain:det.uncertain.length,horizontal:det.horizontal,vertical:det.vertical,quality:det.quality,threshold:det.threshold};
+      state.autoWallConfidence=det.quality>=.72?'boa':det.quality>=.48?'moderada':det.accepted.length?'baixa':'não detectada';
       renderAutoRead();drawAutoWallMask();return;
     }    const renderScale=.82;let footprint=0,pagesUsed=0,quality=[],bestTones=[];
     for(let p=1;p<=state.pdf.numPages;p++){
@@ -797,7 +860,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
       const data=ctx.getImageData(0,0,canvas.width,canvas.height).data,roi=autoWallRoi(p,vp,canvas.width,canvas.height),hist=new Uint32Array(256);
       for(let y=roi.y0;y<roi.y1;y++)for(let x=roi.x0;x<roi.x1;x++){const i=(y*canvas.width+x)*4,r=data[i],g=data[i+1],b=data[i+2];if(Math.abs(r-g)<=5&&Math.abs(g-b)<=5&&r>=45&&r<=210)hist[r]++}
       const ranked=[];for(let v=45;v<=210;v++)if(hist[v])ranked.push([hist[v],v]);ranked.sort((a,b)=>b[0]-a[0]);const candidates=[];for(const pair of ranked){const v=pair[1];if(candidates.every(x=>Math.abs(x-v)>3))candidates.push(v);if(candidates.length>=10)break}
-      const minRun=Math.max(8,Math.round(Math.min(canvas.width,canvas.height)*.006));let bestLevel=0,bestScore=0;for(const v of candidates){const score=wallToneScore(data,canvas.width,canvas.height,roi,v,minRun);if(score>bestScore){bestScore=score;bestLevel=v}}if(!bestLevel){const det=detectImageWallGeometry(data,canvas.width,canvas.height);state.autoWallMasks[p]=det.maskCanvas;const mpp=state.pageScales[p]?state.pageScales[p]*1.45/renderScale:(state.scaleDen?0.0254/72*state.scaleDen/renderScale:0);if(mpp&&det.lengthPx){footprint+=det.lengthPx*mpp*brickFinishedThickness();pagesUsed++;quality.push(.005)}continue;}
+      const minRun=Math.max(8,Math.round(Math.min(canvas.width,canvas.height)*.006));let bestLevel=0,bestScore=0;for(const v of candidates){const score=wallToneScore(data,canvas.width,canvas.height,roi,v,minRun);if(score>bestScore){bestScore=score;bestLevel=v}}if(!bestLevel){const mpp=state.pageScales[p]?state.pageScales[p]*1.45/renderScale:(state.scaleDen?0.0254/72*state.scaleDen/renderScale:0),det=detectImageWallGeometry(data,canvas.width,canvas.height,autoWallRoi(p,vp,canvas.width,canvas.height),mpp);state.autoWallMasks[p]=det.maskCanvas;if(mpp&&det.lengthPx){footprint+=det.lengthPx*mpp*brickFinishedThickness();pagesUsed++;quality.push(Math.max(.004,det.quality*.02))}state.autoWallDiagnostics[p]={accepted:det.accepted.length,uncertain:det.uncertain.length,quality:det.quality};continue;}
       const keep=buildWallMask(data,canvas.width,canvas.height,roi,bestLevel,minRun);let wallPixels=0;const maskCanvas=document.createElement('canvas');maskCanvas.width=canvas.width;maskCanvas.height=canvas.height;const mctx=maskCanvas.getContext('2d'),out=mctx.createImageData(canvas.width,canvas.height);
       for(let i=0;i<keep.length;i++)if(keep[i]){wallPixels++;const j=i*4;out.data[j]=22;out.data[j+1]=113;out.data[j+2]=185;out.data[j+3]=155}mctx.putImageData(out,0,0);state.autoWallMasks[p]=maskCanvas;bestTones.push(bestLevel);
       const roiArea=Math.max(1,(roi.x1-roi.x0)*(roi.y1-roi.y0)),ratio=wallPixels/roiArea;if(wallPixels>0){pagesUsed++;quality.push(ratio);if(state.pageScales[p]||state.scaleDen){const mpp=state.pageScales[p]?state.pageScales[p]*1.45/renderScale:0.0254/72*state.scaleDen/renderScale;footprint+=wallPixels*mpp*mpp}}
@@ -809,7 +872,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   function drawAutoWallMask(){
     const c=$('autoWallCanvas');if(!c||!state.viewport)return;const src=state.autoWallMasks[state.page];c.width=state.viewport.width;c.height=state.viewport.height;c.style.width=state.viewport.width+'px';c.style.height=state.viewport.height+'px';const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);if(src)ctx.drawImage(src,0,0,c.width,c.height);
   }
-  function renderAutoRead(){if(!$('autoReadSummary'))return;const autoLen=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0);const floor=state.floorAreas.reduce((s,x)=>s+x.area,0)||num($('areaConstruida').value);const openQty=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty,0);$('autoReadSummary').innerHTML=`<div class="auto-item"><b>${floor?fmt(floor)+' m²':'—'}</b><span>Área construída identificada</span></div><div class="auto-item"><b>${autoLen?fmt(autoLen)+' m':'—'}</b><span>Comprimento de paredes reconhecido</span></div><div class="auto-item"><b>${openQty||0}</b><span>Portas + janelas lidas</span></div><div class="auto-item"><b>${num($('unidades')&&$('unidades').value)||projectContext().units}</b><span>Unidades residenciais consideradas</span></div><div class="auto-item"><b>${state.autoWallConfidence||'—'}</b><span>Confiança automática</span></div><div class="auto-item"><b>${esc(state.autoWallMethod||'—')}</b><span>Método de leitura de paredes</span></div><div class="auto-item"><b>${state.autoWallLayers.length?state.autoWallLayers.map(esc).join(', '):'—'}</b><span>Camadas usadas</span></div>`;}
+  function renderAutoRead(){if(!$('autoReadSummary'))return;const autoLen=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0);const floor=state.floorAreas.reduce((s,x)=>s+x.area,0)||num($('areaConstruida').value);const openQty=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty,0);$('autoReadSummary').innerHTML=`<div class="auto-item"><b>${floor?fmt(floor)+' m²':'—'}</b><span>Área construída identificada</span></div><div class="auto-item"><b>${autoLen?fmt(autoLen)+' m':'—'}</b><span>Comprimento de paredes reconhecido</span></div><div class="auto-item"><b>${openQty||0}</b><span>Portas + janelas lidas</span></div><div class="auto-item"><b>${num($('unidades')&&$('unidades').value)||projectContext().units}</b><span>Unidades residenciais consideradas</span></div><div class="auto-item"><b>${state.autoWallConfidence||'—'}</b><span>Confiança automática</span></div><div class="auto-item"><b>${state.autoWallDiagnostics.accepted??'—'}</b><span>Trechos estruturais aceitos</span></div><div class="auto-item"><b>${state.autoWallDiagnostics.uncertain??'—'}</b><span>Trechos em amarelo para conferir</span></div><div class="auto-item"><b>${esc(state.autoWallMethod||'—')}</b><span>Método de leitura de paredes</span></div><div class="auto-item"><b>${state.autoWallLayers.length?state.autoWallLayers.map(esc).join(', '):'—'}</b><span>Camadas usadas</span></div>`;}
 
 
   async function renderPage(){
@@ -1057,7 +1120,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   function initExtensions(){
     $('view-coef').insertAdjacentHTML('beforeend',`<div class="card"><h2>Insumos e espessuras</h2><p class="notice">Valores iniciais são hipóteses de orçamento, não medições nem dosagem estrutural. Confirme espessuras, traço, rendimento e perdas conforme o material escolhido. O traço 1:4 do contrapiso é uma referência de execução; fator seco e massa aparente devem ser conferidos na obra.</p><div class="extension-grid">${extraDefs.map(([id,label,v])=>`<div class="field"><label for="${id}">${label}</label><input data-extra id="${id}" type="number" min="0" step="any" value="${v}"></div>`).join('')}</div><p><a href="https://bra.sika.com/portokoll/pt/noticias/4-dicas-essenciais-sobre-como-fazer-contrapiso.html" target="_blank" rel="noopener">Referência de execução de contrapiso — Sika</a></p><p class="hint">Os índices históricos do arquivo original são mantidos como cenários preliminares. A adequação a esta obra não foi comprovada. Não use bitolas ou dispositivos elétricos estimados para dimensionamento.</p></div>`);
     $('view-escopo').insertAdjacentHTML('beforeend',`<div class="card"><h2>Quantidade confirmada por componente</h2><p class="hint">Substitui a estimativa deste componente. Campo vazio usa o estimador; zero registra ausência confirmada. Use os campos complementares para itens com desdobramento automático.</p><div class="extension-grid"><div class="field"><label for="overrideScope">Componente</label><select id="overrideScope">${componentCatalog.map(g=>`<optgroup label="${esc(g.stage)}">${g.items.map(i=>`<option value="${i[0]}">${esc(i[1])}</option>`).join('')}</optgroup>`).join('')}</select></div><div class="field"><label for="overrideQ">Quantidade líquida</label><input id="overrideQ" type="number" min="0" step="any"></div><div class="field"><label for="overrideUnit">Unidade</label><select id="overrideUnit"><option>un.</option><option>m</option><option>m²</option><option>m³</option><option>kg</option><option>L</option><option>cj.</option></select></div><div class="field"><label for="overrideNote">Origem / documento</label><input id="overrideNote" placeholder="Projeto, página, revisão ou medição"></div></div><button class="btn primary" id="applyOverride">Aplicar quantidade</button><input type="hidden" data-extra id="componentOverrides" value="{}"><p id="overrideMessage" role="status"></p></div>`);
-    $('view-planta').insertAdjacentHTML('beforeend',`<div class="card"><h2>Conferência da planta</h2><p class="notice">A detecção automática é uma sugestão visual. Cotas, mobiliário e hachuras podem ser confundidos com paredes. Em PDF digitalizado, calibre cada página utilizada. Fotografias em perspectiva devem ser retificadas antes de medir.</p><div class="actions"><button class="btn secondary" id="areaMode">Medir área por polígono</button><button class="btn secondary" id="finishArea">Concluir área e usar como piso</button></div><p class="hint" id="polygonStatus">Calibre a escala, clique nos vértices da área e conclua. Esta ferramenta substitui o campo de área líquida de piso.</p></div>`);
+    $('view-planta').insertAdjacentHTML('beforeend',`<div class="card"><h2>Conferência da planta</h2><p class="notice">A detecção automática é uma sugestão visual. <b>Azul = parede aceita pelo conjunto estrutural; amarelo = trecho duvidoso para conferência.</b> Cotas, mobiliário e hachuras são filtrados por espessura, continuidade e conexão, mas ainda podem exigir correção. Em PDF digitalizado, calibre cada página utilizada. Fotografias em perspectiva devem ser retificadas antes de medir.</p><div class="actions"><button class="btn secondary" id="areaMode">Medir área por polígono</button><button class="btn secondary" id="finishArea">Concluir área e usar como piso</button></div><p class="hint" id="polygonStatus">Calibre a escala, clique nos vértices da área e conclua. Esta ferramenta substitui o campo de área líquida de piso.</p></div>`);
     $('view-quant').insertAdjacentHTML('afterbegin',`<div class="card"><div class="actions"><button id="csvExport" class="btn secondary">Exportar CSV</button><input id="materialSearch" aria-label="Buscar material" placeholder="Buscar material ou etapa"><select id="originFilter" aria-label="Filtrar origem"><option value="">Todas as origens</option><option value="direct">Dados informados / medidos</option><option value="estimate">Estimativas</option></select></div><p class="hint">Quantidade líquida, perdas e arredondamentos constam na memória de cálculo. Componentes sem base suficiente ficam visíveis na conferência de escopo.</p></div>`);
 
     $('view-planta').insertAdjacentHTML('beforeend',`<div class="card"><h2>Ambientes de imagem ou PDF sem texto</h2><div class="extension-grid"><div class="field"><label for="roomName">Nome do ambiente</label><input id="roomName" placeholder="Cozinha, quarto, banheiro..."></div><div class="field"><label for="roomArea">Área líquida (m²)</label><input id="roomArea" type="number" min="0" step="any"></div><div class="field"><label for="roomPerimeter">Perímetro real (m), se conhecido</label><input id="roomPerimeter" type="number" min="0" step="any"></div></div><button id="addRoom" class="btn secondary">Adicionar ambiente</button><button id="clearRooms" class="btn ghost">Limpar ambientes</button><p class="hint">Insira cada ambiente uma única vez. A soma não substitui automaticamente a área construída.</p></div><div class="card"><h2>Quantidades por dimensões</h2><p class="hint">Calculadora para elementos já dimensionados pelo projetista. As quantidades substituem o campo complementar escolhido.</p><div class="extension-grid"><div class="field"><label for="measureKind">Elemento</label><select id="measureKind"><option value="q_fundConcreto">Concreto de fundação</option><option value="q_estruturaConcreto">Concreto estrutural</option><option value="q_fundAco">Aço de fundação</option><option value="q_estruturaAco">Aço estrutural</option></select></div><div class="field"><label for="measureCount">Número de peças</label><input id="measureCount" type="number" min="1" step="1" value="1"></div><div class="field"><label for="measureLength">Comprimento de cada peça (m)</label><input id="measureLength" type="number" min="0" step="any"></div><div class="field"><label for="measureWidth">Largura do concreto (m)</label><input id="measureWidth" type="number" min="0" step="any"></div><div class="field"><label for="measureHeight">Altura do concreto (m)</label><input id="measureHeight" type="number" min="0" step="any"></div><div class="field"><label for="measureDiameter">Diâmetro do aço (mm)</label><input id="measureDiameter" type="number" min="0" step="any" value="10"></div></div><button id="applyDimensions" class="btn secondary">Calcular e aplicar</button><p id="dimensionResult" role="status"></p></div>`);
