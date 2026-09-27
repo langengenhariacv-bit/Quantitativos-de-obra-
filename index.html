@@ -259,7 +259,7 @@
     ['q_elevador','Elevadores','un.','25. Transporte vertical','elevador',false],['q_limpeza','Limpeza pós-obra','m²','26. Serviços finais','limpezaFinal',false]
   ];
   const defaultScope=new Set(componentCatalog.flatMap(g=>g.items.map(i=>i[0])));
-  const state={pdf:null,pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
+  const state={pdf:null,pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
   let autosaveTimer;
 
   function fmt(n,d=2){return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})}
@@ -579,39 +579,94 @@
     }
     return grown;
   }
+  function collectLongRuns(mask,w,h,minRun,axis){
+    const runs=[];const outer=axis==='h'?h:w,inner=axis==='h'?w:h;
+    for(let o=0;o<outer;o++){
+      let s=-1;
+      for(let i=0;i<=inner;i++){
+        const x=axis==='h'?i:o,y=axis==='h'?o:i,on=i<inner&&mask[y*w+x];
+        if(on&&s<0)s=i;
+        if(!on&&s>=0){if(i-s>=minRun)runs.push({pos:o,a:s,b:i-1,len:i-s});s=-1}
+      }
+    }
+    if(!runs.length)return[];
+    runs.sort((a,b)=>a.pos-b.pos||a.a-b.a);
+    const used=new Uint8Array(runs.length),out=[];
+    for(let i=0;i<runs.length;i++){
+      if(used[i])continue;used[i]=1;const cluster=[runs[i]];
+      for(let j=i+1;j<runs.length;j++){
+        if(used[j])continue;if(runs[j].pos-runs[i].pos>3)break;
+        const ov=Math.max(0,Math.min(runs[i].b,runs[j].b)-Math.max(runs[i].a,runs[j].a)+1);
+        if(ov/Math.min(runs[i].len,runs[j].len)>.86){used[j]=1;cluster.push(runs[j])}
+      }
+      cluster.sort((a,b)=>a.len-b.len);out.push(cluster[Math.floor(cluster.length/2)]);
+    }
+    return out;
+  }
+  async function tryVectorLayerWalls(page,pageNo,renderScale){
+    try{
+      const cfgOn=await state.pdf.getOptionalContentConfig({intent:'display'}),groups=cfgOn&&cfgOn.getGroups?cfgOn.getGroups():null;
+      if(!groups)return null;
+      const wallIds=Object.keys(groups).filter(id=>/alvenaria|parede|wall/i.test(String(groups[id]&&groups[id].name||'')));
+      if(!wallIds.length)return null;
+      const cfgOff=await state.pdf.getOptionalContentConfig({intent:'display'});
+      wallIds.forEach(id=>{try{cfgOn.setVisibility(id,true);cfgOff.setVisibility(id,false)}catch(e){}});
+      const vp=page.getViewport({scale:renderScale}),mk=()=>{const c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);return c},a=mk(),b=mk();
+      await page.render({canvasContext:a.getContext('2d',{willReadFrequently:true}),viewport:vp,intent:'display',optionalContentConfigPromise:Promise.resolve(cfgOn)}).promise;
+      await page.render({canvasContext:b.getContext('2d',{willReadFrequently:true}),viewport:vp,intent:'display',optionalContentConfigPromise:Promise.resolve(cfgOff)}).promise;
+      const da=a.getContext('2d').getImageData(0,0,a.width,a.height).data,db=b.getContext('2d').getImageData(0,0,b.width,b.height).data,mask=new Uint8Array(a.width*a.height);
+      let changed=0;for(let i=0,p=0;i<da.length;i+=4,p++){const d=Math.abs(da[i]-db[i])+Math.abs(da[i+1]-db[i+1])+Math.abs(da[i+2]-db[i+2]);if(d>24){mask[p]=1;changed++}}
+      if(changed<100)return null;
+      const minRun=Math.max(9,Math.round(Math.min(a.width,a.height)*.005)),hr=collectLongRuns(mask,a.width,a.height,minRun,'h'),vr=collectLongRuns(mask,a.width,a.height,minRun,'v');
+      const pxLen=hr.reduce((s,r)=>s+r.len,0)+vr.reduce((s,r)=>s+r.len,0),mpp=state.scaleDen?0.0254/72*state.scaleDen/renderScale:0;
+      if(!mpp||pxLen<minRun*4)return null;
+      const length=pxLen*mpp/2;
+      const out=document.createElement('canvas');out.width=a.width;out.height=a.height;const ox=out.getContext('2d'),im=ox.createImageData(out.width,out.height);
+      for(let p=0;p<mask.length;p++)if(mask[p]){const j=p*4;im.data[j]=22;im.data[j+1]=113;im.data[j+2]=185;im.data[j+3]=180}ox.putImageData(im,0,0);
+      return{length,maskCanvas:out,layers:wallIds.map(id=>groups[id].name),changed,hr:hr.length,vr:vr.length};
+    }catch(err){console.warn('Leitura vetorial de camadas indisponível',err);return null}
+  }
   async function estimateWallsFromPdf(){
-    state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallConfidence='';state.autoWallMasks={};state.autoWallTone=null;
+    state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallConfidence='';state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];
     if(!state.pdf){renderAutoRead();return}
-    const renderScale=.82;let footprint=0,pagesUsed=0,quality=[],bestTones=[];
+    const renderScale=1.15;let footprint=0,vectorLength=0,pagesUsed=0,quality=[],bestTones=[],vectorPages=0;
     for(let p=1;p<=state.pdf.numPages;p++){
       const txt=state.pageTexts[p-1]||'';if(!/planta\s+baixa/i.test(txt))continue;
-      const page=await state.pdf.getPage(p),vp=page.getViewport({scale:renderScale}),c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);
-      const ctx=c.getContext('2d',{willReadFrequently:true});await page.render({canvasContext:ctx,viewport:vp}).promise;
-      const img=ctx.getImageData(0,0,c.width,c.height),d=img.data,roi=autoWallRoi(p,vp,c.width,c.height),hist=new Uint32Array(256);
-      for(let y=roi.y0;y<roi.y1;y++)for(let x=roi.x0;x<roi.x1;x++){const i=(y*c.width+x)*4,r=d[i],g=d[i+1],b=d[i+2];if(Math.abs(r-g)<=5&&Math.abs(g-b)<=5&&r>=45&&r<=210)hist[r]++}
+      const page=await state.pdf.getPage(p);
+      const vec=await tryVectorLayerWalls(page,p,renderScale);
+      if(vec){
+        vectorLength+=vec.length;state.autoWallMasks[p]=vec.maskCanvas;state.autoWallLayers.push(...vec.layers);vectorPages++;pagesUsed++;quality.push(.03);continue;
+      }
+      const vp=page.getViewport({scale:renderScale}),canvas=document.createElement('canvas');canvas.width=Math.ceil(vp.width);canvas.height=Math.ceil(vp.height);
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});await page.render({canvasContext:ctx,viewport:vp}).promise;
+      const img=ctx.getImageData(0,0,canvas.width,canvas.height),d=img.data,roi=autoWallRoi(p,vp,canvas.width,canvas.height),hist=new Uint32Array(256);
+      for(let y=roi.y0;y<roi.y1;y++)for(let x=roi.x0;x<roi.x1;x++){const i=(y*canvas.width+x)*4,r=d[i],g=d[i+1],b=d[i+2];if(Math.abs(r-g)<=5&&Math.abs(g-b)<=5&&r>=45&&r<=210)hist[r]++}
       const ranked=[];for(let v=45;v<=210;v++)if(hist[v])ranked.push([hist[v],v]);ranked.sort((a,b)=>b[0]-a[0]);
-      const candidates=[];for(const [,v] of ranked){if(candidates.every(x=>Math.abs(x-v)>3))candidates.push(v);if(candidates.length>=10)break}
-      const minRun=Math.max(8,Math.round(Math.min(c.width,c.height)*.006));let bestLevel=0,bestScore=0;
-      for(const v of candidates){const score=wallToneScore(d,c.width,c.height,roi,v,minRun);if(score>bestScore){bestScore=score;bestLevel=v}}
+      const candidates=[];for(const pair of ranked){const v=pair[1];if(candidates.every(x=>Math.abs(x-v)>3))candidates.push(v);if(candidates.length>=10)break}
+      const minRun=Math.max(8,Math.round(Math.min(canvas.width,canvas.height)*.006));let bestLevel=0,bestScore=0;
+      for(const v of candidates){const score=wallToneScore(d,canvas.width,canvas.height,roi,v,minRun);if(score>bestScore){bestScore=score;bestLevel=v}}
       if(!bestLevel)continue;
-      const keep=buildWallMask(d,c.width,c.height,roi,bestLevel,minRun);let wallPixels=0;
-      const maskCanvas=document.createElement('canvas');maskCanvas.width=c.width;maskCanvas.height=c.height;const mctx=maskCanvas.getContext('2d'),out=mctx.createImageData(c.width,c.height);
+      const keep=buildWallMask(d,canvas.width,canvas.height,roi,bestLevel,minRun);let wallPixels=0;
+      const maskCanvas=document.createElement('canvas');maskCanvas.width=canvas.width;maskCanvas.height=canvas.height;const mctx=maskCanvas.getContext('2d'),out=mctx.createImageData(canvas.width,canvas.height);
       for(let i=0;i<keep.length;i++)if(keep[i]){wallPixels++;const j=i*4;out.data[j]=22;out.data[j+1]=113;out.data[j+2]=185;out.data[j+3]=155}
       mctx.putImageData(out,0,0);state.autoWallMasks[p]=maskCanvas;bestTones.push(bestLevel);
       const roiArea=Math.max(1,(roi.x1-roi.x0)*(roi.y1-roi.y0)),ratio=wallPixels/roiArea;
       if(wallPixels>0){pagesUsed++;quality.push(ratio);if(state.scaleDen){const mpp=0.0254/72*state.scaleDen/renderScale;footprint+=wallPixels*mpp*mpp}}
     }
     state.autoWallFootprint=footprint;
-    const openingWidth=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty*o.w,0);
-    state.autoWallLength=footprint>0?footprint/brickFinishedThickness()+openingWidth:0;
+    if(vectorLength>0){state.autoWallLength=vectorLength;state.autoWallMethod='Camadas vetoriais do PDF';state.autoWallConfidence='alta'}
+    else{
+      const openingWidth=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty*o.w,0);
+      state.autoWallLength=footprint>0?footprint/brickFinishedThickness()+openingWidth:0;state.autoWallMethod='Leitura raster por geometria';
+      const avg=quality.length?quality.reduce((a,b)=>a+b,0)/quality.length:0;state.autoWallConfidence=pagesUsed?(avg>.012?'boa':avg>.004?'moderada':'baixa'):'';
+    }
     state.autoWallTone=bestTones.length?Math.round(bestTones.reduce((a,b)=>a+b,0)/bestTones.length):null;
-    const avg=quality.length?quality.reduce((a,b)=>a+b,0)/quality.length:0;state.autoWallConfidence=pagesUsed?(avg>.012?'boa':avg>.004?'moderada':'baixa'):'';
-    renderAutoRead();drawAutoWallMask();
+    state.autoWallLayers=[...new Set(state.autoWallLayers)];renderAutoRead();drawAutoWallMask();
   }
   function drawAutoWallMask(){
     const c=$('autoWallCanvas');if(!c||!state.viewport)return;const src=state.autoWallMasks[state.page];c.width=state.viewport.width;c.height=state.viewport.height;c.style.width=state.viewport.width+'px';c.style.height=state.viewport.height+'px';const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);if(src)ctx.drawImage(src,0,0,c.width,c.height);
   }
-  function renderAutoRead(){if(!$('autoReadSummary'))return;const autoLen=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0);const floor=state.floorAreas.reduce((s,x)=>s+x.area,0)||num($('areaConstruida').value);const openQty=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty,0);$('autoReadSummary').innerHTML=`<div class="auto-item"><b>${floor?fmt(floor)+' m²':'—'}</b><span>Área construída identificada</span></div><div class="auto-item"><b>${autoLen?fmt(autoLen)+' m':'—'}</b><span>Comprimento bruto de paredes reconhecido</span></div><div class="auto-item"><b>${openQty||0}</b><span>Portas + janelas lidas</span></div><div class="auto-item"><b>${state.autoWallConfidence||'—'}</b><span>Confiança da geometria automática</span></div>`;}
+  function renderAutoRead(){if(!$('autoReadSummary'))return;const autoLen=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0);const floor=state.floorAreas.reduce((s,x)=>s+x.area,0)||num($('areaConstruida').value);const openQty=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty,0);$('autoReadSummary').innerHTML=`<div class="auto-item"><b>${floor?fmt(floor)+' m²':'—'}</b><span>Área construída identificada</span></div><div class="auto-item"><b>${autoLen?fmt(autoLen)+' m':'—'}</b><span>Comprimento de paredes reconhecido</span></div><div class="auto-item"><b>${openQty||0}</b><span>Portas + janelas lidas</span></div><div class="auto-item"><b>${state.autoWallConfidence||'—'}</b><span>Confiança automática</span></div><div class="auto-item"><b>${esc(state.autoWallMethod||'—')}</b><span>Método de leitura</span></div><div class="auto-item"><b>${state.autoWallLayers.length?state.autoWallLayers.map(esc).join(', '):'—'}</b><span>Camadas usadas</span></div>`;}
 
 
   async function renderPage(){
@@ -674,8 +729,8 @@
 
   function getForm(){const ids=['obra','cliente','endereco','tipoObra','pavimentos','peDireito','peCustom','tijolo','facesReboco','revInterno','revExterno','piso','rodape','forro','cobertura','pintInterna','pintExterna','perdas','perdasCustom','areaCobertura','areaConstruida','perimetroRodape','wallLengthOverride','fundacaoTipo','estruturaTipo','lajeTipo','aguaQuente','esgotoSistema','gasSistema','climatizacao','solarSistema','incendioSistema','spdaSistema','elevadorSistema','piscinaSistema',...complementaryDefs.map(x=>x[0])];const out={};ids.forEach(id=>{if($(id))out[id]=$(id).value});return out}
   function setForm(f={}){for(const [k,v] of Object.entries(f))if($(k))$(k).value=v}
-  function saveProject(show=true){const data={form:getForm(),pdfName:state.pdfName,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus};localStorage.setItem('lang-quant-project',JSON.stringify(data));$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
-  function loadProject(){const d=JSON.parse(localStorage.getItem('lang-quant-project')||'null');if(!d)return;setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.openingDefinitions=d.openingDefinitions||[];renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o PDF para visualizar a planta.`}
+  function saveProject(show=true){const data={form:getForm(),pdfName:state.pdfName,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,autoWallMethod:state.autoWallMethod,autoWallLayers:state.autoWallLayers,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus};localStorage.setItem('lang-quant-project',JSON.stringify(data));$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
+  function loadProject(){const d=JSON.parse(localStorage.getItem('lang-quant-project')||'null');if(!d)return;setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.autoWallMethod=d.autoWallMethod||'';state.autoWallLayers=d.autoWallLayers||[];state.openingDefinitions=d.openingDefinitions||[];renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o PDF para visualizar a planta.`}
 
   document.querySelectorAll('[data-report]').forEach(b=>b.addEventListener('click',()=>generateReport(b.dataset.report)));
   function generateReport(type){if(!state.materials.length)calculate();const f=getForm();const title=type==='resumo'?'Resumo Geral de Materiais':type==='completo'?'Quantitativo Completo e Memória de Cálculo':'Materiais por Etapa da Obra';let body='';
