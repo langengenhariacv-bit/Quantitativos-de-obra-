@@ -920,15 +920,68 @@
   if($('importBackupBtn'))$('importBackupBtn').onclick=()=>$('backupInput').click();
   if($('backupInput'))$('backupInput').onchange=e=>{const file=e.target.files&&e.target.files[0];if(file)importBackup(file);e.target.value=''};
   document.querySelectorAll('[data-report]').forEach(b=>b.addEventListener('click',()=>generateReport(b.dataset.report)));
-  function generateReport(type){if(!state.materials.length)calculate();const f=getForm();const title=type==='resumo'?'Resumo Geral de Materiais':type==='completo'?'Quantitativo Completo e Memória de Cálculo':'Materiais por Etapa da Obra';let body='';
+  function generateReport(type){
+    if(!state.materials.length)calculate();
+    const f=getForm(),audit=updateQualityAudit()||state.qualityAudit||{},m=state.metrics||{},title=type==='resumo'?'Resumo Geral de Materiais':type==='completo'?'Quantitativo Completo e Memória de Cálculo':'Materiais por Etapa da Obra';
+    const fmtQ=function(x){const d=['un.','pontos','conj.','kits','sistemas','sistema','lote'].includes(x.unit)?0:2;let s=fmt(x.q,d);if(x.range)s+=' (faixa '+fmt(x.range.low,d)+'–'+fmt(x.range.high,d)+')';return s};
+    let body='';
     if(type==='resumo'){
-      const map={};state.materials.forEach(x=>{const k=x.material+'|'+x.unit;map[k]=(map[k]||0)+x.q});body='<h2>Materiais consolidados</h2>'+tableHtml(Object.entries(map).map(([k,q])=>{const [m,u]=k.split('|');return [m,fmt(q,u==='un.'||u==='sacos'?0:2),u]}),['Material','Quantidade','Unidade']);
-    } else if(type==='etapas'){
-      const stages=componentCatalog.map(g=>g.stage).filter(st=>componentCatalog.find(g=>g.stage===st).items.some(i=>state.scope.has(i[0])));body=stages.map(st=>{const rows=state.materials.filter(x=>x.stage===st).map(x=>[x.material,fmt(x.q,x.unit==='un.'||x.unit==='sacos'?0:2),x.unit,x.originType==='estimate'?'Estimativa — '+(x.origin||''):(x.origin||'Projeto')]);const extra=componentCatalog.find(g=>g.stage===st).items.filter(i=>state.scope.has(i[0])&&!quantifiedScopeIds().has(i[0])).map(i=>{const s=state.scopeStatus[i[0]]||{};return[i[1],s.label||'Não aplicável','—',s.basis||'']});return `<h2>${st}</h2>${tableHtml([...rows,...extra],['Material / serviço','Quantidade','Unidade','Origem / base'])}`}).join('');
-    } else {
-      const m=state.metrics||{};body=`<h2>Parâmetros adotados</h2>${tableHtml([['Tipo de obra',f.tipoObra],['Pavimentos',f.pavimentos],['Pé-direito',fmt(height())+' m'],['Tijolo padrão',f.tijolo.replace('.',',')+'×19×19 cm'],['Perda',fmt(loss()*100,1)+'%'],['Faces de revestimento',f.facesReboco]],['Parâmetro','Valor'])}<h2>Memória geométrica</h2>${tableHtml([['Comprimento total de paredes',fmt(m.wallLength||state.walls.reduce((s,w)=>s+w.length,0))+' m'],['Origem da geometria',m.wallSource||'—'],['Área bruta de alvenaria',fmt(m.gross)+' m²'],['Vãos descontados',fmt(m.open)+' m²'],['Área líquida de alvenaria',fmt(m.net)+' m²'],['Área de piso',fmt(m.floor)+' m²'],['Área de revestimento',fmt(m.coatArea)+' m²']],['Item','Resultado'])}<h2>Paredes conferidas</h2>${tableHtml(state.walls.map((w,i)=>[i+1,w.page,fmt(w.length)+' m',fmt(w.height)+' m',w.brick.replace('.',',')+'×19×19']),['#','Página','Comprimento','Altura','Tijolo'])}<h2>Materiais e serviços</h2>${tableHtml(state.materials.map(x=>[x.stage,x.material,fmt(x.q,x.unit==='un.'||x.unit==='sacos'?0:2),x.unit,x.originType==='estimate'?'Estimativa — '+(x.origin||''):(x.origin||'Projeto'),x.basis||'']),['Etapa','Material','Quantidade','Unidade','Origem','Base'])}<h2>Controle de escopo</h2>${tableHtml(componentCatalog.flatMap(g=>g.items.filter(i=>state.scope.has(i[0])).map(i=>{const s=state.scopeStatus[i[0]]||{};return[g.stage,i[1],s.label||'Não aplicável',s.source||i[2],s.basis||'']})),['Etapa','Componente','Situação','Fonte','Base'])}`;
+      const map={};
+      state.materials.forEach(function(x){
+        const kind=x.originType==='estimate'?'Estimativa':'Projeto / derivação',k=x.material+'|'+x.unit+'|'+kind;
+        if(!map[k])map[k]={material:x.material,unit:x.unit,kind:kind,q:0,origins:new Set()};
+        map[k].q+=x.q;if(x.origin)map[k].origins.add(x.origin);
+      });
+      const rows=Object.values(map).map(function(x){return[x.material,fmt(x.q,['un.','pontos','conj.','kits','sistemas','sistema','lote'].includes(x.unit)?0:2),x.unit,x.kind,[...x.origins].join('; ')]});
+      body='<h2>Materiais consolidados</h2>'+tableHtml(rows,['Material','Quantidade','Unidade','Natureza','Origem']);
+    }else if(type==='etapas'){
+      const stages=[...new Set(componentCatalog.map(g=>g.stage))].filter(function(st){return componentCatalog.find(g=>g.stage===st).items.some(i=>state.scope.has(i[0]))});
+      body=stages.map(function(st){
+        const rows=state.materials.filter(x=>x.stage===st).map(function(x){return[x.material,fmtQ(x),x.unit,x.originType==='estimate'?'Estimativa':'Projeto / derivação',x.origin||'—',x.basis||'']});
+        const extra=componentCatalog.find(g=>g.stage===st).items.filter(i=>state.scope.has(i[0])&&!quantifiedScopeIds().has(i[0])).map(function(i){const s=state.scopeStatus[i[0]]||{};return[i[1],s.label||'Não aplicável','—',s.label||'Não aplicável',s.source||'—',s.basis||'']});
+        return '<h2>'+esc(st)+'</h2>'+tableHtml(rows.concat(extra),['Material / serviço','Quantidade','Unidade','Natureza','Origem','Base']);
+      }).join('');
+    }else{
+      const issues=(audit.issues||[]).length?(audit.issues||[]).map(function(x){return['Atenção',x]}):[['OK','Nenhum alerta crítico registrado na auditoria atual.']];
+      const wallLayers=state.autoWallLayers&&state.autoWallLayers.length?state.autoWallLayers.join(', '):'—';
+      body=
+        '<h2>Parâmetros adotados</h2>'+
+        tableHtml([
+          ['Tipo de obra',f.tipoObra||'—'],['Pavimentos',f.pavimentos||'—'],['Pé-direito',fmt(height())+' m'],
+          ['Tijolo padrão',(f.tijolo||'').replace('.',',')+'×19×19 cm'],['Perdas',fmt(loss()*100,1)+'%'],['Faces de revestimento',f.facesReboco||'—'],
+          ['Estrutura',f.estruturaTipo||'—'],['Fundação',f.fundacaoTipo||'—']
+        ],['Parâmetro','Valor'])+
+        '<h2>Auditoria de precisão</h2>'+
+        tableHtml([
+          ['Índice de confiança',(audit.score!=null?audit.score+'%':'—')],['Classificação',audit.grade||'—'],
+          ['Itens diretos',audit.direct!=null?audit.direct:'—'],['Itens estimados',audit.estimated!=null?audit.estimated:'—'],
+          ['Estimativas de baixa confiança',audit.low!=null?audit.low:'—'],['Cobertura dos ambientes',audit.roomCoverage?Math.round(audit.roomCoverage*100)+'%':'—']
+        ],['Indicador','Resultado'])+
+        tableHtml(issues,['Situação','Observação'])+
+        '<h2>Memória geométrica</h2>'+
+        tableHtml([
+          ['Área construída',fmt(m.floorBuilt)+' m²'],['Área dos ambientes identificados',fmt(m.roomFloor)+' m²'],
+          ['Área de piso acabável',fmt(m.floor)+' m²'],['Origem da área de piso',m.floorSource||'—'],
+          ['Área ocupada pelas paredes em planta',fmt(m.wallFootprint)+' m²'],['Origem da área das paredes',m.wallFootprintSource||'—'],
+          ['Comprimento total de paredes',fmt(m.wallLength||0)+' m'],['Origem do comprimento',m.wallSource||'—'],
+          ['Método automático',state.autoWallMethod||'—'],['Confiança das paredes',state.autoWallConfidence||'—'],
+          ['Camadas vetoriais utilizadas',wallLayers],['Área bruta de alvenaria',fmt(m.gross)+' m²'],
+          ['Vãos descontados',fmt(m.open)+' m²'],['Área líquida de alvenaria',fmt(m.net)+' m²'],
+          ['Fachada líquida',fmt(m.facadeNet)+' m²'],['Origem da fachada',m.facadeSource||'—'],
+          ['Revestimento interno',fmt(m.internalCoat)+' m²'],['Revestimento externo',fmt(m.externalCoat)+' m²'],
+          ['Cerâmica de parede considerada',fmt(m.ceramicWall)+' m²'],['Pintura interna',fmt(m.paintInternal)+' m²'],
+          ['Pintura externa',fmt(m.paintExternal)+' m²']
+        ],['Item','Resultado'])+
+        '<h2>Correções manuais de paredes</h2>'+
+        tableHtml(state.walls.length?state.walls.map(function(w,i){return[i+1,w.page,fmt(w.length)+' m',fmt(w.height)+' m',w.brick.replace('.',',')+'×19×19']}):[['—','—','Nenhuma correção manual','—','—']],['#','Página','Comprimento','Altura','Tijolo'])+
+        '<h2>Materiais e serviços</h2>'+
+        tableHtml(state.materials.map(function(x){return[x.stage,x.material,fmtQ(x),x.unit,x.originType==='estimate'?'Estimativa':'Projeto / derivação',x.origin||'—',x.basis||'']}),['Etapa','Material','Quantidade','Unidade','Natureza','Origem','Base'])+
+        '<h2>Controle de escopo</h2>'+
+        tableHtml(componentCatalog.flatMap(function(g){return g.items.filter(i=>state.scope.has(i[0])).map(function(i){const s=state.scopeStatus[i[0]]||{};return[g.stage,i[1],s.label||'Não aplicável',s.source||i[2],s.basis||'']})}),['Etapa','Componente','Situação','Fonte','Base'])+
+        '<h2>Bases de referência</h2>'+
+        tableHtml(Object.values(estimatorSources).map(function(x){return[x]}),['Referência usada pelos estimadores']);
     }
-    const html=`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Arial,sans-serif;color:#182631;margin:38px}header{border-bottom:3px solid #0d2742;padding-bottom:14px;margin-bottom:24px}h1{font-size:24px;color:#0d2742;margin:0}h2{font-size:16px;color:#0d2742;margin:24px 0 10px}p{font-size:12px;color:#61717d}table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px}th,td{border-bottom:1px solid #d8e1e6;padding:8px;text-align:left}th{background:#eef4f8;color:#405261}.meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 30px;font-size:12px}.note{margin-top:26px;padding:10px;background:#f6f8fa;border:1px solid #dce4e9;font-size:10px;color:#667783}@media print{button{display:none}}</style></head><body><header><h1>LANG Engenharia</h1><p>${esc(title)}</p></header><div class="meta"><div><b>Obra:</b> ${esc(f.obra||'—')}</div><div><b>Cliente:</b> ${esc(f.cliente||'—')}</div><div><b>Endereço:</b> ${esc(f.endereco||'—')}</div><div><b>Data:</b> ${new Date().toLocaleDateString('pt-BR')}</div></div>${body}<div class="note">Quantitativos gerados a partir da planta, dados informados e estimadores identificados no campo Origem/Base. Estimativas estatísticas e paramétricas são preliminares e devem ser substituídas pelo projeto executivo quando disponível.</div><script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`;
+    const html='<!doctype html><html><head><meta charset="utf-8"><title>'+esc(title)+'</title><style>body{font-family:Arial,sans-serif;color:#182631;margin:34px}header{border-bottom:3px solid #0d2742;padding-bottom:14px;margin-bottom:24px}h1{font-size:24px;color:#0d2742;margin:0}h2{font-size:16px;color:#0d2742;margin:24px 0 10px;page-break-after:avoid}p{font-size:12px;color:#61717d}table{width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:14px;page-break-inside:auto}tr{page-break-inside:avoid}th,td{border-bottom:1px solid #d8e1e6;padding:7px;text-align:left;vertical-align:top}th{background:#eef4f8;color:#405261}.meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 30px;font-size:12px}.note{margin-top:26px;padding:10px;background:#f6f8fa;border:1px solid #dce4e9;font-size:10px;color:#667783}@media print{button{display:none}}</style></head><body><header><h1>LANG Engenharia</h1><p>'+esc(title)+'</p></header><div class="meta"><div><b>Obra:</b> '+esc(f.obra||'—')+'</div><div><b>Cliente:</b> '+esc(f.cliente||'—')+'</div><div><b>Endereço:</b> '+esc(f.endereco||'—')+'</div><div><b>Data:</b> '+new Date().toLocaleDateString('pt-BR')+'</div></div>'+body+'<div class="note">Quantidades identificadas como estimativa são preliminares e preservam sua origem/base. Elas não devem ser interpretadas como medição de projeto executivo. Quando um projeto complementar ou medida confirmada for inserido, o dado informado substitui o estimador correspondente.</div><script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>';
     const w=window.open('','_blank');w.document.open();w.document.write(html);w.document.close();
   }
   function tableHtml(rows,heads){return '<table><thead><tr>'+heads.map(h=>`<th>${esc(String(h))}</th>`).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>`<td>${esc(String(c??''))}</td>`).join('')+'</tr>').join('')+'</tbody></table>'}
