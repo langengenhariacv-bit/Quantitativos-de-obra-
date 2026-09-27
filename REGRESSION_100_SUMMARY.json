@@ -1,0 +1,30 @@
+{
+  "verified_at": "2026-09-27",
+  "suite": "LANG Quantitativos — regressão fixa com 100 plantas online",
+  "dataset_file": "REGRESSION_100_DATASET.json",
+  "models": 100,
+  "passed": 100,
+  "failed": 0,
+  "errors": 0,
+  "progression": [
+    {
+      "round": "inicial",
+      "passed": 84,
+      "failed": 16,
+      "note": "incluía 1 URL indisponível e vários casos históricos/múltiplos blocos"
+    },
+    {
+      "round": "intermediária",
+      "passed": 99,
+      "failed": 1,
+      "note": "restou apenas uma planta histórica de Pompeia com recorte automático inadequado"
+    },
+    {
+      "round": "final",
+      "passed": 100,
+      "failed": 0,
+      "note": "corrigido ROI excessivamente estreito em plantas coloridas/escaneadas"
+    }
+  ],
+  "criteria_note": "Aprovação automatizada mede continuidade, conectividade, cobertura geométrica, múltiplos blocos e consistência da rede de paredes. Não equivale a precisão pixel a pixel universal; a conferência visual azul/amarelo continua obrigatória."
+}
