@@ -97,7 +97,7 @@
             <div class="field"><label>Área líquida de fachada conhecida (m²)</label><input id="areaFachadaManual" type="number" step="0.01" placeholder="Opcional; melhora pintura externa"></div>
             <div class="field"><label>Perímetro para rodapé (m)</label><input id="perimetroRodape" type="number" step="0.01" placeholder="Pode ser ajustado depois"></div>
           </div>
-          <div class="actions" style="margin-top:16px"><button class="btn primary" id="analisarBtn">Analisar PDF e ir para conferência</button><button class="btn secondary" id="salvarBtn">Salvar projeto</button><button class="btn ghost" id="exportBackupBtn">Exportar backup</button><button class="btn ghost" id="importBackupBtn">Importar backup</button><input id="backupInput" type="file" accept="application/json,.json" style="display:none"></div>
+          <div class="actions" style="margin-top:16px"><button class="btn primary" id="analisarBtn">Analisar PDF e ir para conferência</button><button class="btn secondary" id="salvarBtn">Salvar projeto</button><button class="btn ghost" id="exportBackupBtn">Exportar backup</button><button class="btn ghost" id="importBackupBtn">Importar backup</button><button class="btn danger" id="novoProjetoBtn">Novo projeto / limpar</button><input id="backupInput" type="file" accept="application/json,.json" style="display:none"></div>
         </div>
         <div class="card">
           <h2>Sistemas construtivos</h2>
@@ -290,7 +290,7 @@
 
   document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
   const mainViews=['novo','escopo','planta','quant','relatorios'];
-  function showView(v){const target=$('view-'+v);if(!target)return;document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('active',x.dataset.view===v));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));target.classList.add('active');const active=document.querySelector(`.navbtn[data-view="${v}"]`);if(active)active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});window.scrollTo({top:0,behavior:'smooth'});if(v==='quant')renderMaterials();}
+  function showView(v){const target=$('view-'+v);if(!target)return;document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('active',x.dataset.view===v));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));target.classList.add('active');const active=document.querySelector(`.navbtn[data-view="${v}"]`);if(active)active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});window.scrollTo({top:0,behavior:'smooth'});if(v==='quant'){const hasBase=num($('areaConstruida')&&$('areaConstruida').value)||state.floorAreas.length||state.metrics;if(hasBase)calculate();else renderMaterials();}}
   function initStepNavigation(){mainViews.forEach((v,i)=>{const sec=$('view-'+v);if(!sec||sec.querySelector('.step-nav'))return;const nav=document.createElement('div');nav.className='step-nav no-print';const prev=i>0?`<button class="btn ghost" data-go="${mainViews[i-1]}">← Voltar</button>`:'<span></span>';const next=i<mainViews.length-1?`<button class="btn primary" data-go="${mainViews[i+1]}">${i===mainViews.length-2?'Ver relatórios':'Avançar'} →</button>`:'<button class="btn ghost" data-go="novo">← Início</button>';nav.innerHTML=prev+next;sec.appendChild(nav)});document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.go)));}
   if($('homeBtn'))$('homeBtn').onclick=()=>showView('novo');document.querySelector('.brand')?.addEventListener('click',()=>showView('novo'));
   function renderScope(){
@@ -928,7 +928,7 @@
 
 
   function loadCoef(){const saved=JSON.parse(localStorage.getItem('lang-coef')||'null');state.coef=saved||{...defaultCoef};for(const [k,v] of Object.entries(state.coef))$('c_'+k).value=v}
-  $('saveCoef').onclick=()=>{for(const k of Object.keys(defaultCoef))state.coef[k]=num($('c_'+k).value);localStorage.setItem('lang-coef',JSON.stringify(state.coef));alert('Coeficientes salvos.');if(state.walls.length)calculate()};$('resetCoef').onclick=()=>{state.coef={...defaultCoef};localStorage.removeItem('lang-coef');loadCoef()};
+  $('saveCoef').onclick=()=>{for(const k of Object.keys(defaultCoef))state.coef[k]=num($('c_'+k).value);localStorage.setItem('lang-coef',JSON.stringify(state.coef));alert('Coeficientes salvos.');if(state.metrics||state.autoWallLength||state.walls.length)calculate()};$('resetCoef').onclick=()=>{state.coef={...defaultCoef};localStorage.removeItem('lang-coef');loadCoef()};
 
   function getForm(){const ids=['obra','cliente','endereco','tipoObra','pavimentos','unidades','peDireito','peCustom','tijolo','facesReboco','revInterno','revExterno','piso','rodape','forro','cobertura','pintInterna','pintExterna','perdas','perdasCustom','areaCobertura','areaConstruida','areaPisoManual','areaFachadaManual','perimetroRodape','wallLengthOverride','wallManualMode','fundacaoTipo','estruturaTipo','lajeTipo','aguaQuente','esgotoSistema','gasSistema','climatizacao','solarSistema','incendioSistema','spdaSistema','elevadorSistema','piscinaSistema',...complementaryDefs.map(x=>x[0])];const out={};ids.forEach(id=>{if($(id))out[id]=$(id).value});return out}
   function setForm(f={}){for(const [k,v] of Object.entries(f))if($(k))$(k).value=v}
@@ -955,6 +955,7 @@
   if($('exportBackupBtn'))$('exportBackupBtn').onclick=exportBackup;
   if($('importBackupBtn'))$('importBackupBtn').onclick=()=>$('backupInput').click();
   if($('backupInput'))$('backupInput').onchange=e=>{const file=e.target.files&&e.target.files[0];if(file)importBackup(file);e.target.value=''};
+  if($('novoProjetoBtn'))$('novoProjetoBtn').onclick=()=>{if(confirm('Iniciar um novo projeto? Os coeficientes personalizados serão mantidos, mas os dados desta obra serão removidos do navegador. Exporte um backup antes se quiser guardar este levantamento.')){localStorage.removeItem('lang-quant-project');location.reload()}};
   document.querySelectorAll('[data-report]').forEach(b=>b.addEventListener('click',()=>generateReport(b.dataset.report)));
   function generateReport(type){
     if(!state.materials.length)calculate();
