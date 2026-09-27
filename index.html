@@ -313,7 +313,7 @@
     model:'Derivação geométrica explícita a partir da planta'
   };
   const bench={
-    excavacao:3.80/43.20,aterro:1.47/43.20,fundConc:(.86+1.47)/43.20,fundAco:(.86*(6.2322+21.1313+30.85)+1.47*(17.5555+20.1227+27.4222))/43.20,fundForma:(.86*3.75+1.47*13.3333)/43.20,impermeabFund:14.70/43.20,radierConc:6.65/55.40,radierAco:(229.81+10.36)/55.40,radierForma:3.79/55.40,radierBrita:2.77/55.40,
+    wallArea:(51.03+14.25+23.75)/43.20,excavacao:3.80/43.20,aterro:1.47/43.20,fundConc:(.86+1.47)/43.20,fundAco:(.86*(6.2322+21.1313+30.85)+1.47*(17.5555+20.1227+27.4222))/43.20,fundForma:(.86*3.75+1.47*13.3333)/43.20,impermeabFund:14.70/43.20,radierConc:6.65/55.40,radierAco:(229.81+10.36)/55.40,radierForma:3.79/55.40,radierBrita:2.77/55.40,
     roof:65.75/43.20,forroPVC:57.75/43.20,cumeeira:7.80/43.20,
     contrapisoArea:66.88/43.20,contrapisoConc:3.34/43.20,pisoFinish:(7.30+31.85)/43.20,rodape:(22.27+13.60)/43.20,
     chapInt:94.50/43.20,chapExt:76.25/43.20,rebocoInt:70.42/43.20,fachada:76.25/43.20,
@@ -400,7 +400,9 @@
       if(id==='bombas'&&x.pav<=3){na(id,'Sem pressurização indicada para a edificação baixa.');continue}
       if(id==='demolicoes'&&!/reforma|demoli/i.test(text)){na(id,'Demolição não indicada.');continue}
       if(id==='corte'&&!/topograf|talude|corte de terreno/i.test(text)){na(id,'Sem topografia que sustente volume de corte.');continue}
-      if(['cftv','alarme','automacao','marcenaria','deck','pisoTatil','sinalAcess'].includes(id)){na(id,'Sistema opcional não identificado na prancha; não foi criado consumo fictício.');continue}
+      if(['cftv','alarme','automacao','marcenaria','deck'].includes(id)){na(id,'Sistema opcional não selecionado nem identificado na prancha; não foi criado consumo fictício.');continue}
+      if(id==='pisoTatil'&&!/t[aá]til/i.test(text)){na(id,'Piso tátil não identificado na prancha.');continue}
+      if(id==='sinalAcess'&&!/acess/i.test(text)){na(id,'Sinalização de acessibilidade não identificada na prancha.');continue}
 
       switch(id){
         case 'canteiro':add(id,1,'lote',estimatorSources.model,'1 instalação de canteiro por obra; itens internos dependem do plano de canteiro','alta');break;
@@ -549,7 +551,36 @@
         case 'asbuilt':add(id,1,'conj.',estimatorSources.model,'1 conjunto documental por empreendimento','alta');break;
         case 'desmobilizacao':add(id,1,'lote',estimatorSources.model,'1 desmobilização por obra','alta');break;
         case 'outros':if(state.customItems.length)direct(id);else na(id,'Nenhum item personalizado cadastrado.');break;
-        default:add(id,x.A,'m² de área atendida',estimatorSources.sinapi,'Grandeza de serviço baseada na área atendida; não convertida em material sem composição/projeto específico.','baixa');
+        case 'demolicoes':add(id,x.A,'m² de área-base',estimatorSources.model,'Obra identificada como reforma/demolição; área construída usada apenas como teto preliminar de intervenção','baixa');break;
+        case 'corte':add(id,x.foot,'m² de implantação afetada',estimatorSources.model,'Há indício topográfico/corte, mas volume em m³ exige levantamento de terreno','baixa');break;
+        case 'alvenaria':add(id,x.A*bench.wallArea,'m²',estimatorSources.casa,'89,03 m² de alvenaria / 43,20 m² de habitação, usado somente quando a geometria das paredes não foi obtida','baixa');break;
+        case 'argAssent':{const wa=x.A*bench.wallArea;add(id,Math.ceil(wa*state.coef.mortar/state.coef.bag),'sacos',estimatorSources.casa,'Área paramétrica de alvenaria × coeficiente configurável de argamassa','baixa');break;}
+        case 'drywall':add(id,1,'sistema identificado',estimatorSources.geo,'Drywall/placa cimentícia foi identificado no texto, mas a prancha não fornece área mensurável; não é convertido em m² fictícios','baixa');break;
+        case 'telhas':if(x.roofArea)add(id,x.roofArea,'m²',num($('areaCobertura')&&$('areaCobertura').value)?estimatorSources.geo:estimatorSources.casa,'Área de cobertura informada ou estimada pela referência de cobertura','média');else na(id,'Cobertura/telhamento não ativado ou sem área-base.');break;
+        case 'portas':case 'janelas':case 'vidros':case 'ferragens':case 'soleiras':case 'peitoris':na(id,'O item não foi identificado no quadro/códigos de esquadrias da planta atual.');break;
+        case 'guardaCorpo':{const a=state.rooms.filter(function(r){return /sacada|varanda|terra[cç]o/i.test(r.name)}).reduce(function(s,r){return s+r.area},0);if(a)add(id,2*Math.sqrt(a),'m de borda equivalente',estimatorSources.model,'Borda equivalente derivada das áreas de sacada/varanda; confirmar desenho de elevação','baixa');else na(id,'Sacada/varanda com guarda-corpo não identificada.');break;}
+        case 'corrimao':if(x.stairs>0)add(id,x.stairs*2,'linhas de corrimão',estimatorSources.model,'Duas linhas por ligação vertical; comprimento depende da geometria da escada','baixa');else na(id,'Escada que exija corrimão não identificada.');break;
+        case 'portoes':{const n=(text.match(/port[aã]o/gi)||[]).length;if(n)add(id,n,'un.',estimatorSources.geo,'Contagem textual de portões identificados; dimensões devem ser conferidas na implantação','baixa');else na(id,'Portão não identificado.');break;}
+        case 'aguaQuente':{
+          if(/el[eé]trico local/i.test(hot)){na(id,'Aquecimento elétrico local selecionado; não foi criada rede central de água quente.');break}
+          const pts=Math.max(x.units,x.bwc+x.kitchens),route=Math.sqrt(x.A/Math.max(1,x.units))/2;
+          addGroup(id,[{material:'Pontos previstos de água quente',q:pts,unit:'pontos',basis:'BWCs/cozinhas e unidades identificados'},{material:'Tubulação de água quente — percurso equivalente',q:pts*route,unit:'m',basis:'Pontos × metade da dimensão equivalente da unidade'}],estimatorSources.model,'Modelo geométrico preliminar; diâmetros dependem do sistema de aquecimento','baixa');break;
+        }
+        case 'bombas':add(id,1,'sistema',estimatorSources.model,'Edificação com mais de 3 pavimentos; quantidade/potência final dependem do cálculo de pressão','baixa');break;
+        case 'chapisco':add(id,x.A*(bench.chapInt+bench.chapExt),'m²',estimatorSources.casa,'Superfície interna + fachada da referência catarinense, usada apenas sem geometria de paredes','baixa');break;
+        case 'reboco':add(id,x.A*bench.rebocoInt,'m²',estimatorSources.casa,'70,42 m² de massa única interna / 43,20 m², usado somente sem geometria direta','baixa');break;
+        case 'gessoParede':if(/gesso/i.test($('revInterno')?$('revInterno').value:''))add(id,x.A*bench.rebocoInt,'m²',estimatorSources.casa,'Superfície interna de referência; consumo final depende do sistema de gesso','baixa');else na(id,'Gesso interno não selecionado.');break;
+        case 'piso':add(id,(state.metrics&&state.metrics.floor)||x.roomFloor||x.A,'m²',estimatorSources.geo,'Área de piso acabável da obra','alta');break;
+        case 'argColante':{const fa=(state.metrics&&state.metrics.floor)||x.roomFloor||x.A;add(id,Math.ceil(fa*state.coef.tileadh/state.coef.bag),'sacos',estimatorSources.geo,'Área de piso × coeficiente configurável','média');break;}
+        case 'rejunte':{const fa=(state.metrics&&state.metrics.floor)||x.roomFloor||x.A;add(id,fa*state.coef.grout,'kg',estimatorSources.geo,'Área de piso × coeficiente configurável','média');break;}
+        case 'selador':if($('pintInterna')&&$('pintInterna').value==='sim')add(id,x.A*bench.rebocoInt*state.coef.primer,'L',estimatorSources.casa,'Superfície interna de referência × coeficiente configurável','baixa');else na(id,'Pintura interna não selecionada.');break;
+        case 'massa':if($('pintInterna')&&$('pintInterna').value==='sim')add(id,x.A*bench.rebocoInt*state.coef.putty,'kg',estimatorSources.casa,'Superfície interna de referência × coeficiente configurável','baixa');else na(id,'Preparação de pintura interna não selecionada.');break;
+        case 'tintaInterna':if($('pintInterna')&&$('pintInterna').value==='sim')add(id,x.A*bench.rebocoInt*state.coef.paint,'L',estimatorSources.casa,'Superfície interna de referência × coeficiente configurável','baixa');else na(id,'Pintura interna não selecionada.');break;
+        case 'nichos':{const n=(text.match(/nicho/gi)||[]).length;if(n)add(id,n,'un.',estimatorSources.geo,'Contagem textual de nichos identificados','média');else na(id,'Nicho/prateleira de pedra não identificado.');break;}
+        case 'piscina':add(id,1,'sistema',estimatorSources.model,'Piscina ativada nos parâmetros; dimensões e equipamentos exigem projeto específico','baixa');break;
+        case 'pisoTatil':add(id,1,'sistema identificado',estimatorSources.geo,'Piso tátil identificado na prancha; metragem exige geometria de acessibilidade','baixa');break;
+        case 'sinalAcess':add(id,1,'sistema identificado',estimatorSources.geo,'Acessibilidade identificada na prancha; quantidade de placas depende do projeto','baixa');break;
+        default:na(id,'Sem regra específica ou evidência suficiente para converter este componente em quantidade de compra sem inventar dados.');
       }
     }
     return{items:items,status:status,context:x};
