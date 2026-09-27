@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Initializes all 161 scope controls",
+    "ok": true
+  },
+  {
+    "name": "100 m² produces full finite takeoff",
+    "ok": true
+  },
+  {
+    "name": "No staircase invented for single storey",
+    "ok": true
+  },
+  {
+    "name": "Screed constituents replace service",
+    "ok": true
+  },
+  {
+    "name": "Manual ceramic total replaces fallback exactly once",
+    "ok": true
+  },
+  {
+    "name": "Override quantity and explicit zero",
+    "ok": true
+  },
+  {
+    "name": "Unknown items are visible for review",
+    "ok": true
+  },
+  {
+    "name": "Backup preserves parameters and per page scales",
+    "ok": true
+  },
+  {
+    "name": "10 mm rebar geometric mass",
+    "ok": true
+  },
+  {
+    "name": "Paint disabled does not generate paint",
+    "ok": true
+  }
+]
