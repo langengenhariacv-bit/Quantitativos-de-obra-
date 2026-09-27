@@ -1,0 +1,101 @@
+const sharp=require('sharp');
+
+const PLANS=[
+ {id:1,name:'Hangzhou 3 quartos',kind:'P/B cotada',url:'https://imgpicture.kan3721.com/221128013800_thumb.jpg'},
+ {id:2,name:'Edifício multifamiliar colorido',kind:'multifamiliar',url:'https://i.archi.ru/i/650/235527.png'},
+ {id:3,name:'Lagom residencial com garagem',kind:'P/B mobiliada',url:'https://static.wixstatic.com/media/860bee_a80eb8e49f104cdeb26f59818a85bdae~mv2.jpg/v1/fill/w_2500%2Ch_2777%2Cal_c/860bee_a80eb8e49f104cdeb26f59818a85bdae~mv2.jpg'},
+ {id:4,name:'Imobiliária colorida',kind:'marketing',url:'https://lid.zoocdn.com/u/1024/768/a0577c1b6b507a34f811e8e385ebc4f7e19a7e40.jpg'},
+ {id:5,name:'Duplex simétrico',kind:'duplex P/B',url:'https://images.squarespace-cdn.com/content/v1/678844c055cd445561eb0942/de015f7b-4f6a-400e-acc5-cf78084b6419/MSCAN5220-1BX%2B%28Canton-duplex%29.jpg'},
+ {id:6,name:'Apartamento chinês mobiliado',kind:'P/B mobiliada',url:'https://x4.tuozhe8.com/attachment/forum/202205/27/023844xxwj1jxwp7wqh7ee.jpg'},
+ {id:7,name:'Prancha com carimbo 1:50',kind:'prancha técnica',url:'https://khamsat.hsoubcdn.com/images/profiles/992519/a8704483da4e52c974953edd09577573.jpg'},
+ {id:8,name:'ProcessOn colorida',kind:'colorida cotada',url:'https://pocdn.processon.com/admin/knowledge/article_content_img/66f140f0f8e22204bf981aed.png'},
+ {id:9,name:'Apartamento Aparna',kind:'P/B escala',url:'https://coohom-biz-sg-s3.coohom.com/ins/static/case/kitchen-gallery-balcony-floorplan-1765430417791544100.jpg'},
+ {id:10,name:'Casa dois pavimentos imobiliária',kind:'P/B dois pavimentos',url:'https://lc.zoocdn.com/0de9474c63fd1c243bb3db9bbb4572db10e33729.jpg'},
+ {id:11,name:'Apartamento colorido IA layout',kind:'colorida',url:'https://floordesign.ai/nuxt_img/floor-plan-generator/generator-style-colored.webp'},
+ {id:12,name:'Casa moderna 180 m²',kind:'P/B complexa',url:'https://optimumhouse.ru/history-projects/floors/mikea-x-v3.jpg'},
+ {id:13,name:'Bungalow imobiliária',kind:'P/B espessa',url:'https://greenhouseos-media.s3.eu-west-2.amazonaws.com/00DQH000007lqC12AI/a0dWS000006PO5cYAG/467c6d/60_manor_road-high.jpg'},
+ {id:14,name:'Casa africana 3 quartos',kind:'P/B cotada',url:'https://4.bp.blogspot.com/--5xqY0vhfP0/V0BfD1IJPbI/AAAAAAAAelQ/pWND2zk1lPYhvCd9VWLkKjWB1OZ4s5rnQCLcB/s1600/ra4.jpg'},
+ {id:15,name:'Apartamento hachurado',kind:'hachuras/cotas',url:'https://i.pinimg.com/736x/26/24/ee/2624eec9fcb01e358ef81e8070b1ef22.jpg'},
+ {id:16,name:'Sobrado brasileiro 5x25',kind:'Brasil cotada',url:'https://www.gaprojetos.com/assets/site/uploader/projetos/1000a/planta_com_medidas_-PLOT-A4_page-0001.jpg'},
+ {id:17,name:'Casa brasileira 3 quartos',kind:'Brasil mobiliada',url:'https://i.pinimg.com/736x/75/b7/bd/75b7bd0e24abf3f6a6322b3134288263.jpg'},
+ {id:18,name:'Apartamento A2 técnico',kind:'Brasil técnico',url:'https://imgv2-2-f.scribdassets.com/img/document/931688771/original/392c32c2e9/1?v=1'},
+ {id:19,name:'Apartamento Dubai 1 quarto',kind:'P/B mobiliada',url:'https://terrarealestate.com/img/3665/terra-696f699bc25fa.jpg'},
+ {id:20,name:'Ranch 1400 sq ft',kind:'P/B densa',url:'https://i.pinimg.com/originals/01/b2/e4/01b2e413cfc774006d4a00a9a3315c2d.jpg'},
+ {id:21,name:'UNCW 3 quartos',kind:'P/B fina',url:'https://uncw.edu/media/images/application-assets/housing/village-3-br-notpad-housing.png'},
+ {id:22,name:'Apartamento Ashbury',kind:'P/B imobiliária',url:'https://images1.apartments.com/i2/_Vsh81qXoKse34o_YFGsS8lSAWqf-owc_XDuC_IyiLA/111/ashbury-court-dekalb-il-heat-included-in-rent.jpg'},
+ {id:23,name:'Casa com pátio central',kind:'curvas/pátio',url:'https://i.pinimg.com/736x/82/c9/d1/82c9d1a8abeeba993a5dfc25dabe5108.jpg'},
+ {id:24,name:'Casa em U',kind:'U complexa',url:'https://i.pinimg.com/originals/97/e4/1f/97e41f01df188685ed643ac2d57bca7c.jpg'},
+ {id:25,name:'Apartamento Dinamarca',kind:'P/B escala gráfica',url:'https://image-lambda.boligportal.dk/d23b44d364abf67b5e6c2ce7e60001b3?h=400&w=600'},
+ {id:26,name:'Split level',kind:'níveis',url:'https://hel1.your-objectstorage.com/old-web/remodelai/seo1/split-level-house-floor-plans/5.jpg'},
+ {id:27,name:'Garagem + apartamento',kind:'dois desenhos',url:'https://i.ebayimg.com/images/g/kTgAAOSwLF1X-jrj/s-l1200.jpg'},
+ {id:28,name:'Prancha universitária A1',kind:'carimbo/cotas',url:'https://website-assets.studocu.com/img/document_thumbnails/da624d7c2555a882cd0ec4c68dbf1a1f/thumb_1200_848.png'},
+ {id:29,name:'Bungalow 6,5x8,5',kind:'colorida fina',url:'https://i0.wp.com/prohomedecors.com/wp-content/uploads/2020/06/Small-Bungalow-6.5x8.5-meter-22x28-feet.jpg?resize=640%2C512&ssl=1'},
+ {id:30,name:'Casa 2 quartos 42m²',kind:'P/B verde/cotas',url:'https://i.pinimg.com/736x/e1/a5/db/e1a5dbc84d9fc10b706521f08ae66c94.jpg'}
+];
+
+function bounds(gray,w,h){
+ const row=new Float32Array(h),col=new Float32Array(w);
+ for(let y=0;y<h;y++){let l=0;for(let x=0;x<w;x+=2)if(gray[y*w+x]>205)l++;row[y]=l/Math.ceil(w/2)}
+ for(let x=0;x<w;x++){let l=0;for(let y=0;y<h;y+=2)if(gray[y*w+x]>205)l++;col[x]=l/Math.ceil(h/2)}
+ const longest=(a,m)=>{let bs=0,be=a.length-1,s=-1,best=0;for(let i=0;i<=a.length;i++){const on=i<a.length&&a[i]>=m;if(on&&s<0)s=i;if((!on||i===a.length)&&s>=0){if(i-s>best){best=i-s;bs=s;be=i-1}s=-1}}return[bs,be]};
+ const rx=longest(col,.18),ry=longest(row,.18);let r={x0:rx[0],x1:rx[1]+1,y0:ry[0],y1:ry[1]+1};
+ if((r.x1-r.x0)*(r.y1-r.y0)<w*h*.18)r={x0:0,y0:0,x1:w,y1:h};
+ const mx=Math.max(2,Math.round((r.x1-r.x0)*.004)),my=Math.max(2,Math.round((r.y1-r.y0)*.004));
+ return{x0:Math.min(r.x1-1,r.x0+mx),x1:Math.max(r.x0+1,r.x1-mx),y0:Math.min(r.y1-1,r.y0+my),y1:Math.max(r.y0+1,r.y1-my)};
+}
+function otsu(gray,roi,w){
+ const hist=new Uint32Array(256);let n=0,sum=0;
+ for(let y=roi.y0;y<roi.y1;y++)for(let x=roi.x0;x<roi.x1;x++){const v=gray[y*w+x];hist[v]++;n++;sum+=v}
+ let wb=0,sb=0,best=90,max=-1;for(let t=0;t<256;t++){wb+=hist[t];if(!wb)continue;const wf=n-wb;if(!wf)break;sb+=t*hist[t];const mb=sb/wb,mf=(sum-sb)/wf,v=wb*wf*(mb-mf)*(mb-mf);if(v>max){max=v;best=t}}
+ return Math.max(45,Math.min(205,best));
+}
+function darkMask(gray,w,h,roi){
+ const th=otsu(gray,roi,w),rw=roi.x1-roi.x0,rh=roi.y1-roi.y0,integ=new Uint32Array((rw+1)*(rh+1)),mask=new Uint8Array(w*h);
+ for(let yy=0;yy<rh;yy++){let rs=0;for(let xx=0;xx<rw;xx++){rs+=gray[(roi.y0+yy)*w+roi.x0+xx];integ[(yy+1)*(rw+1)+xx+1]=integ[yy*(rw+1)+xx+1]+rs}}
+ const rad=Math.max(6,Math.round(Math.min(rw,rh)*.012));
+ for(let yy=0;yy<rh;yy++)for(let xx=0;xx<rw;xx++){const x0=Math.max(0,xx-rad),x1=Math.min(rw-1,xx+rad),y0=Math.max(0,yy-rad),y1=Math.min(rh-1,yy+rad),A=integ[y0*(rw+1)+x0],B=integ[y0*(rw+1)+x1+1],C=integ[(y1+1)*(rw+1)+x0],D=integ[(y1+1)*(rw+1)+x1+1],mean=(D-B-C+A)/((x1-x0+1)*(y1-y0+1)),v=gray[(roi.y0+yy)*w+roi.x0+xx];if(v<th||v<mean-25)mask[(roi.y0+yy)*w+roi.x0+xx]=1}
+ return{mask,threshold:th};
+}
+function scan(mask,w,roi,axis,minLen){
+ const out=[],outer=axis==='h'?[roi.y0,roi.y1]:[roi.x0,roi.x1],inner=axis==='h'?[roi.x0,roi.x1]:[roi.y0,roi.y1],allow=Math.max(1,Math.round(minLen*.035));
+ for(let o=outer[0];o<outer[1];o++){let s=-1,last=-1,g=0;for(let i=inner[0];i<=inner[1];i++){const x=axis==='h'?i:o,y=axis==='h'?o:i,on=i<inner[1]&&mask[y*w+x];if(on){if(s<0)s=i;last=i;g=0}else if(s>=0&&++g>allow){if(last-s+1>=minLen)out.push({axis,pos:o,a:s,b:last,len:last-s+1});s=-1;last=-1;g=0}}}
+ return out;
+}
+function cluster(runs,roi,axis,minLen){
+ if(!runs.length)return[];runs.sort((a,b)=>a.pos-b.pos||a.a-b.a);const used=new Uint8Array(runs.length),out=[],span=axis==='h'?roi.y1-roi.y0:roi.x1-roi.x0,maxBand=Math.max(4,Math.round(span*.01)),edge=Math.max(4,span*.012);
+ for(let i=0;i<runs.length;i++){if(used[i])continue;const cl=[runs[i]];used[i]=1;let ch=true;while(ch){ch=false;for(let j=i+1;j<runs.length;j++){if(used[j])continue;for(const r of cl){if(Math.abs(runs[j].pos-r.pos)>maxBand)continue;const ov=Math.max(0,Math.min(r.b,runs[j].b)-Math.max(r.a,runs[j].a)+1),rr=ov/Math.max(1,Math.min(r.len,runs[j].len));if(rr>.66&&Math.abs(r.len-runs[j].len)<Math.max(22,r.len*.45)){used[j]=1;cl.push(runs[j]);ch=true;break}}}}
+ const ps=cl.map(r=>r.pos).sort((a,b)=>a-b),as=cl.map(r=>r.a).sort((a,b)=>a-b),bs=cl.map(r=>r.b).sort((a,b)=>a-b),minP=ps[0],maxP=ps[ps.length-1],th=maxP-minP+1,pos=ps[Math.floor(ps.length/2)],a=as[Math.floor(as.length/2)],b=bs[Math.floor(bs.length/2)],len=b-a+1,near=pos<(axis==='h'?roi.y0:roi.x0)+edge||pos>(axis==='h'?roi.y1:roi.x1)-edge;if(len>=minLen&&(cl.length>=2||th>=3)&&th<=Math.max(55,span*.05)&&len/Math.max(1,th)>=3&&!near)out.push({axis,pos,a,b,len,thick:th,count:cl.length})}
+ return out;
+}
+function merge(list,roi){
+ const out=[],minDim=Math.min(roi.x1-roi.x0,roi.y1-roi.y0),gapMax=minDim*.055,posTol=Math.max(3,minDim*.006);
+ for(const axis of ['h','v']){const arr=list.filter(x=>x.axis===axis).sort((a,b)=>a.pos-b.pos||a.a-b.a),used=new Uint8Array(arr.length);for(let i=0;i<arr.length;i++){if(used[i])continue;let cur={...arr[i]};used[i]=1;let ch=true;while(ch){ch=false;for(let j=i+1;j<arr.length;j++){if(used[j])continue;const q=arr[j];if(Math.abs(q.pos-cur.pos)>posTol)continue;const gap=Math.max(q.a-cur.b,cur.a-q.b,0),ov=Math.max(0,Math.min(cur.b,q.b)-Math.max(cur.a,q.a));if(gap<=gapMax||ov>0){cur.a=Math.min(cur.a,q.a);cur.b=Math.max(cur.b,q.b);cur.len=cur.b-cur.a+1;cur.thick=Math.max(cur.thick,q.thick);used[j]=1;ch=true}}}out.push(cur)}}
+ return out;
+}
+function connected(a,b,t){if(a.axis!==b.axis){const H=a.axis==='h'?a:b,V=a.axis==='v'?a:b;return V.pos>=H.a-t&&V.pos<=H.b+t&&H.pos>=V.a-t&&H.pos<=V.b+t}return Math.abs(a.pos-b.pos)<=t&&Math.max(a.a,b.a)<=Math.min(a.b,b.b)+t*2}
+function analyzeSegments(seg,roi){
+ const tol=Math.max(4,Math.round(Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.008)),adj=seg.map(()=>[]);
+ for(let i=0;i<seg.length;i++)for(let j=i+1;j<seg.length;j++)if(connected(seg[i],seg[j],tol)){adj[i].push(j);adj[j].push(i)}
+ const seen=new Uint8Array(seg.length),comps=[];for(let i=0;i<seg.length;i++){if(seen[i])continue;const st=[i],ids=[];seen[i]=1;while(st.length){const n=st.pop();ids.push(n);for(const q of adj[n])if(!seen[q]){seen[q]=1;st.push(q)}}comps.push({ids,length:ids.reduce((s,k)=>s+seg[k].len,0),nodes:ids.length})}comps.sort((a,b)=>b.length-a.length);
+ const largest=comps[0]?.length||1,ids=new Set();for(const cp of comps)if(cp===comps[0]||((cp.length>=largest*.15||cp.nodes>=5)&&(cp.nodes>=3||cp.length>=largest*.3)))for(const id of cp.ids)ids.add(id);
+ const accepted=[],uncertain=[];seg.forEach((r,i)=>{const degree=adj[i].length,score=.42*Math.min(1,r.thick/5)+.28*Math.min(1,r.len/Math.max(1,Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.12))+.30*Math.min(1,degree/2);r.score=score;r.connections=degree;(ids.has(i)&&score>=.32?accepted:uncertain).push(r)});
+ return{accepted,uncertain,comps,adj};
+}
+function metrics(gray,w,h){
+ const roi=bounds(gray,w,h),dm=darkMask(gray,w,h,roi),minDim=Math.min(roi.x1-roi.x0,roi.y1-roi.y0),minLen=Math.max(14,Math.round(minDim*.013)),hRuns=cluster(scan(dm.mask,w,roi,'h',minLen),roi,'h',minLen),vRuns=cluster(scan(dm.mask,w,roi,'v',minLen),roi,'v',minLen),merged=merge([...hRuns,...vRuns],roi),g=analyzeSegments(merged,roi),a=g.accepted,u=g.uncertain,total=a.reduce((s,r)=>s+r.len,0),cand=merged.reduce((s,r)=>s+r.len,0),conn=a.filter(r=>r.connections>0).length,q=a.length?Math.max(0,Math.min(1,.48*total/Math.max(1,cand)+.30*conn/a.length+.22*Math.min(1,a.length/14))):0;
+ let minX=1e9,maxX=-1,minY=1e9,maxY=-1;for(const r of a){if(r.axis==='h'){minX=Math.min(minX,r.a);maxX=Math.max(maxX,r.b);minY=Math.min(minY,r.pos);maxY=Math.max(maxY,r.pos)}else{minX=Math.min(minX,r.pos);maxX=Math.max(maxX,r.pos);minY=Math.min(minY,r.a);maxY=Math.max(maxY,r.b)}}const bw=maxX>=minX?(maxX-minX)/(roi.x1-roi.x0):0,bh=maxY>=minY?(maxY-minY)/(roi.y1-roi.y0):0,dom=(g.comps[0]?.length||0)/Math.max(1,cand),unc=u.length/Math.max(1,merged.length),hv=[a.filter(x=>x.axis==='h').length,a.filter(x=>x.axis==='v').length],pass=a.length>=4&&q>=.33&&dom>=.32&&(bw>=.28||bh>=.28)&&unc<=.82;
+ return{pass,threshold:dm.threshold,accepted:a.length,uncertain:u.length,quality:+q.toFixed(3),dominant:+dom.toFixed(3),bboxWidth:+bw.toFixed(3),bboxHeight:+bh.toFixed(3),horizontal:hv[0],vertical:hv[1],lengthPx:Math.round(total),roi:{w:roi.x1-roi.x0,h:roi.y1-roi.y0},reason:pass?'ok':a.length<4?'few-segments':q<.33?'low-quality':dom<.32?'fragmented':unc>.82?'too-uncertain':'small-coverage'};
+}
+async function one(p){
+ try{
+  const ctl=new AbortController();const timer=setTimeout(()=>ctl.abort(),12000);
+  const r=await fetch(p.url,{signal:ctl.signal,headers:{'user-agent':'Mozilla/5.0 LANG-Quantitativos/1.0','accept':'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'}});clearTimeout(timer);
+  if(!r.ok)throw new Error('HTTP '+r.status);const buf=Buffer.from(await r.arrayBuffer());if(buf.length>12*1024*1024)throw new Error('image-too-large');
+  const {data,info}=await sharp(buf,{failOn:'none'}).rotate().resize({width:900,height:900,fit:'inside',withoutEnlargement:true}).flatten({background:'#fff'}).greyscale().raw().toBuffer({resolveWithObject:true});
+  return{...p,status:'ok',width:info.width,height:info.height,bytes:buf.length,...metrics(data,info.width,info.height)};
+ }catch(e){return{...p,status:'error',pass:false,error:String(e&&e.message||e)}}
+}
+module.exports=async function handler(req,res){
+ res.setHeader('Cache-Control','no-store');const start=Math.max(0,Math.min(29,Number(req.query.start||0))),count=Math.max(1,Math.min(5,Number(req.query.count||5))),slice=PLANS.slice(start,start+count),results=await Promise.all(slice.map(one));
+ res.status(200).json({dataset:PLANS.length,start,count:results.length,passed:results.filter(x=>x.pass).length,failed:results.filter(x=>!x.pass).length,results});
+};
