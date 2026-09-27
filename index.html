@@ -331,7 +331,7 @@
     const pts=state.rooms.filter(r=>r.page===pageNumber&&r.area>0&&r.area<80&&Number.isFinite(r.x)&&Number.isFinite(r.y)).map(r=>vp.convertToViewportPoint(r.x,r.y));
     if(pts.length<3)return{x0:0,y0:0,x1:w,y1:h};
     let minX=Math.min(...pts.map(p=>p[0])),maxX=Math.max(...pts.map(p=>p[0])),minY=Math.min(...pts.map(p=>p[1])),maxY=Math.max(...pts.map(p=>p[1]));
-    const mx=Math.max(35,w*.075),my=Math.max(35,h*.075);
+    const mx=Math.max(45,w*.12),my=Math.max(45,h*.12);
     return{x0:Math.max(0,Math.floor(minX-mx)),y0:Math.max(0,Math.floor(minY-my)),x1:Math.min(w,Math.ceil(maxX+mx)),y1:Math.min(h,Math.ceil(maxY+my))};
   }
   function wallToneScore(data,w,h,roi,level,minRun){
@@ -342,11 +342,44 @@
     return score;
   }
   function buildWallMask(data,w,h,roi,level,minRun){
-    const tol=2,neutral=5,keep=new Uint8Array(w*h);
-    const hit=(x,y)=>{const i=(y*w+x)*4,r=data[i],g=data[i+1],b=data[i+2];return Math.abs(r-g)<=neutral&&Math.abs(g-b)<=neutral&&Math.abs(r-level)<=tol};
-    for(let y=roi.y0;y<roi.y1;y++){let start=-1;for(let x=roi.x0;x<=roi.x1;x++){const on=x<roi.x1&&hit(x,y);if(on&&start<0)start=x;if(!on&&start>=0){if(x-start>=minRun)for(let k=start;k<x;k++)keep[y*w+k]=1;start=-1}}}
-    for(let x=roi.x0;x<roi.x1;x++){let start=-1;for(let y=roi.y0;y<=roi.y1;y++){const on=y<roi.y1&&hit(x,y);if(on&&start<0)start=y;if(!on&&start>=0){if(y-start>=minRun)for(let k=start;k<y;k++)keep[k*w+x]=1;start=-1}}}
-    return keep;
+    const tol=4,neutral=7,raw=new Uint8Array(w*h),keep=new Uint8Array(w*h);
+    const x0=Math.max(0,roi.x0),y0=Math.max(0,roi.y0),x1=Math.min(w,roi.x1),y1=Math.min(h,roi.y1);
+    for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+      const i=(y*w+x)*4,r=data[i],g=data[i+1],b=data[i+2];
+      if(Math.abs(r-g)<=neutral&&Math.abs(g-b)<=neutral&&Math.abs(r-level)<=tol)raw[y*w+x]=1;
+    }
+    const seen=new Uint8Array(w*h),stack=[],pixels=[];
+    const minPixels=Math.max(16,minRun*2);
+    for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+      const seed=y*w+x;if(!raw[seed]||seen[seed])continue;
+      stack.length=0;pixels.length=0;stack.push(seed);seen[seed]=1;
+      let minX=x,maxX=x,minY=y,maxY=y;
+      while(stack.length){
+        const idx=stack.pop(),py=Math.floor(idx/w),px=idx-py*w;pixels.push(idx);
+        if(px<minX)minX=px;if(px>maxX)maxX=px;if(py<minY)minY=py;if(py>maxY)maxY=py;
+        for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+          if(!dx&&!dy)continue;const nx=px+dx,ny=py+dy;
+          if(nx<x0||nx>=x1||ny<y0||ny>=y1)continue;
+          const ni=ny*w+nx;if(raw[ni]&&!seen[ni]){seen[ni]=1;stack.push(ni)}
+        }
+      }
+      const bw=maxX-minX+1,bh=maxY-minY+1,area=bw*bh,fill=pixels.length/Math.max(1,area);
+      const elongated=Math.max(bw,bh)>=minRun;
+      const substantial=pixels.length>=minPixels;
+      const wallLike=(substantial&&elongated&&fill>.045);
+      if(wallLike)for(const idx of pixels)keep[idx]=1;
+    }
+    // Join tiny gaps caused by anti-aliasing/opening symbols without growing into annotations.
+    const grown=keep.slice();
+    for(let y=y0+1;y<y1-1;y++)for(let x=x0+1;x<x1-1;x++){
+      const idx=y*w+x;if(keep[idx]||!raw[idx])continue;
+      let near=0;
+      for(let dy=-2;dy<=2&&!near;dy++)for(let dx=-2;dx<=2;dx++){
+        const nx=x+dx,ny=y+dy;if(nx>=x0&&nx<x1&&ny>=y0&&ny<y1&&keep[ny*w+nx]){near=1;break}
+      }
+      if(near)grown[idx]=1;
+    }
+    return grown;
   }
   async function estimateWallsFromPdf(){
     state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallConfidence='';state.autoWallMasks={};state.autoWallTone=null;
@@ -406,7 +439,7 @@
   $('addVao').onclick=()=>{state.openings.push({type:$('vaoTipo').value,qty:Math.max(1,num($('vaoQtd').value)),w:num($('vaoLarg').value),h:num($('vaoAlt').value)});renderOpenings();saveProject(false)};
   function renderOpenings(){$('vaoBody').innerHTML=state.openings.map((o,i)=>`<tr><td>${o.type}</td><td>${o.qty}</td><td>${fmt(o.w)}×${fmt(o.h)} m</td><td><button class="btn danger" onclick="window.delOpen(${i})">×</button></td></tr>`).join('')};window.delOpen=i=>{state.openings.splice(i,1);renderOpenings();saveProject(false)};
 
-  function updateReadout(){const areaRooms=state.rooms.reduce((s,r)=>s+r.area,0),manualWallM=state.walls.reduce((s,w)=>s+w.length,0),wallM=manualWallM||state.autoWallLength||0;$('statEscala').textContent=state.metersPerPixel?(state.scaleDen?`1:${state.scaleDen}`:'Calibrada'):(state.scaleDen?`1:${state.scaleDen}`:'—');$('statAmb').textContent=state.rooms.length;$('statArea').textContent=fmt(areaRooms)+' m²';$('statWalls').textContent=state.walls.length?state.walls.length:(state.autoWallLength?'AUTO':'0');$('statWallM').textContent=fmt(wallM)+' m';if(state.metersPerPixel)$('scaleBox').textContent=state.scaleDen?`Escala lida do PDF: 1:${state.scaleDen}. Confirme se o arquivo foi plotado corretamente ou calibre por uma cota conhecida.`:'Escala calibrada manualmente.'}
+  function updateReadout(){const areaRooms=state.floorAreas.length?state.floorAreas.reduce((s,r)=>s+r.area,0):state.rooms.reduce((s,r)=>s+r.area,0),manualWallM=state.walls.reduce((s,w)=>s+w.length,0),wallM=manualWallM||state.autoWallLength||0;$('statEscala').textContent=state.metersPerPixel?(state.scaleDen?`1:${state.scaleDen}`:'Calibrada'):(state.scaleDen?`1:${state.scaleDen}`:'—');$('statAmb').textContent=state.rooms.length;$('statArea').textContent=fmt(areaRooms)+' m²';$('statWalls').textContent=state.walls.length?state.walls.length:(state.autoWallLength?'AUTO':'0');$('statWallM').textContent=fmt(wallM)+' m';if(state.metersPerPixel)$('scaleBox').textContent=state.scaleDen?`Escala lida do PDF: 1:${state.scaleDen}. Confirme se o arquivo foi plotado corretamente ou calibre por uma cota conhecida.`:'Escala calibrada manualmente.'}
 
   $('analisarBtn').onclick=async()=>{if(!state.pdf){alert('Selecione um PDF primeiro.');return}await renderPage();renderRooms();renderWalls();renderOpenings();renderAutoRead();renderScopeStatus();showView('planta')};
   $('salvarBtn').onclick=()=>{saveProject();alert('Projeto salvo neste dispositivo.')};
