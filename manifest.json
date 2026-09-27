@@ -1,0 +1,11 @@
+{
+  "name": "LANG Quantitativos",
+  "short_name": "LANG Quant.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f8fa",
+  "theme_color": "#0d2742",
+  "lang": "pt-BR",
+  "description": "Levantamento de quantitativos e materiais de obras a partir de plantas em PDF."
+}
