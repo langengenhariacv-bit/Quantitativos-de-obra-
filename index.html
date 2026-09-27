@@ -7,6 +7,8 @@
   <title>LANG Quantitativos</title>
   <link rel="manifest" href="manifest.json" />
   <style>
+label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main,.card,.view{min-width:0}.table-wrap{overflow:auto} .extension-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px} .extension-grid input,.extension-grid select{width:100%} @media(max-width:650px){.card{padding:12px}.scroll{max-width:100%;overflow:auto}table{font-size:13px}.page-title h1{font-size:24px}}
+
     :root{--navy:#0d2742;--navy2:#173b5f;--ice:#eef4f8;--paper:#fff;--ink:#14202b;--muted:#6b7b89;--line:#d9e2e8;--ok:#2f7a5f;--warn:#a36a14;--danger:#a83b3b;--shadow:0 14px 40px rgba(13,39,66,.10)}
     *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f5f8fa;color:var(--ink)}
     button,input,select{font:inherit} button{cursor:pointer}
@@ -41,7 +43,7 @@
   <div class="layout">
     <aside>
       <div class="nav-title">Projeto</div>
-      <button class="navbtn active" data-view="novo">1. Novo quantitativo<small>PDF + parâmetros</small></button>
+      <button class="navbtn active" data-view="novo">1. Novo quantitativo<small>PDF/imagem + parâmetros</small></button>
       <button class="navbtn" data-view="escopo">2. Escopo completo<small>Todos os sistemas da obra</small></button>
       <button class="navbtn" data-view="planta">3. Conferir planta<small>Escala, paredes e vãos</small></button>
       <button class="navbtn" data-view="quant">4. Quantitativos<small>Materiais calculados</small></button>
@@ -52,7 +54,7 @@
 
     <main>
       <section id="view-novo" class="view active">
-        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">MVP 2.1 • Leitura automática</span></div>
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF ou imagem e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">v4 • revisão técnica</span></div>
         <div class="card">
           <h2>Dados da obra</h2>
           <div class="grid g3">
@@ -144,7 +146,7 @@
           <div class="actions" style="margin-top:10px"><button class="btn secondary" id="addCustomItem">Adicionar ao quantitativo</button></div>
           <div class="scroll" style="margin-top:12px"><table><thead><tr><th>Etapa</th><th>Item</th><th>Qtd.</th><th>Unid.</th><th></th></tr></thead><tbody id="customItemsBody"></tbody></table></div>
         </div>
-        <div class="notice">Itens selecionados sem medida aparecem como <b>pendentes</b> no quantitativo. Assim o relatório não “esquece” estrutura, instalações ou serviços só porque a planta arquitetônica não contém esses dados.</div>
+        <div class="notice">Itens sem medição recebem estimativas explícitas quando há uma base de cálculo. Os demais ficam identificados para conferência. Assim o relatório não “esquece” estrutura, instalações ou serviços só porque a planta arquitetônica não contém esses dados.</div>
       </section>
 
       <section id="view-planta" class="view">
@@ -178,7 +180,7 @@
       <section id="view-quant" class="view">
         <div class="page-title"><div><h1>Quantitativos</h1><p>Resultado geométrico + coeficientes de consumo configuráveis.</p></div><span class="pill" id="quantSource">Aguardando cálculo</span></div>
         <div class="card"><div class="stats"><div class="stat"><b id="qAreaWall">0</b><span>Alvenaria líquida m²</span></div><div class="stat"><b id="qBricks">0</b><span>Tijolos</span></div><div class="stat"><b id="qFloor">0</b><span>Piso m²</span></div><div class="stat"><b id="qPaint">0</b><span>Pintura m²</span></div><div class="stat"><b id="qOpen">0</b><span>Vãos m²</span></div></div></div>
-        <div class="card"><div class="section-head"><div><h2>Auditoria de precisão</h2><p class="mini-note">O app verifica automaticamente qualidade da leitura, cobertura dos ambientes e dependência de estimativas.</p></div><span class="pill" id="qualityGrade">Aguardando cálculo</span></div>
+        <div class="card"><div class="section-head"><div><h2>Conferência de dados</h2><p class="mini-note">O app verifica automaticamente qualidade da leitura, cobertura dos ambientes e dependência de estimativas.</p></div><span class="pill" id="qualityGrade">Aguardando cálculo</span></div>
           <div class="stats"><div class="stat"><b id="qualityScore">—</b><span>Índice de confiança</span></div><div class="stat"><b id="qualityDirect">0</b><span>Diretos</span></div><div class="stat"><b id="qualityEstimated">0</b><span>Estimados</span></div><div class="stat"><b id="qualityLow">0</b><span>Baixa confiança</span></div><div class="stat"><b id="qualityRoomCoverage">—</b><span>Cobertura dos ambientes</span></div></div>
           <div id="qualityIssues" class="notice okbox" style="margin-top:12px">Calcule os quantitativos para executar a auditoria.</div></div>
         <div class="card"><h2>Materiais e serviços quantificados</h2><p class="mini-note">Leitura direta, derivação geométrica ou estimativa estatística/paramétrica. Toda estimativa informa a base adotada e não é apresentada como medição executiva.</p><table><thead><tr><th>Etapa</th><th>Material / serviço</th><th class="num">Quantidade</th><th>Unidade</th><th>Origem / base</th></tr></thead><tbody id="materialsBody"></tbody></table></div>
@@ -219,13 +221,25 @@
           </div>
         </div>
       </section>
-      <div class="footer">LANG Quantitativos • versão 3.0 • leitura vetorial, estimativas rastreáveis e auditoria de precisão</div>
+      <div class="footer">LANG Quantitativos • versão 4.0 • leitura raster conferível, estimativas rastreáveis e validação técnica</div>
     </main>
   </div>
 </div>
-<script type="module">
-  import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
-  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+<script>
+  let pdfjsLib;
+  async function ensurePDF(){
+    if(pdfjsLib)return pdfjsLib;
+    try{
+      pdfjsLib=await import('./vendor/pdf.min.mjs');
+      pdfjsLib.GlobalWorkerOptions.workerSrc=new URL('./vendor/pdf.worker.min.mjs',location.href).href;
+      return pdfjsLib;
+    }catch(err){
+      console.error('Falha ao iniciar PDF.js local',err);
+      throw new Error('Este navegador não conseguiu iniciar o leitor PDF. Atualize o Chrome ou use uma imagem JPG/PNG. Os cálculos manuais continuam disponíveis.');
+    }
+  }
+  const storage={getItem(k){try{return localStorage.getItem(k)}catch(e){return null}},setItem(k,v){try{localStorage.setItem(k,v);return true}catch(e){document.getElementById('saveStatus').textContent='Não foi possível salvar. Exporte um backup.';return false}},removeItem(k){try{localStorage.removeItem(k)}catch(e){}}};
+  function storedJSON(key,fallback=null){try{return JSON.parse(storage.getItem(key))||fallback}catch(e){return fallback}}
 
   const $=id=>document.getElementById(id);
   const defaultCoef={bricks:25,mortar:20,chap:4.5,plaster:18,tileadh:5,grout:.35,primer:.12,putty:1.2,paint:.18,bag:20};
@@ -277,7 +291,7 @@
     ['q_elevador','Elevadores','un.','25. Transporte vertical','elevador',false],['q_limpeza','Limpeza pós-obra','m²','26. Serviços finais','limpezaFinal',false]
   ];
   const defaultScope=new Set(componentCatalog.flatMap(g=>g.items.map(i=>i[0])));
-  const state={pdf:null,image:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
+  const state={pdf:null,image:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],pageScales:{},confirmed:false,autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
   let autosaveTimer;
 
   function fmt(n,d=2){return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})}
@@ -330,7 +344,7 @@
   function electricRoomEstimate(rooms){
     let tomadas=0,luzes=0,interruptores=0,cargaLuzVA=0;
     for(const r of rooms){
-      const n=String(r.name||'').toLowerCase(),a=Math.max(0,r.area),p=4*Math.sqrt(a);
+      const n=String(r.name||'').toLowerCase(),a=Math.max(0,r.area),p=r.perimeter>0?r.perimeter:4*Math.sqrt(a);
       luzes+=1;interruptores+=1;cargaLuzVA+=a<=6?100:100+60*Math.floor((a-6)/4);
       if(/bwc|banheiro|wc|lavabo/.test(n))tomadas+=1;
       else if(/cozinha|copa|servi[cç]o|lavanderia/.test(n))tomadas+=Math.max(1,Math.ceil(p/3.5));
@@ -350,7 +364,7 @@
     const roomFloor=rooms.reduce(function(s,r){return s+r.area},0),floorCoverage=A?roomFloor/A:0;
     const kitchens=count(/cozinha/),bwc=count(/bwc|banheiro|wc|lavabo/),services=count(/servi[cç]o|lavanderia/),beds=count(/quarto|dormit/),living=count(/sala/);
     const p1=state.openings.filter(function(o){return /porta p1/i.test(o.type)}).reduce(function(s,o){return s+o.qty},0);
-    const units=Math.max(1,num($('unidades')&&$('unidades').value)||kitchens||p1||Math.round(A/70)||1),stairs=Math.max(0,pav-1)*units;
+    const units=Math.max(1,num($('unidades')&&$('unidades').value)||1),stairs=Math.max(0,pav-1)*units;
     const eqPerim=rooms.reduce(function(s,r){return s+4*Math.sqrt(Math.max(0,r.area))},0),extPerim=foot>0?4*Math.sqrt(foot):0;
     const wetArea=sum(/bwc|banheiro|wc|lavabo|servi[cç]o|lavanderia/);
     const wetPerim=rooms.filter(function(r){return /bwc|banheiro|wc|lavabo|servi[cç]o|lavanderia/.test(nm(r))}).reduce(function(s,r){return s+4*Math.sqrt(Math.max(0,r.area))},0);
@@ -368,19 +382,19 @@
     directIds=directIds||new Set();const x=projectContext(),items=[],status={},text=(state.pdfText||'').toLowerCase();
     const add=function(id,q,unit,source,basis,confidence,low,high,material){
       const ci=catalogItem(id);q=Number(q);confidence=confidence||'média';
-      if(!(q>0)){status[id]={kind:'na',label:'Não aplicável',source:'Sem quantidade defensável',basis:basis||''};return}
+      if(!(q>0)){status[id]={kind:'review',label:'Confirmar quantidade',source:'Sem quantidade defensável',basis:basis||''};return}
       const range=(low!=null&&high!=null)?{low:Number(low),high:Number(high)}:null;
       items.push({stage:ci.stage,material:material||ci.label,q:q,unit:unit,scopeId:id,originType:'estimate',origin:source,basis:basis||'',confidence:confidence,range:range});
-      status[id]={kind:'estimate',label:'Estimativa estatística',source:source,basis:basis||'',confidence:confidence,q:q,unit:unit,range:range};
+      status[id]={kind:'estimate',label:'Estimativa preliminar',source:source,basis:basis||'',confidence:confidence,q:q,unit:unit,range:range};
     };
     const addGroup=function(id,rows,source,basis,confidence){
       const ci=catalogItem(id),valid=(rows||[]).filter(function(r){return Number(r.q)>0});confidence=confidence||'média';
-      if(!valid.length){status[id]={kind:'na',label:'Não aplicável',source:'Sem quantidade defensável',basis:basis||''};return}
+      if(!valid.length){status[id]={kind:'review',label:'Confirmar quantidade',source:'Sem quantidade defensável',basis:basis||''};return}
       valid.forEach(function(r){items.push({stage:ci.stage,material:r.material,q:Number(r.q),unit:r.unit,scopeId:id,originType:'estimate',origin:source,basis:r.basis||basis||'',confidence:confidence,range:null})});
-      status[id]={kind:'estimate',label:'Estimativa estatística',source:source,basis:basis||'',confidence:confidence,groupCount:valid.length};
+      status[id]={kind:'estimate',label:'Estimativa preliminar',source:source,basis:basis||'',confidence:confidence,groupCount:valid.length};
     };
     const covered=function(id,reason){status[id]={kind:'covered',label:'Quantificado em outra etapa',source:'Consolidação sem duplicidade',basis:reason}};
-    const na=function(id,reason){status[id]={kind:'na',label:'Não aplicável',source:'Parâmetros/evidência da obra',basis:reason}};
+    const na=function(id,reason){const excluded=/desativad|não selecionad|não ativad|definido como sem|radier selecionado|rede pública|não aplicável|não prevista/i.test(reason);status[id]={kind:excluded?'na':'review',label:excluded?'Não aplicável':'Confirmar quantidade / aplicação',source:'Parâmetros da obra',basis:reason}};
     const direct=function(id){status[id]={kind:'direct',label:'Quantificado',source:'Leitura, geometria ou dado informado',basis:'Quantidade derivada do projeto/dados do usuário'}};
     const wait=function(id){status[id]={kind:'wait',label:'Aguardando planta',source:'Sem área-base',basis:'Carregue a planta para gerar a estimativa'}};
     const qA=function(id,factor,unit,source,basis,confidence){add(id,x.A*(factor==null?1:factor),unit||'m²',source||estimatorSources.geo,basis||'Área-base lida da planta',confidence||'alta')};
@@ -432,7 +446,7 @@
         case 'estruturaForma':if(x.concreteStructure)add(id,x.A*x.structural.form,'m²',estimatorSources.cbc,x.structuralLabel+' — média estatística por m² estrutural','alta',x.A*x.structural.formMin,x.A*x.structural.formMax);else na(id,'Índice de fôrmas não aplicado porque a estrutura selecionada é '+x.structureType+'.');break;
         case 'pilares':case 'vigas':if(x.concreteStructure)covered(id,'Concreto, aço e fôrmas de pilares/vigas estão consolidados nos índices estruturais CBC, sem repartição artificial entre elementos.');else na(id,'Quantitativo de pilares/vigas depende do sistema '+x.structureType+' e do projeto correspondente.');break;
         case 'lajes':{const lt=$('lajeTipo')?$('lajeTipo').value:'Não informado';if(/sem laje/i.test(lt))na(id,'Sistema definido como sem laje.');else if(x.pav>1)add(id,x.foot*(x.pav-1),'m²',estimatorSources.model,'Área de implantação × número de lajes entre pavimentos','média');else if(!/não informado/i.test(lt))add(id,x.foot,'m²',estimatorSources.geo,'Área de implantação para laje selecionada','média');else na(id,'Edificação térrea sem tipo de laje informado.');break;}
-        case 'escadasEstr':add(id,Math.max(1,x.stairs),'un.',estimatorSources.geo,'Ligações verticais por unidade/pavimento','média');break;
+        case 'escadasEstr':add(id,x.stairs,'un.',estimatorSources.geo,'Ligações verticais por unidade/pavimento','média');break;
         case 'escoramento':{const lt=$('lajeTipo')?$('lajeTipo').value:'Não informado';if(/sem laje/i.test(lt))na(id,'Sem laje: escoramento não aplicado.');else if(x.pav>1)add(id,x.foot*(x.pav-1),'m²',estimatorSources.model,'Área das lajes entre pavimentos como base de escoramento','média');else if(!/não informado/i.test(lt))add(id,x.foot,'m²',estimatorSources.model,'Área de laje selecionada como base de escoramento','baixa');else na(id,'Sem área de laje confirmada para estimar escoramento.');break;}
         case 'graute':if(/alvenaria estrutural/i.test($('estruturaTipo')?$('estruturaTipo').value:''))qA(id,1,'m² de área estrutural',estimatorSources.sinapi,'Área estrutural atendida; consumo exige modulação','baixa');else na(id,'Estrutura não definida como alvenaria estrutural.');break;
         case 'vergas':{const q=state.openings.reduce(function(s,o){return s+o.qty*((/janela/i.test(o.type)?2:1)*(o.w+.40))},0);add(id,q,'m',estimatorSources.geo,'Portas: largura + 0,40 m; janelas: verga + contraverga','alta');break}
@@ -594,7 +608,7 @@
   function renderScopeStatus(){
     if(!$('scopeStatusBody'))return;
     const directIds=new Set((state.materials||[]).filter(function(x){return x.originType!=='estimate'}).map(function(x){return x.scopeId}).filter(Boolean));
-    state.scopeStatus=buildParametricEstimates(directIds).status;
+    state.scopeStatus=buildParametricEstimates(directIds).status;syncScopeStatuses();
     let selected=0,directN=0,estimated=0,naN=0;const rows=[];
     componentCatalog.forEach(function(g){g.items.forEach(function(it){
       const id=it[0],label=it[1];if(!state.scope.has(id))return;selected++;const s=state.scopeStatus[id]||{kind:'wait',label:'Aguardando planta',source:'—',basis:'—'};
@@ -609,19 +623,21 @@
   $('basicScope').onclick=()=>{const optional=new Set(['solarFV','solarTermico','inversor','elevador','plataforma','pocoElev','piscina','spdaCap','spdaDesc','spdaTerra','spdaConex','sprinklers','hidrantes','reservaInc','automacao','cftv','alarme','dutos','marcenaria','deck']);state.scope=new Set([...defaultScope].filter(x=>!optional.has(x)));renderScope();renderScopeStatus();saveProject(false)};
 
   $('pdfInput').addEventListener('change',async e=>{
-  const file=e.target.files[0];if(!file)return;
-  state.pdfName=file.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];state.floorAreas=[];state.pdfText='';state.pageTexts=[];state.page=1;state.metersPerPixel=null;state.scaleDen=null;
+  const file=e.target.files[0];if(!file)return; if(file.size>60*1024*1024){alert('Use um arquivo com até 60 MB.');return} e.target.disabled=true; try{ const prior=state.pdfName===file.name?{walls:state.walls,rooms:state.rooms.filter(r=>r.source==='manual'),openings:state.openings.filter(o=>o.source!=='PDF'),scales:state.pageScales,confirmed:state.confirmed}:null; const pdfFile=/\.pdf$/i.test(file.name)||file.type==='application/pdf';let preparedPdf=null,preparedImage=null;if(pdfFile){await ensurePDF();preparedPdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise}else if(/^image\/(jpeg|png|webp)$/i.test(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name)){preparedImage=await loadPlanImage(file)}else{alert('Use PDF, JPG, PNG ou WebP.');return}
+  state.pageScales={};state.confirmed=false;state.openingDefinitions=[];state.scopeStatus={};state.pdf=null;state.image=null;state.viewport=null;state.pdfName=file.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];state.floorAreas=[];state.pdfText='';state.pageTexts=[];state.page=1;state.metersPerPixel=null;state.scaleDen=null;
   const isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
   const isImage=/^image\/(jpeg|png|webp)$/i.test(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name);
   if(isPdf){
-    state.sourceType='pdf';state.image=null;const data=await file.arrayBuffer();state.pdf=await pdfjsLib.getDocument({data}).promise;state.pages=state.pdf.numPages;
+    state.sourceType='pdf';state.image=null;state.pdf=preparedPdf;state.pages=state.pdf.numPages;
     $('pdfInfo').textContent=file.name+' • '+state.pages+' página(s) • analisando PDF...';await extractPdfText();await renderPage();
   }else if(isImage){
     state.sourceType='image';state.pdf=null;state.pages=1;
-    try{state.image=await loadPlanImage(file)}catch(err){state.image=null;state.sourceType='';alert('Não foi possível abrir esta imagem. Use JPG, JPEG, PNG ou WebP.');return}
+    try{state.image=preparedImage}catch(err){state.image=null;state.sourceType='';alert('Não foi possível abrir esta imagem. Use JPG, JPEG, PNG ou WebP.');return}
     $('pdfInfo').textContent=file.name+' • imagem carregada • calibre a escala por uma cota conhecida';await renderPage();await estimateWallsFromPdf();
   }else{alert('Formato não suportado. Use PDF, JPG/JPEG, PNG ou WebP.');return}
-  renderRooms();renderOpenings();renderAutoRead();saveProject(false);
+  if(prior){state.walls=prior.walls;state.rooms.push(...prior.rooms);state.openings.push(...prior.openings);state.pageScales=prior.scales||{};state.confirmed=prior.confirmed;state.metersPerPixel=state.pageScales[1]||state.metersPerPixel;await estimateWallsFromPdf();await renderPage()}
+  renderRooms();renderWalls();renderOpenings();renderAutoRead();renderMaterials();saveProject(false);
+}catch(err){$('pdfInfo').textContent='Falha ao abrir: '+err.message;alert($('pdfInfo').textContent)}finally{e.target.disabled=false;e.target.value=''}
 });
 function loadPlanImage(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Falha ao abrir imagem'))};img.src=url})}
 function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height))}
@@ -640,7 +656,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     }
     state.pdfText=all.join('\n');state.rooms=dedupeRooms(rooms);
     const scaleMatch=state.pdfText.match(/escala\s*[:\-]?\s*1\s*[:\/]\s*(\d{1,4})/i)||state.pdfText.match(/\b1\s*[:\/]\s*(20|25|50|75|100|125|200)\b/i);
-    if(scaleMatch)state.scaleDen=num(scaleMatch[1]);
+    const denominators=new Set([...state.pdfText.matchAll(/\b1\s*[:/]\s*(20|25|50|75|100|125|200)\b/g)].map(m=>m[1]));if(scaleMatch&&denominators.size<=1)state.scaleDen=num(scaleMatch[1]);else state.scaleDen=null;
     state.floorAreas=extractFloorAreasFromText(state.pdfText);
     if(state.floorAreas.length){$('areaConstruida').value=state.floorAreas.reduce((a,b)=>a+b.area,0).toFixed(2);}else if(state.rooms.length&&!num($('areaConstruida').value)){$('areaConstruida').value=state.rooms.reduce((a,b)=>a+b.area,0).toFixed(2);}
     if(/multifamiliar/i.test(state.pdfText))$('tipoObra').value='Residencial multifamiliar';
@@ -762,7 +778,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     return{roi,threshold:dm.threshold,runs:filtered,maskCanvas:canvas,lengthPx:filtered.reduce((s,r)=>s+r.len,0),horizontal:filtered.filter(r=>r.axis==='h').length,vertical:filtered.filter(r=>r.axis==='v').length};
   }
   async function estimateWallsFromPdf(){
-    state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallConfidence='';state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='Leitura raster validada';state.autoWallLayers=[];
+    state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallConfidence='';state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='Leitura raster preliminar';state.autoWallLayers=[];
     if(!state.pdf&&!state.image){renderAutoRead();return}
     if(state.image){
       const img=state.image,scale=imageDisplayScale(img),cw=Math.max(1,Math.round((img.naturalWidth||img.width)*scale)),ch=Math.max(1,Math.round((img.naturalHeight||img.height)*scale)),canvas=document.createElement('canvas');
@@ -771,24 +787,24 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
       if(state.metersPerPixel&&det.lengthPx>0){state.autoWallLength=det.lengthPx*state.metersPerPixel+state.openings.reduce((s,o)=>s+o.qty*o.w,0);state.autoWallFootprint=state.autoWallLength*brickFinishedThickness()}
       else{state.autoWallLength=0;state.autoWallFootprint=0}
       state.autoWallTone=det.threshold;state.autoWallMethod=state.metersPerPixel?'Imagem P/B calibrada — linhas estruturais filtradas':'Imagem P/B — paredes detectadas; falta calibrar escala';state.autoWallLayers=[];
-      const n=det.runs.length;state.autoWallConfidence=n>=12?'boa':n>=5?'moderada':n?'baixa':'não detectada';
+      const n=det.runs.length;state.autoWallConfidence=n?'baixa':'não detectada';
       renderAutoRead();drawAutoWallMask();return;
     }    const renderScale=.82;let footprint=0,pagesUsed=0,quality=[],bestTones=[];
     for(let p=1;p<=state.pdf.numPages;p++){
-      const txt=state.pageTexts[p-1]||'';if(!/planta\s+baixa/i.test(txt))continue;
+      const txt=state.pageTexts[p-1]||'';if(!/planta\s+baixa/i.test(txt)&&!state.pageScales[p])continue;
       const page=await state.pdf.getPage(p),vp=page.getViewport({scale:renderScale}),canvas=document.createElement('canvas');canvas.width=Math.ceil(vp.width);canvas.height=Math.ceil(vp.height);
       const ctx=canvas.getContext('2d',{willReadFrequently:true});await page.render({canvasContext:ctx,viewport:vp}).promise;
       const data=ctx.getImageData(0,0,canvas.width,canvas.height).data,roi=autoWallRoi(p,vp,canvas.width,canvas.height),hist=new Uint32Array(256);
       for(let y=roi.y0;y<roi.y1;y++)for(let x=roi.x0;x<roi.x1;x++){const i=(y*canvas.width+x)*4,r=data[i],g=data[i+1],b=data[i+2];if(Math.abs(r-g)<=5&&Math.abs(g-b)<=5&&r>=45&&r<=210)hist[r]++}
       const ranked=[];for(let v=45;v<=210;v++)if(hist[v])ranked.push([hist[v],v]);ranked.sort((a,b)=>b[0]-a[0]);const candidates=[];for(const pair of ranked){const v=pair[1];if(candidates.every(x=>Math.abs(x-v)>3))candidates.push(v);if(candidates.length>=10)break}
-      const minRun=Math.max(8,Math.round(Math.min(canvas.width,canvas.height)*.006));let bestLevel=0,bestScore=0;for(const v of candidates){const score=wallToneScore(data,canvas.width,canvas.height,roi,v,minRun);if(score>bestScore){bestScore=score;bestLevel=v}}if(!bestLevel)continue;
+      const minRun=Math.max(8,Math.round(Math.min(canvas.width,canvas.height)*.006));let bestLevel=0,bestScore=0;for(const v of candidates){const score=wallToneScore(data,canvas.width,canvas.height,roi,v,minRun);if(score>bestScore){bestScore=score;bestLevel=v}}if(!bestLevel){const det=detectImageWallGeometry(data,canvas.width,canvas.height);state.autoWallMasks[p]=det.maskCanvas;const mpp=state.pageScales[p]?state.pageScales[p]*1.45/renderScale:(state.scaleDen?0.0254/72*state.scaleDen/renderScale:0);if(mpp&&det.lengthPx){footprint+=det.lengthPx*mpp*brickFinishedThickness();pagesUsed++;quality.push(.005)}continue;}
       const keep=buildWallMask(data,canvas.width,canvas.height,roi,bestLevel,minRun);let wallPixels=0;const maskCanvas=document.createElement('canvas');maskCanvas.width=canvas.width;maskCanvas.height=canvas.height;const mctx=maskCanvas.getContext('2d'),out=mctx.createImageData(canvas.width,canvas.height);
       for(let i=0;i<keep.length;i++)if(keep[i]){wallPixels++;const j=i*4;out.data[j]=22;out.data[j+1]=113;out.data[j+2]=185;out.data[j+3]=155}mctx.putImageData(out,0,0);state.autoWallMasks[p]=maskCanvas;bestTones.push(bestLevel);
-      const roiArea=Math.max(1,(roi.x1-roi.x0)*(roi.y1-roi.y0)),ratio=wallPixels/roiArea;if(wallPixels>0){pagesUsed++;quality.push(ratio);if(state.scaleDen){const mpp=0.0254/72*state.scaleDen/renderScale;footprint+=wallPixels*mpp*mpp}}
+      const roiArea=Math.max(1,(roi.x1-roi.x0)*(roi.y1-roi.y0)),ratio=wallPixels/roiArea;if(wallPixels>0){pagesUsed++;quality.push(ratio);if(state.pageScales[p]||state.scaleDen){const mpp=state.pageScales[p]?state.pageScales[p]*1.45/renderScale:0.0254/72*state.scaleDen/renderScale;footprint+=wallPixels*mpp*mpp}}
     }
     state.autoWallFootprint=footprint;const openingWidth=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty*o.w,0);state.autoWallLength=footprint>0?footprint/brickFinishedThickness()+openingWidth:0;
-    state.autoWallTone=bestTones.length?Math.round(bestTones.reduce((a,b)=>a+b,0)/bestTones.length):null;state.autoWallMethod='Leitura raster validada — componentes conectados';state.autoWallLayers=[];
-    const avg=quality.length?quality.reduce((a,b)=>a+b,0)/quality.length:0;state.autoWallConfidence=pagesUsed?(avg>.012?'boa':avg>.004?'moderada':'baixa'):'';renderAutoRead();drawAutoWallMask();
+    state.autoWallTone=bestTones.length?Math.round(bestTones.reduce((a,b)=>a+b,0)/bestTones.length):null;state.autoWallMethod='Leitura raster preliminar — componentes conectados';state.autoWallLayers=[];
+    const avg=quality.length?quality.reduce((a,b)=>a+b,0)/quality.length:0;state.autoWallConfidence=pagesUsed?'baixa':'';renderAutoRead();drawAutoWallMask();
   }
   function drawAutoWallMask(){
     const c=$('autoWallCanvas');if(!c||!state.viewport)return;const src=state.autoWallMasks[state.page];c.width=state.viewport.width;c.height=state.viewport.height;c.style.width=state.viewport.width+'px';c.style.height=state.viewport.height+'px';const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);if(src)ctx.drawImage(src,0,0,c.width,c.height);
@@ -802,7 +818,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if(state.pdf){
       const page=await state.pdf.getPage(state.page);scale=1.45;viewport=page.getViewport({scale});canvas.width=viewport.width;canvas.height=viewport.height;
       await page.render({canvasContext:ctx,viewport}).promise;
-      if(state.scaleDen&&!state.metersPerPixel)state.metersPerPixel=0.0254/72*state.scaleDen/scale;
+      state.metersPerPixel=state.pageScales[state.page]||(state.scaleDen?0.0254/72*state.scaleDen/scale:null);
     }else{
       const img=state.image;scale=imageDisplayScale(img);viewport={width:Math.max(1,Math.round((img.naturalWidth||img.width)*scale)),height:Math.max(1,Math.round((img.naturalHeight||img.height)*scale))};
       canvas.width=viewport.width;canvas.height=viewport.height;ctx.fillStyle='#fff';ctx.fillRect(0,0,viewport.width,viewport.height);ctx.drawImage(img,0,0,viewport.width,viewport.height);
@@ -811,11 +827,11 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     drawAutoWallMask();$('pageLabel').textContent=state.page+' / '+state.pages;drawOverlay();updateReadout();
   }
   $('prevPage').onclick=async()=>{if(state.page>1){state.page--;await renderPage()}};$('nextPage').onclick=async()=>{if(state.page<state.pages){state.page++;await renderPage()}};
-  $('relerAutoBtn').onclick=async()=>{if(!state.pdf&&!state.image){alert('Recarregue o arquivo da planta primeiro.');return}$('relerAutoBtn').disabled=true;$('relerAutoBtn').textContent='Analisando...';await estimateWallsFromPdf();await renderPage();$('relerAutoBtn').disabled=false;$('relerAutoBtn').textContent='Refazer leitura automática';saveProject(false)};
+  $('relerAutoBtn').onclick=async()=>{if(!state.pdf&&!state.image){alert('Recarregue a planta primeiro.');return}const b=$('relerAutoBtn');b.disabled=true;b.textContent='Analisando...';try{await estimateWallsFromPdf();await renderPage();saveProject(false)}catch(e){alert('Falha na leitura: '+e.message)}finally{b.disabled=false;b.textContent='Refazer leitura automática'}};
 
   function setMode(m){state.mode=m;state.tempPts=[];$('overlay').classList.toggle('active',!!m);$('scaleBox').textContent=m==='cal'?'Clique em dois pontos de uma dimensão conhecida.':m==='wall'?'Clique no início e no fim da parede.':'Ferramenta cancelada.';drawOverlay()}
   $('calibrarBtn').onclick=()=>setMode('cal');$('paredeBtn').onclick=()=>setMode('wall');$('cancelMode').onclick=()=>setMode(null);
-  $('overlay').addEventListener('click',async e=>{if(!state.mode)return;const r=$('overlay').getBoundingClientRect();const x=(e.clientX-r.left)*(state.viewport.width/r.width),y=(e.clientY-r.top)*(state.viewport.height/r.height);state.tempPts.push({x,y});drawOverlay();if(state.tempPts.length===2){if(state.mode==='cal'){const d=prompt('Qual é a distância real entre os dois pontos, em metros?','3.00');const real=num(d);if(real>0){const px=dist(state.tempPts[0],state.tempPts[1]);state.metersPerPixel=real/px;state.scaleDen=null;$('scaleBox').textContent='Calibração manual concluída: 1 px = '+state.metersPerPixel.toFixed(5)+' m';if(state.image){await estimateWallsFromPdf();drawAutoWallMask();renderAutoRead();}}}else if(state.mode==='wall'){if(!state.metersPerPixel){alert('Primeiro confirme a escala ou faça a calibração por dois pontos.');state.tempPts=[];return}const len=dist(state.tempPts[0],state.tempPts[1])*state.metersPerPixel;state.walls.push({page:state.page,a:state.tempPts[0],b:state.tempPts[1],length:len,height:height(),brick:$('tijolo').value});renderWalls();}state.tempPts=[];saveProject(false);drawOverlay();updateReadout();}});
+  $('overlay').addEventListener('click',async e=>{if(!state.mode||!state.viewport)return;const r=$('overlay').getBoundingClientRect();const x=(e.clientX-r.left)*(state.viewport.width/r.width),y=(e.clientY-r.top)*(state.viewport.height/r.height);state.tempPts.push({x,y});drawOverlay();if(state.tempPts.length===2){if(state.mode==='cal'){const d=prompt('Qual é a distância real entre os dois pontos, em metros?','3.00');const real=num(d);if(real>0){const px=dist(state.tempPts[0],state.tempPts[1]);if(px<3){alert('Selecione dois pontos diferentes.');state.tempPts=[];drawOverlay();return}state.metersPerPixel=real/px;state.pageScales[state.page]=state.metersPerPixel;state.scaleDen=null;state.confirmed=true;state.walls.filter(w=>w.page===state.page).forEach(w=>w.length=dist(w.a,w.b)*state.metersPerPixel);renderWalls();$('scaleBox').textContent='Calibração manual concluída: 1 px = '+state.metersPerPixel.toFixed(5)+' m';if(state.image||state.pdf){await estimateWallsFromPdf();drawAutoWallMask();renderAutoRead();}}}else if(state.mode==='wall'){if(!state.metersPerPixel){alert('Primeiro confirme a escala ou faça a calibração por dois pontos.');state.tempPts=[];return}const len=dist(state.tempPts[0],state.tempPts[1])*state.metersPerPixel;state.walls.push({page:state.page,a:state.tempPts[0],b:state.tempPts[1],length:len,height:height(),brick:$('tijolo').value});renderWalls();}state.tempPts=[];saveProject(false);drawOverlay();updateReadout();}});
   function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
   function drawOverlay(){const svg=$('overlay');svg.innerHTML='';state.walls.filter(w=>w.page===state.page).forEach(w=>addLine(w.a,w.b,'wall-line'));if(state.tempPts.length){state.tempPts.forEach(p=>addCircle(p));if(state.tempPts.length===2)addLine(state.tempPts[0],state.tempPts[1],state.mode==='cal'?'cal-line':'wall-line')}function addLine(a,b,c){const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',a.x);l.setAttribute('y1',a.y);l.setAttribute('x2',b.x);l.setAttribute('y2',b.y);l.setAttribute('class',c);svg.appendChild(l)}function addCircle(p){const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',5);c.setAttribute('class','point');svg.appendChild(c)}}
 
@@ -824,7 +840,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   window.editWall=(i,k,v)=>{state.walls[i][k]=k==='height'?num(v):v;saveProject(false);updateReadout()};window.delWall=i=>{state.walls.splice(i,1);renderWalls();drawOverlay();saveProject(false)};
 
   $('addVao').onclick=()=>{state.openings.push({type:$('vaoTipo').value,qty:Math.max(1,num($('vaoQtd').value)),w:num($('vaoLarg').value),h:num($('vaoAlt').value)});renderOpenings();saveProject(false)};
-  function renderOpenings(){$('vaoBody').innerHTML=state.openings.map((o,i)=>`<tr><td>${o.type}</td><td>${o.qty}</td><td>${fmt(o.w)}×${fmt(o.h)} m</td><td><button class="btn danger" onclick="window.delOpen(${i})">×</button></td></tr>`).join('')};window.delOpen=i=>{state.openings.splice(i,1);renderOpenings();saveProject(false)};
+  function renderOpenings(){$('vaoBody').innerHTML=state.openings.map((o,i)=>`<tr><td>${esc(o.type)}</td><td>${o.qty}</td><td>${fmt(o.w)}×${fmt(o.h)} m</td><td><button class="btn danger" onclick="window.delOpen(${i})">×</button></td></tr>`).join('')};window.delOpen=i=>{state.openings.splice(i,1);renderOpenings();saveProject(false)};
 
   function updateReadout(){const areaRooms=state.floorAreas.length?state.floorAreas.reduce((s,r)=>s+r.area,0):state.rooms.reduce((s,r)=>s+r.area,0),manualWallM=state.walls.reduce((s,w)=>s+w.length,0),wallM=manualWallM||state.autoWallLength||0;$('statEscala').textContent=state.metersPerPixel?(state.scaleDen?`1:${state.scaleDen}`:'Calibrada'):(state.scaleDen?`1:${state.scaleDen}`:'—');$('statAmb').textContent=state.rooms.length;$('statArea').textContent=fmt(areaRooms)+' m²';$('statWalls').textContent=state.walls.length?state.walls.length:(state.autoWallLength?'AUTO':'0');$('statWallM').textContent=fmt(wallM)+' m';if(state.metersPerPixel)$('scaleBox').textContent=state.scaleDen?`Escala lida do PDF: 1:${state.scaleDen}. Confirme se o arquivo foi plotado corretamente ou calibre por uma cota conhecida.`:'Escala calibrada manualmente.'}
 
@@ -833,6 +849,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   $('calcularBtn').onclick=()=>{calculate();showView('quant')};
 
   function calculate(){
+    for(const el of document.querySelectorAll('input[type=number]'))if(el.value!==''&&(!Number.isFinite(Number(el.value))||Number(el.value)<0)){alert('Revise os valores numéricos: não são aceitos valores negativos ou inválidos.');el.focus();return}
     const manualLength=state.walls.reduce((s,w)=>s+w.length,0),manualGross=state.walls.reduce((s,w)=>s+w.length*w.height,0),override=num($('wallLengthOverride').value),manualMode=$('wallManualMode')?$('wallManualMode').value:'add',autoLength=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0);
     let wallLength=0,wallSource='Sem geometria',gross=0;
     if(override>0){wallLength=override;gross=override*height();wallSource='Comprimento total ajustado pelo usuário'}
@@ -844,7 +861,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     const roomFloor=state.rooms.filter(r=>r.area>0&&r.area<100).reduce((s,r)=>s+r.area,0),manualFloor=num($('areaPisoManual')&&$('areaPisoManual').value);
     let wallFootprint=wallLength*brickFinishedThickness(),wallFootprintSource='Comprimento de paredes × espessura acabada paramétrica';
     if(override<=0&&manualMode!=='replace'&&autoLength>0&&state.autoWallFootprint>0&&/Camadas vetoriais/i.test(state.autoWallMethod||'')){wallFootprint=state.autoWallFootprint+manualLength*brickFinishedThickness();wallFootprintSource='Área da camada vetorial de alvenaria + correções manuais'}
-    const geometricFloor=Math.max(0,built-wallFootprint),floor=manualFloor>0?manualFloor:(geometricFloor>0?Math.max(roomFloor,geometricFloor):(roomFloor||built)),floorSource=manualFloor>0?'Área de piso informada pelo usuário':(geometricFloor>0?'Área construída menos projeção paramétrica das paredes':'Soma das áreas de ambientes');
+    const geometricFloor=Math.max(0,built-wallFootprint),floor=manualFloor>0?manualFloor:(roomFloor>0&&roomFloor<=built&&roomFloor/built>.65?roomFloor:(geometricFloor||built)),floorSource=manualFloor>0?'Área de piso informada pelo usuário':(geometricFloor>0?'Área construída menos projeção paramétrica das paredes':'Soma das áreas de ambientes');
     const foot=built/Math.max(1,num($('pavimentos').value)||1),extPerim=foot>0?4*Math.sqrt(foot):0,manualFacade=num($('areaFachadaManual')&&$('areaFachadaManual').value);
     const wins=state.openings.filter(o=>/janela/i.test(o.type)),doors=state.openings.filter(o=>/porta/i.test(o.type)),exteriorDoors=doors.filter(o=>/p1|p2|vidro|extern/i.test(o.type)),facadeOpen=wins.reduce((s,o)=>s+o.qty*o.w*o.h,0)+exteriorDoors.reduce((s,o)=>s+o.qty*o.w*o.h,0);
     const facadeGross=manualFacade>0?manualFacade:extPerim*height()*Math.max(1,num($('pavimentos').value)||1),facadeNet=manualFacade>0?manualFacade:Math.max(0,facadeGross-facadeOpen),facadeSource=manualFacade>0?'Área líquida de fachada informada':'Perímetro equivalente × altura − vãos externos';
@@ -852,7 +869,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     const ceramicManual=$('q_revestParede')?num($('q_revestParede').value):0,ceramicWall=ceramicManual||(state.scope.has('ceramicaParede')?Math.min(internalCoat,built*bench.cerParede):0);
     const paintInternal=$('pintInterna').value==='sim'?Math.max(0,internalCoat-ceramicWall):0,paintExternal=$('pintExterna').value==='sim'?externalCoat:0,paintArea=paintInternal+paintExternal;
     const rod=$('rodape').value==='sim'?num($('perimetroRodape').value):0;
-    const mats=[],add=(stage,material,q,unit,scopeId,origin='Leitura/derivação do projeto',originType='direct',basis='',range=null)=>{if(q>0&&(!scopeId||state.scope.has(scopeId)))mats.push({stage,material,q,unit,scopeId,origin,originType,basis,range})};
+    const mats=[],add=(stage,material,q,unit,scopeId,origin='Leitura/derivação do projeto',originType='direct',basis='',range=null)=>{if(Number.isFinite(q)&&q>0&&(!scopeId||state.scope.has(scopeId)))mats.push({stage,material,q,unit,scopeId,origin,originType,basis,range})};
 
     add('5. Alvenarias e vedações','Tijolo '+primaryBrick.replace('.',',')+'×19×19 cm',Math.ceil(net*c.bricks*factor),'un.','alvenaria','Geometria da planta','direct','Área líquida de paredes × '+fmt(c.bricks,1)+' tijolos/m² × perdas');
     add('5. Alvenarias e vedações','Argamassa de assentamento',Math.ceil(net*c.mortar*factor/c.bag),'sacos','argAssent','Geometria + coeficiente configurável','direct','Área líquida × '+fmt(c.mortar,1)+' kg/m² ÷ saco de '+fmt(c.bag,0)+' kg × perdas');
@@ -892,10 +909,10 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     const glassArea=[...wins,...glassDoors].reduce((s,o)=>s+o.qty*o.w*o.h,0);if(glassArea)add('8. Esquadrias, vidros e serralheria','Vidros de esquadrias',glassArea*factor,'m²','vidros','Esquadrias identificadas como vidro','direct','Área dos vãos envidraçados × perdas');
 
     state.customItems.forEach(x=>mats.push({...x,scopeId:'outros',origin:'Entrada manual',originType:'direct',basis:'Quantidade informada pelo usuário'}));
-    complementaryDefs.forEach(([id,label,unit,stage,scopeId,applyLoss])=>{const q=$(id)?num($(id).value):0;if(q>0)add(stage,label,q*(applyLoss?factor:1),unit,scopeId,'Projeto complementar / entrada manual','direct','Quantidade informada pelo usuário')});
+    complementaryDefs.forEach(([id,label,unit,stage,scopeId,applyLoss])=>{const q=$(id)?num($(id).value):0;if(q>0){for(let i=mats.length-1;i>=0;i--)if(mats[i].scopeId===scopeId)mats.splice(i,1);add(stage,label,q*(applyLoss?factor:1),unit,scopeId,'Projeto complementar / entrada manual','direct','Quantidade informada pelo usuário')}});
 
     state.metrics={gross:gross,open:open,net:net,floor:floor,floorBuilt:built,roomFloor:roomFloor,roomCoverage:built?roomFloor/built:0,floorSource:floorSource,wallFootprint:wallFootprint,wallFootprintSource:wallFootprintSource,coatArea:coatArea,internalCoat:internalCoat,externalCoat:externalCoat,facadeGross:facadeGross,facadeNet:facadeNet,facadeSource:facadeSource,ceramicWall:ceramicWall,paintInternal:paintInternal,paintExternal:paintExternal,paintArea:paintArea,wallLength:wallLength,wallSource:wallSource};
-    const directIds=new Set(mats.map(x=>x.scopeId).filter(Boolean)),pack=buildParametricEstimates(directIds);pack.items.forEach(x=>mats.push(x));state.scopeStatus=pack.status;state.materials=mats;
+    const directIds=new Set(mats.map(x=>x.scopeId).filter(Boolean)),pack=buildParametricEstimates(directIds);pack.items.forEach(x=>mats.push(x));state.scopeStatus=pack.status;state.materials=enhanceMaterials(mats);syncScopeStatuses();
     renderMaterials();renderScopeStatus();updateQualityAudit();saveProject(false);
   }
   function renderMaterials(){
@@ -903,8 +920,8 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     const bricks=state.materials.find(function(x){return x.material.startsWith('Tijolo')});$('qBricks').textContent=bricks?Math.round(bricks.q).toLocaleString('pt-BR'):'0';
     $('materialsBody').innerHTML=state.materials.map(function(x){
       const integerUnits=['un.','pontos','conj.','kits','sistemas','sistema','lote'],d=integerUnits.includes(x.unit)?0:2;
-      const range=x.range?'<br><small>faixa estatística: '+fmt(x.range.low,d)+'–'+fmt(x.range.high,d)+' '+esc(x.unit)+'</small>':'';
-      const tag=x.originType==='estimate'?'<span class="tag">ESTIMATIVA</span> ':'<span class="tag">PROJETO</span> ';
+      const range=x.range?'<br><small>faixa da referência: '+fmt(x.range.low,d)+'–'+fmt(x.range.high,d)+' '+esc(x.unit)+'</small>':'';
+      const tag=x.originType==='estimate'?'<span class="tag">ESTIMATIVA</span> ':'<span class="tag">DADO INFORMADO</span> ';
       return '<tr><td>'+esc(x.stage)+'</td><td>'+esc(x.material)+'</td><td class="num">'+fmt(x.q,d)+range+'</td><td>'+esc(x.unit)+'</td><td>'+tag+esc(x.origin||'—')+'<br><small>'+esc(x.basis||'')+'</small></td></tr>';
     }).join('')||'<tr><td colspan="5">Nenhum quantitativo calculado ainda.</td></tr>';renderScopeStatus();updateQualityAudit();
   }
@@ -915,8 +932,9 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     let points=0,count=0;for(const s of applicable){count++;if(s.kind==='direct'||s.kind==='covered')points+=1;else if(s.kind==='estimate')points+=s.confidence==='alta'?.9:s.confidence==='média'?.72:.45;else points+=.25}
     let score=count?points/count*100:0;const issues=[];
     if(!state.scaleDen&&!state.metersPerPixel){score-=12;issues.push('Escala não confirmada: calibre por dois pontos antes do quantitativo executivo.')}
+    if(state.openings.reduce((n,o)=>n+o.qty*o.w*o.h,0)>(state.metrics?.gross||0)&&state.metrics?.gross)issues.push('Área de vãos maior que a área bruta de paredes: confira dimensões e duplicidades.');
     if(!state.autoWallLength&&!state.walls.length&&!num($('wallLengthOverride').value)){score-=18;issues.push('Paredes sem geometria confirmada.')}
-    else if(state.autoWallMethod&&/Leitura raster validada/i.test(state.autoWallMethod)){/* motor raster validado nesta planta; não penalizar automaticamente */}
+    else if(state.autoWallMethod&&/Leitura raster preliminar/i.test(state.autoWallMethod)){/* motor raster validado nesta planta; não penalizar automaticamente */}
     if(state.autoWallConfidence==='baixa'){score-=8;issues.push('A leitura automática de paredes está com confiança baixa.')}
     const cov=state.metrics&&state.metrics.roomCoverage||x.floorCoverage||0;
     if(cov&&cov<.65){score-=6;issues.push('Pouca área foi identificada por nome de ambiente ('+Math.round(cov*100)+'% da área construída). Confira pisos e ambientes sem rótulo.')}
@@ -927,24 +945,24 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if($('pintExterna')&&$('pintExterna').value==='sim'&&!num($('areaFachadaManual')&&$('areaFachadaManual').value))issues.push('Fachada calculada por perímetro equivalente. Informe a área líquida de fachada se já a possuir.');
     if(!num($('areaPisoManual')&&$('areaPisoManual').value))issues.push('Piso calculado por geometria (área construída menos projeção das paredes). A área manual pode substituir essa estimativa.');
     score=Math.max(0,Math.min(100,Math.round(score)));const grade=score>=85?'Alta':score>=70?'Boa':score>=55?'Moderada':'Baixa';
-    $('qualityScore').textContent=score+'%';$('qualityGrade').textContent='Confiança '+grade;$('qualityDirect').textContent=direct;$('qualityEstimated').textContent=estimated;$('qualityLow').textContent=low;$('qualityRoomCoverage').textContent=cov?Math.round(cov*100)+'%':'—';
+    $('qualityScore').textContent=direct+' / '+applicable.length;$('qualityGrade').textContent='Componentes com dados informados';$('qualityDirect').textContent=direct;$('qualityEstimated').textContent=estimated;$('qualityLow').textContent=low;$('qualityRoomCoverage').textContent=cov?Math.round(cov*100)+'%':'—';
     const box=$('qualityIssues');if(!issues.length){box.className='notice okbox';box.innerHTML='<b>Sem alertas críticos.</b> A leitura atual está consistente com os dados disponíveis.'}else{box.className='notice';box.innerHTML='<b>Pontos para elevar a precisão:</b><ul style="margin:7px 0 0 18px;padding:0">'+issues.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'}
     state.qualityAudit={score:score,grade:grade,direct:direct,estimated:estimated,low:low,roomCoverage:cov,issues:issues};return state.qualityAudit;
   }
 
 
-  function loadCoef(){const saved=JSON.parse(localStorage.getItem('lang-coef')||'null');state.coef=saved||{...defaultCoef};for(const [k,v] of Object.entries(state.coef))$('c_'+k).value=v}
-  $('saveCoef').onclick=()=>{for(const k of Object.keys(defaultCoef))state.coef[k]=num($('c_'+k).value);localStorage.setItem('lang-coef',JSON.stringify(state.coef));alert('Coeficientes salvos.');if(state.metrics||state.autoWallLength||state.walls.length)calculate()};$('resetCoef').onclick=()=>{state.coef={...defaultCoef};localStorage.removeItem('lang-coef');loadCoef()};
+  function loadCoef(){const saved=storedJSON('lang-coef');state.coef={...defaultCoef,...saved};for(const k of Object.keys(defaultCoef))if(!Number.isFinite(Number(state.coef[k]))||state.coef[k]<0||(k==='bag'&&state.coef[k]<=0))state.coef[k]=defaultCoef[k];for(const [k,v] of Object.entries(state.coef))if($('c_'+k))$('c_'+k).value=v}
+  $('saveCoef').onclick=()=>{for(const k of Object.keys(defaultCoef)){const v=num($('c_'+k).value);if(v<0||(k==='bag'&&v<=0)){alert('Informe consumos não negativos e peso de saco maior que zero.');return}state.coef[k]=v;}storage.setItem('lang-coef',JSON.stringify(state.coef));alert('Coeficientes salvos.');if(state.metrics||state.autoWallLength||state.walls.length)calculate()};$('resetCoef').onclick=()=>{state.coef={...defaultCoef};storage.removeItem('lang-coef');loadCoef()};
 
   function getForm(){const ids=['obra','cliente','endereco','tipoObra','pavimentos','unidades','peDireito','peCustom','tijolo','facesReboco','revInterno','revExterno','piso','rodape','forro','cobertura','pintInterna','pintExterna','perdas','perdasCustom','areaCobertura','areaConstruida','areaPisoManual','areaFachadaManual','perimetroRodape','wallLengthOverride','wallManualMode','fundacaoTipo','estruturaTipo','lajeTipo','aguaQuente','esgotoSistema','gasSistema','climatizacao','solarSistema','incendioSistema','spdaSistema','elevadorSistema','piscinaSistema',...complementaryDefs.map(x=>x[0])];const out={};ids.forEach(id=>{if($(id))out[id]=$(id).value});return out}
   function setForm(f={}){for(const [k,v] of Object.entries(f))if($(k))$(k).value=v}
-  function saveProject(show=true){const data={form:getForm(),pdfName:state.pdfName,sourceType:state.sourceType,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,autoWallMethod:state.autoWallMethod,autoWallLayers:state.autoWallLayers,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus};localStorage.setItem('lang-quant-project',JSON.stringify(data));$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
-  function loadProject(){const d=JSON.parse(localStorage.getItem('lang-quant-project')||'null');if(!d)return;setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.sourceType=d.sourceType||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.autoWallMethod=d.autoWallMethod||'';state.autoWallLayers=d.autoWallLayers||[];state.openingDefinitions=d.openingDefinitions||[];renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o arquivo original para visualizar a planta.`}
+  function saveProject(show=true){const data={pageScales:state.pageScales,confirmed:state.confirmed,extras:extraValues(),form:getForm(),pdfName:state.pdfName,sourceType:state.sourceType,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,autoWallMethod:state.autoWallMethod,autoWallLayers:state.autoWallLayers,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus};const saved=storage.setItem('lang-quant-project',JSON.stringify(data));if(saved)$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
+  function loadProject(){const d=storedJSON('lang-quant-project');if(!d)return;state.pageScales=d.pageScales||{};state.confirmed=d.confirmed||false;setExtra(d.extras||{});setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.sourceType=d.sourceType||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.autoWallMethod=d.autoWallMethod||'';state.autoWallLayers=d.autoWallLayers||[];state.openingDefinitions=d.openingDefinitions||[];renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o arquivo original para visualizar a planta.`}
 
   function exportBackup(){
     saveProject(false);
-    const project=JSON.parse(localStorage.getItem('lang-quant-project')||'null');if(!project){alert('Não há projeto salvo para exportar.');return}
-    const payload={format:'LANG-Quantitativos',version:3,exportedAt:new Date().toISOString(),project:project,coefficients:JSON.parse(localStorage.getItem('lang-coef')||'null')};
+    const project=storedJSON('lang-quant-project');if(!project){alert('Não há projeto salvo para exportar.');return}
+    const payload={format:'LANG-Quantitativos',version:3,exportedAt:new Date().toISOString(),project:project,coefficients:storedJSON('lang-coef')};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a'),url=URL.createObjectURL(blob),name=(project.form&&project.form.obra?project.form.obra:'projeto').replace(/[^a-z0-9_-]+/gi,'-');
     a.href=url;a.download='LANG-Quantitativos-'+name+'-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
@@ -952,8 +970,8 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     try{
       const payload=JSON.parse(await file.text()),project=payload&&payload.project?payload.project:payload;
       if(!project||!project.form||!Array.isArray(project.scope))throw new Error('Arquivo não reconhecido como backup do LANG Quantitativos.');
-      localStorage.setItem('lang-quant-project',JSON.stringify(project));
-      if(payload.coefficients)localStorage.setItem('lang-coef',JSON.stringify(payload.coefficients));
+      storage.setItem('lang-quant-project',JSON.stringify(project));
+      if(payload.coefficients)storage.setItem('lang-coef',JSON.stringify(payload.coefficients));
       alert('Backup importado. O projeto será recarregado. O PDF original precisa ser selecionado novamente para visualizar a prancha.');
       location.reload();
     }catch(err){alert('Não foi possível importar o backup: '+err.message)}
@@ -961,10 +979,10 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   if($('exportBackupBtn'))$('exportBackupBtn').onclick=exportBackup;
   if($('importBackupBtn'))$('importBackupBtn').onclick=()=>$('backupInput').click();
   if($('backupInput'))$('backupInput').onchange=e=>{const file=e.target.files&&e.target.files[0];if(file)importBackup(file);e.target.value=''};
-  if($('novoProjetoBtn'))$('novoProjetoBtn').onclick=()=>{if(confirm('Iniciar um novo projeto? Os coeficientes personalizados serão mantidos, mas os dados desta obra serão removidos do navegador. Exporte um backup antes se quiser guardar este levantamento.')){localStorage.removeItem('lang-quant-project');location.reload()}};
+  if($('novoProjetoBtn'))$('novoProjetoBtn').onclick=()=>{if(confirm('Iniciar um novo projeto? Os coeficientes personalizados serão mantidos, mas os dados desta obra serão removidos do navegador. Exporte um backup antes se quiser guardar este levantamento.')){storage.removeItem('lang-quant-project');location.reload()}};
   document.querySelectorAll('[data-report]').forEach(b=>b.addEventListener('click',()=>generateReport(b.dataset.report)));
   function generateReport(type){
-    if(!state.materials.length)calculate();
+    calculate();
     const f=getForm(),audit=updateQualityAudit()||state.qualityAudit||{},m=state.metrics||{},title=type==='resumo'?'Resumo Geral de Materiais':type==='completo'?'Quantitativo Completo e Memória de Cálculo':'Materiais por Etapa da Obra';
     const fmtQ=function(x){const d=['un.','pontos','conj.','kits','sistemas','sistema','lote'].includes(x.unit)?0:2;let s=fmt(x.q,d);if(x.range)s+=' (faixa '+fmt(x.range.low,d)+'–'+fmt(x.range.high,d)+')';return s};
     let body='';
@@ -981,8 +999,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
       const stages=[...new Set(componentCatalog.map(g=>g.stage))].filter(function(st){return componentCatalog.find(g=>g.stage===st).items.some(i=>state.scope.has(i[0]))});
       body=stages.map(function(st){
         const rows=state.materials.filter(x=>x.stage===st).map(function(x){return[x.material,fmtQ(x),x.unit,x.originType==='estimate'?'Estimativa':'Projeto / derivação',x.origin||'—',x.basis||'']});
-        const extra=componentCatalog.find(g=>g.stage===st).items.filter(i=>state.scope.has(i[0])&&!quantifiedScopeIds().has(i[0])).map(function(i){const s=state.scopeStatus[i[0]]||{};return[i[1],s.label||'Não aplicável','—',s.label||'Não aplicável',s.source||'—',s.basis||'']});
-        return '<h2>'+esc(st)+'</h2>'+tableHtml(rows.concat(extra),['Material / serviço','Quantidade','Unidade','Natureza','Origem','Base']);
+        const extra=componentCatalog.find(g=>g.stage===st).items.filter(i=>state.scope.has(i[0])&&!quantifiedScopeIds().has(i[0])).map(function(i){const s=state.scopeStatus[i[0]]||{};return[i[1],s.label||'Não aplicável','—',s.label||'Não aplicável',s.source||'—',s.basis||'']});        return '<h2>'+esc(st)+'</h2>'+tableHtml(rows.concat(extra),['Material / serviço','Quantidade','Unidade','Natureza','Origem','Base']);
       }).join('');
     }else{
       const issues=(audit.issues||[]).length?(audit.issues||[]).map(function(x){return['Atenção',x]}):[['OK','Nenhum alerta crítico registrado na auditoria atual.']];
@@ -994,9 +1011,9 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
           ['Tijolo padrão',(f.tijolo||'').replace('.',',')+'×19×19 cm'],['Perdas',fmt(loss()*100,1)+'%'],['Faces de revestimento',f.facesReboco||'—'],
           ['Estrutura',f.estruturaTipo||'—'],['Fundação',f.fundacaoTipo||'—']
         ],['Parâmetro','Valor'])+
-        '<h2>Auditoria de precisão</h2>'+
+        '<h2>Conferência de dados</h2>'+
         tableHtml([
-          ['Índice de confiança',(audit.score!=null?audit.score+'%':'—')],['Classificação',audit.grade||'—'],
+          ['Indicador de cobertura (não é precisão)',(audit.score!=null?audit.direct+' componentes com dados':'—')],['Validação estatística','Não realizada para esta obra'],
           ['Itens diretos',audit.direct!=null?audit.direct:'—'],['Itens estimados',audit.estimated!=null?audit.estimated:'—'],
           ['Estimativas de baixa confiança',audit.low!=null?audit.low:'—'],['Cobertura dos ambientes',audit.roomCoverage?Math.round(audit.roomCoverage*100)+'%':'—']
         ],['Indicador','Resultado'])+
@@ -1030,7 +1047,68 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   function tableHtml(rows,heads){return '<table><thead><tr>'+heads.map(h=>`<th>${esc(String(h))}</th>`).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>`<td>${esc(String(c??''))}</td>`).join('')+'</tr>').join('')+'</tbody></table>'}
   function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 
-  renderComplementaryInputs();renderScope();renderCustomItems();initStepNavigation();loadCoef();loadProject();renderAutoRead();renderScopeStatus();
+  const extraDefs=[
+    ['screedCm','Contrapiso: espessura (cm)',4],['screedDry','Contrapiso: fator de volume seco',1.3],['cementDensity','Cimento: massa aparente (kg/m³)',1400],['sandRatio','Contrapiso: partes de areia por 1 de cimento',4],['cementBag','Saco de cimento (kg)',50],
+    ['waterproofKg','Impermeabilizante: consumo total (kg/m²)',3],['wireRate','Arame recozido (kg/kg de aço)',.015],['formRelease','Desmoldante (L/m² de fôrma)',.1],['spacers','Espaçadores (un./m² de fôrma)',4],['pipeLength','Comprimento comercial dos tubos (m)',6],['wallAdh','Argamassa colante de parede (kg/m²)',5]
+  ];
+  function extraValues(){const values={};document.querySelectorAll('[data-extra]').forEach(e=>values[e.id]=e.value);return values}
+  function setExtra(values){for(const [k,v] of Object.entries(values))if($(k)&&$(k).hasAttribute('data-extra'))$(k).value=v}
+  function ext(id){return Math.max(0,num($(id)?.value))}
+  function initExtensions(){
+    $('view-coef').insertAdjacentHTML('beforeend',`<div class="card"><h2>Insumos e espessuras</h2><p class="notice">Valores iniciais são hipóteses de orçamento, não medições nem dosagem estrutural. Confirme espessuras, traço, rendimento e perdas conforme o material escolhido. O traço 1:4 do contrapiso é uma referência de execução; fator seco e massa aparente devem ser conferidos na obra.</p><div class="extension-grid">${extraDefs.map(([id,label,v])=>`<div class="field"><label for="${id}">${label}</label><input data-extra id="${id}" type="number" min="0" step="any" value="${v}"></div>`).join('')}</div><p><a href="https://bra.sika.com/portokoll/pt/noticias/4-dicas-essenciais-sobre-como-fazer-contrapiso.html" target="_blank" rel="noopener">Referência de execução de contrapiso — Sika</a></p><p class="hint">Os índices históricos do arquivo original são mantidos como cenários preliminares. A adequação a esta obra não foi comprovada. Não use bitolas ou dispositivos elétricos estimados para dimensionamento.</p></div>`);
+    $('view-escopo').insertAdjacentHTML('beforeend',`<div class="card"><h2>Quantidade confirmada por componente</h2><p class="hint">Substitui a estimativa deste componente. Campo vazio usa o estimador; zero registra ausência confirmada. Use os campos complementares para itens com desdobramento automático.</p><div class="extension-grid"><div class="field"><label for="overrideScope">Componente</label><select id="overrideScope">${componentCatalog.map(g=>`<optgroup label="${esc(g.stage)}">${g.items.map(i=>`<option value="${i[0]}">${esc(i[1])}</option>`).join('')}</optgroup>`).join('')}</select></div><div class="field"><label for="overrideQ">Quantidade líquida</label><input id="overrideQ" type="number" min="0" step="any"></div><div class="field"><label for="overrideUnit">Unidade</label><select id="overrideUnit"><option>un.</option><option>m</option><option>m²</option><option>m³</option><option>kg</option><option>L</option><option>cj.</option></select></div><div class="field"><label for="overrideNote">Origem / documento</label><input id="overrideNote" placeholder="Projeto, página, revisão ou medição"></div></div><button class="btn primary" id="applyOverride">Aplicar quantidade</button><input type="hidden" data-extra id="componentOverrides" value="{}"><p id="overrideMessage" role="status"></p></div>`);
+    $('view-planta').insertAdjacentHTML('beforeend',`<div class="card"><h2>Conferência da planta</h2><p class="notice">A detecção automática é uma sugestão visual. Cotas, mobiliário e hachuras podem ser confundidos com paredes. Em PDF digitalizado, calibre cada página utilizada. Fotografias em perspectiva devem ser retificadas antes de medir.</p><div class="actions"><button class="btn secondary" id="areaMode">Medir área por polígono</button><button class="btn secondary" id="finishArea">Concluir área e usar como piso</button></div><p class="hint" id="polygonStatus">Calibre a escala, clique nos vértices da área e conclua. Esta ferramenta substitui o campo de área líquida de piso.</p></div>`);
+    $('view-quant').insertAdjacentHTML('afterbegin',`<div class="card"><div class="actions"><button id="csvExport" class="btn secondary">Exportar CSV</button><input id="materialSearch" aria-label="Buscar material" placeholder="Buscar material ou etapa"><select id="originFilter" aria-label="Filtrar origem"><option value="">Todas as origens</option><option value="direct">Dados informados / medidos</option><option value="estimate">Estimativas</option></select></div><p class="hint">Quantidade líquida, perdas e arredondamentos constam na memória de cálculo. Componentes sem base suficiente ficam visíveis na conferência de escopo.</p></div>`);
+
+    $('view-planta').insertAdjacentHTML('beforeend',`<div class="card"><h2>Ambientes de imagem ou PDF sem texto</h2><div class="extension-grid"><div class="field"><label for="roomName">Nome do ambiente</label><input id="roomName" placeholder="Cozinha, quarto, banheiro..."></div><div class="field"><label for="roomArea">Área líquida (m²)</label><input id="roomArea" type="number" min="0" step="any"></div><div class="field"><label for="roomPerimeter">Perímetro real (m), se conhecido</label><input id="roomPerimeter" type="number" min="0" step="any"></div></div><button id="addRoom" class="btn secondary">Adicionar ambiente</button><button id="clearRooms" class="btn ghost">Limpar ambientes</button><p class="hint">Insira cada ambiente uma única vez. A soma não substitui automaticamente a área construída.</p></div><div class="card"><h2>Quantidades por dimensões</h2><p class="hint">Calculadora para elementos já dimensionados pelo projetista. As quantidades substituem o campo complementar escolhido.</p><div class="extension-grid"><div class="field"><label for="measureKind">Elemento</label><select id="measureKind"><option value="q_fundConcreto">Concreto de fundação</option><option value="q_estruturaConcreto">Concreto estrutural</option><option value="q_fundAco">Aço de fundação</option><option value="q_estruturaAco">Aço estrutural</option></select></div><div class="field"><label for="measureCount">Número de peças</label><input id="measureCount" type="number" min="1" step="1" value="1"></div><div class="field"><label for="measureLength">Comprimento de cada peça (m)</label><input id="measureLength" type="number" min="0" step="any"></div><div class="field"><label for="measureWidth">Largura do concreto (m)</label><input id="measureWidth" type="number" min="0" step="any"></div><div class="field"><label for="measureHeight">Altura do concreto (m)</label><input id="measureHeight" type="number" min="0" step="any"></div><div class="field"><label for="measureDiameter">Diâmetro do aço (mm)</label><input id="measureDiameter" type="number" min="0" step="any" value="10"></div></div><button id="applyDimensions" class="btn secondary">Calcular e aplicar</button><p id="dimensionResult" role="status"></p></div>`);
+    $('addRoom').onclick=()=>{const area=num($('roomArea').value),name=$('roomName').value.trim();if(!name||area<=0){alert('Informe o nome e uma área positiva.');return}state.rooms.push({name,area,perimeter:num($('roomPerimeter').value),page:state.page,source:'manual'});renderRooms();saveProject(false);$('roomName').value='';$('roomArea').value='';$('roomPerimeter').value=''};
+    $('clearRooms').onclick=()=>{if(confirm('Remover todos os ambientes lidos e informados?')){state.rooms=[];renderRooms();saveProject(false)}};
+    $('applyDimensions').onclick=()=>{const id=$('measureKind').value,n=num($('measureCount').value),l=num($('measureLength').value),steel=/Aco/.test(id),q=steel?n*l*Math.PI/4*(num($('measureDiameter').value)/1000)**2*7850:n*l*num($('measureWidth').value)*num($('measureHeight').value);if(!(q>0)||!Number.isInteger(n)){alert('Informe dimensões positivas e número inteiro de peças.');return}$(id).value=q.toFixed(4);$('dimensionResult').textContent=fmt(q,3)+(steel?' kg (massa específica adotada: 7.850 kg/m³).':' m³.')+' Quantidade líquida aplicada; perdas seguem o parâmetro da obra.';saveProject(false)};
+    document.querySelectorAll('[data-extra]').forEach(e=>e.addEventListener('change',()=>{saveProject(false);if(state.metrics)calculate()}));
+    $('applyOverride').onclick=()=>{const all=overrides(),id=$('overrideScope').value,q=$('overrideQ').value;if(q==='')delete all[id];else {if(num(q)<0)return;all[id]={q:num(q),unit:$('overrideUnit').value,note:$('overrideNote').value}}$('componentOverrides').value=JSON.stringify(all);state.scope.add(id);renderScope();calculate();$('overrideMessage').textContent='Quantidade aplicada ao componente.'};
+    $('overrideScope').onchange=()=>{const x=overrides()[$('overrideScope').value];$('overrideQ').value=x?.q??'';$('overrideUnit').value=x?.unit||'un.';$('overrideNote').value=x?.note||''};
+    $('materialSearch').oninput=filterMaterials;$('originFilter').onchange=filterMaterials;
+    $('csvExport').onclick=()=>{calculate();const cell=v=>'"'+String(v??'').replace(/^[=+@-]/,"'$&").replaceAll('"','""')+'"';const rows=[['Etapa','Material','Quantidade','Unidade','Origem','Memória'],...state.materials.map(m=>[m.stage,m.material,String(m.q).replace('.',','),m.unit,m.origin,m.basis])];downloadText('\uFEFF'+rows.map(r=>r.map(cell).join(';')).join('\r\n'),'LANG-quantitativo.csv','text/csv;charset=utf-8')};
+    $('areaMode').onclick=()=>{if(!state.viewport||!state.metersPerPixel){alert('Carregue uma planta e calibre sua escala.');return}setMode('area');$('scaleBox').textContent='Clique nos vértices e depois em Concluir área.'};
+    $('finishArea').onclick=()=>{if(state.mode!=='area'||state.tempPts.length<3){alert('Marque pelo menos três vértices.');return}const pts=state.tempPts;let sum=0;pts.forEach((p,i)=>{const q=pts[(i+1)%pts.length];sum+=p.x*q.y-q.x*p.y});const area=Math.abs(sum)/2*state.metersPerPixel**2;$('areaPisoManual').value=area.toFixed(3);$('polygonStatus').textContent='Área medida: '+fmt(area)+' m². Aplicada ao piso; a área construída permanece independente.';setMode(null);saveProject(false);if(num($('areaConstruida').value))calculate()};
+    $('overlay').addEventListener('click',e=>{if(state.mode!=='area')return;e.stopImmediatePropagation();const r=$('overlay').getBoundingClientRect();state.tempPts.push({x:(e.clientX-r.left)*state.viewport.width/r.width,y:(e.clientY-r.top)*state.viewport.height/r.height});drawOverlay();$('polygonStatus').textContent=state.tempPts.length+' vértices marcados.'},true);
+  }
+  function overrides(){try{return JSON.parse($('componentOverrides').value)||{}}catch(e){return {}}}
+  function downloadText(text,name,type){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+  function filterMaterials(){const q=$('materialSearch').value.toLowerCase(),kind=$('originFilter').value;[...$('materialsBody').rows].forEach((r,i)=>r.hidden=!r.textContent.toLowerCase().includes(q)||(kind&&state.materials[i]?.originType!==kind))}
+  function syncScopeStatuses(){
+    const off=[];if($('pintInterna').value!=='sim')off.push('tintaInterna');if($('pintExterna').value!=='sim')off.push('tintaExterna');if($('pintInterna').value!=='sim'&&$('pintExterna').value!=='sim')off.push('massa','selador');if($('rodape').value!=='sim')off.push('rodape');if($('revInterno').value==='Sem revestimento'&&$('revExterno').value==='Sem revestimento')off.push('chapisco','reboco','emboço','gessoParede');for(const id of off)if(state.scope.has(id))state.scopeStatus[id]={kind:'na',label:'Não aplicável',basis:'Desativado nos parâmetros da obra'};
+    for(const [id,v] of Object.entries(overrides()))if(state.scope.has(id))state.scopeStatus[id]={kind:v.q>0?'direct':'na',label:v.q>0?'Quantidade informada':'Ausência confirmada',source:v.note||'Entrada manual',basis:v.q+' '+v.unit};
+    for(const id of new Set(state.materials.filter(m=>m.originType==='estimate').map(m=>m.scopeId)))if(state.scopeStatus[id]?.kind==='direct')state.scopeStatus[id]={...state.scopeStatus[id],kind:'estimate',label:'Estimativa preliminar',confidence:'baixa'};
+    const dependencies={pilares:['estruturaConcreto','estruturaAco','estruturaForma'],vigas:['estruturaConcreto','estruturaAco','estruturaForma'],loucas:['vasos','lavatorios'],metais:['torneiras','acessoriosBwc']};
+    for(const [id,deps] of Object.entries(dependencies))if(state.scopeStatus[id]?.kind==='covered'&&!deps.every(d=>state.materials.some(m=>m.scopeId===d)))state.scopeStatus[id]={kind:'review',label:'Conferir componentes vinculados',basis:'Selecione e quantifique: '+deps.join(', ')};
+  }
+  function enhanceMaterials(input){
+    let mats=input.filter(m=>Number.isFinite(m.q)&&m.q>0);const factor=1+loss(),c=state.coef;
+    const add=(id,name,q,unit,basis)=>{if(q>0&&Number.isFinite(q)&&state.scope.has(id))mats.push({stage:catalogItem(id).stage,scopeId:id,material:name,q,unit,originType:'estimate',origin:'Composição paramétrica editável',basis,confidence:'baixa'})};
+    // Keep derived geometry and historic reference ratios explicitly preliminary.
+    for(const m of mats){if(m.originType!=='estimate'&&!/informad|Entrada manual|complementar/.test(m.origin)){m.originType='estimate';m.confidence='baixa'}if(m.originType==='estimate'&&/CBC|Lajeado|Catalão|AGEHAB/.test(m.origin)){m.confidence='baixa';m.origin+=' — cenário de referência; adequação não validada'}}
+    // Respect finish choices even when the fallback estimator is active.
+    const disabled=new Set();if($('revInterno').value==='Sem revestimento'&&$('revExterno').value==='Sem revestimento')for(const id of ['chapisco','reboco','emboço','gessoParede'])disabled.add(id);
+    if($('rodape').value!=='sim')disabled.add('rodape');
+    if($('pintInterna').value!=='sim')disabled.add('tintaInterna');if($('pintExterna').value!=='sim')disabled.add('tintaExterna');if($('pintInterna').value!=='sim'&&$('pintExterna').value!=='sim'){disabled.add('selador');disabled.add('massa')}
+    mats=mats.filter(m=>!disabled.has(m.scopeId));
+    for(const id of disabled)state.scopeStatus[id]={kind:'na',label:'Não aplicável',basis:'Acabamento desativado nos parâmetros'};
+    // Wall ceramic ancillary products were absent from the original takeoff.
+    const ceramic=num($('q_revestParede').value)||state.metrics?.ceramicWall||0;
+    if(ceramic&&state.scope.has('ceramicaParede')){add('argColante','Argamassa colante para paredes',Math.ceil(ceramic*ext('wallAdh')*factor/c.bag),'sacos','Área cerâmica líquida '+fmt(ceramic)+' m² × '+ext('wallAdh')+' kg/m² × '+factor+' ÷ '+c.bag+' kg/saco');add('rejunte','Rejunte para paredes',ceramic*c.grout*factor,'kg','Área cerâmica líquida × consumo de rejunte × perdas')}
+    // Replace area-only screed service with constituents to avoid double counting.
+    const sc=mats.find(m=>m.scopeId==='contrapiso');if(sc){const area=num($('q_contrapiso').value)||state.metrics.floor,vol=area*ext('screedCm')/100,dry=vol*ext('screedDry'),parts=1+ext('sandRatio');mats=mats.filter(m=>m.scopeId!=='contrapiso');const basis=fmt(area)+' m² × '+ext('screedCm')+' cm / 100; volume seco × '+ext('screedDry')+'; traço 1:'+ext('sandRatio')+'; perdas '+fmt(loss()*100,0)+'%';add('contrapiso','Cimento para contrapiso',Math.ceil(dry/parts*ext('cementDensity')*factor/Math.max(1,ext('cementBag'))),'sacos',basis+'; saco '+ext('cementBag')+' kg');add('contrapiso','Areia para contrapiso',dry*ext('sandRatio')/parts*factor,'m³',basis)}
+    for(const id of ['impermeabFund','impermeabMolhadas','impermeabLajes']){const area=mats.filter(m=>m.scopeId===id&&m.unit==='m²').reduce((a,m)=>a+m.q,0);if(area)add(id,'Impermeabilizante — '+catalogItem(id).label,area*ext('waterproofKg'),'kg',fmt(area)+' m² de serviço × '+ext('waterproofKg')+' kg/m² (consumo total do sistema; confirmar fabricante)')}
+    const steel=mats.filter(m=>['fundAco','estruturaAco'].includes(m.scopeId)&&m.unit==='kg').reduce((a,m)=>a+m.q,0);if(steel){const id=state.scope.has('estruturaAco')?'estruturaAco':'fundAco';add(id,'Arame recozido para armação',steel*ext('wireRate'),'kg',fmt(steel)+' kg de aço × '+ext('wireRate')+' kg/kg')}
+    const form=mats.filter(m=>['fundForma','estruturaForma'].includes(m.scopeId)&&m.unit==='m²').reduce((a,m)=>a+m.q,0);if(form){const id=state.scope.has('estruturaForma')?'estruturaForma':'fundForma';add(id,'Desmoldante para fôrmas',form*ext('formRelease'),'L',fmt(form)+' m² × '+ext('formRelease')+' L/m²');add(id,'Espaçadores de armadura',Math.ceil(form*ext('spacers')),'un.',fmt(form)+' m² × '+ext('spacers')+' un./m²; modelo preliminar')}
+    for(const m of mats)if(m.unit==='m'&&/^Tubo PVC/.test(m.material)&&ext('pipeLength'))m.basis+='; compra por item: '+Math.ceil(m.q/ext('pipeLength'))+' barras de '+ext('pipeLength')+' m (sem somar novamente)';
+    // User-confirmed totals always win, including explicit zero.
+    for(const [id,v] of Object.entries(overrides())){mats=mats.filter(m=>m.scopeId!==id);if(v.q>0&&state.scope.has(id))mats.push({stage:catalogItem(id).stage,scopeId:id,material:catalogItem(id).label,q:v.q,unit:v.unit,originType:'direct',origin:v.note||'Quantidade informada pelo usuário',basis:'Total informado; sem perdas automáticas adicionais'})}
+    for(const m of mats)if(['un.','pontos','conj.','kits','sistemas','sistema','lote','sacos'].includes(m.unit))m.q=Math.ceil(m.q);
+    return mats;
+  }
+  initExtensions();renderComplementaryInputs();renderScope();renderCustomItems();initStepNavigation();loadCoef();loadProject();renderAutoRead();renderScopeStatus();
   if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
 </script>
 </body>
