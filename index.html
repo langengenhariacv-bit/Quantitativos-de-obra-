@@ -830,7 +830,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   }
   function structuralWallComponents(segments,roi){
     if(!segments.length)return{accepted:[],uncertain:[]};
-    const tol=Math.max(4,Math.round(Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.008)),adj=segments.map(()=>[]);
+    const tol=Math.max(4,Math.round(Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.014)),adj=segments.map(()=>[]);
     for(let i=0;i<segments.length;i++)for(let j=i+1;j<segments.length;j++)if(wallSegmentsConnected(segments[i],segments[j],tol)){adj[i].push(j);adj[j].push(i)}
     const seen=new Uint8Array(segments.length),components=[];
     for(let i=0;i<segments.length;i++){if(seen[i])continue;const stack=[i],ids=[],seenLocal=new Set();seen[i]=1;while(stack.length){const n=stack.pop();ids.push(n);for(const q of adj[n])if(!seen[q]){seen[q]=1;stack.push(q)}}components.push({ids,length:ids.reduce((s,k)=>s+segments[k].len,0),nodes:ids.length})}
