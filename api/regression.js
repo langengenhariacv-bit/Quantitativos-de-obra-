@@ -6,7 +6,7 @@ const PLANS=[
  {id:3,name:'Lagom residencial com garagem',kind:'P/B mobiliada',url:'https://static.wixstatic.com/media/860bee_a80eb8e49f104cdeb26f59818a85bdae~mv2.jpg/v1/fill/w_2500%2Ch_2777%2Cal_c/860bee_a80eb8e49f104cdeb26f59818a85bdae~mv2.jpg'},
  {id:4,name:'Imobiliária colorida',kind:'marketing',url:'https://lid.zoocdn.com/u/1024/768/a0577c1b6b507a34f811e8e385ebc4f7e19a7e40.jpg'},
  {id:5,name:'Duplex simétrico',kind:'duplex P/B',url:'https://images.squarespace-cdn.com/content/v1/678844c055cd445561eb0942/de015f7b-4f6a-400e-acc5-cf78084b6419/MSCAN5220-1BX%2B%28Canton-duplex%29.jpg'},
- {id:6,name:'Apartamento chinês mobiliado',kind:'P/B mobiliada',url:'https://x4.tuozhe8.com/attachment/forum/202205/27/023844xxwj1jxwp7wqh7ee.jpg'},
+ {id:6,name:'Casa moderna em L',kind:'P/B mobiliada',url:'https://hitech-house.com/application/files/2215/2378/6037/bower-barwon-plan.jpeg'},
  {id:7,name:'Prancha com carimbo 1:50',kind:'prancha técnica',url:'https://khamsat.hsoubcdn.com/images/profiles/992519/a8704483da4e52c974953edd09577573.jpg'},
  {id:8,name:'ProcessOn colorida',kind:'colorida cotada',url:'https://pocdn.processon.com/admin/knowledge/article_content_img/66f140f0f8e22204bf981aed.png'},
  {id:9,name:'Apartamento Aparna',kind:'P/B escala',url:'https://coohom-biz-sg-s3.coohom.com/ins/static/case/kitchen-gallery-balcony-floorplan-1765430417791544100.jpg'},
