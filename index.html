@@ -715,19 +715,19 @@
       const length=pxLen*mpp/2;
       const out=document.createElement('canvas');out.width=a.width;out.height=a.height;const ox=out.getContext('2d'),im=ox.createImageData(out.width,out.height);
       for(let p=0;p<mask.length;p++)if(mask[p]){const j=p*4;im.data[j]=22;im.data[j+1]=113;im.data[j+2]=185;im.data[j+3]=180}ox.putImageData(im,0,0);
-      return{length,maskCanvas:out,layers:wallIds.map(id=>groups[id].name),changed,hr:hr.length,vr:vr.length};
+      return{length,footprint:changed*mpp*mpp,maskCanvas:out,layers:wallIds.map(id=>groups[id].name),changed,hr:hr.length,vr:vr.length};
     }catch(err){console.warn('Leitura vetorial de camadas indisponível',err);return null}
   }
   async function estimateWallsFromPdf(){
     state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallConfidence='';state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];
     if(!state.pdf){renderAutoRead();return}
-    const renderScale=1.15;let footprint=0,vectorLength=0,pagesUsed=0,quality=[],bestTones=[],vectorPages=0;
+    const renderScale=1.15;let footprint=0,vectorLength=0,vectorFootprint=0,pagesUsed=0,quality=[],bestTones=[],vectorPages=0;
     for(let p=1;p<=state.pdf.numPages;p++){
       const txt=state.pageTexts[p-1]||'';if(!/planta\s+baixa/i.test(txt))continue;
       const page=await state.pdf.getPage(p);
       const vec=await tryVectorLayerWalls(page,p,renderScale);
       if(vec){
-        vectorLength+=vec.length;state.autoWallMasks[p]=vec.maskCanvas;state.autoWallLayers.push(...vec.layers);vectorPages++;pagesUsed++;quality.push(.03);continue;
+        vectorLength+=vec.length;vectorFootprint+=vec.footprint||0;state.autoWallMasks[p]=vec.maskCanvas;state.autoWallLayers.push(...vec.layers);vectorPages++;pagesUsed++;quality.push(.03);continue;
       }
       const vp=page.getViewport({scale:renderScale}),canvas=document.createElement('canvas');canvas.width=Math.ceil(vp.width);canvas.height=Math.ceil(vp.height);
       const ctx=canvas.getContext('2d',{willReadFrequently:true});await page.render({canvasContext:ctx,viewport:vp}).promise;
@@ -745,7 +745,7 @@
       const roiArea=Math.max(1,(roi.x1-roi.x0)*(roi.y1-roi.y0)),ratio=wallPixels/roiArea;
       if(wallPixels>0){pagesUsed++;quality.push(ratio);if(state.scaleDen){const mpp=0.0254/72*state.scaleDen/renderScale;footprint+=wallPixels*mpp*mpp}}
     }
-    state.autoWallFootprint=footprint;
+    state.autoWallFootprint=vectorLength>0?vectorFootprint:footprint;
     if(vectorLength>0){const openingWidth=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty*o.w,0);state.autoWallLength=vectorLength+openingWidth;state.autoWallMethod='Camadas vetoriais do PDF + recomposição dos vãos';state.autoWallConfidence='alta'}
     else{
       const openingWidth=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty*o.w,0);
@@ -799,7 +799,9 @@
     else if(manualLength>0){wallLength=manualLength;gross=manualGross;wallSource='Paredes marcadas manualmente'}
     const open=state.openings.reduce((s,o)=>s+o.qty*o.w*o.h,0),net=Math.max(0,gross-open),L=loss(),factor=1+L,faces=num($('facesReboco').value)||2,c=state.coef,primaryBrick=$('tijolo').value;
     const built=num($('areaConstruida').value)||state.floorAreas.reduce((s,r)=>s+r.area,0)||state.rooms.filter(r=>r.area<100).reduce((s,r)=>s+r.area,0);
-    const roomFloor=state.rooms.filter(r=>r.area>0&&r.area<100).reduce((s,r)=>s+r.area,0),manualFloor=num($('areaPisoManual')&&$('areaPisoManual').value),wallFootprint=wallLength*brickFinishedThickness();
+    const roomFloor=state.rooms.filter(r=>r.area>0&&r.area<100).reduce((s,r)=>s+r.area,0),manualFloor=num($('areaPisoManual')&&$('areaPisoManual').value);
+    let wallFootprint=wallLength*brickFinishedThickness(),wallFootprintSource='Comprimento de paredes × espessura acabada paramétrica';
+    if(override<=0&&manualMode!=='replace'&&autoLength>0&&state.autoWallFootprint>0&&/Camadas vetoriais/i.test(state.autoWallMethod||'')){wallFootprint=state.autoWallFootprint+manualLength*brickFinishedThickness();wallFootprintSource='Área da camada vetorial de alvenaria + correções manuais'}
     const geometricFloor=Math.max(0,built-wallFootprint),floor=manualFloor>0?manualFloor:(geometricFloor>0?Math.max(roomFloor,geometricFloor):(roomFloor||built)),floorSource=manualFloor>0?'Área de piso informada pelo usuário':(geometricFloor>0?'Área construída menos projeção paramétrica das paredes':'Soma das áreas de ambientes');
     const foot=built/Math.max(1,num($('pavimentos').value)||1),extPerim=foot>0?4*Math.sqrt(foot):0,manualFacade=num($('areaFachadaManual')&&$('areaFachadaManual').value);
     const wins=state.openings.filter(o=>/janela/i.test(o.type)),doors=state.openings.filter(o=>/porta/i.test(o.type)),exteriorDoors=doors.filter(o=>/p1|p2|vidro|extern/i.test(o.type)),facadeOpen=wins.reduce((s,o)=>s+o.qty*o.w*o.h,0)+exteriorDoors.reduce((s,o)=>s+o.qty*o.w*o.h,0);
@@ -850,7 +852,7 @@
     state.customItems.forEach(x=>mats.push({...x,scopeId:'outros',origin:'Entrada manual',originType:'direct',basis:'Quantidade informada pelo usuário'}));
     complementaryDefs.forEach(([id,label,unit,stage,scopeId,applyLoss])=>{const q=$(id)?num($(id).value):0;if(q>0)add(stage,label,q*(applyLoss?factor:1),unit,scopeId,'Projeto complementar / entrada manual','direct','Quantidade informada pelo usuário')});
 
-    state.metrics={gross:gross,open:open,net:net,floor:floor,floorBuilt:built,roomFloor:roomFloor,roomCoverage:built?roomFloor/built:0,floorSource:floorSource,wallFootprint:wallFootprint,coatArea:coatArea,internalCoat:internalCoat,externalCoat:externalCoat,facadeGross:facadeGross,facadeNet:facadeNet,facadeSource:facadeSource,ceramicWall:ceramicWall,paintInternal:paintInternal,paintExternal:paintExternal,paintArea:paintArea,wallLength:wallLength,wallSource:wallSource};
+    state.metrics={gross:gross,open:open,net:net,floor:floor,floorBuilt:built,roomFloor:roomFloor,roomCoverage:built?roomFloor/built:0,floorSource:floorSource,wallFootprint:wallFootprint,wallFootprintSource:wallFootprintSource,coatArea:coatArea,internalCoat:internalCoat,externalCoat:externalCoat,facadeGross:facadeGross,facadeNet:facadeNet,facadeSource:facadeSource,ceramicWall:ceramicWall,paintInternal:paintInternal,paintExternal:paintExternal,paintArea:paintArea,wallLength:wallLength,wallSource:wallSource};
     const directIds=new Set(mats.map(x=>x.scopeId).filter(Boolean)),pack=buildParametricEstimates(directIds);pack.items.forEach(x=>mats.push(x));state.scopeStatus=pack.status;state.materials=mats;
     renderMaterials();renderScopeStatus();updateQualityAudit();saveProject(false);
   }
