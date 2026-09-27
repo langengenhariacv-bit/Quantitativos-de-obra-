@@ -86,11 +86,24 @@ function metrics(gray,w,h){
  let minX=1e9,maxX=-1,minY=1e9,maxY=-1;for(const r of a){if(r.axis==='h'){minX=Math.min(minX,r.a);maxX=Math.max(maxX,r.b);minY=Math.min(minY,r.pos);maxY=Math.max(maxY,r.pos)}else{minX=Math.min(minX,r.pos);maxX=Math.max(maxX,r.pos);minY=Math.min(minY,r.a);maxY=Math.max(maxY,r.b)}}const bw=maxX>=minX?(maxX-minX)/(roi.x1-roi.x0):0,bh=maxY>=minY?(maxY-minY)/(roi.y1-roi.y0):0,dom=(g.comps[0]?.length||0)/Math.max(1,cand),unc=u.length/Math.max(1,merged.length),hv=[a.filter(x=>x.axis==='h').length,a.filter(x=>x.axis==='v').length],network=Math.sqrt(Math.max(0,bw*bh)),multiOk=q>=.72&&a.length>=16&&network>=.42&&unc<=.80,pass=a.length>=4&&q>=.33&&(dom>=.30||multiOk)&&(bw>=.28||bh>=.28)&&unc<=.82;
  return{pass,threshold:dm.threshold,accepted:a.length,uncertain:u.length,quality:+q.toFixed(3),dominant:+dom.toFixed(3),bboxWidth:+bw.toFixed(3),bboxHeight:+bh.toFixed(3),networkCoverage:+network.toFixed(3),horizontal:hv[0],vertical:hv[1],lengthPx:Math.round(total),roi:{w:roi.x1-roi.x0,h:roi.y1-roi.y0},reason:pass?'ok':a.length<4?'few-segments':q<.33?'low-quality':(!multiOk&&dom<.30)?'fragmented':unc>.82?'too-uncertain':'small-coverage'};
 }
+async function fetchImageWithRetry(url){
+  let last=null;
+  for(let attempt=0;attempt<4;attempt++){
+    const ctl=new AbortController();const timer=setTimeout(()=>ctl.abort(),15000);
+    try{
+      const r=await fetch(url,{signal:ctl.signal,headers:{'user-agent':'Mozilla/5.0 LANG-Quantitativos-Regressao/1.0 (+https://langquantitativos.vercel.app/)','accept':'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8','referer':'https://commons.wikimedia.org/'}});
+      clearTimeout(timer);
+      if(r.ok)return r;
+      last=new Error('HTTP '+r.status);
+      if(r.status!==429&&r.status<500)throw last;
+    }catch(e){clearTimeout(timer);last=e}
+    await new Promise(resolve=>setTimeout(resolve,350*(attempt+1)));
+  }
+  throw last||new Error('Falha ao baixar imagem');
+}
 async function one(p){
  try{
-  const ctl=new AbortController();const timer=setTimeout(()=>ctl.abort(),12000);
-  const r=await fetch(p.url,{signal:ctl.signal,headers:{'user-agent':'Mozilla/5.0 LANG-Quantitativos/1.0','accept':'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'}});clearTimeout(timer);
-  if(!r.ok)throw new Error('HTTP '+r.status);const buf=Buffer.from(await r.arrayBuffer());if(buf.length>12*1024*1024)throw new Error('image-too-large');
+  const r=await fetchImageWithRetry(p.url);const buf=Buffer.from(await r.arrayBuffer());if(buf.length>12*1024*1024)throw new Error('image-too-large');
   const {data,info}=await sharp(buf,{failOn:'none'}).rotate().resize({width:900,height:900,fit:'inside',withoutEnlargement:true}).flatten({background:'#fff'}).greyscale().raw().toBuffer({resolveWithObject:true});
   return{...p,status:'ok',width:info.width,height:info.height,bytes:buf.length,...metrics(data,info.width,info.height)};
  }catch(e){return{...p,status:'error',pass:false,error:String(e&&e.message||e)}}
@@ -113,12 +126,15 @@ async function commonsCategory(category,limit=250){
 async function buildDataset100(){
   if(DATASET100)return DATASET100;
   const pools=[];
-  for(const cat of ['Floor_plans_of_houses','Floor_plans','Floor_plans_of_residential_buildings']){
-    try{pools.push(...await commonsCategory(cat,300))}catch(e){}
+  for(const cat of ['Floor_plans_of_houses']){
+    try{pools.push(...await commonsCategory(cat,500))}catch(e){}
   }
   const seen=new Set(PLANS.map(p=>p.url)),unique=[];
   for(const p of pools){
-    if(seen.has(p.url))continue;seen.add(p.url);unique.push(p);
+    if(seen.has(p.url))continue;
+    const n=p.name.toLowerCase();
+    if(/elevation|facade|façade|section|portrait|map\b|photograph|photo\b/.test(n))continue;
+    seen.add(p.url);unique.push(p);
   }
   unique.sort((a,b)=>hashTitle(a.name)-hashTitle(b.name));
   const selected=unique.slice(0,70).map((p,i)=>({id:31+i,name:'Commons — '+p.name,kind:'Wikimedia Commons',url:p.url,source:'commons'}));
@@ -134,6 +150,6 @@ module.exports=async function handler(req,res){
   const start=Math.max(0,Math.min(dataset.length-1,Number(req.query.start||0))),
         count=Math.max(1,Math.min(5,Number(req.query.count||5))),
         slice=dataset.slice(start,start+count),
-        results=await Promise.all(slice.map(one));
+        results=[];for(const p of slice){results.push(await one(p));if(p.source==='commons')await new Promise(resolve=>setTimeout(resolve,120));}
   res.status(200).json({dataset:dataset.length,start,count:results.length,passed:results.filter(x=>x.pass).length,failed:results.filter(x=>!x.pass).length,results});
 };
