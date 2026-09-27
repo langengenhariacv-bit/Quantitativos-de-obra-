@@ -762,7 +762,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     for(let x=0;x<w;x+=step){let light=0,n=0;for(let y=0;y<h;y+=step){const i=(y*w+x)*4,l=data[i]*.299+data[i+1]*.587+data[i+2]*.114;if(l>205)light++;n++}col[x]=n?light/n:0}
     function longest(arr,minRatio){let bs=0,be=arr.length-1,s=-1,best=0;for(let i=0;i<=arr.length;i++){const on=i<arr.length&&arr[i]>=minRatio;if(on&&s<0)s=i;if((!on||i===arr.length)&&s>=0){if(i-s>best){best=i-s;bs=s;be=i-1}s=-1}}return[bs,be,best]}
     const ry=longest(row,.18),rx=longest(col,.18);let x0=rx[0],x1=rx[1]+1,y0=ry[0],y1=ry[1]+1;
-    if((x1-x0)*(y1-y0)<w*h*.20)return{x0:0,y0:0,x1:w,y1:h};
+    if((x1-x0)*(y1-y0)<w*h*.20||(x1-x0)<w*.45||(y1-y0)<h*.45)return{x0:0,y0:0,x1:w,y1:h};
     const mx=Math.max(2,Math.round((x1-x0)*.004)),my=Math.max(2,Math.round((y1-y0)*.004));
     return{x0:Math.min(x1-1,x0+mx),y0:Math.min(y1-1,y0+my),x1:Math.max(x0+1,x1-mx),y1:Math.max(y0+1,y1-my)};
   }
