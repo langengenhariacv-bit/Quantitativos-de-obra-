@@ -619,7 +619,7 @@
   }else if(isImage){
     state.sourceType='image';state.pdf=null;state.pages=1;
     try{state.image=await loadPlanImage(file)}catch(err){state.image=null;state.sourceType='';alert('Não foi possível abrir esta imagem. Use JPG, JPEG, PNG ou WebP.');return}
-    $('pdfInfo').textContent=file.name+' • imagem carregada • calibre a escala por uma cota conhecida';await renderPage();
+    $('pdfInfo').textContent=file.name+' • imagem carregada • calibre a escala por uma cota conhecida';await renderPage();await estimateWallsFromPdf();
   }else{alert('Formato não suportado. Use PDF, JPG/JPEG, PNG ou WebP.');return}
   renderRooms();renderOpenings();renderAutoRead();saveProject(false);
 });
@@ -723,32 +723,41 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   }
   async function estimateWallsFromPdf(){
     state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallConfidence='';state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='Leitura raster validada';state.autoWallLayers=[];
-    if(!state.pdf){renderAutoRead();return}
+    if(!state.pdf&&!state.image){renderAutoRead();return}
+    if(state.image){
+      const img=state.image,scale=imageDisplayScale(img),cw=Math.max(1,Math.round((img.naturalWidth||img.width)*scale)),ch=Math.max(1,Math.round((img.naturalHeight||img.height)*scale)),canvas=document.createElement('canvas');
+      canvas.width=cw;canvas.height=ch;const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#fff';ctx.fillRect(0,0,cw,ch);ctx.drawImage(img,0,0,cw,ch);
+      const data=ctx.getImageData(0,0,cw,ch).data,roi={x0:0,y0:0,x1:cw,y1:ch},hist=new Uint32Array(256);
+      for(let y=0;y<ch;y++)for(let x=0;x<cw;x++){const i=(y*cw+x)*4,r=data[i],g=data[i+1],b=data[i+2];if(Math.abs(r-g)<=8&&Math.abs(g-b)<=8&&r>=35&&r<=220)hist[r]++}
+      const ranked=[];for(let v=35;v<=220;v++)if(hist[v])ranked.push([hist[v],v]);ranked.sort((a,b)=>b[0]-a[0]);
+      const candidates=[];for(const pair of ranked){const v=pair[1];if(candidates.every(x=>Math.abs(x-v)>3))candidates.push(v);if(candidates.length>=12)break}
+      const minRun=Math.max(8,Math.round(Math.min(cw,ch)*.006));let bestLevel=0,bestScore=0;
+      for(const v of candidates){const score=wallToneScore(data,cw,ch,roi,v,minRun);if(score>bestScore){bestScore=score;bestLevel=v}}
+      if(bestLevel){
+        const keep=buildWallMask(data,cw,ch,roi,bestLevel,minRun);let wallPixels=0;const maskCanvas=document.createElement('canvas');maskCanvas.width=cw;maskCanvas.height=ch;const mctx=maskCanvas.getContext('2d'),out=mctx.createImageData(cw,ch);
+        for(let i=0;i<keep.length;i++)if(keep[i]){wallPixels++;const j=i*4;out.data[j]=22;out.data[j+1]=113;out.data[j+2]=185;out.data[j+3]=155}
+        mctx.putImageData(out,0,0);state.autoWallMasks[1]=maskCanvas;state.autoWallTone=bestLevel;
+        const ratio=wallPixels/Math.max(1,cw*ch);state.autoWallConfidence=ratio>.012?'boa':ratio>.004?'moderada':'baixa';
+        if(state.metersPerPixel){state.autoWallFootprint=wallPixels*state.metersPerPixel*state.metersPerPixel;state.autoWallLength=state.autoWallFootprint/brickFinishedThickness()+state.openings.reduce((s,o)=>s+o.qty*o.w,0)}
+      }
+      state.autoWallMethod=state.metersPerPixel?'Leitura raster de imagem calibrada':'Leitura raster de imagem — falta calibrar escala';state.autoWallLayers=[];renderAutoRead();drawAutoWallMask();return;
+    }
     const renderScale=.82;let footprint=0,pagesUsed=0,quality=[],bestTones=[];
     for(let p=1;p<=state.pdf.numPages;p++){
       const txt=state.pageTexts[p-1]||'';if(!/planta\s+baixa/i.test(txt))continue;
-      const page=await state.pdf.getPage(p),vp=page.getViewport({scale:renderScale}),c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);
-      const ctx=c.getContext('2d',{willReadFrequently:true});await page.render({canvasContext:ctx,viewport:vp}).promise;
-      const img=ctx.getImageData(0,0,c.width,c.height),d=img.data,roi=autoWallRoi(p,vp,c.width,c.height),hist=new Uint32Array(256);
-      for(let y=roi.y0;y<roi.y1;y++)for(let x=roi.x0;x<roi.x1;x++){const i=(y*c.width+x)*4,r=d[i],g=d[i+1],b=d[i+2];if(Math.abs(r-g)<=5&&Math.abs(g-b)<=5&&r>=45&&r<=210)hist[r]++}
-      const ranked=[];for(let v=45;v<=210;v++)if(hist[v])ranked.push([hist[v],v]);ranked.sort((a,b)=>b[0]-a[0]);
-      const candidates=[];for(const [,v] of ranked){if(candidates.every(x=>Math.abs(x-v)>3))candidates.push(v);if(candidates.length>=10)break}
-      const minRun=Math.max(8,Math.round(Math.min(c.width,c.height)*.006));let bestLevel=0,bestScore=0;
-      for(const v of candidates){const score=wallToneScore(d,c.width,c.height,roi,v,minRun);if(score>bestScore){bestScore=score;bestLevel=v}}
-      if(!bestLevel)continue;
-      const keep=buildWallMask(d,c.width,c.height,roi,bestLevel,minRun);let wallPixels=0;
-      const maskCanvas=document.createElement('canvas');maskCanvas.width=c.width;maskCanvas.height=c.height;const mctx=maskCanvas.getContext('2d'),out=mctx.createImageData(c.width,c.height);
-      for(let i=0;i<keep.length;i++)if(keep[i]){wallPixels++;const j=i*4;out.data[j]=22;out.data[j+1]=113;out.data[j+2]=185;out.data[j+3]=155}
-      mctx.putImageData(out,0,0);state.autoWallMasks[p]=maskCanvas;bestTones.push(bestLevel);
-      const roiArea=Math.max(1,(roi.x1-roi.x0)*(roi.y1-roi.y0)),ratio=wallPixels/roiArea;
-      if(wallPixels>0){pagesUsed++;quality.push(ratio);if(state.scaleDen){const mpp=0.0254/72*state.scaleDen/renderScale;footprint+=wallPixels*mpp*mpp}}
+      const page=await state.pdf.getPage(p),vp=page.getViewport({scale:renderScale}),canvas=document.createElement('canvas');canvas.width=Math.ceil(vp.width);canvas.height=Math.ceil(vp.height);
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});await page.render({canvasContext:ctx,viewport:vp}).promise;
+      const data=ctx.getImageData(0,0,canvas.width,canvas.height).data,roi=autoWallRoi(p,vp,canvas.width,canvas.height),hist=new Uint32Array(256);
+      for(let y=roi.y0;y<roi.y1;y++)for(let x=roi.x0;x<roi.x1;x++){const i=(y*canvas.width+x)*4,r=data[i],g=data[i+1],b=data[i+2];if(Math.abs(r-g)<=5&&Math.abs(g-b)<=5&&r>=45&&r<=210)hist[r]++}
+      const ranked=[];for(let v=45;v<=210;v++)if(hist[v])ranked.push([hist[v],v]);ranked.sort((a,b)=>b[0]-a[0]);const candidates=[];for(const pair of ranked){const v=pair[1];if(candidates.every(x=>Math.abs(x-v)>3))candidates.push(v);if(candidates.length>=10)break}
+      const minRun=Math.max(8,Math.round(Math.min(canvas.width,canvas.height)*.006));let bestLevel=0,bestScore=0;for(const v of candidates){const score=wallToneScore(data,canvas.width,canvas.height,roi,v,minRun);if(score>bestScore){bestScore=score;bestLevel=v}}if(!bestLevel)continue;
+      const keep=buildWallMask(data,canvas.width,canvas.height,roi,bestLevel,minRun);let wallPixels=0;const maskCanvas=document.createElement('canvas');maskCanvas.width=canvas.width;maskCanvas.height=canvas.height;const mctx=maskCanvas.getContext('2d'),out=mctx.createImageData(canvas.width,canvas.height);
+      for(let i=0;i<keep.length;i++)if(keep[i]){wallPixels++;const j=i*4;out.data[j]=22;out.data[j+1]=113;out.data[j+2]=185;out.data[j+3]=155}mctx.putImageData(out,0,0);state.autoWallMasks[p]=maskCanvas;bestTones.push(bestLevel);
+      const roiArea=Math.max(1,(roi.x1-roi.x0)*(roi.y1-roi.y0)),ratio=wallPixels/roiArea;if(wallPixels>0){pagesUsed++;quality.push(ratio);if(state.scaleDen){const mpp=0.0254/72*state.scaleDen/renderScale;footprint+=wallPixels*mpp*mpp}}
     }
-    state.autoWallFootprint=footprint;
-    const openingWidth=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty*o.w,0);
-    state.autoWallLength=footprint>0?footprint/brickFinishedThickness()+openingWidth:0;
+    state.autoWallFootprint=footprint;const openingWidth=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty*o.w,0);state.autoWallLength=footprint>0?footprint/brickFinishedThickness()+openingWidth:0;
     state.autoWallTone=bestTones.length?Math.round(bestTones.reduce((a,b)=>a+b,0)/bestTones.length):null;state.autoWallMethod='Leitura raster validada — componentes conectados';state.autoWallLayers=[];
-    const avg=quality.length?quality.reduce((a,b)=>a+b,0)/quality.length:0;state.autoWallConfidence=pagesUsed?(avg>.012?'boa':avg>.004?'moderada':'baixa'):'';
-    renderAutoRead();drawAutoWallMask();
+    const avg=quality.length?quality.reduce((a,b)=>a+b,0)/quality.length:0;state.autoWallConfidence=pagesUsed?(avg>.012?'boa':avg>.004?'moderada':'baixa'):'';renderAutoRead();drawAutoWallMask();
   }
   function drawAutoWallMask(){
     const c=$('autoWallCanvas');if(!c||!state.viewport)return;const src=state.autoWallMasks[state.page];c.width=state.viewport.width;c.height=state.viewport.height;c.style.width=state.viewport.width+'px';c.style.height=state.viewport.height+'px';const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);if(src)ctx.drawImage(src,0,0,c.width,c.height);
@@ -775,7 +784,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
 
   function setMode(m){state.mode=m;state.tempPts=[];$('overlay').classList.toggle('active',!!m);$('scaleBox').textContent=m==='cal'?'Clique em dois pontos de uma dimensão conhecida.':m==='wall'?'Clique no início e no fim da parede.':'Ferramenta cancelada.';drawOverlay()}
   $('calibrarBtn').onclick=()=>setMode('cal');$('paredeBtn').onclick=()=>setMode('wall');$('cancelMode').onclick=()=>setMode(null);
-  $('overlay').addEventListener('click',e=>{if(!state.mode)return;const r=$('overlay').getBoundingClientRect();const x=(e.clientX-r.left)*(state.viewport.width/r.width),y=(e.clientY-r.top)*(state.viewport.height/r.height);state.tempPts.push({x,y});drawOverlay();if(state.tempPts.length===2){if(state.mode==='cal'){const d=prompt('Qual é a distância real entre os dois pontos, em metros?','3.00');const real=num(d);if(real>0){const px=dist(state.tempPts[0],state.tempPts[1]);state.metersPerPixel=real/px;state.scaleDen=null;$('scaleBox').textContent=`Calibração manual concluída: 1 px = ${state.metersPerPixel.toFixed(5)} m`;}}else if(state.mode==='wall'){if(!state.metersPerPixel){alert('Primeiro confirme a escala ou faça a calibração por dois pontos.');state.tempPts=[];return}const len=dist(state.tempPts[0],state.tempPts[1])*state.metersPerPixel;state.walls.push({page:state.page,a:state.tempPts[0],b:state.tempPts[1],length:len,height:height(),brick:$('tijolo').value});renderWalls();}state.tempPts=[];saveProject(false);drawOverlay();updateReadout();}});
+  $('overlay').addEventListener('click',async e=>{if(!state.mode)return;const r=$('overlay').getBoundingClientRect();const x=(e.clientX-r.left)*(state.viewport.width/r.width),y=(e.clientY-r.top)*(state.viewport.height/r.height);state.tempPts.push({x,y});drawOverlay();if(state.tempPts.length===2){if(state.mode==='cal'){const d=prompt('Qual é a distância real entre os dois pontos, em metros?','3.00');const real=num(d);if(real>0){const px=dist(state.tempPts[0],state.tempPts[1]);state.metersPerPixel=real/px;state.scaleDen=null;$('scaleBox').textContent='Calibração manual concluída: 1 px = '+state.metersPerPixel.toFixed(5)+' m';if(state.image){await estimateWallsFromPdf();drawAutoWallMask();renderAutoRead();}}}else if(state.mode==='wall'){if(!state.metersPerPixel){alert('Primeiro confirme a escala ou faça a calibração por dois pontos.');state.tempPts=[];return}const len=dist(state.tempPts[0],state.tempPts[1])*state.metersPerPixel;state.walls.push({page:state.page,a:state.tempPts[0],b:state.tempPts[1],length:len,height:height(),brick:$('tijolo').value});renderWalls();}state.tempPts=[];saveProject(false);drawOverlay();updateReadout();}});
   function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
   function drawOverlay(){const svg=$('overlay');svg.innerHTML='';state.walls.filter(w=>w.page===state.page).forEach(w=>addLine(w.a,w.b,'wall-line'));if(state.tempPts.length){state.tempPts.forEach(p=>addCircle(p));if(state.tempPts.length===2)addLine(state.tempPts[0],state.tempPts[1],state.mode==='cal'?'cal-line':'wall-line')}function addLine(a,b,c){const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',a.x);l.setAttribute('y1',a.y);l.setAttribute('x2',b.x);l.setAttribute('y2',b.y);l.setAttribute('class',c);svg.appendChild(l)}function addCircle(p){const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',5);c.setAttribute('class','point');svg.appendChild(c)}}
 
@@ -898,8 +907,8 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
 
   function getForm(){const ids=['obra','cliente','endereco','tipoObra','pavimentos','unidades','peDireito','peCustom','tijolo','facesReboco','revInterno','revExterno','piso','rodape','forro','cobertura','pintInterna','pintExterna','perdas','perdasCustom','areaCobertura','areaConstruida','areaPisoManual','areaFachadaManual','perimetroRodape','wallLengthOverride','wallManualMode','fundacaoTipo','estruturaTipo','lajeTipo','aguaQuente','esgotoSistema','gasSistema','climatizacao','solarSistema','incendioSistema','spdaSistema','elevadorSistema','piscinaSistema',...complementaryDefs.map(x=>x[0])];const out={};ids.forEach(id=>{if($(id))out[id]=$(id).value});return out}
   function setForm(f={}){for(const [k,v] of Object.entries(f))if($(k))$(k).value=v}
-  function saveProject(show=true){const data={form:getForm(),pdfName:state.pdfName,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,autoWallMethod:state.autoWallMethod,autoWallLayers:state.autoWallLayers,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus};localStorage.setItem('lang-quant-project',JSON.stringify(data));$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
-  function loadProject(){const d=JSON.parse(localStorage.getItem('lang-quant-project')||'null');if(!d)return;setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.autoWallMethod=d.autoWallMethod||'';state.autoWallLayers=d.autoWallLayers||[];state.openingDefinitions=d.openingDefinitions||[];renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o PDF para visualizar a planta.`}
+  function saveProject(show=true){const data={form:getForm(),pdfName:state.pdfName,sourceType:state.sourceType,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,autoWallMethod:state.autoWallMethod,autoWallLayers:state.autoWallLayers,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus};localStorage.setItem('lang-quant-project',JSON.stringify(data));$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
+  function loadProject(){const d=JSON.parse(localStorage.getItem('lang-quant-project')||'null');if(!d)return;setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.sourceType=d.sourceType||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.autoWallMethod=d.autoWallMethod||'';state.autoWallLayers=d.autoWallLayers||[];state.openingDefinitions=d.openingDefinitions||[];renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o arquivo original para visualizar a planta.`}
 
   function exportBackup(){
     saveProject(false);
