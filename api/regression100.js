@@ -1,4 +1,5 @@
 const sharp=require('sharp');
+const FROZEN_DATASET=require('../REGRESSION_100_DATASET.json');
 
 const PLANS=[
  {id:1,name:'Hangzhou 3 quartos',kind:'P/B cotada',url:'https://imgpicture.kan3721.com/221128013800_thumb.jpg'},
@@ -110,52 +111,7 @@ async function one(p){
  }catch(e){return{...p,status:'error',pass:false,error:String(e&&e.message||e)}}
 }
 
-let DATASET100=null;
-function hashTitle(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
-async function commonsCategory(category,limit=250){
-  const url='https://commons.wikimedia.org/w/api.php?action=query&generator=categorymembers&gcmtitle='+encodeURIComponent('Category:'+category)+'&gcmtype=file&gcmlimit='+limit+'&prop=imageinfo&iiprop=url|mime&iiurlwidth=1200&format=json&formatversion=2&origin=*';
-  const r=await fetch(url,{headers:{'user-agent':'LANG-Quantitativos-Regressao/1.0'}});
-  if(!r.ok)throw new Error('Commons API '+r.status);
-  const j=await r.json(),pages=j.query&&j.query.pages||[];
-  return pages.map(p=>{
-    const ii=p.imageinfo&&p.imageinfo[0];if(!ii)return null;
-    const mime=ii.mime||'',u=ii.thumburl||ii.url||'';
-    if(!/^image\/(jpeg|png|webp)$/i.test(mime)||!u)return null;
-    return{name:String(p.title||'').replace(/^File:/,''),url:u,mime};
-  }).filter(Boolean);
-}
-async function commonsSearch(query,limit=100){
-  const url='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent(query)+'&gsrnamespace=6&gsrlimit='+limit+'&prop=imageinfo&iiprop=url|mime&iiurlwidth=1200&format=json&formatversion=2&origin=*';
-  const r=await fetch(url,{headers:{'user-agent':'LANG-Quantitativos-Regressao/1.0'}});
-  if(!r.ok)throw new Error('Commons search '+r.status);
-  const j=await r.json(),pages=j.query&&j.query.pages||[];
-  return pages.map(p=>{
-    const ii=p.imageinfo&&p.imageinfo[0];if(!ii)return null;
-    const mime=ii.mime||'',u=ii.thumburl||ii.url||'';
-    if(!/^image\/(jpeg|png|webp)$/i.test(mime)||!u)return null;
-    return{name:String(p.title||'').replace(/^File:/,''),url:u,mime};
-  }).filter(Boolean);
-}
-async function buildDataset100(){
-  if(DATASET100)return DATASET100;
-  const pools=[];
-  try{pools.push(...await commonsCategory('Floor_plans_of_houses',500))}catch(e){}
-  for(const q of ['"floor plan" house','"house plan" floor','"apartment plan" floor','"ground floor plan" house','"first floor plan" house','"residential floor plan"']){
-    try{pools.push(...await commonsSearch(q,100))}catch(e){}
-  }
-  const seen=new Set(PLANS.map(p=>p.url)),unique=[];
-  for(const p of pools){
-    if(seen.has(p.url))continue;
-    const n=p.name.toLowerCase();
-    if(/elevation|facade|façade|section|portrait|map\b|photograph|photo\b/.test(n))continue;
-    seen.add(p.url);unique.push(p);
-  }
-  unique.sort((a,b)=>hashTitle(a.name)-hashTitle(b.name));
-  const selected=unique.slice(0,70).map((p,i)=>({id:31+i,name:'Commons — '+p.name,kind:'Wikimedia Commons',url:p.url,source:'commons'}));
-  if(selected.length<70)throw new Error('Base pública retornou apenas '+selected.length+' imagens válidas.');
-  DATASET100=[...PLANS.map(p=>({...p,source:'internet-static'})),...selected];
-  return DATASET100;
-}
+async function buildDataset100(){return FROZEN_DATASET.items;}
 
 module.exports=async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
