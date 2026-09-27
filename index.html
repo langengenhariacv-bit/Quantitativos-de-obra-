@@ -672,7 +672,7 @@
       if(wallPixels>0){pagesUsed++;quality.push(ratio);if(state.scaleDen){const mpp=0.0254/72*state.scaleDen/renderScale;footprint+=wallPixels*mpp*mpp}}
     }
     state.autoWallFootprint=footprint;
-    if(vectorLength>0){state.autoWallLength=vectorLength;state.autoWallMethod='Camadas vetoriais do PDF';state.autoWallConfidence='alta'}
+    if(vectorLength>0){const openingWidth=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty*o.w,0);state.autoWallLength=vectorLength+openingWidth;state.autoWallMethod='Camadas vetoriais do PDF + recomposição dos vãos';state.autoWallConfidence='alta'}
     else{
       const openingWidth=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty*o.w,0);
       state.autoWallLength=footprint>0?footprint/brickFinishedThickness()+openingWidth:0;state.autoWallMethod='Leitura raster por geometria';
