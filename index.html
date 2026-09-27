@@ -221,7 +221,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
           </div>
         </div>
       </section>
-      <div class="footer">LANG Quantitativos • versão 4.1 • leitura híbrida e conferência estrutural</div>
+      <div class="footer">LANG Quantitativos • versão 4.2 • leitura híbrida e regressão com 30 plantas</div>
     </main>
   </div>
 </div>
@@ -761,7 +761,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     for(let y=0;y<h;y+=step){let light=0,n=0;for(let x=0;x<w;x+=step){const i=(y*w+x)*4,l=data[i]*.299+data[i+1]*.587+data[i+2]*.114;if(l>205)light++;n++}row[y]=n?light/n:0}
     for(let x=0;x<w;x+=step){let light=0,n=0;for(let y=0;y<h;y+=step){const i=(y*w+x)*4,l=data[i]*.299+data[i+1]*.587+data[i+2]*.114;if(l>205)light++;n++}col[x]=n?light/n:0}
     function longest(arr,minRatio){let bs=0,be=arr.length-1,s=-1,best=0;for(let i=0;i<=arr.length;i++){const on=i<arr.length&&arr[i]>=minRatio;if(on&&s<0)s=i;if((!on||i===arr.length)&&s>=0){if(i-s>best){best=i-s;bs=s;be=i-1}s=-1}}return[bs,be,best]}
-    const ry=longest(row,.20),rx=longest(col,.20);let x0=rx[0],x1=rx[1]+1,y0=ry[0],y1=ry[1]+1;
+    const ry=longest(row,.18),rx=longest(col,.18);let x0=rx[0],x1=rx[1]+1,y0=ry[0],y1=ry[1]+1;
     if((x1-x0)*(y1-y0)<w*h*.20)return{x0:0,y0:0,x1:w,y1:h};
     const mx=Math.max(2,Math.round((x1-x0)*.004)),my=Math.max(2,Math.round((y1-y0)*.004));
     return{x0:Math.min(x1-1,x0+mx),y0:Math.min(y1-1,y0+my),x1:Math.max(x0+1,x1-mx),y1:Math.max(y0+1,y1-my)};
@@ -799,11 +799,11 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     const used=new Uint8Array(runs.length),out=[],crossSpan=axis==='h'?(roi.y1-roi.y0):(roi.x1-roi.x0),edgeMargin=Math.max(5,crossSpan*.012),maxBand=Math.max(5,Math.round(crossSpan*.010));
     for(let i=0;i<runs.length;i++){
       if(used[i])continue;const cluster=[runs[i]];used[i]=1;let changed=true;
-      while(changed){changed=false;for(let j=i+1;j<runs.length;j++){if(used[j])continue;for(const r of cluster){if(Math.abs(runs[j].pos-r.pos)>maxBand)continue;const ov=Math.max(0,Math.min(r.b,runs[j].b)-Math.max(r.a,runs[j].a)+1),ratio=ov/Math.max(1,Math.min(r.len,runs[j].len));if(ratio>.68&&Math.abs(r.len-runs[j].len)<Math.max(24,r.len*.42)){used[j]=1;cluster.push(runs[j]);changed=true;break}}}}
+      while(changed){changed=false;for(let j=i+1;j<runs.length;j++){if(used[j])continue;for(const r of cluster){if(Math.abs(runs[j].pos-r.pos)>maxBand)continue;const ov=Math.max(0,Math.min(r.b,runs[j].b)-Math.max(r.a,runs[j].a)+1),ratio=ov/Math.max(1,Math.min(r.len,runs[j].len));if(ratio>.66&&Math.abs(r.len-runs[j].len)<Math.max(24,r.len*.45)){used[j]=1;cluster.push(runs[j]);changed=true;break}}}}
       const positions=cluster.map(r=>r.pos).sort((a,b)=>a-b),minP=positions[0],maxP=positions[positions.length-1],thick=maxP-minP+1,center=positions[Math.floor(positions.length/2)];
       const aa=cluster.map(r=>r.a).sort((a,b)=>a-b),bb=cluster.map(r=>r.b).sort((a,b)=>a-b),a=aa[Math.floor(aa.length/2)],b=bb[Math.floor(bb.length/2)],len=b-a+1;
       const nearEdge=center<(axis==='h'?roi.y0:roi.x0)+edgeMargin||center>(axis==='h'?roi.y1:roi.x1)-edgeMargin;
-      const stable=cluster.length>=2||thick>=3,wallLike=len>=minLen&&stable&&thick<=Math.max(55,crossSpan*.045)&&len/Math.max(1,thick)>=3.5;
+      const stable=cluster.length>=2||thick>=3,wallLike=len>=minLen&&stable&&thick<=Math.max(55,crossSpan*.045)&&len/Math.max(1,thick)>=3;
       if(wallLike&&!nearEdge)out.push({axis,pos:center,a,b,len,thick,count:cluster.length,rawCount:cluster.length});
     }
     return out;
@@ -836,11 +836,11 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     for(let i=0;i<segments.length;i++){if(seen[i])continue;const stack=[i],ids=[],seenLocal=new Set();seen[i]=1;while(stack.length){const n=stack.pop();ids.push(n);for(const q of adj[n])if(!seen[q]){seen[q]=1;stack.push(q)}}components.push({ids,length:ids.reduce((s,k)=>s+segments[k].len,0),nodes:ids.length})}
     components.sort((a,b)=>b.length-a.length);const largest=components[0]?.length||1,acceptedIds=new Set();
     for(const comp of components){
-      const connectedEnough=comp.nodes>=3||comp.length>=largest*.32;
-      if(comp===components[0]||((comp.length>=largest*.16||comp.nodes>=5)&&connectedEnough))for(const id of comp.ids)acceptedIds.add(id);
+      const connectedEnough=comp.nodes>=3||comp.length>=largest*.30;
+      if(comp===components[0]||((comp.length>=largest*.15||comp.nodes>=5)&&connectedEnough))for(const id of comp.ids)acceptedIds.add(id);
     }
     const accepted=[],uncertain=[];
-    segments.forEach((r,i)=>{const degree=adj[i].length,thicknessScore=Math.min(1,r.thick/5),lengthScore=Math.min(1,r.len/Math.max(1,Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.12)),score=.42*thicknessScore+.28*lengthScore+.30*Math.min(1,degree/2);r.score=score;r.connections=degree;(acceptedIds.has(i)&&score>=.34?accepted:uncertain).push(r)});
+    segments.forEach((r,i)=>{const degree=adj[i].length,thicknessScore=Math.min(1,r.thick/5),lengthScore=Math.min(1,r.len/Math.max(1,Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.12)),score=.42*thicknessScore+.28*lengthScore+.30*Math.min(1,degree/2);r.score=score;r.connections=degree;(acceptedIds.has(i)&&score>=.32?accepted:uncertain).push(r)});
     return{accepted,uncertain,components,adj};
   }
   function paintWallDetection(w,h,accepted,uncertain){
