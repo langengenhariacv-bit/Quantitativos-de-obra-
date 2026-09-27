@@ -99,7 +99,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
             <div class="field"><label>Área líquida de fachada conhecida (m²)</label><input id="areaFachadaManual" type="number" step="0.01" placeholder="Opcional; melhora pintura externa"></div>
             <div class="field"><label>Perímetro para rodapé (m)</label><input id="perimetroRodape" type="number" step="0.01" placeholder="Pode ser ajustado depois"></div>
           </div>
-          <div class="actions" style="margin-top:16px"><button class="btn primary" id="analisarBtn">Analisar PDF e ir para conferência</button><button class="btn secondary" id="salvarBtn">Salvar projeto</button><button class="btn ghost" id="exportBackupBtn">Exportar backup</button><button class="btn ghost" id="importBackupBtn">Importar backup</button><button class="btn danger" id="novoProjetoBtn">Novo projeto / limpar</button><input id="backupInput" type="file" accept="application/json,.json" style="display:none"></div>
+          <div class="actions" style="margin-top:16px"><button class="btn primary" id="analisarBtn">Analisar planta e ir para conferência</button><button class="btn secondary" id="salvarBtn">Salvar projeto</button><button class="btn ghost" id="exportBackupBtn">Exportar backup</button><button class="btn ghost" id="importBackupBtn">Importar backup</button><button class="btn danger" id="novoProjetoBtn">Novo projeto / limpar</button><input id="backupInput" type="file" accept="application/json,.json" style="display:none"></div>
         </div>
         <div class="card">
           <h2>Sistemas construtivos</h2>
@@ -221,7 +221,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
           </div>
         </div>
       </section>
-      <div class="footer">LANG Quantitativos • versão 4.0 • leitura raster conferível, estimativas rastreáveis e validação técnica</div>
+      <div class="footer">LANG Quantitativos • versão 4.1 • leitura híbrida e conferência estrutural</div>
     </main>
   </div>
 </div>
@@ -624,7 +624,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
   $('pdfInput').addEventListener('change',async e=>{
   const file=e.target.files[0];if(!file)return; if(file.size>60*1024*1024){alert('Use um arquivo com até 60 MB.');return} e.target.disabled=true; try{ const prior=state.pdfName===file.name?{walls:state.walls,rooms:state.rooms.filter(r=>r.source==='manual'),openings:state.openings.filter(o=>o.source!=='PDF'),scales:state.pageScales,confirmed:state.confirmed}:null; const pdfFile=/\.pdf$/i.test(file.name)||file.type==='application/pdf';let preparedPdf=null,preparedImage=null;if(pdfFile){await ensurePDF();preparedPdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise}else if(/^image\/(jpeg|png|webp)$/i.test(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name)){preparedImage=await loadPlanImage(file)}else{alert('Use PDF, JPG, PNG ou WebP.');return}
-  state.pageScales={};state.confirmed=false;state.openingDefinitions=[];state.scopeStatus={};state.pdf=null;state.image=null;state.viewport=null;state.pdfName=file.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];state.floorAreas=[];state.pdfText='';state.pageTexts=[];state.page=1;state.metersPerPixel=null;state.scaleDen=null;
+  state.pageScales={};state.pageDenominators={};state.confirmed=false;state.openingDefinitions=[];state.scopeStatus={};state.pdf=null;state.image=null;state.viewport=null;state.pdfName=file.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];state.autoWallDiagnostics={};state.floorAreas=[];state.pdfText='';state.pageTexts=[];state.page=1;state.metersPerPixel=null;state.scaleDen=null;
   const isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
   const isImage=/^image\/(jpeg|png|webp)$/i.test(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name);
   if(isPdf){
