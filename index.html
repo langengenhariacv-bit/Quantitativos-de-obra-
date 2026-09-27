@@ -297,7 +297,7 @@
     model:'Derivação geométrica explícita a partir da planta'
   };
   const bench={
-    excavacao:3.80/43.20,aterro:1.47/43.20,fundConc:(.86+1.47)/43.20,impermeabFund:14.70/43.20,
+    excavacao:3.80/43.20,aterro:1.47/43.20,fundConc:(.86+1.47)/43.20,fundAco:(.86*(6.2322+21.1313+30.85)+1.47*(17.5555+20.1227+27.4222))/43.20,fundForma:(.86*3.75+1.47*13.3333)/43.20,impermeabFund:14.70/43.20,radierConc:6.65/55.40,radierAco:(229.81+10.36)/55.40,radierForma:3.79/55.40,radierBrita:2.77/55.40,
     roof:65.75/43.20,forroPVC:57.75/43.20,cumeeira:7.80/43.20,
     contrapisoArea:66.88/43.20,contrapisoConc:3.34/43.20,pisoFinish:(7.30+31.85)/43.20,rodape:(22.27+13.60)/43.20,
     chapInt:94.50/43.20,chapExt:76.25/43.20,rebocoInt:70.42/43.20,fachada:76.25/43.20,
@@ -379,23 +379,23 @@
       if(['cftv','alarme','automacao','marcenaria','deck','pisoTatil','sinalAcess'].includes(id)){na(id,'Sistema opcional não identificado na prancha; não foi criado consumo fictício.');continue}
 
       switch(id){
-        case 'canteiro':add(id,x.A*bench.canteiro,'m²',estimatorSources.casa,'1,66 m² / 48,07 m²','média');break;
+        case 'canteiro':add(id,1,'lote',estimatorSources.model,'1 instalação de canteiro por obra; itens internos dependem do plano de canteiro','alta');break;
         case 'locacao':qFoot(id);break;
         case 'ligacoes':add(id,2,'un.',estimatorSources.model,'1 ligação provisória de água + 1 de energia','média');break;
-        case 'protecao':add(id,x.A*bench.andaime,'m²',estimatorSources.casa,'22,83 m² de andaime / 48,07 m²','baixa');break;
+        case 'protecao':add(id,x.A,'m² de obra atendida',estimatorSources.sinapi,'Área construída como grandeza de cobertura do serviço; equipamentos específicos dependem do plano de segurança','média');break;
         case 'residuos':qA(id,1,'m²',estimatorSources.sinapi,'Área construída como base de gestão; conversão em caçambas exige sistema executivo','média');break;
         case 'limpezaTerreno':qFoot(id);break;
-        case 'escavacao':add(id,x.foot*bench.estaca,'m³ equivalente',estimatorSources.casa,'Referência de 13 m de estaca / 48,07 m²; revisar com topografia/fundação','baixa');break;
-        case 'aterro':add(id,x.foot*bench.aterro,'m³',estimatorSources.casa,'12,98 m³ / 48,07 m²','baixa');break;
-        case 'botaFora':add(id,x.foot*bench.aterro,'m³',estimatorSources.casa,'Igual ao volume-base de movimento de terra; sem fator de empolamento inventado','baixa');break;
+        case 'escavacao':add(id,x.foot*bench.excavacao,'m³',estimatorSources.casa,'3,80 m³ de escavação / 43,20 m² na referência catarinense','média');break;
+        case 'aterro':add(id,x.foot*bench.aterro,'m³',estimatorSources.casa,'1,47 m³ de reaterro / 43,20 m² na referência catarinense','média');break;
+        case 'botaFora':add(id,x.foot*Math.max(0,bench.excavacao-bench.aterro),'m³',estimatorSources.model,'Balanço preliminar: escavação menos reaterro; não aplica fator de empolamento sem dado do solo','baixa');break;
         case 'drenagemProv':add(id,x.extPerim,'m',estimatorSources.model,'Perímetro equivalente da implantação','baixa');break;
-        case 'lastro':add(id,x.foot*bench.lastro,'m³',estimatorSources.casa,'0,16 m³ / 48,07 m²','média');break;
-        case 'fundacoes':add(id,x.foot*bench.estaca,'m de fundação-equivalente',estimatorSources.casa,'13 m de estaca / 48,07 m² quando não há projeto de fundações','baixa');break;
+        case 'lastro':{const ft=$('fundacaoTipo')?$('fundacaoTipo').value:'';if(/radier/i.test(ft))add(id,x.foot*bench.radierBrita,'m³', 'AGEHAB Casa UNI — radier 12 cm','2,77 m³ de lastro de brita / 55,40 m² de base','média');else add(id,x.foot,'m² de base',estimatorSources.model,'Área de implantação atendida; volume do lastro depende da solução de fundação','baixa');break;}
+        case 'fundacoes':{const ft=$('fundacaoTipo')?$('fundacaoTipo').value:'Não informado';if(/radier/i.test(ft))add(id,x.foot,'m²', 'AGEHAB Casa UNI — radier 12 cm','Área de implantação adotada como área de radier','média');else add(id,1,'sistema',estimatorSources.casa,'Referência-base: sapatas/blocos + vigas baldrame; tipo final depende de sondagem e projeto','baixa');break;}
         case 'baldrame':add(id,Math.max(x.wallLen/x.pav,x.extPerim),'m',estimatorSources.model,'Maior entre paredes do térreo e perímetro equivalente','média');break;
-        case 'fundConcreto':add(id,x.foot*bench.fundConc,'m³',estimatorSources.casa,'1,37 m³ / 48,07 m²','média');break;
-        case 'fundAco':add(id,x.foot*bench.fundAco,'kg',estimatorSources.casa,'Aço de estacas + baldrame normalizado por área','média');break;
-        case 'fundForma':add(id,x.foot*bench.fundForma,'m²',estimatorSources.casa,'4,60 m² / 48,07 m²','média');break;
-        case 'impermeabFund':add(id,x.foot*bench.impermeabFund,'m²',estimatorSources.casa,'28,79 m² / 48,07 m²','média');break;
+        case 'fundConcreto':{const ft=$('fundacaoTipo')?$('fundacaoTipo').value:'';if(/radier/i.test(ft))add(id,x.foot*bench.radierConc,'m³','AGEHAB Casa UNI — radier 12 cm','6,65 m³ / 55,40 m² de base de radier','média');else add(id,x.foot*bench.fundConc,'m³',estimatorSources.casa,'0,86 m³ fundações + 1,47 m³ baldrame / 43,20 m²','média');break;}
+        case 'fundAco':{const ft=$('fundacaoTipo')?$('fundacaoTipo').value:'';if(/radier/i.test(ft))add(id,x.foot*bench.radierAco,'kg','AGEHAB Casa UNI — radier 12 cm','240,17 kg de aço / 55,40 m² de base','média');else add(id,x.foot*bench.fundAco,'kg',estimatorSources.casa,'Composições 01 e 02: aço de sapatas e vigas baldrame, normalizado por 43,20 m²','média');break;}
+        case 'fundForma':{const ft=$('fundacaoTipo')?$('fundacaoTipo').value:'';if(/radier/i.test(ft))add(id,x.foot*bench.radierForma,'m²','AGEHAB Casa UNI — radier 12 cm','3,79 m² de fôrma / 55,40 m² de base','média');else add(id,x.foot*bench.fundForma,'m²',estimatorSources.casa,'Composições 01 e 02: fôrmas de sapatas e baldrame, normalizadas por 43,20 m²','média');break;}
+        case 'impermeabFund':add(id,x.foot*bench.impermeabFund,'m²',estimatorSources.casa,'14,70 m² / 43,20 m² de impermeabilização de baldrames','média');break;
         case 'chumbadores':add(id,Math.max(x.wallLen/x.pav,x.extPerim),'m de interface',estimatorSources.model,'Extensão de interface; quantidade de peças exige projeto estrutural','baixa');break;
         case 'estruturaConcreto':add(id,x.A*x.structural.conc,'m³',estimatorSources.cbc,'Média estatística por m² estrutural','alta',x.A*x.structural.concMin,x.A*x.structural.concMax);break;
         case 'estruturaAco':add(id,x.A*x.structural.steel,'kg',estimatorSources.cbc,'Média estatística por m² estrutural','alta',x.A*x.structural.steelMin,x.A*x.structural.steelMax);break;
@@ -413,17 +413,17 @@
         case 'impermeabReserv':na(id,'Reservatório/piscina impermeabilizado não identificado.');break;
         case 'juntas':add(id,x.wetPerim||x.extPerim,'m',estimatorSources.model,'Perímetro equivalente das áreas de arremate','baixa');break;
         case 'estruturaCobertura':case 'mantaCobertura':if(x.roofArea)add(id,x.roofArea,'m²',estimatorSources.casa,'Área informada ou 61,32/48,07 × implantação','média');else na(id,'Cobertura não ativada.');break;
-        case 'cumeeiras':if(x.roofArea)add(id,x.foot*bench.cumeeira,'m',estimatorSources.casa,'8,85 m / 48,07 m²','média');else na(id,'Cobertura não ativada.');break;
+        case 'cumeeiras':if(x.roofArea)add(id,x.foot*bench.cumeeira,'m',estimatorSources.casa,'7,80 m / 43,20 m²','média');else na(id,'Cobertura não ativada.');break;
         case 'rufos':if(x.roofArea)add(id,x.extPerim,'m',estimatorSources.model,'Perímetro equivalente','baixa');else na(id,'Cobertura não ativada.');break;
         case 'calhas':if(x.roofArea)add(id,2*Math.sqrt(x.foot),'m',estimatorSources.model,'Modelo equivalente de duas águas','baixa');else na(id,'Cobertura não ativada.');break;
         case 'condutores':case 'pluvial':if(x.roofArea)add(id,Math.max(2,x.units)*x.h*x.pav,'m',estimatorSources.model,'Prumada equivalente por unidade × altura','baixa');else na(id,'Rede pluvial não ativada.');break;
-        case 'aguaFria':add(id,x.A*bench.aguaFria,'m',estimatorSources.casa,'38,10 m / 48,07 m²','média');break;
-        case 'registros':add(id,x.units*3,'un.',estimatorSources.casa,'2 registros de gaveta + 1 de pressão por unidade na referência','média');break;
-        case 'esgoto':add(id,x.A*bench.esgoto,'m',estimatorSources.casa,'24,00 m / 48,07 m²','média');break;
-        case 'ventSanitaria':add(id,x.A*bench.vent,'m',estimatorSources.casa,'3,00 m / 48,07 m²','média');break;
-        case 'ralos':add(id,Math.max(1,x.bwc+x.services),'un.',estimatorSources.geo,'1 por BWC/área de serviço','média');break;
-        case 'caixas':add(id,x.units*5,'un.',estimatorSources.casa,'1 caixa gordura + 4 passagem por unidade','média');break;
-        case 'reservatorios':add(id,x.A*bench.reservLitros,'L',estimatorSources.casa,'500 L / 48,07 m²','média');break;
+        case 'aguaFria':add(id,x.A*bench.aguaFria,'m',estimatorSources.casa,'23,00 m de tubos de água fria / 43,20 m²','média');break;
+        case 'registros':add(id,x.units*6,'un.',estimatorSources.casa,'Referência por unidade: 3 gaveta + 2 esfera + 1 pressão','média');break;
+        case 'esgoto':add(id,x.A*bench.esgoto,'m',estimatorSources.casa,'12,00 m de tubos de esgoto / 43,20 m²','média');break;
+        case 'ventSanitaria':add(id,Math.max(x.units,x.bwc)*x.h,'m',estimatorSources.model,'1 prumada de ventilação equivalente por unidade/BWC × pé-direito; confirmar projeto sanitário','baixa');break;
+        case 'ralos':add(id,Math.max(1,x.bwc),'un.',estimatorSources.casa,'Referência catarinense: 1 ralo por BWC; áreas de serviço devem ser conferidas','média');break;
+        case 'caixas':add(id,x.units*2,'un.',estimatorSources.casa,'1 caixa de gordura + 1 caixa de inspeção por unidade na referência','média');break;
+        case 'reservatorios':add(id,x.units,'un.',estimatorSources.casa,'1 reservatório por unidade na referência; capacidade deve seguir população/projeto de abastecimento','média',null,null,'Reservatórios de água');break;
         case 'loucas':add(id,Math.max(x.units*2,x.bwc*2),'un.',estimatorSources.casa,'1 vaso + 1 lavatório por unidade, ajustado aos BWCs','média');break;
         case 'metais':add(id,Math.max(x.units*3,x.bwc+x.kitchens+x.services),'un.',estimatorSources.casa,'Lavatório + pia + tanque por unidade','média');break;
         case 'tratamentoEsgoto':add(id,x.units,'conj.',estimatorSources.casa,'1 fossa + sumidouro por unidade na referência; confirmar solução local','baixa');break;
@@ -431,14 +431,14 @@
         case 'gasAbrigo':add(id,/central/i.test(gas)?1:x.units,'un.',estimatorSources.model,/central/i.test(gas)?'1 central':'1 abrigo por unidade','média');break;
         case 'gasValv':case 'gasVent':add(id,x.units,'un.',estimatorSources.model,'1 conjunto por unidade','média');break;
         case 'entradaEnergia':case 'quadros':add(id,x.units,'un.',estimatorSources.casa,'1 por unidade na referência','média');break;
-        case 'protecoes':add(id,Math.ceil(x.A*bench.protecaoEletrica),'un.',estimatorSources.casa,'8 dispositivos / 48,07 m²','média');break;
-        case 'eletrodutos':add(id,x.A*bench.eletroduto,'m',estimatorSources.casa,'57,90 m / 48,07 m²','média');break;
-        case 'cabos':add(id,x.A*bench.cabos,'m',estimatorSources.casa,'249,20 m / 48,07 m²','média');break;
-        case 'caixasEletricas':add(id,Math.ceil(x.A*bench.caixasEletricas),'un.',estimatorSources.casa,'19 caixas / 48,07 m²','média');break;
-        case 'tomadas':add(id,Math.ceil(x.A*bench.tomadas),'un.',estimatorSources.casa,'13 tomadas / 48,07 m²','média');break;
-        case 'interruptores':add(id,Math.ceil(x.A*bench.interruptores),'un.',estimatorSources.casa,'6 interruptores / 48,07 m²','média');break;
-        case 'luminarias':add(id,Math.ceil(x.A*bench.luz),'un.',estimatorSources.casa,'8 pontos de luz / 48,07 m²','média');break;
-        case 'aterramento':add(id,x.A*bench.terra,'m de condutor',estimatorSources.casa,'50,10 m cobre nu / 48,07 m²','média');break;
+        case 'protecoes':add(id,Math.ceil(x.A*bench.protecaoEletrica),'un.',estimatorSources.casa,'10 dispositivos de proteção / 43,20 m²','média');break;
+        case 'eletrodutos':add(id,x.A*bench.eletroduto,'m',estimatorSources.casa,'100,00 m de eletrodutos / 43,20 m²','média');break;
+        case 'cabos':add(id,x.A*bench.cabos,'m',estimatorSources.casa,'322,00 m de cabos de cobre / 43,20 m²','média');break;
+        case 'caixasEletricas':add(id,Math.max(x.electrical.caixas,Math.ceil(x.A*bench.caixasEletricas)),'un.',x.rooms.length?estimatorSources.nbr5410:estimatorSources.casa,x.rooms.length?'Tomadas + interruptores + pontos de luz derivados dos ambientes':'20 caixas / 43,20 m² na referência catarinense','média');break;
+        case 'tomadas':add(id,x.rooms.length?x.electrical.tomadas:Math.ceil(x.A*bench.tomadas),'un.',x.rooms.length?estimatorSources.nbr5410:estimatorSources.casa,x.rooms.length?'Mínimos por ambiente usando perímetro equivalente 4√área; cozinhas/serviço 3,5 m e demais ambientes 5 m':'16 tomadas / 43,20 m²','média');break;
+        case 'interruptores':add(id,x.rooms.length?x.electrical.interruptores:Math.ceil(x.A*bench.interruptores),'un.',x.rooms.length?estimatorSources.geo:estimatorSources.casa,x.rooms.length?'1 comando mínimo por ambiente identificado':'5 interruptores / 43,20 m²','média');break;
+        case 'luminarias':add(id,x.rooms.length?x.electrical.luzes:Math.ceil(x.A*bench.luz),'un.',x.rooms.length?estimatorSources.nbr5410:estimatorSources.casa,x.rooms.length?'1 ponto de luz mínimo por ambiente; carga mínima calculada separadamente':'7 pontos / 43,20 m²','média');break;
+        case 'aterramento':add(id,x.units*2,'m de condutor',estimatorSources.casa,'2,00 m de cobre nu + 1 haste + 1 caixa por unidade na referência; malha final depende do projeto','baixa');break;
         case 'dados':add(id,Math.max(x.units,x.beds+x.living),'pontos',estimatorSources.model,'1 por dormitório/sala, mínimo 1 por unidade','baixa');break;
         case 'tv':case 'interfone':add(id,x.units,'pontos',estimatorSources.model,'1 por unidade','média');break;
         case 'spdaCap':if(spda==='Sim')add(id,x.extPerim,'m',estimatorSources.model,'Perímetro equivalente; confirmar NBR 5419','baixa');else na(id,'SPDA não confirmado.');break;
@@ -459,23 +459,23 @@
         case 'sprinklers':add(id,x.A,'m² protegidos',estimatorSources.geo,'Área total protegida; quantidade de bicos exige projeto/IN 15','média');break;
         case 'reservaInc':add(id,1,'sistema',estimatorSources.model,'1 reserva técnica; volume exige cálculo','baixa');break;
         case 'emboço':add(id,(state.metrics&&state.metrics.coatArea)||x.wallLen*x.h,'m²',estimatorSources.geo,'Superfície geométrica de paredes','alta');break;
-        case 'ceramicaParede':add(id,x.A*bench.cerParede,'m²',estimatorSources.casa,'16,95 m² / 48,07 m²','média');break;
+        case 'ceramicaParede':add(id,x.A*bench.cerParede,'m²',estimatorSources.casa,'24,08 m² / 43,20 m²','média');break;
         case 'fachada':add(id,x.extPerim*x.h*x.pav,'m²',estimatorSources.model,'Perímetro equivalente × altura total','média');break;
-        case 'lastroPiso':case 'contrapiso':add(id,x.A*bench.contrapiso,'m²',estimatorSources.casa,'43,46 m² / 48,07 m²','média');break;
-        case 'rodape':add(id,x.A*bench.rodape,'m',estimatorSources.casa,'40,50 m / 48,07 m²','média');break;
+        case 'lastroPiso':case 'contrapiso':add(id,x.A*bench.contrapisoArea,'m²',estimatorSources.casa,'66,88 m² de base/regularização / 43,20 m²; inclui áreas externas na referência e deve ser conferido','baixa');break;
+        case 'rodape':add(id,x.A*bench.rodape,'m',estimatorSources.casa,'35,87 m / 43,20 m²','média');break;
         case 'juntasPiso':add(id,x.eqPerim,'m de perímetro equivalente',estimatorSources.model,'Perímetros equivalentes dos ambientes','baixa');break;
-        case 'forro':case 'estruturaForro':if(/sem forro|laje/i.test(forro))na(id,'Forro leve não selecionado.');else if(/pvc/i.test(forro))add(id,x.A*bench.forroPVC,'m²',estimatorSources.casa,'34,82 m² / 48,07 m²','média');else add(id,x.A,'m²',estimatorSources.geo,'Área construída como área de teto','média');break;
+        case 'forro':case 'estruturaForro':if(/sem forro|laje/i.test(forro))na(id,'Forro leve não selecionado.');else if(/pvc/i.test(forro))add(id,x.A*bench.forroPVC,'m²',estimatorSources.casa,'57,75 m² / 43,20 m² incluindo beirais na referência','média');else add(id,x.roomFloor||x.A,'m²',estimatorSources.geo,'Área de ambientes identificados como base de teto/forro','média');break;
         case 'sancas':if(/gesso/i.test(forro))add(id,x.eqPerim,'m',estimatorSources.model,'Perímetro equivalente dos ambientes','baixa');else na(id,'Sancas/tabicas não indicadas.');break;
-        case 'tintaExterna':add(id,x.A*bench.pintExt,'m²',estimatorSources.casa,'70,46 m² / 48,07 m²','média');break;
-        case 'textura':if(/outro/i.test($('revExterno')?$('revExterno').value:''))add(id,x.A*bench.pintExt,'m²',estimatorSources.casa,'Superfície externa de referência','baixa');else na(id,'Textura não selecionada.');break;
-        case 'esmalte':add(id,x.A*bench.esquadPint,'m² de referência',estimatorSources.casa,'31,31 m² / 48,07 m²; aplicar às esquadrias pintáveis','baixa');break;
+        case 'tintaExterna':add(id,Math.max(0,x.extPerim*x.h*x.pav),'m²',estimatorSources.model,'Perímetro equivalente da implantação × altura total; vãos são descontados no cálculo principal de pintura','média');break;
+        case 'textura':if(/outro/i.test($('revExterno')?$('revExterno').value:''))add(id,x.extPerim*x.h*x.pav,'m²',estimatorSources.model,'Perímetro equivalente × altura total','baixa');else na(id,'Textura não selecionada.');break;
+        case 'esmalte':{const metal=state.openings.filter(function(o){return /vidro|ferro|alum/i.test(o.type)}).reduce(function(s,o){return s+o.qty*o.w*o.h*2},0);if(metal)add(id,metal,'m²',estimatorSources.geo,'Duas faces equivalentes das esquadrias metálicas/vidro identificadas; conferir acabamento real','baixa');else na(id,'Esquadrias pintáveis não identificadas.');break;}
         case 'verniz':{const wood=state.openings.filter(function(o){return /porta p3|porta p4|madeira/i.test(o.type)}).reduce(function(s,o){return s+o.qty*o.w*o.h*2},0);if(wood)add(id,wood,'m²',estimatorSources.geo,'Duas faces das portas de madeira','média');else na(id,'Madeira envernizada não identificada.');break}
         case 'bancadas':add(id,Math.max(1,x.kitchens)*(.54*1.20),'m²',estimatorSources.casa,'Pia 1,20 × 0,54 m por cozinha','média');break;
         case 'cubas':add(id,Math.max(x.units*2,x.kitchens+x.services+x.bwc),'un.',estimatorSources.casa,'Pia/tanque da referência + ambientes identificados','média');break;
         case 'vasos':case 'lavatorios':case 'chuveiros':case 'boxes':add(id,Math.max(x.units,x.bwc),'un.',estimatorSources.geo,'1 por BWC/unidade','alta');break;
         case 'torneiras':add(id,Math.max(x.units*3,x.bwc+x.kitchens+x.services),'un.',estimatorSources.casa,'Lavatório + cozinha + tanque por unidade','média');break;
         case 'acessoriosBwc':add(id,Math.max(x.units,x.bwc),'kits',estimatorSources.geo,'1 kit por BWC/unidade','média');break;
-        case 'calcadas':case 'pavExt':add(id,x.foot*bench.pisoExt,'m²',estimatorSources.casa,'18,75 m² de piso externo / 48,07 m²; conferir implantação','baixa');break;
+        case 'calcadas':case 'pavExt':add(id,x.foot,'m² de área-base',estimatorSources.model,'Área de implantação usada somente como grandeza preliminar; área externa real exige planta de implantação','baixa');break;
         case 'drenExt':add(id,x.extPerim,'m',estimatorSources.model,'Perímetro equivalente','baixa');break;
         case 'muros':if(/muro/i.test(text))add(id,x.extPerim*x.h,'m² de referência',estimatorSources.model,'Perímetro equivalente × pé-direito','baixa');else na(id,'Muro/contenção não identificado.');break;
         case 'cercas':case 'paisagismo':na(id,'Implantação externa não fornece geometria suficiente para este item.');break;
