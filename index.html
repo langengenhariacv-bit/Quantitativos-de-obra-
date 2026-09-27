@@ -757,14 +757,21 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
 
 
   async function renderPage(){
-    if(!state.pdf)return;const page=await state.pdf.getPage(state.page);const scale=1.45;const viewport=page.getViewport({scale});state.viewport=viewport;
-    const canvas=$('pdfCanvas'),ctx=canvas.getContext('2d');canvas.width=viewport.width;canvas.height=viewport.height;$('overlay').setAttribute('width',viewport.width);$('overlay').setAttribute('height',viewport.height);$('overlay').style.width=viewport.width+'px';$('overlay').style.height=viewport.height+'px';
-    await page.render({canvasContext:ctx,viewport}).promise;drawAutoWallMask();
-    if(state.scaleDen && !state.metersPerPixel) state.metersPerPixel=0.0254/72*state.scaleDen/scale;
-    $('pageLabel').textContent=`${state.page} / ${state.pages}`;drawOverlay();updateReadout();
+    if(!state.pdf&&!state.image)return;
+    const canvas=$('pdfCanvas'),ctx=canvas.getContext('2d');let viewport,scale=1;
+    if(state.pdf){
+      const page=await state.pdf.getPage(state.page);scale=1.45;viewport=page.getViewport({scale});canvas.width=viewport.width;canvas.height=viewport.height;
+      await page.render({canvasContext:ctx,viewport}).promise;
+      if(state.scaleDen&&!state.metersPerPixel)state.metersPerPixel=0.0254/72*state.scaleDen/scale;
+    }else{
+      const img=state.image;scale=imageDisplayScale(img);viewport={width:Math.max(1,Math.round((img.naturalWidth||img.width)*scale)),height:Math.max(1,Math.round((img.naturalHeight||img.height)*scale))};
+      canvas.width=viewport.width;canvas.height=viewport.height;ctx.fillStyle='#fff';ctx.fillRect(0,0,viewport.width,viewport.height);ctx.drawImage(img,0,0,viewport.width,viewport.height);
+    }
+    state.viewport=viewport;$('overlay').setAttribute('width',viewport.width);$('overlay').setAttribute('height',viewport.height);$('overlay').style.width=viewport.width+'px';$('overlay').style.height=viewport.height+'px';
+    drawAutoWallMask();$('pageLabel').textContent=state.page+' / '+state.pages;drawOverlay();updateReadout();
   }
   $('prevPage').onclick=async()=>{if(state.page>1){state.page--;await renderPage()}};$('nextPage').onclick=async()=>{if(state.page<state.pages){state.page++;await renderPage()}};
-  $('relerAutoBtn').onclick=async()=>{if(!state.pdf){alert('Recarregue o PDF primeiro.');return}$('relerAutoBtn').disabled=true;$('relerAutoBtn').textContent='Analisando...';await estimateWallsFromPdf();await renderPage();$('relerAutoBtn').disabled=false;$('relerAutoBtn').textContent='Refazer leitura automática';saveProject(false)};
+  $('relerAutoBtn').onclick=async()=>{if(!state.pdf&&!state.image){alert('Recarregue o arquivo da planta primeiro.');return}$('relerAutoBtn').disabled=true;$('relerAutoBtn').textContent='Analisando...';await estimateWallsFromPdf();await renderPage();$('relerAutoBtn').disabled=false;$('relerAutoBtn').textContent='Refazer leitura automática';saveProject(false)};
 
   function setMode(m){state.mode=m;state.tempPts=[];$('overlay').classList.toggle('active',!!m);$('scaleBox').textContent=m==='cal'?'Clique em dois pontos de uma dimensão conhecida.':m==='wall'?'Clique no início e no fim da parede.':'Ferramenta cancelada.';drawOverlay()}
   $('calibrarBtn').onclick=()=>setMode('cal');$('paredeBtn').onclick=()=>setMode('wall');$('cancelMode').onclick=()=>setMode(null);
@@ -781,7 +788,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
 
   function updateReadout(){const areaRooms=state.floorAreas.length?state.floorAreas.reduce((s,r)=>s+r.area,0):state.rooms.reduce((s,r)=>s+r.area,0),manualWallM=state.walls.reduce((s,w)=>s+w.length,0),wallM=manualWallM||state.autoWallLength||0;$('statEscala').textContent=state.metersPerPixel?(state.scaleDen?`1:${state.scaleDen}`:'Calibrada'):(state.scaleDen?`1:${state.scaleDen}`:'—');$('statAmb').textContent=state.rooms.length;$('statArea').textContent=fmt(areaRooms)+' m²';$('statWalls').textContent=state.walls.length?state.walls.length:(state.autoWallLength?'AUTO':'0');$('statWallM').textContent=fmt(wallM)+' m';if(state.metersPerPixel)$('scaleBox').textContent=state.scaleDen?`Escala lida do PDF: 1:${state.scaleDen}. Confirme se o arquivo foi plotado corretamente ou calibre por uma cota conhecida.`:'Escala calibrada manualmente.'}
 
-  $('analisarBtn').onclick=async()=>{if(!state.pdf){alert('Selecione um PDF primeiro.');return}await renderPage();renderRooms();renderWalls();renderOpenings();renderAutoRead();renderScopeStatus();showView('planta')};
+  $('analisarBtn').onclick=async()=>{if(!state.pdf&&!state.image){alert('Selecione um PDF ou imagem primeiro.');return}await renderPage();renderRooms();renderWalls();renderOpenings();renderAutoRead();renderScopeStatus();showView('planta')};
   $('salvarBtn').onclick=()=>{saveProject();alert('Projeto salvo neste dispositivo.')};
   $('calcularBtn').onclick=()=>{calculate();showView('quant')};
 
