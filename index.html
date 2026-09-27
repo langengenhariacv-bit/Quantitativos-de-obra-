@@ -291,7 +291,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
     ['q_elevador','Elevadores','un.','25. Transporte vertical','elevador',false],['q_limpeza','Limpeza pós-obra','m²','26. Serviços finais','limpezaFinal',false]
   ];
   const defaultScope=new Set(componentCatalog.flatMap(g=>g.items.map(i=>i[0])));
-  const state={pdf:null,image:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],pageScales:{},confirmed:false,autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],autoWallDiagnostics:{},materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
+  const state={pdf:null,image:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],pageScales:{},pageDenominators:{},confirmed:false,autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],autoWallDiagnostics:{},materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
   let autosaveTimer;
 
   function fmt(n,d=2){return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})}
@@ -643,44 +643,63 @@ function loadPlanImage(file){return new Promise((resolve,reject)=>{const url=URL
 function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height))}
 
   async function extractPdfText(){
-    if(!state.pdf)return;let all=[];let rooms=[];state.pageTexts=[];
+    if(!state.pdf)return;let all=[],rooms=[];state.pageTexts=[];state.pageDenominators={};
     for(let p=1;p<=state.pdf.numPages;p++){
-      const page=await state.pdf.getPage(p);const tc=await page.getTextContent();
-      const items=tc.items.map(i=>({s:i.str.trim(),x:i.transform[4],y:i.transform[5]})).filter(i=>i.s);
+      const page=await state.pdf.getPage(p),tc=await page.getTextContent();
+      const items=tc.items.map(i=>({s:String(i.str||'').trim(),x:i.transform?.[4]||0,y:i.transform?.[5]||0,w:i.width||0,h:i.height||0})).filter(i=>i.s);
       items.sort((a,b)=>Math.abs(b.y-a.y)>3?b.y-a.y:a.x-b.x);
       const pageText=items.map(i=>i.s).join(' ');state.pageTexts.push(pageText);all.push(pageText);
+      const dens=[...new Set([...pageText.matchAll(/\b1\s*[:/]\s*(20|25|30|40|50|75|100|125|150|200|250|500)\b/g)].map(m=>num(m[1])))];
+      if(dens.length===1)state.pageDenominators[p]=dens[0];
+      const used=new Set();
       for(let i=0;i<items.length;i++){
-        const m=items[i].s.match(/(\d{1,4}[,.]\d{1,2}|\d{1,4})\s*m[²2]/i);
-        if(m){let label='Ambiente';for(let j=i-1;j>=Math.max(0,i-4);j--){if(items[j].s.length>2&&!/^[-+]?\d/.test(items[j].s)&&!/Área|Escala/i.test(items[j].s)){label=items[j].s;break}}rooms.push({name:label,area:num(m[1]),page:p,x:items[i].x,y:items[i].y});}
+        const s=items[i].s,areaMatch=s.match(/(?:^|\b)(?:A(?:rea)?\.?\s*[:=]?\s*)?(\d{1,4}[,.]\d{1,2})\s*m[²2]\b/i);
+        if(!areaMatch)continue;const area=num(areaMatch[1]);if(!(area>0&&area<1000))continue;
+        const x=items[i].x,y=items[i].y;
+        const candidates=items.map((it,j)=>({it,j,dy:Math.abs(it.y-y),dx:Math.abs(it.x-x)}))
+          .filter(o=>o.j!==i&&o.dy<38&&o.it.s.length>1&&!/^(?:A|P|Área|Per[ií]metro)\s*[:=]?/i.test(o.it.s)&&!/^\d/.test(o.it.s)&&!/\bm[²2]\b/i.test(o.it.s))
+          .sort((a,b)=>(a.dy*2+a.dx*.04)-(b.dy*2+b.dx*.04));
+        let label=candidates[0]?.it.s||'Ambiente';label=label.replace(/\s+/g,' ').trim();if(label.length>60)label=label.slice(0,60);
+        let perimeter=0;const nearby=items.filter((it,j)=>j!==i&&Math.abs(it.y-y)<26&&Math.abs(it.x-x)<170).map(it=>it.s).join(' ');
+        const pm=nearby.match(/(?:P|Per[ií]metro)\s*[:=]?\s*(\d{1,4}[,.]\d{1,2})\s*m\b/i);if(pm)perimeter=num(pm[1]);
+        const key=p+'|'+Math.round(x/5)+'|'+Math.round(y/5)+'|'+area;if(!used.has(key)){used.add(key);rooms.push({name:label,area,perimeter,page:p,x,y});}
       }
     }
     state.pdfText=all.join('\n');state.rooms=dedupeRooms(rooms);
-    const scaleMatch=state.pdfText.match(/escala\s*[:\-]?\s*1\s*[:\/]\s*(\d{1,4})/i)||state.pdfText.match(/\b1\s*[:\/]\s*(20|25|50|75|100|125|200)\b/i);
-    const denominators=new Set([...state.pdfText.matchAll(/\b1\s*[:/]\s*(20|25|50|75|100|125|200)\b/g)].map(m=>m[1]));if(scaleMatch&&denominators.size<=1)state.scaleDen=num(scaleMatch[1]);else state.scaleDen=null;
+    const uniqueDen=[...new Set(Object.values(state.pageDenominators))];state.scaleDen=uniqueDen.length===1?uniqueDen[0]:null;
     state.floorAreas=extractFloorAreasFromText(state.pdfText);
-    if(state.floorAreas.length){$('areaConstruida').value=state.floorAreas.reduce((a,b)=>a+b.area,0).toFixed(2);}else if(state.rooms.length&&!num($('areaConstruida').value)){$('areaConstruida').value=state.rooms.reduce((a,b)=>a+b.area,0).toFixed(2);}
+    if(state.floorAreas.length)$('areaConstruida').value=state.floorAreas.reduce((a,b)=>a+b.area,0).toFixed(2);
     if(/multifamiliar/i.test(state.pdfText))$('tipoObra').value='Residencial multifamiliar';
-    const hasInf=/pavto\.?\s*inferior/i.test(state.pdfText),hasSup=/pavto\.?\s*superior/i.test(state.pdfText);if(hasInf&&hasSup)$('pavimentos').value=2;
-    const kitchenCount=state.rooms.filter(r=>r.area>0&&r.area<100&&/cozinha/i.test(r.name||'')).length;if(!num($('unidades').value))$('unidades').value=/multifamiliar/i.test(state.pdfText)&&kitchenCount?kitchenCount:1;
+    const hasInf=/pavto\.?\s*inferior|pavimento\s+inferior/i.test(state.pdfText),hasSup=/pavto\.?\s*superior|pavimento\s+superior/i.test(state.pdfText);if(hasInf&&hasSup)$('pavimentos').value=2;
     extractOpeningsFromText();
     await estimateWallsFromPdf();
-    $('pdfInfo').textContent=`${state.pdfName} • ${state.pages} página(s)${state.scaleDen?' • escala 1:'+state.scaleDen:''}${num($('areaConstruida').value)?' • área '+fmt(num($('areaConstruida').value))+' m²':''}`;
+    const scaleText=state.scaleDen?' • escala 1:'+state.scaleDen:(Object.keys(state.pageDenominators).length?' • escalas por página detectadas':'');
+    $('pdfInfo').textContent=state.pdfName+' • '+state.pages+' página(s)'+scaleText+(num($('areaConstruida').value)?' • área '+fmt(num($('areaConstruida').value))+' m²':'');
     updateReadout();renderRooms();renderOpenings();renderAutoRead();
   }
   function dedupeRooms(arr){const seen=new Set();return arr.filter(r=>{const k=r.page+'|'+Math.round((r.x||0)/6)+'|'+Math.round((r.y||0)/6)+'|'+r.area;if(seen.has(k))return false;seen.add(k);return r.area>0&&r.area<10000})}
   function extractFloorAreasFromText(text){const found=[];const patterns=[/Planta\s+Baixa\s+(?:Pavto\.?|Pavimento)?\s*(Inferior|Superior|T[eé]rreo|Cobertura)?[\s\S]{0,55}?Área\s*[:\-]?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]/gi,/(?:Pavto\.?|Pavimento)\s*(Inferior|Superior|T[eé]rreo)[\s\S]{0,55}?Área\s*[:\-]?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]/gi];for(const re of patterns){for(const m of text.matchAll(re)){const area=num(m[2]),label=(m[1]||'Pavimento').trim();if(area>0&&area<10000&&!found.some(x=>Math.abs(x.area-area)<.001&&x.label===label))found.push({label,area})}if(found.length)break}return found}
   function extractOpeningsFromText(){
-    const text=state.pdfText.replace(/\s+/g,' '),codes=[...new Set([...text.matchAll(/\b([JP]\d{1,2})\b/g)].map(m=>m[1]))],defs=[];
+    const text=state.pdfText.replace(/\s+/g,' '),codes=[...new Set([...text.matchAll(/\b([JP]\d{1,2})\b/gi)].map(m=>m[1].toUpperCase()))],defs=[];
     for(const code of codes){
-      const re=new RegExp('\\b'+code+'\\b\\s+(Janela|Porta)\\b','i'),m=re.exec(text);if(!m)continue;
-      const seg=text.slice(m.index,Math.min(text.length,m.index+220)),nums=[...seg.matchAll(/\b(\d{2,3}[,.]\d{1,2})\b/g)].map(x=>num(x[1])),isWin=/janela/i.test(m[1]);
-      if((isWin&&nums.length<3)||(!isWin&&nums.length<2))continue;
-      const w=nums[0]/100,h=(isWin?nums[2]:nums[1])/100,count=Math.max(0,(text.match(new RegExp('\\b'+code+'\\b','g'))||[]).length-1);
-      const material=/vidro/i.test(seg)?'vidro':/madeira/i.test(seg)?'madeira':/alum[ií]nio/i.test(seg)?'alumínio':/ferro|a[cç]o/i.test(seg)?'metálica':'';
-      if(count>0&&w>.2&&w<5&&h>.2&&h<5)defs.push({code:code,type:isWin?'Janela':'Porta',material:material,w:w,h:h,qty:count});
+      const matches=[...text.matchAll(new RegExp('\\b'+code+'\\b','gi'))];if(!matches.length)continue;
+      const type=code.startsWith('J')?'Janela':'Porta';let best=null;
+      for(const hit of matches){
+        const seg=text.slice(hit.index,Math.min(text.length,hit.index+240));let w=0,h=0,peitoril=null;
+        const pair=seg.match(/(?:^|\s)(\d{2,3})\s*[xX×]\s*(\d{2,3})(?:\s*[xX×]\s*(\d{2,3}))?/);
+        if(pair){w=num(pair[1])/100;h=num(pair[2])/100;if(pair[3])peitoril=num(pair[3])/100}
+        else{
+          const nums=[...seg.matchAll(/\b(\d{2,3}[,.]\d{1,2}|\d{2,3})\b/g)].map(x=>num(x[1])).filter(n=>n>=30&&n<=400);
+          if(type==='Janela'&&nums.length>=2){w=nums[0]/100;h=(nums.length>=3?nums[2]:nums[1])/100;if(nums.length>=3)peitoril=nums[1]/100}
+          else if(type==='Porta'&&nums.length>=2){w=nums[0]/100;h=nums[1]/100}
+        }
+        if(w>.25&&w<5&&h>.25&&h<5){const score=(new RegExp('\\b'+(type==='Janela'?'janela':'porta')+'\\b','i').test(seg)?3:0)+(pair?2:0)+(/largura|altura|peitoril|dimens/i.test(seg)?2:0);if(!best||score>best.score)best={w,h,peitoril,seg,score}}
+      }
+      if(!best)continue;const qty=Math.max(0,matches.length-1),material=/vidro/i.test(best.seg)?'vidro':/madeira/i.test(best.seg)?'madeira':/alum[ií]nio/i.test(best.seg)?'alumínio':/ferro|a[cç]o/i.test(best.seg)?'metálica':'';
+      if(qty>0)defs.push({code,type,material,w:best.w,h:best.h,peitoril:best.peitoril,qty});
     }
     state.openingDefinitions=defs;const manual=state.openings.filter(o=>o.source!=='PDF');
-    state.openings=[...manual,...defs.map(d=>({type:d.type+' '+d.code+(d.material?' '+d.material:''),code:d.code,material:d.material,qty:d.qty,w:d.w,h:d.h,source:'PDF'}))];
+    state.openings=[...manual,...defs.map(d=>({type:d.type+' '+d.code+(d.material?' '+d.material:''),code:d.code,material:d.material,qty:d.qty,w:d.w,h:d.h,peitoril:d.peitoril,source:'PDF'}))];
   }
   function brickFinishedThickness(){const b=$('tijolo').value;return b==='9'?0.12:b==='14'?0.18:0.15}
   function autoWallRoi(pageNumber,vp,w,h){
@@ -859,7 +878,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
       const page=await state.pdf.getPage(p),vp=page.getViewport({scale:renderScale}),canvas=document.createElement('canvas');canvas.width=Math.ceil(vp.width);canvas.height=Math.ceil(vp.height);
       const ctx=canvas.getContext('2d',{willReadFrequently:true});await page.render({canvasContext:ctx,viewport:vp}).promise;
       const data=ctx.getImageData(0,0,canvas.width,canvas.height).data,roi=autoWallRoi(p,vp,canvas.width,canvas.height);
-      const mpp=state.pageScales[p]?state.pageScales[p]*1.45/renderScale:(state.scaleDen?0.0254/72*state.scaleDen/renderScale:0);
+      const mpp=state.pageScales[p]?state.pageScales[p]*1.45/renderScale:(state.pageDenominators[p]?0.0254/72*state.pageDenominators[p]/renderScale:(state.scaleDen?0.0254/72*state.scaleDen/renderScale:0));
       const det=detectImageWallGeometry(data,canvas.width,canvas.height,roi,mpp);
       let lineLength=mpp&&det.lengthPx?det.lengthPx*mpp:0,grayLength=0,grayFootprint=0,grayCanvas=null,bestLevel=0,bestScore=0,grayRatio=0;
 
@@ -918,7 +937,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if(state.pdf){
       const page=await state.pdf.getPage(state.page);scale=1.45;viewport=page.getViewport({scale});canvas.width=viewport.width;canvas.height=viewport.height;
       await page.render({canvasContext:ctx,viewport}).promise;
-      state.metersPerPixel=state.pageScales[state.page]||(state.scaleDen?0.0254/72*state.scaleDen/scale:null);
+      state.metersPerPixel=state.pageScales[state.page]||(state.pageDenominators[state.page]?0.0254/72*state.pageDenominators[state.page]/scale:(state.scaleDen?0.0254/72*state.scaleDen/scale:null));
     }else{
       const img=state.image;scale=imageDisplayScale(img);viewport={width:Math.max(1,Math.round((img.naturalWidth||img.width)*scale)),height:Math.max(1,Math.round((img.naturalHeight||img.height)*scale))};
       canvas.width=viewport.width;canvas.height=viewport.height;ctx.fillStyle='#fff';ctx.fillRect(0,0,viewport.width,viewport.height);ctx.drawImage(img,0,0,viewport.width,viewport.height);
@@ -942,7 +961,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   $('addVao').onclick=()=>{state.openings.push({type:$('vaoTipo').value,qty:Math.max(1,num($('vaoQtd').value)),w:num($('vaoLarg').value),h:num($('vaoAlt').value)});renderOpenings();saveProject(false)};
   function renderOpenings(){$('vaoBody').innerHTML=state.openings.map((o,i)=>`<tr><td>${esc(o.type)}</td><td>${o.qty}</td><td>${fmt(o.w)}×${fmt(o.h)} m</td><td><button class="btn danger" onclick="window.delOpen(${i})">×</button></td></tr>`).join('')};window.delOpen=i=>{state.openings.splice(i,1);renderOpenings();saveProject(false)};
 
-  function updateReadout(){const areaRooms=state.floorAreas.length?state.floorAreas.reduce((s,r)=>s+r.area,0):state.rooms.reduce((s,r)=>s+r.area,0),manualWallM=state.walls.reduce((s,w)=>s+w.length,0),wallM=manualWallM||state.autoWallLength||0;$('statEscala').textContent=state.metersPerPixel?(state.scaleDen?`1:${state.scaleDen}`:'Calibrada'):(state.scaleDen?`1:${state.scaleDen}`:'—');$('statAmb').textContent=state.rooms.length;$('statArea').textContent=fmt(areaRooms)+' m²';$('statWalls').textContent=state.walls.length?state.walls.length:(state.autoWallLength?'AUTO':'0');$('statWallM').textContent=fmt(wallM)+' m';if(state.metersPerPixel)$('scaleBox').textContent=state.scaleDen?`Escala lida do PDF: 1:${state.scaleDen}. Confirme se o arquivo foi plotado corretamente ou calibre por uma cota conhecida.`:'Escala calibrada manualmente.'}
+  function updateReadout(){const areaRooms=state.floorAreas.length?state.floorAreas.reduce((s,r)=>s+r.area,0):state.rooms.reduce((s,r)=>s+r.area,0),manualWallM=state.walls.reduce((s,w)=>s+w.length,0),wallM=manualWallM||state.autoWallLength||0;$('statEscala').textContent=state.pageScales[state.page]?'Calibrada':(state.pageDenominators[state.page]?`1:${state.pageDenominators[state.page]}`:(state.scaleDen?`1:${state.scaleDen}`:'—'));$('statAmb').textContent=state.rooms.length;$('statArea').textContent=fmt(areaRooms)+' m²';$('statWalls').textContent=state.walls.length?state.walls.length:(state.autoWallLength?'AUTO':'0');$('statWallM').textContent=fmt(wallM)+' m';if(state.metersPerPixel)$('scaleBox').textContent=state.scaleDen?`Escala lida do PDF: 1:${state.scaleDen}. Confirme se o arquivo foi plotado corretamente ou calibre por uma cota conhecida.`:'Escala calibrada manualmente.'}
 
   $('analisarBtn').onclick=async()=>{if(!state.pdf&&!state.image){alert('Selecione um PDF ou imagem primeiro.');return}await renderPage();renderRooms();renderWalls();renderOpenings();renderAutoRead();renderScopeStatus();showView('planta')};
   $('salvarBtn').onclick=()=>{saveProject();alert('Projeto salvo neste dispositivo.')};
@@ -1056,8 +1075,8 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
 
   function getForm(){const ids=['obra','cliente','endereco','tipoObra','pavimentos','unidades','peDireito','peCustom','tijolo','facesReboco','revInterno','revExterno','piso','rodape','forro','cobertura','pintInterna','pintExterna','perdas','perdasCustom','areaCobertura','areaConstruida','areaPisoManual','areaFachadaManual','perimetroRodape','wallLengthOverride','wallManualMode','fundacaoTipo','estruturaTipo','lajeTipo','aguaQuente','esgotoSistema','gasSistema','climatizacao','solarSistema','incendioSistema','spdaSistema','elevadorSistema','piscinaSistema',...complementaryDefs.map(x=>x[0])];const out={};ids.forEach(id=>{if($(id))out[id]=$(id).value});return out}
   function setForm(f={}){for(const [k,v] of Object.entries(f))if($(k))$(k).value=v}
-  function saveProject(show=true){const data={pageScales:state.pageScales,confirmed:state.confirmed,extras:extraValues(),form:getForm(),pdfName:state.pdfName,sourceType:state.sourceType,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,autoWallMethod:state.autoWallMethod,autoWallLayers:state.autoWallLayers,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus};const saved=storage.setItem('lang-quant-project',JSON.stringify(data));if(saved)$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
-  function loadProject(){const d=storedJSON('lang-quant-project');if(!d)return;state.pageScales=d.pageScales||{};state.confirmed=d.confirmed||false;setExtra(d.extras||{});setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.sourceType=d.sourceType||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.autoWallMethod=d.autoWallMethod||'';state.autoWallLayers=d.autoWallLayers||[];state.openingDefinitions=d.openingDefinitions||[];renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o arquivo original para visualizar a planta.`}
+  function saveProject(show=true){const data={pageScales:state.pageScales,pageDenominators:state.pageDenominators,confirmed:state.confirmed,extras:extraValues(),form:getForm(),pdfName:state.pdfName,sourceType:state.sourceType,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,autoWallMethod:state.autoWallMethod,autoWallLayers:state.autoWallLayers,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus};const saved=storage.setItem('lang-quant-project',JSON.stringify(data));if(saved)$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
+  function loadProject(){const d=storedJSON('lang-quant-project');if(!d)return;state.pageScales=d.pageScales||{};state.pageDenominators=d.pageDenominators||{};state.confirmed=d.confirmed||false;setExtra(d.extras||{});setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.sourceType=d.sourceType||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.autoWallMethod=d.autoWallMethod||'';state.autoWallLayers=d.autoWallLayers||[];state.openingDefinitions=d.openingDefinitions||[];renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o arquivo original para visualizar a planta.`}
 
   function exportBackup(){
     saveProject(false);
