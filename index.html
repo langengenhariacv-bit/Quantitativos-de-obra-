@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0d2742" />
+  <title>LANG Quantitativos</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    :root{--navy:#0d2742;--navy2:#173b5f;--ice:#eef4f8;--paper:#fff;--ink:#14202b;--muted:#6b7b89;--line:#d9e2e8;--ok:#2f7a5f;--warn:#a36a14;--danger:#a83b3b;--shadow:0 14px 40px rgba(13,39,66,.10)}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f5f8fa;color:var(--ink)}
+    button,input,select{font:inherit} button{cursor:pointer}
+    .app{min-height:100vh}.topbar{position:sticky;top:0;z-index:50;background:rgba(13,39,66,.97);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 20px rgba(0,0,0,.12)}
+    .brand{display:flex;align-items:center;gap:12px}.brandmark{width:42px;height:42px;border:1px solid rgba(255,255,255,.55);border-radius:10px;display:grid;place-items:center;font-weight:800;letter-spacing:.08em}.brand strong{display:block;font-size:15px;letter-spacing:.05em}.brand span{font-size:11px;opacity:.75}
+    .save-status{font-size:12px;opacity:.8}.layout{display:grid;grid-template-columns:250px 1fr;min-height:calc(100vh - 70px)}
+    aside{background:#102f4f;color:#dbe7ef;padding:18px 12px}.nav-title{font-size:11px;text-transform:uppercase;letter-spacing:.12em;opacity:.55;padding:10px 12px}.navbtn{width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:11px 12px;border-radius:10px;margin:2px 0}.navbtn:hover,.navbtn.active{background:rgba(255,255,255,.10);color:#fff}.navbtn small{display:block;opacity:.6;margin-top:2px}
+    main{padding:24px;max-width:1500px;width:100%;margin:0 auto}.view{display:none}.view.active{display:block}.page-title{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:20px}.page-title h1{margin:0;font-size:28px;color:var(--navy)}.page-title p{margin:6px 0 0;color:var(--muted)}
+    .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px}.card h2{font-size:17px;margin:0 0 14px;color:var(--navy)}.card h3{font-size:14px;margin:18px 0 10px;color:var(--navy)}
+    .grid{display:grid;gap:14px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    label{display:block;font-size:12px;font-weight:700;color:#405261;margin-bottom:6px}.field input,.field select{width:100%;padding:10px 11px;border:1px solid #cbd7df;border-radius:9px;background:#fff;color:var(--ink)}.field input:focus,.field select:focus{outline:2px solid #b8d0e2;border-color:#7898b1}
+    .upload{border:2px dashed #9fb6c8;border-radius:14px;background:var(--ice);padding:24px;text-align:center}.upload input{margin-top:12px}.hint{font-size:12px;color:var(--muted);line-height:1.45}.notice{padding:12px 14px;border-radius:10px;background:#fff7e8;border:1px solid #efd4a2;color:#72501c;font-size:12px;line-height:1.5}.okbox{background:#edf7f3;border-color:#b8dbc9;color:#285b48}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:9px;padding:10px 14px;font-weight:750}.primary{background:var(--navy);color:#fff}.secondary{background:#e8f0f5;color:var(--navy)}.ghost{background:transparent;border:1px solid #bfcdd7;color:var(--navy)}.danger{background:#f9eaea;color:var(--danger)}.btn:disabled{opacity:.45;cursor:not-allowed}
+    .stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.stat{padding:14px;border-radius:12px;background:#f8fbfd;border:1px solid #e1e9ee}.stat b{display:block;font-size:21px;color:var(--navy)}.stat span{font-size:11px;color:var(--muted)}
+    table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px 9px;border-bottom:1px solid #e6edf1;text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#60717f;background:#f8fafc}.num{text-align:right;font-variant-numeric:tabular-nums}.pill{display:inline-block;padding:4px 7px;border-radius:999px;background:#e7f0f6;color:var(--navy);font-size:11px;font-weight:750}
+    .pdf-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.canvas-wrap{position:relative;display:inline-block;max-width:100%;border:1px solid #bccbd5;background:#dfe7ec;overflow:auto;border-radius:10px;max-height:70vh}.canvas-wrap canvas{display:block;max-width:none}.overlay{position:absolute;left:0;top:0;pointer-events:none}.overlay.active{pointer-events:auto;cursor:crosshair}.wall-line{stroke:#1671b9;stroke-width:4;stroke-linecap:round;opacity:.85}.cal-line{stroke:#e08a1a;stroke-width:4;stroke-dasharray:8 5}.point{fill:#fff;stroke:#0d2742;stroke-width:2}
+    .split{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,.8fr);gap:16px;align-items:start}.sidepanel{position:sticky;top:92px}.scroll{max-height:360px;overflow:auto}
+    .report-card{border-left:4px solid var(--navy)}.report-card h3{margin-top:0}.kicker{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#6f8290;font-weight:800}.report-actions{display:flex;justify-content:space-between;gap:10px;align-items:center}.empty{padding:26px;text-align:center;color:var(--muted);border:1px dashed #ccd7de;border-radius:10px}
+    .footer{font-size:11px;color:#758694;text-align:center;padding:18px}.tag{font-size:10px;border:1px solid #c8d5de;border-radius:6px;padding:3px 5px;color:#60717f;background:#fff}.scope-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.scope-stage{border:1px solid var(--line);border-radius:12px;background:#fbfdfe;padding:14px}.scope-stage h3{margin:0 0 10px;font-size:14px;color:var(--navy)}.scope-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #edf2f5;font-size:12px}.scope-item:last-child{border-bottom:0}.scope-item input{margin-top:2px}.scope-item small{display:block;color:var(--muted);margin-top:2px}.scope-status-ok{color:#2f7a5f;font-weight:700}.scope-status-warn{color:#a36a14;font-weight:700}.scope-status-off{color:#8a98a4}.mini-note{font-size:11px;color:var(--muted);line-height:1.45}.section-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}
+    .step-nav{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:22px 0 8px;padding:12px 0}.step-nav .btn{min-width:130px}.auto-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.auto-item{border:1px solid #dce6ec;background:#f8fbfd;border-radius:10px;padding:10px}.auto-item b{display:block;color:var(--navy);font-size:17px}.auto-item span{display:block;color:var(--muted);font-size:11px;margin-top:2px}.source-note{font-size:11px;color:#5f7281;line-height:1.45;margin-top:10px}.brand{cursor:pointer}.mobile-home{border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;border-radius:9px;padding:8px 10px;font-weight:700;display:none}
+    @media(max-width:1000px){.scope-grid{grid-template-columns:1fr}.layout{grid-template-columns:1fr}aside{display:flex;overflow:auto;padding:8px;position:sticky;top:70px;z-index:40}.nav-title{display:none}.navbtn{min-width:170px}.split{grid-template-columns:1fr}.sidepanel{position:static}.stats{grid-template-columns:repeat(2,1fr)}.g4{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:650px){main{padding:14px;padding-bottom:84px}.g2,.g3,.g4{grid-template-columns:1fr}.page-title{display:block}.stats{grid-template-columns:1fr 1fr}.topbar{padding:12px}.save-status{display:none}.navbtn{min-width:145px;font-size:12px}.step-nav{position:sticky;bottom:0;z-index:35;background:rgba(245,248,250,.96);border-top:1px solid #d7e2e9;padding:10px 0;margin:18px 0 0}.step-nav .btn{min-width:0;flex:1}.auto-summary{grid-template-columns:1fr 1fr}.mobile-home{display:block}.brand span{display:none}}
+    @media print{.topbar,aside,.no-print{display:none!important}.layout{display:block}main{padding:0}.card{box-shadow:none;border:0}.view{display:none!important}.view.print-target{display:block!important}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="brandmark">L</div><div><strong>LANG QUANTITATIVOS</strong><span>Engenharia • Levantamento de materiais</span></div></div>
+    <div style="display:flex;align-items:center;gap:8px"><button class="mobile-home" id="homeBtn">Início</button><div class="save-status" id="saveStatus">Dados salvos neste dispositivo</div></div>
+  </header>
+  <div class="layout">
+    <aside>
+      <div class="nav-title">Projeto</div>
+      <button class="navbtn active" data-view="novo">1. Novo quantitativo<small>PDF + parâmetros</small></button>
+      <button class="navbtn" data-view="escopo">2. Escopo completo<small>Todos os sistemas da obra</small></button>
+      <button class="navbtn" data-view="planta">3. Conferir planta<small>Escala, paredes e vãos</small></button>
+      <button class="navbtn" data-view="quant">4. Quantitativos<small>Materiais calculados</small></button>
+      <button class="navbtn" data-view="relatorios">5. Relatórios<small>3 modelos de saída</small></button>
+      <div class="nav-title">Configuração</div>
+      <button class="navbtn" data-view="coef">Coeficientes<small>Consumos editáveis</small></button>
+    </aside>
+
+    <main>
+      <section id="view-novo" class="view active">
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">MVP 2.1 • Leitura automática</span></div>
+        <div class="card">
+          <h2>Dados da obra</h2>
+          <div class="grid g3">
+            <div class="field"><label>Nome da obra</label><input id="obra" placeholder="Ex.: Residência Silva" /></div>
+            <div class="field"><label>Cliente</label><input id="cliente" placeholder="Nome do cliente" /></div>
+            <div class="field"><label>Endereço</label><input id="endereco" placeholder="Cidade / endereço" /></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Planta baixa em PDF</h2>
+          <div class="upload">
+            <strong>Selecione o arquivo da planta</strong><br><span class="hint">O app extrai textos do PDF para tentar localizar escala, áreas e nomes de ambientes. Depois você confere as paredes diretamente sobre a planta.</span>
+            <br><input id="pdfInput" type="file" accept="application/pdf" />
+            <div id="pdfInfo" class="hint" style="margin-top:10px">Nenhum PDF carregado.</div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Parâmetros gerais</h2>
+          <div class="grid g4">
+            <div class="field"><label>Tipo de obra</label><select id="tipoObra"><option>Residencial unifamiliar</option><option>Residencial multifamiliar</option></select></div>
+            <div class="field"><label>Nº de pavimentos</label><input id="pavimentos" type="number" min="1" value="1"></div>
+            <div class="field"><label>Pé-direito</label><select id="peDireito"><option value="2.60">2,60 m</option><option value="2.70">2,70 m</option><option value="2.80" selected>2,80 m</option><option value="3.00">3,00 m</option><option value="custom">Personalizado</option></select></div>
+            <div class="field"><label>Pé-direito personalizado (m)</label><input id="peCustom" type="number" step="0.01" placeholder="Ex.: 2,90"></div>
+            <div class="field"><label>Tijolo padrão</label><select id="tijolo"><option value="9">9×19×19 cm</option><option value="11.5" selected>11,5×19×19 cm</option><option value="14">14×19×19 cm</option></select></div>
+            <div class="field"><label>Faces rebocadas</label><select id="facesReboco"><option value="1">1 face</option><option value="2" selected>2 faces</option></select></div>
+            <div class="field"><label>Revestimento interno</label><select id="revInterno"><option>Reboco</option><option>Gesso</option><option>Sem revestimento</option></select></div>
+            <div class="field"><label>Revestimento externo</label><select id="revExterno"><option>Reboco</option><option>Sem revestimento</option><option>Outro</option></select></div>
+            <div class="field"><label>Piso</label><select id="piso"><option>Cerâmico</option><option selected>Porcelanato</option><option>Outro</option></select></div>
+            <div class="field"><label>Rodapé</label><select id="rodape"><option value="sim" selected>Sim</option><option value="nao">Não</option></select></div>
+            <div class="field"><label>Forro</label><select id="forro"><option>Laje</option><option>Gesso</option><option>PVC</option><option>Sem forro</option></select></div>
+            <div class="field"><label>Cobertura</label><select id="cobertura"><option value="nao">Não calcular</option><option>Laje</option><option>Telhado cerâmico</option><option>Fibrocimento</option><option>Metálico</option><option>Outro</option></select></div>
+            <div class="field"><label>Pintura interna</label><select id="pintInterna"><option value="sim" selected>Sim</option><option value="nao">Não</option></select></div>
+            <div class="field"><label>Pintura externa</label><select id="pintExterna"><option value="sim" selected>Sim</option><option value="nao">Não</option></select></div>
+            <div class="field"><label>Perdas de materiais</label><select id="perdas"><option value="0.05" selected>5%</option><option value="0.075">7,5%</option><option value="0.10">10%</option><option value="custom">Personalizado</option></select></div>
+            <div class="field"><label>Perda personalizada (%)</label><input id="perdasCustom" type="number" step="0.5" placeholder="Ex.: 6"></div>
+          </div>
+          <h3>Complementos opcionais</h3>
+          <div class="grid g3">
+            <div class="field"><label>Área de cobertura (m²)</label><input id="areaCobertura" type="number" step="0.01" placeholder="Se aplicável"></div>
+            <div class="field"><label>Área construída conhecida (m²)</label><input id="areaConstruida" type="number" step="0.01" placeholder="Pode ser preenchida pela leitura"></div>
+            <div class="field"><label>Perímetro para rodapé (m)</label><input id="perimetroRodape" type="number" step="0.01" placeholder="Pode ser ajustado depois"></div>
+          </div>
+          <div class="actions" style="margin-top:16px"><button class="btn primary" id="analisarBtn">Analisar PDF e ir para conferência</button><button class="btn secondary" id="salvarBtn">Salvar projeto</button></div>
+        </div>
+        <div class="card">
+          <h2>Sistemas construtivos</h2>
+          <div class="grid g4">
+            <div class="field"><label>Fundação</label><select id="fundacaoTipo"><option>Não informado</option><option>Sapatas isoladas</option><option>Sapata corrida</option><option>Radier</option><option>Estacas + blocos</option><option>Brocas</option><option>Outro</option></select></div>
+            <div class="field"><label>Estrutura</label><select id="estruturaTipo"><option>Concreto armado</option><option>Alvenaria estrutural</option><option>Metálica</option><option>Madeira</option><option>Mista</option><option>Outro</option></select></div>
+            <div class="field"><label>Laje</label><select id="lajeTipo"><option>Não informado</option><option>Pré-moldada</option><option>Maciça</option><option>Nervurada</option><option>Protendida</option><option>Steel deck</option><option>Sem laje</option><option>Outro</option></select></div>
+            <div class="field"><label>Água quente</label><select id="aguaQuente"><option>Não</option><option>Elétrico local</option><option>Gás</option><option>Boiler elétrico</option><option>Solar</option><option>Misto</option></select></div>
+            <div class="field"><label>Destino do esgoto</label><select id="esgotoSistema"><option>Rede pública</option><option>Fossa + filtro + sumidouro</option><option>Estação compacta</option><option>Outro</option></select></div>
+            <div class="field"><label>Gás</label><select id="gasSistema"><option>Não</option><option>GLP individual</option><option>Central GLP</option><option>Gás natural</option></select></div>
+            <div class="field"><label>Climatização</label><select id="climatizacao"><option>Não prever</option><option>Split</option><option>Multi-split</option><option>Central</option></select></div>
+            <div class="field"><label>Solar</label><select id="solarSistema"><option>Não</option><option>Fotovoltaico</option><option>Aquecimento solar</option><option>Fotovoltaico + aquecimento</option></select></div>
+            <div class="field"><label>Proteção contra incêndio</label><select id="incendioSistema"><option>Conforme exigência do projeto</option><option>Extintores + sinalização + emergência</option><option>Hidrantes</option><option>Sprinklers</option><option>Não aplicável</option></select></div>
+            <div class="field"><label>SPDA</label><select id="spdaSistema"><option>Conforme projeto</option><option>Sim</option><option>Não</option></select></div>
+            <div class="field"><label>Elevador / plataforma</label><select id="elevadorSistema"><option>Não</option><option>Elevador</option><option>Plataforma de acessibilidade</option></select></div>
+            <div class="field"><label>Piscina</label><select id="piscinaSistema"><option>Não</option><option>Sim</option></select></div>
+          </div>
+          <p class="mini-note">Os sistemas selecionados organizam o escopo e os relatórios. O quantitativo só é fechado quando houver geometria ou dados do projeto correspondente.</p>
+        </div>
+        <div class="notice">A leitura automática do PDF pré-preenche áreas, esquadrias e uma estimativa geométrica das paredes. A conferência continua disponível, mas o cálculo não fica mais zerado quando nenhuma parede foi marcada manualmente.</div>
+      </section>
+
+
+      <section id="view-escopo" class="view">
+        <div class="page-title"><div><h1>Escopo completo da construção</h1><p>Checklist mestre para que nenhuma etapa fique fora do levantamento. Desmarque apenas o que comprovadamente não se aplica à obra.</p></div><span class="pill" id="scopeCountPill">0 componentes</span></div>
+        <div class="card">
+          <div class="section-head"><div><h2 style="margin:0">Todos os sistemas e componentes</h2><p class="mini-note" style="margin:4px 0 0">Inclui serviços preliminares, estrutura, instalações, acabamentos, áreas externas e sistemas condicionais.</p></div><div class="actions"><button class="btn secondary" id="selectAllScope">Selecionar tudo</button><button class="btn ghost" id="basicScope">Residencial básico</button></div></div>
+          <div id="scopeGrid" class="scope-grid"></div>
+        </div>
+        <div class="card">
+          <h2>Quantidades vindas de projetos complementares</h2>
+          <p class="hint">Preencha quando o dado não puder ser extraído da planta arquitetônica. O aplicativo incorpora esses quantitativos aos três relatórios.</p>
+          <div id="complementaryInputs" class="grid g4"></div>
+        </div>
+        <div class="card">
+          <h2>Item personalizado</h2>
+          <p class="hint">Use para qualquer material, equipamento ou serviço específico que não esteja no catálogo. Isso impede que um projeto especial fique limitado pela lista padrão.</p>
+          <div class="grid g4">
+            <div class="field"><label>Etapa</label><input id="customStage" placeholder="Ex.: 27. Itens especiais"></div>
+            <div class="field"><label>Material / serviço</label><input id="customMaterial" placeholder="Descrição"></div>
+            <div class="field"><label>Quantidade</label><input id="customQty" type="number" min="0" step="0.01"></div>
+            <div class="field"><label>Unidade</label><select id="customUnit"><option>un.</option><option>m</option><option>m²</option><option>m³</option><option>kg</option><option>L</option><option>sacos</option><option>kWp</option><option>cj.</option><option>vb.</option></select></div>
+          </div>
+          <div class="actions" style="margin-top:10px"><button class="btn secondary" id="addCustomItem">Adicionar ao quantitativo</button></div>
+          <div class="scroll" style="margin-top:12px"><table><thead><tr><th>Etapa</th><th>Item</th><th>Qtd.</th><th>Unid.</th><th></th></tr></thead><tbody id="customItemsBody"></tbody></table></div>
+        </div>
+        <div class="notice">Itens selecionados sem medida aparecem como <b>pendentes</b> no quantitativo. Assim o relatório não “esquece” estrutura, instalações ou serviços só porque a planta arquitetônica não contém esses dados.</div>
+      </section>
+
+      <section id="view-planta" class="view">
+        <div class="page-title"><div><h1>Conferir planta</h1><p>Confirme a escala e marque as paredes. O comprimento é calculado diretamente sobre o PDF.</p></div></div>
+        <div class="split">
+          <div class="card">
+            <div class="pdf-tools no-print">
+              <button class="btn secondary" id="prevPage">◀ Página</button><span class="tag" id="pageLabel">0 / 0</span><button class="btn secondary" id="nextPage">Página ▶</button>
+              <button class="btn ghost" id="calibrarBtn">Calibrar por 2 pontos</button>
+              <button class="btn primary" id="paredeBtn">Adicionar parede</button>
+              <button class="btn ghost" id="cancelMode">Cancelar ferramenta</button>
+            </div>
+            <div id="scaleBox" class="notice" style="margin-bottom:10px">Carregue e analise um PDF para iniciar.</div>
+            <div class="canvas-wrap" id="canvasWrap"><canvas id="pdfCanvas"></canvas><svg id="overlay" class="overlay"></svg></div>
+          </div>
+          <div class="sidepanel">
+            <div class="card"><h2>Leitura encontrada</h2><div class="stats"><div class="stat"><b id="statEscala">—</b><span>Escala</span></div><div class="stat"><b id="statAmb">0</b><span>Ambientes</span></div><div class="stat"><b id="statArea">0</b><span>Área lida</span></div><div class="stat"><b id="statWalls">0</b><span>Paredes</span></div><div class="stat"><b id="statWallM">0</b><span>Metros de parede</span></div></div></div>
+            <div class="card"><h2>Leitura automática do PDF</h2><div id="autoReadSummary" class="auto-summary"><div class="auto-item"><b>—</b><span>Aguardando análise</span></div></div><div class="field" style="margin-top:12px"><label>Ajuste opcional — comprimento total de paredes (m)</label><input id="wallLengthOverride" type="number" min="0" step="0.01" placeholder="Deixe vazio para usar a leitura automática"></div><div class="actions" style="margin-top:10px"><button class="btn secondary" id="relerAutoBtn">Refazer leitura automática</button></div><p class="source-note">Quando não houver paredes marcadas manualmente, o cálculo usa a geometria identificada no desenho. Se a leitura não for confiável, você pode ajustar somente o comprimento total aqui.</p></div>
+            <div class="card"><h2>Vãos</h2><div class="grid g2"><div class="field"><label>Tipo</label><select id="vaoTipo"><option>Porta</option><option>Janela</option></select></div><div class="field"><label>Quantidade</label><input id="vaoQtd" type="number" min="1" value="1"></div><div class="field"><label>Largura (m)</label><input id="vaoLarg" type="number" step="0.01" value="0.80"></div><div class="field"><label>Altura (m)</label><input id="vaoAlt" type="number" step="0.01" value="2.10"></div></div><button class="btn secondary" id="addVao" style="margin-top:10px">Adicionar vão</button><div class="scroll" style="margin-top:10px"><table><thead><tr><th>Tipo</th><th>Qtd.</th><th>Dim.</th><th></th></tr></thead><tbody id="vaoBody"></tbody></table></div></div>
+            <div class="card"><h2>Ambientes lidos do PDF</h2><div id="roomsList" class="scroll empty">Nenhum ambiente identificado ainda.</div></div>
+          </div>
+        </div>
+        <div class="card"><h2>Paredes marcadas</h2><div class="scroll"><table><thead><tr><th>#</th><th>Página</th><th>Comprimento</th><th>Altura</th><th>Tijolo</th><th></th></tr></thead><tbody id="wallBody"></tbody></table></div></div>
+        <div class="actions no-print"><button class="btn primary" id="calcularBtn">Calcular materiais</button></div>
+      </section>
+
+      <section id="view-quant" class="view">
+        <div class="page-title"><div><h1>Quantitativos</h1><p>Resultado geométrico + coeficientes de consumo configuráveis.</p></div><span class="pill" id="quantSource">Aguardando cálculo</span></div>
+        <div class="card"><div class="stats"><div class="stat"><b id="qAreaWall">0</b><span>Alvenaria líquida m²</span></div><div class="stat"><b id="qBricks">0</b><span>Tijolos</span></div><div class="stat"><b id="qFloor">0</b><span>Piso m²</span></div><div class="stat"><b id="qPaint">0</b><span>Pintura m²</span></div><div class="stat"><b id="qOpen">0</b><span>Vãos m²</span></div></div></div>
+        <div class="card"><h2>Materiais e serviços quantificados</h2><table><thead><tr><th>Etapa</th><th>Material / serviço</th><th class="num">Quantidade</th><th>Unidade</th></tr></thead><tbody id="materialsBody"></tbody></table></div>
+        <div class="card"><h2>Controle de escopo</h2><div class="stats" style="margin-bottom:12px"><div class="stat"><b id="scopeSelected">0</b><span>Selecionados</span></div><div class="stat"><b id="scopeDone">0</b><span>Quantificados</span></div><div class="stat"><b id="scopePending">0</b><span>Pendentes</span></div><div class="stat"><b id="scopeNA">0</b><span>Não aplicáveis</span></div><div class="stat"><b id="scopeCoverage">0%</b><span>Cobertura do escopo</span></div></div><div class="scroll" style="max-height:460px"><table><thead><tr><th>Etapa</th><th>Componente</th><th>Situação</th><th>Fonte</th></tr></thead><tbody id="scopeStatusBody"></tbody></table></div></div>
+        <div class="notice">Os coeficientes de consumo são editáveis na aba “Coeficientes”. Ajuste-os conforme especificação do produto, traço, método executivo e fornecedor.</div>
+      </section>
+
+      <section id="view-relatorios" class="view">
+        <div class="page-title"><div><h1>Relatórios</h1><p>Três saídas para usos diferentes na obra.</p></div></div>
+        <div class="card report-card"><span class="kicker">Relatório 1</span><h3>Resumo geral de materiais</h3><p class="hint">Consolida cada material no total da obra, já considerando a perda configurada.</p><div class="report-actions"><span class="tag">Lista de compra geral</span><button class="btn primary" data-report="resumo">Gerar / imprimir PDF</button></div></div>
+        <div class="card report-card"><span class="kicker">Relatório 2</span><h3>Quantitativo completo + memória de cálculo</h3><p class="hint">Mostra parâmetros, comprimentos, áreas, vãos descontados e os materiais derivados.</p><div class="report-actions"><span class="tag">Conferência técnica</span><button class="btn primary" data-report="completo">Gerar / imprimir PDF</button></div></div>
+        <div class="card report-card"><span class="kicker">Relatório 3</span><h3>Materiais por etapa da obra</h3><p class="hint">Separa os materiais e serviços de todas as etapas selecionadas, incluindo os quantitativos de projetos complementares.</p><div class="report-actions"><span class="tag">Planejamento de compras</span><button class="btn primary" data-report="etapas">Gerar / imprimir PDF</button></div></div>
+      </section>
+
+      <section id="view-coef" class="view">
+        <div class="page-title"><div><h1>Coeficientes</h1><p>Valores iniciais de referência. Eles podem ser alterados e ficam salvos no dispositivo.</p></div></div>
+        <div class="card"><h2>Consumos por unidade de serviço</h2><div class="grid g3">
+          <div class="field"><label>Tijolos por m²</label><input id="c_bricks" type="number" step="0.1"></div>
+          <div class="field"><label>Argamassa assentamento (kg/m²)</label><input id="c_mortar" type="number" step="0.1"></div>
+          <div class="field"><label>Argamassa chapisco (kg/m²)</label><input id="c_chap" type="number" step="0.1"></div>
+          <div class="field"><label>Argamassa reboco (kg/m²)</label><input id="c_plaster" type="number" step="0.1"></div>
+          <div class="field"><label>Argamassa colante piso (kg/m²)</label><input id="c_tileadh" type="number" step="0.1"></div>
+          <div class="field"><label>Rejunte (kg/m²)</label><input id="c_grout" type="number" step="0.01"></div>
+          <div class="field"><label>Selador (L/m²)</label><input id="c_primer" type="number" step="0.01"></div>
+          <div class="field"><label>Massa corrida (kg/m²)</label><input id="c_putty" type="number" step="0.01"></div>
+          <div class="field"><label>Tinta acabada (L/m²)</label><input id="c_paint" type="number" step="0.01"></div>
+          <div class="field"><label>Saco de argamassa (kg)</label><input id="c_bag" type="number" step="1"></div>
+        </div><div class="actions" style="margin-top:15px"><button class="btn primary" id="saveCoef">Salvar coeficientes</button><button class="btn ghost" id="resetCoef">Restaurar iniciais</button></div></div>
+        <div class="notice">Estes consumos não são apresentados como norma técnica. Eles são parâmetros de orçamento e devem ser adequados ao sistema construtivo efetivamente adotado.</div>
+      </section>
+      <div class="footer">LANG Quantitativos • MVP 2.0 • levantamento residencial com escopo completo</div>
+    </main>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs" type="module"></script>
+<script type="module">
+  import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs';
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+
+  const $=id=>document.getElementById(id);
+  const defaultCoef={bricks:25,mortar:20,chap:4.5,plaster:18,tileadh:5,grout:.35,primer:.12,putty:1.2,paint:.18,bag:20};
+  const componentCatalog=[
+    {stage:'1. Serviços preliminares e canteiro',items:[['canteiro','Instalação do canteiro, tapumes e placa','manual'],['locacao','Locação da obra / gabarito','arquitetônico'],['ligacoes','Ligações provisórias de água e energia','manual'],['demolicoes','Demolições / remoções','manual'],['protecao','Proteções, andaimes e equipamentos provisórios','manual'],['residuos','Caçambas e gestão de resíduos','manual']]},
+    {stage:'2. Terraplenagem e movimento de terra',items:[['limpezaTerreno','Limpeza e regularização do terreno','manual'],['escavacao','Escavações','complementar'],['corte','Cortes de terreno','complementar'],['aterro','Aterro / reaterro e compactação','complementar'],['botaFora','Carga, transporte e bota-fora','complementar'],['drenagemProv','Drenagem provisória','complementar']]},
+    {stage:'3. Fundações e infraestrutura',items:[['lastro','Lastro de concreto / brita','complementar'],['fundacoes','Sapatas, blocos, radier, estacas ou brocas','complementar'],['baldrame','Vigas baldrame','complementar'],['fundConcreto','Concreto de fundação','complementar'],['fundAco','Aço de fundação','complementar'],['fundForma','Fôrmas de fundação','complementar'],['impermeabFund','Impermeabilização de fundações e baldrames','complementar'],['chumbadores','Chumbadores e esperas','complementar']]},
+    {stage:'4. Estrutura',items:[['pilares','Pilares','complementar'],['vigas','Vigas','complementar'],['lajes','Lajes','complementar'],['escadasEstr','Escadas estruturais','complementar'],['estruturaConcreto','Concreto estrutural','complementar'],['estruturaAco','Aço CA-50 / CA-60','complementar'],['estruturaForma','Fôrmas e desmoldante','complementar'],['escoramento','Escoramento / reescoramento','complementar'],['graute','Graute e reforços localizados','complementar']]},
+    {stage:'5. Alvenarias e vedações',items:[['alvenaria','Alvenaria de vedação','arquitetônico'],['argAssent','Argamassa de assentamento','arquitetônico'],['vergas','Vergas e contravergas','arquitetônico'],['encunhamento','Encunhamento e fixações','arquitetônico'],['telas','Telas / amarrações de alvenaria','arquitetônico'],['drywall','Drywall / placas cimentícias (quando houver)','complementar']]},
+    {stage:'6. Impermeabilização',items:[['impermeabMolhadas','Áreas molhadas e boxes','arquitetônico'],['impermeabLajes','Lajes, sacadas e terraços','complementar'],['impermeabReserv','Reservatórios e piscinas','complementar'],['juntas','Selantes, juntas e arremates','complementar']]},
+    {stage:'7. Cobertura e drenagem pluvial',items:[['estruturaCobertura','Estrutura da cobertura','complementar'],['telhas','Telhas / cobertura','arquitetônico'],['mantaCobertura','Mantas, subcobertura e isolamento','complementar'],['cumeeiras','Cumeeiras e espigões','complementar'],['rufos','Rufos e arremates','complementar'],['calhas','Calhas','complementar'],['condutores','Condutores pluviais','complementar']]},
+    {stage:'8. Esquadrias, vidros e serralheria',items:[['portas','Portas, marcos e alizares','arquitetônico'],['janelas','Janelas','arquitetônico'],['vidros','Vidros','arquitetônico'],['ferragens','Fechaduras, dobradiças e ferragens','arquitetônico'],['soleiras','Soleiras','arquitetônico'],['peitoris','Peitoris','arquitetônico'],['guardaCorpo','Guarda-corpos','complementar'],['corrimao','Corrimãos','complementar'],['portoes','Portões e gradis','complementar']]},
+    {stage:'9. Instalações hidrossanitárias',items:[['aguaFria','Tubulação de água fria','complementar'],['aguaQuente','Tubulação de água quente','complementar'],['registros','Registros, válvulas e conexões','complementar'],['esgoto','Tubulação de esgoto sanitário','complementar'],['ventSanitaria','Ventilação sanitária','complementar'],['pluvial','Rede de águas pluviais','complementar'],['ralos','Ralos e caixas sifonadas','complementar'],['caixas','Caixas de inspeção / gordura / passagem','complementar'],['reservatorios','Reservatórios, boias e barriletes','complementar'],['bombas','Bombas e pressurização (quando houver)','complementar'],['loucas','Louças sanitárias','arquitetônico'],['metais','Metais e acessórios sanitários','arquitetônico'],['tratamentoEsgoto','Fossa, filtro, sumidouro ou estação (quando aplicável)','complementar']]},
+    {stage:'10. Instalação de gás',items:[['gasTub','Tubulação de gás','complementar'],['gasAbrigo','Abrigo / central de GLP','complementar'],['gasValv','Reguladores, válvulas e medidores','complementar'],['gasVent','Ventilação permanente','complementar']]},
+    {stage:'11. Instalações elétricas',items:[['entradaEnergia','Entrada de energia e medição','complementar'],['quadros','Quadros de distribuição','complementar'],['protecoes','Disjuntores, DR e DPS','complementar'],['eletrodutos','Eletrodutos e eletrocalhas','complementar'],['cabos','Cabos e condutores','complementar'],['caixasEletricas','Caixas 4x2 / 4x4 / passagem','complementar'],['tomadas','Tomadas','complementar'],['interruptores','Interruptores','complementar'],['luminarias','Pontos e luminárias','complementar'],['aterramento','Aterramento e equipotencialização','complementar']]},
+    {stage:'12. Telecomunicações, automação e segurança',items:[['dados','Rede lógica / dados','complementar'],['tv','TV / antena','complementar'],['interfone','Interfone / porteiro eletrônico','complementar'],['cftv','CFTV','complementar'],['alarme','Alarme e sensores','complementar'],['automacao','Automação residencial (quando houver)','complementar']]},
+    {stage:'13. SPDA',items:[['spdaCap','Captores e malha de captação','complementar'],['spdaDesc','Descidas','complementar'],['spdaTerra','Aterramento do SPDA','complementar'],['spdaConex','Conectores, caixas e inspeções','complementar']]},
+    {stage:'14. Climatização e ventilação',items:[['arCond','Pontos e equipamentos de ar-condicionado','complementar'],['drenoAr','Drenos de condensado','complementar'],['exaustao','Exaustores e ventilação mecânica','complementar'],['dutos','Dutos e grelhas (quando houver)','complementar']]},
+    {stage:'15. Energia solar',items:[['solarFV','Sistema fotovoltaico','complementar'],['solarTermico','Aquecimento solar','complementar'],['inversor','Inversores, proteções e estruturas','complementar']]},
+    {stage:'16. Proteção contra incêndio',items:[['extintores','Extintores','complementar'],['sinalizacao','Sinalização de emergência','complementar'],['luzEmerg','Iluminação de emergência','complementar'],['alarmeInc','Alarme / detecção','complementar'],['hidrantes','Hidrantes / mangotinhos','complementar'],['sprinklers','Sprinklers (quando exigido)','complementar'],['reservaInc','Reserva técnica de incêndio e bombeamento','complementar']]},
+    {stage:'17. Revestimentos de paredes e fachadas',items:[['chapisco','Chapisco','arquitetônico'],['emboço','Emboço','arquitetônico'],['reboco','Reboco / massa única','arquitetônico'],['gessoParede','Gesso interno','arquitetônico'],['ceramicaParede','Revestimento cerâmico de parede','complementar'],['fachada','Textura, monocapa, cerâmica ou revestimento de fachada','complementar']]},
+    {stage:'18. Pisos, contrapisos e rodapés',items:[['lastroPiso','Lastro / regularização de base','complementar'],['contrapiso','Contrapiso','complementar'],['piso','Pisos e revestimentos de piso','arquitetônico'],['argColante','Argamassa colante','arquitetônico'],['rejunte','Rejunte','arquitetônico'],['rodape','Rodapés','arquitetônico'],['juntasPiso','Juntas e perfis de acabamento','complementar']]},
+    {stage:'19. Forros',items:[['forro','Forro de gesso, PVC, madeira ou outro','complementar'],['estruturaForro','Estrutura e perfis de forro','complementar'],['sancas','Sancas, tabicas e alçapões','complementar']]},
+    {stage:'20. Pinturas e acabamentos superficiais',items:[['selador','Selador / fundo preparador','arquitetônico'],['massa','Massa corrida / acrílica','arquitetônico'],['tintaInterna','Tinta interna','arquitetônico'],['tintaExterna','Tinta externa','arquitetônico'],['textura','Textura / grafiato','complementar'],['esmalte','Esmalte em metais / madeira','complementar'],['verniz','Verniz / stain','complementar']]},
+    {stage:'21. Marmoraria, bancadas e marcenaria',items:[['bancadas','Bancadas de cozinha, BWC e áreas de serviço','arquitetônico'],['cubas','Cubas e tanques','arquitetônico'],['nichos','Nichos e prateleiras de pedra','arquitetônico'],['marcenaria','Marcenaria fixa (quando incluída)','manual']]},
+    {stage:'22. Equipamentos, louças e acessórios',items:[['vasos','Vasos sanitários','arquitetônico'],['lavatorios','Lavatórios / cubas','arquitetônico'],['chuveiros','Chuveiros','arquitetônico'],['torneiras','Torneiras e misturadores','arquitetônico'],['boxes','Boxes de banheiro','arquitetônico'],['acessoriosBwc','Acessórios de banheiro','manual']]},
+    {stage:'23. Áreas externas e urbanização',items:[['calcadas','Calçadas e passeios','complementar'],['pavExt','Pavimentação externa / garagem','complementar'],['drenExt','Drenagem externa','complementar'],['muros','Muros e contenções','complementar'],['cercas','Cercas / gradis','complementar'],['paisagismo','Paisagismo e grama','complementar'],['deck','Decks / pergolados','complementar'],['piscina','Piscina e casa de máquinas (quando houver)','complementar'],['churrasqueira','Churrasqueira / área gourmet','arquitetônico']]},
+    {stage:'24. Acessibilidade e circulação',items:[['rampas','Rampas','arquitetônico'],['pisoTatil','Piso tátil','complementar'],['corrimaoAcess','Corrimãos acessíveis','complementar'],['sinalAcess','Sinalização de acessibilidade','complementar']]},
+    {stage:'25. Transporte vertical',items:[['elevador','Elevador','complementar'],['plataforma','Plataforma elevatória','complementar'],['pocoElev','Poço, casa de máquinas e acabamentos','complementar']]},
+    {stage:'26. Serviços finais',items:[['limpezaFinal','Limpeza pós-obra','manual'],['testes','Testes, comissionamento e regulagens','manual'],['asbuilt','As built / documentação final','manual'],['desmobilizacao','Desmobilização do canteiro','manual']]},
+    {stage:'27. Itens especiais / personalizados',items:[['outros','Outros sistemas, materiais ou serviços específicos da obra','manual']]}
+  ];
+  const complementaryDefs=[
+    ['q_demolicao','Demolições / remoções','m²','1. Serviços preliminares e canteiro','demolicoes',true],
+    ['q_escavacao','Escavação','m³','2. Terraplenagem e movimento de terra','escavacao',true],['q_aterro','Aterro / reaterro compactado','m³','2. Terraplenagem e movimento de terra','aterro',true],['q_botaFora','Bota-fora','m³','2. Terraplenagem e movimento de terra','botaFora',false],
+    ['q_fundConcreto','Concreto de fundação','m³','3. Fundações e infraestrutura','fundConcreto',true],['q_fundAco','Aço de fundação','kg','3. Fundações e infraestrutura','fundAco',true],['q_fundForma','Fôrmas de fundação','m²','3. Fundações e infraestrutura','fundForma',true],
+    ['q_estruturaConcreto','Concreto estrutural','m³','4. Estrutura','estruturaConcreto',true],['q_estruturaAco','Aço estrutural CA-50/60','kg','4. Estrutura','estruturaAco',true],['q_estruturaForma','Fôrmas estruturais','m²','4. Estrutura','estruturaForma',true],['q_laje','Área de lajes','m²','4. Estrutura','lajes',false],
+    ['q_drywall','Drywall / placa cimentícia','m²','5. Alvenarias e vedações','drywall',true],['q_impermeab','Impermeabilização total','m²','6. Impermeabilização','impermeabMolhadas',true],
+    ['q_rufo','Rufos','m','7. Cobertura e drenagem pluvial','rufos',true],['q_calha','Calhas','m','7. Cobertura e drenagem pluvial','calhas',true],['q_condutor','Condutores pluviais','m','7. Cobertura e drenagem pluvial','condutores',true],
+    ['q_guardaCorpo','Guarda-corpo','m','8. Esquadrias, vidros e serralheria','guardaCorpo',false],['q_corrimao','Corrimão','m','8. Esquadrias, vidros e serralheria','corrimao',false],['q_portoes','Portões','un.','8. Esquadrias, vidros e serralheria','portoes',false],
+    ['q_aguaFria','Tubulação de água fria','m','9. Instalações hidrossanitárias','aguaFria',true],['q_aguaQuente','Tubulação de água quente','m','9. Instalações hidrossanitárias','aguaQuente',true],['q_esgoto','Tubulação de esgoto','m','9. Instalações hidrossanitárias','esgoto',true],['q_ventSan','Ventilação sanitária','m','9. Instalações hidrossanitárias','ventSanitaria',true],['q_pluvial','Rede pluvial','m','9. Instalações hidrossanitárias','pluvial',true],['q_ralos','Ralos / caixas sifonadas','un.','9. Instalações hidrossanitárias','ralos',false],['q_caixas','Caixas de inspeção / gordura / passagem','un.','9. Instalações hidrossanitárias','caixas',false],
+    ['q_gas','Tubulação de gás','m','10. Instalação de gás','gasTub',true],
+    ['q_quadros','Quadros de distribuição','un.','11. Instalações elétricas','quadros',false],['q_eletroduto','Eletrodutos / eletrocalhas','m','11. Instalações elétricas','eletrodutos',true],['q_cabos','Cabos elétricos','m','11. Instalações elétricas','cabos',true],['q_tomadas','Tomadas','un.','11. Instalações elétricas','tomadas',false],['q_interruptores','Interruptores','un.','11. Instalações elétricas','interruptores',false],['q_luminarias','Luminárias / pontos de luz','un.','11. Instalações elétricas','luminarias',false],
+    ['q_dados','Pontos de dados / TV','un.','12. Telecomunicações, automação e segurança','dados',false],['q_interfone','Pontos de interfone','un.','12. Telecomunicações, automação e segurança','interfone',false],['q_cftv','Pontos de CFTV','un.','12. Telecomunicações, automação e segurança','cftv',false],
+    ['q_spda','Condutores / fitas do SPDA','m','13. SPDA','spdaDesc',true],['q_arcond','Pontos de ar-condicionado','un.','14. Climatização e ventilação','arCond',false],['q_solar','Potência fotovoltaica instalada','kWp','15. Energia solar','solarFV',false],
+    ['q_extintores','Extintores','un.','16. Proteção contra incêndio','extintores',false],['q_luzEmerg','Luminárias de emergência','un.','16. Proteção contra incêndio','luzEmerg',false],['q_sinalizacao','Placas de sinalização','un.','16. Proteção contra incêndio','sinalizacao',false],
+    ['q_revestParede','Revestimento cerâmico de parede','m²','17. Revestimentos de paredes e fachadas','ceramicaParede',true],['q_contrapiso','Contrapiso','m²','18. Pisos, contrapisos e rodapés','contrapiso',true],['q_forro','Forro','m²','19. Forros','forro',true],
+    ['q_bancadas','Bancadas / marmoraria','m²','21. Marmoraria, bancadas e marcenaria','bancadas',true],['q_calcadas','Calçadas','m²','23. Áreas externas e urbanização','calcadas',true],['q_pavExt','Pavimentação externa','m²','23. Áreas externas e urbanização','pavExt',true],['q_muros','Muros / contenções','m²','23. Áreas externas e urbanização','muros',true],['q_grama','Grama / paisagismo','m²','23. Áreas externas e urbanização','paisagismo',true],
+    ['q_elevador','Elevadores','un.','25. Transporte vertical','elevador',false],['q_limpeza','Limpeza pós-obra','m²','26. Serviços finais','limpezaFinal',false]
+  ];
+  const defaultScope=new Set(componentCatalog.flatMap(g=>g.items.map(i=>i[0])));
+  const state={pdf:null,pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[]};
+  let autosaveTimer;
+
+  function fmt(n,d=2){return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})}
+  function num(v){const n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:0}
+  function loss(){return $('perdas').value==='custom'?num($('perdasCustom').value)/100:num($('perdas').value)}
+  function height(){return $('peDireito').value==='custom'?num($('peCustom').value):num($('peDireito').value)}
+  function debounceSave(){clearTimeout(autosaveTimer);autosaveTimer=setTimeout(saveProject,350)}
+  document.querySelectorAll('input,select').forEach(el=>el.addEventListener('change',debounceSave));
+  $('tijolo').addEventListener('change',()=>{renderAutoRead();if(state.metrics)calculate()});
+
+  document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+  const mainViews=['novo','escopo','planta','quant','relatorios'];
+  function showView(v){const target=$('view-'+v);if(!target)return;document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('active',x.dataset.view===v));document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));target.classList.add('active');const active=document.querySelector(`.navbtn[data-view="${v}"]`);if(active)active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});window.scrollTo({top:0,behavior:'smooth'});if(v==='quant')renderMaterials();}
+  function initStepNavigation(){mainViews.forEach((v,i)=>{const sec=$('view-'+v);if(!sec||sec.querySelector('.step-nav'))return;const nav=document.createElement('div');nav.className='step-nav no-print';const prev=i>0?`<button class="btn ghost" data-go="${mainViews[i-1]}">← Voltar</button>`:'<span></span>';const next=i<mainViews.length-1?`<button class="btn primary" data-go="${mainViews[i+1]}">${i===mainViews.length-2?'Ver relatórios':'Avançar'} →</button>`:'<button class="btn ghost" data-go="novo">← Início</button>';nav.innerHTML=prev+next;sec.appendChild(nav)});document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.go)));}
+  if($('homeBtn'))$('homeBtn').onclick=()=>showView('novo');document.querySelector('.brand')?.addEventListener('click',()=>showView('novo'));
+  function renderScope(){
+    const grid=$('scopeGrid');if(!grid)return;
+    grid.innerHTML=componentCatalog.map(g=>`<div class="scope-stage"><h3>${esc(g.stage)}</h3>${g.items.map(([id,label,source])=>`<label class="scope-item"><input type="checkbox" data-scope-id="${id}" ${state.scope.has(id)?'checked':''}><span>${esc(label)}<small>Fonte principal: ${source==='arquitetônico'?'projeto arquitetônico / conferência':source==='complementar'?'projeto complementar':'entrada manual / planejamento'}</small></span></label>`).join('')}</div>`).join('');
+    grid.querySelectorAll('[data-scope-id]').forEach(cb=>cb.addEventListener('change',()=>{cb.checked?state.scope.add(cb.dataset.scopeId):state.scope.delete(cb.dataset.scopeId);updateScopeCount();renderScopeStatus();saveProject(false)}));updateScopeCount();
+  }
+  function updateScopeCount(){if($('scopeCountPill'))$('scopeCountPill').textContent=state.scope.size+' componentes selecionados'}
+  function renderComplementaryInputs(){const wrap=$('complementaryInputs');if(!wrap)return;wrap.innerHTML=complementaryDefs.map(([id,label,unit])=>`<div class="field"><label>${esc(label)} (${esc(unit)})</label><input class="comp-qty" id="${id}" type="number" min="0" step="0.01" placeholder="0"></div>`).join('');wrap.querySelectorAll('input').forEach(el=>el.addEventListener('change',()=>{saveProject(false);renderScopeStatus()}));}
+  function renderCustomItems(){if(!$('customItemsBody'))return;$('customItemsBody').innerHTML=state.customItems.map((x,i)=>`<tr><td>${esc(x.stage)}</td><td>${esc(x.material)}</td><td>${fmt(x.q,2)}</td><td>${esc(x.unit)}</td><td><button class="btn danger" onclick="window.delCustomItem(${i})">×</button></td></tr>`).join('')||'<tr><td colspan="5">Nenhum item personalizado.</td></tr>';}
+  $('addCustomItem').onclick=()=>{const material=$('customMaterial').value.trim(),q=num($('customQty').value);if(!material||q<=0){alert('Informe a descrição e uma quantidade maior que zero.');return}state.customItems.push({stage:$('customStage').value.trim()||'27. Itens especiais / personalizados',material,q,unit:$('customUnit').value});$('customMaterial').value='';$('customQty').value='';renderCustomItems();saveProject(false)};
+  window.delCustomItem=i=>{state.customItems.splice(i,1);renderCustomItems();saveProject(false)};
+  function scopeSource(id){for(const g of componentCatalog){const it=g.items.find(x=>x[0]===id);if(it)return it[2]}return 'manual'}
+  function scopeStage(id){for(const g of componentCatalog){if(g.items.some(x=>x[0]===id))return g.stage}return ''}
+  function quantifiedScopeIds(){const done=new Set();
+    if((state.metrics?.net||0)>0)['alvenaria','argAssent','chapisco','emboço','reboco','selador','massa','tintaInterna','tintaExterna'].forEach(x=>done.add(x));
+    if((state.metrics?.floor||0)>0)['piso','argColante','rejunte'].forEach(x=>done.add(x));if(num($('perimetroRodape')?.value))done.add('rodape');if(num($('areaCobertura')?.value))done.add('telhas');
+    if(state.openings.some(o=>/porta/i.test(o.type)))['portas','ferragens','soleiras'].forEach(x=>done.add(x));if(state.openings.some(o=>/janela/i.test(o.type)))['janelas','vidros','peitoris'].forEach(x=>done.add(x));if(state.customItems.length)done.add('outros');
+    complementaryDefs.forEach(([id,label,unit,stage,scopeId])=>{if($(id)&&num($(id).value)>0)done.add(scopeId)});return done;
+  }
+  function renderScopeStatus(){if(!$('scopeStatusBody'))return;const done=quantifiedScopeIds();let selected=0,finished=0,na=0;const rows=[];componentCatalog.forEach(g=>g.items.forEach(([id,label,source])=>{if(!state.scope.has(id)){na++;return}selected++;const ok=done.has(id);if(ok)finished++;rows.push(`<tr><td>${esc(g.stage)}</td><td>${esc(label)}</td><td class="${ok?'scope-status-ok':'scope-status-warn'}">${ok?'Quantificado':'Pendente'}</td><td>${source==='arquitetônico'?'Arquitetônico / leitura':source==='complementar'?'Projeto complementar':'Entrada manual'}</td></tr>`)}));$('scopeStatusBody').innerHTML=rows.join('');$('scopeSelected').textContent=selected;$('scopeDone').textContent=finished;$('scopePending').textContent=Math.max(0,selected-finished);$('scopeNA').textContent=componentCatalog.flatMap(g=>g.items).length-selected;$('scopeCoverage').textContent=selected?Math.round(finished/selected*100)+'%':'0%';updateScopeCount();}
+  $('selectAllScope').onclick=()=>{state.scope=new Set(defaultScope);renderScope();renderScopeStatus();saveProject(false)};
+  $('basicScope').onclick=()=>{const optional=new Set(['solarFV','solarTermico','inversor','elevador','plataforma','pocoElev','piscina','spdaCap','spdaDesc','spdaTerra','spdaConex','sprinklers','hidrantes','reservaInc','automacao','cftv','alarme','dutos','marcenaria','deck']);state.scope=new Set([...defaultScope].filter(x=>!optional.has(x)));renderScope();renderScopeStatus();saveProject(false)};
+
+  $('pdfInput').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;state.pdfName=f.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;state.autoWallFootprint=0;state.autoWallLength=0;state.floorAreas=[];const data=await f.arrayBuffer();state.pdf=await pdfjsLib.getDocument({data}).promise;state.pages=state.pdf.numPages;state.page=1;$('pdfInfo').textContent=`${f.name} • ${state.pages} página(s) • analisando...`;await extractPdfText();await renderPage();renderOpenings();renderAutoRead();saveProject(false)});
+
+  async function extractPdfText(){
+    if(!state.pdf)return;let all=[];let rooms=[];state.pageTexts=[];
+    for(let p=1;p<=state.pdf.numPages;p++){
+      const page=await state.pdf.getPage(p);const tc=await page.getTextContent();
+      const items=tc.items.map(i=>({s:i.str.trim(),x:i.transform[4],y:i.transform[5]})).filter(i=>i.s);
+      items.sort((a,b)=>Math.abs(b.y-a.y)>3?b.y-a.y:a.x-b.x);
+      const pageText=items.map(i=>i.s).join(' ');state.pageTexts.push(pageText);all.push(pageText);
+      for(let i=0;i<items.length;i++){
+        const m=items[i].s.match(/(\d{1,4}[,.]\d{1,2}|\d{1,4})\s*m[²2]/i);
+        if(m){let label='Ambiente';for(let j=i-1;j>=Math.max(0,i-4);j--){if(items[j].s.length>2&&!/^[-+]?\d/.test(items[j].s)&&!/Área|Escala/i.test(items[j].s)){label=items[j].s;break}}rooms.push({name:label,area:num(m[1]),page:p,x:items[i].x,y:items[i].y});}
+      }
+    }
+    state.pdfText=all.join('\n');state.rooms=dedupeRooms(rooms);
+    const scaleMatch=state.pdfText.match(/escala\s*[:\-]?\s*1\s*[:\/]\s*(\d{1,4})/i)||state.pdfText.match(/\b1\s*[:\/]\s*(20|25|50|75|100|125|200)\b/i);
+    if(scaleMatch)state.scaleDen=num(scaleMatch[1]);
+    state.floorAreas=extractFloorAreasFromText(state.pdfText);
+    if(state.floorAreas.length){$('areaConstruida').value=state.floorAreas.reduce((a,b)=>a+b.area,0).toFixed(2);}else if(state.rooms.length&&!num($('areaConstruida').value)){$('areaConstruida').value=state.rooms.reduce((a,b)=>a+b.area,0).toFixed(2);}
+    if(/multifamiliar/i.test(state.pdfText))$('tipoObra').value='Residencial multifamiliar';
+    const hasInf=/pavto\.?\s*inferior/i.test(state.pdfText),hasSup=/pavto\.?\s*superior/i.test(state.pdfText);if(hasInf&&hasSup)$('pavimentos').value=2;
+    extractOpeningsFromText();
+    await estimateWallsFromPdf();
+    $('pdfInfo').textContent=`${state.pdfName} • ${state.pages} página(s)${state.scaleDen?' • escala 1:'+state.scaleDen:''}${num($('areaConstruida').value)?' • área '+fmt(num($('areaConstruida').value))+' m²':''}`;
+    updateReadout();renderRooms();renderOpenings();renderAutoRead();
+  }
+  function dedupeRooms(arr){const seen=new Set();return arr.filter(r=>{const k=r.page+'|'+Math.round((r.x||0)/6)+'|'+Math.round((r.y||0)/6)+'|'+r.area;if(seen.has(k))return false;seen.add(k);return r.area>0&&r.area<10000})}
+  function extractFloorAreasFromText(text){const found=[];const patterns=[/Planta\s+Baixa\s+(?:Pavto\.?|Pavimento)?\s*(Inferior|Superior|T[eé]rreo|Cobertura)?[\s\S]{0,55}?Área\s*[:\-]?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]/gi,/(?:Pavto\.?|Pavimento)\s*(Inferior|Superior|T[eé]rreo)[\s\S]{0,55}?Área\s*[:\-]?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]/gi];for(const re of patterns){for(const m of text.matchAll(re)){const area=num(m[2]),label=(m[1]||'Pavimento').trim();if(area>0&&area<10000&&!found.some(x=>Math.abs(x.area-area)<.001&&x.label===label))found.push({label,area})}if(found.length)break}return found}
+  function extractOpeningsFromText(){const text=state.pdfText.replace(/\s+/g,' ');const codes=[...new Set([...text.matchAll(/\b([JP]\d{1,2})\b/g)].map(m=>m[1]))];const defs=[];for(const code of codes){const re=new RegExp('\\b'+code+'\\b\\s+(Janela|Porta)\\b','i');const m=re.exec(text);if(!m)continue;const seg=text.slice(m.index,Math.min(text.length,m.index+220));const nums=[...seg.matchAll(/\b(\d{2,3}[,.]\d{1,2})\b/g)].map(x=>num(x[1]));const isWin=/janela/i.test(m[1]);if((isWin&&nums.length<3)||(!isWin&&nums.length<2))continue;const w=nums[0]/100,h=(isWin?nums[2]:nums[1])/100;const count=Math.max(0,(text.match(new RegExp('\\b'+code+'\\b','g'))||[]).length-1);if(count>0&&w>.2&&w<5&&h>.2&&h<5)defs.push({code,type:isWin?'Janela':'Porta',w,h,qty:count})}state.openingDefinitions=defs;const manual=state.openings.filter(o=>o.source!=='PDF');state.openings=[...manual,...defs.map(d=>({type:`${d.type} ${d.code}`,qty:d.qty,w:d.w,h:d.h,source:'PDF'}))]}
+  function brickFinishedThickness(){const b=$('tijolo').value;return b==='9'?0.12:b==='14'?0.18:0.15}
+  async function estimateWallsFromPdf(){state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallConfidence='';if(!state.pdf||!state.scaleDen){renderAutoRead();return}const renderScale=.82;let footprint=0,pagesUsed=0,quality=[];for(let p=1;p<=state.pdf.numPages;p++){const txt=state.pageTexts[p-1]||'';if(!/planta\s+baixa/i.test(txt))continue;const page=await state.pdf.getPage(p),vp=page.getViewport({scale:renderScale}),c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);const ctx=c.getContext('2d',{willReadFrequently:true});await page.render({canvasContext:ctx,viewport:vp}).promise;const d=ctx.getImageData(0,0,c.width,c.height).data,hist=new Uint32Array(256);for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2];if(Math.abs(r-g)<=3&&Math.abs(g-b)<=3&&r>=70&&r<=205)hist[r]++}let peak=0,peakCount=0;for(let v=70;v<=205;v++){if(hist[v]>peakCount){peak=v;peakCount=hist[v]}}let wallPixels=0;for(let v=Math.max(70,peak-2);v<=Math.min(205,peak+2);v++)wallPixels+=hist[v];const ratio=wallPixels/(c.width*c.height);if(peakCount>0&&ratio>.001){const mpp=0.0254/72*state.scaleDen/renderScale;footprint+=wallPixels*mpp*mpp;pagesUsed++;quality.push(ratio)}}state.autoWallFootprint=footprint;state.autoWallLength=footprint>0?footprint/brickFinishedThickness():0;const avg=quality.length?quality.reduce((a,b)=>a+b,0)/quality.length:0;state.autoWallConfidence=pagesUsed?(avg>.008?'boa':'moderada'):'';renderAutoRead()}
+  function renderAutoRead(){if(!$('autoReadSummary'))return;const autoLen=state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():state.autoWallLength;state.autoWallLength=autoLen;const floor=state.floorAreas.reduce((s,x)=>s+x.area,0)||num($('areaConstruida').value);const openQty=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty,0);$('autoReadSummary').innerHTML=`<div class="auto-item"><b>${floor?fmt(floor)+' m²':'—'}</b><span>Área construída identificada</span></div><div class="auto-item"><b>${autoLen?fmt(autoLen)+' m':'—'}</b><span>Paredes estimadas automaticamente</span></div><div class="auto-item"><b>${openQty||0}</b><span>Portas + janelas lidas</span></div><div class="auto-item"><b>${state.autoWallConfidence||'—'}</b><span>Confiança da geometria automática</span></div>`;}
+
+
+  async function renderPage(){
+    if(!state.pdf)return;const page=await state.pdf.getPage(state.page);const scale=1.45;const viewport=page.getViewport({scale});state.viewport=viewport;
+    const canvas=$('pdfCanvas'),ctx=canvas.getContext('2d');canvas.width=viewport.width;canvas.height=viewport.height;$('overlay').setAttribute('width',viewport.width);$('overlay').setAttribute('height',viewport.height);$('overlay').style.width=viewport.width+'px';$('overlay').style.height=viewport.height+'px';
+    await page.render({canvasContext:ctx,viewport}).promise;
+    if(state.scaleDen && !state.metersPerPixel) state.metersPerPixel=0.0254/72*state.scaleDen/scale;
+    $('pageLabel').textContent=`${state.page} / ${state.pages}`;drawOverlay();updateReadout();
+  }
+  $('prevPage').onclick=async()=>{if(state.page>1){state.page--;await renderPage()}};$('nextPage').onclick=async()=>{if(state.page<state.pages){state.page++;await renderPage()}};
+  $('relerAutoBtn').onclick=async()=>{if(!state.pdf){alert('Recarregue o PDF primeiro.');return}$('relerAutoBtn').disabled=true;$('relerAutoBtn').textContent='Analisando...';await estimateWallsFromPdf();$('relerAutoBtn').disabled=false;$('relerAutoBtn').textContent='Refazer leitura automática';saveProject(false)};
+
+  function setMode(m){state.mode=m;state.tempPts=[];$('overlay').classList.toggle('active',!!m);$('scaleBox').textContent=m==='cal'?'Clique em dois pontos de uma dimensão conhecida.':m==='wall'?'Clique no início e no fim da parede.':'Ferramenta cancelada.';drawOverlay()}
+  $('calibrarBtn').onclick=()=>setMode('cal');$('paredeBtn').onclick=()=>setMode('wall');$('cancelMode').onclick=()=>setMode(null);
+  $('overlay').addEventListener('click',e=>{if(!state.mode)return;const r=$('overlay').getBoundingClientRect();const x=(e.clientX-r.left)*(state.viewport.width/r.width),y=(e.clientY-r.top)*(state.viewport.height/r.height);state.tempPts.push({x,y});drawOverlay();if(state.tempPts.length===2){if(state.mode==='cal'){const d=prompt('Qual é a distância real entre os dois pontos, em metros?','3.00');const real=num(d);if(real>0){const px=dist(state.tempPts[0],state.tempPts[1]);state.metersPerPixel=real/px;state.scaleDen=null;$('scaleBox').textContent=`Calibração manual concluída: 1 px = ${state.metersPerPixel.toFixed(5)} m`;}}else if(state.mode==='wall'){if(!state.metersPerPixel){alert('Primeiro confirme a escala ou faça a calibração por dois pontos.');state.tempPts=[];return}const len=dist(state.tempPts[0],state.tempPts[1])*state.metersPerPixel;state.walls.push({page:state.page,a:state.tempPts[0],b:state.tempPts[1],length:len,height:height(),brick:$('tijolo').value});renderWalls();}state.tempPts=[];saveProject(false);drawOverlay();updateReadout();}});
+  function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+  function drawOverlay(){const svg=$('overlay');svg.innerHTML='';state.walls.filter(w=>w.page===state.page).forEach(w=>addLine(w.a,w.b,'wall-line'));if(state.tempPts.length){state.tempPts.forEach(p=>addCircle(p));if(state.tempPts.length===2)addLine(state.tempPts[0],state.tempPts[1],state.mode==='cal'?'cal-line':'wall-line')}function addLine(a,b,c){const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',a.x);l.setAttribute('y1',a.y);l.setAttribute('x2',b.x);l.setAttribute('y2',b.y);l.setAttribute('class',c);svg.appendChild(l)}function addCircle(p){const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',5);c.setAttribute('class','point');svg.appendChild(c)}}
+
+  function renderRooms(){if(!state.rooms.length){$('roomsList').className='scroll empty';$('roomsList').textContent='Nenhum ambiente identificado ainda.';return}$('roomsList').className='scroll';$('roomsList').innerHTML='<table><thead><tr><th>Ambiente</th><th>Pág.</th><th class="num">Área</th></tr></thead><tbody>'+state.rooms.map(r=>`<tr><td>${esc(r.name)}</td><td>${r.page}</td><td class="num">${fmt(r.area)} m²</td></tr>`).join('')+'</tbody></table>'}
+  function renderWalls(){$('wallBody').innerHTML=state.walls.map((w,i)=>`<tr><td>${i+1}</td><td>${w.page}</td><td>${fmt(w.length)} m</td><td><input style="width:78px" type="number" step="0.01" value="${w.height}" onchange="window.editWall(${i},'height',this.value)"></td><td><select onchange="window.editWall(${i},'brick',this.value)"><option value="9" ${w.brick==='9'?'selected':''}>9×19×19</option><option value="11.5" ${w.brick==='11.5'?'selected':''}>11,5×19×19</option><option value="14" ${w.brick==='14'?'selected':''}>14×19×19</option></select></td><td><button class="btn danger" onclick="window.delWall(${i})">Excluir</button></td></tr>`).join('');updateReadout();}
+  window.editWall=(i,k,v)=>{state.walls[i][k]=k==='height'?num(v):v;saveProject(false);updateReadout()};window.delWall=i=>{state.walls.splice(i,1);renderWalls();drawOverlay();saveProject(false)};
+
+  $('addVao').onclick=()=>{state.openings.push({type:$('vaoTipo').value,qty:Math.max(1,num($('vaoQtd').value)),w:num($('vaoLarg').value),h:num($('vaoAlt').value)});renderOpenings();saveProject(false)};
+  function renderOpenings(){$('vaoBody').innerHTML=state.openings.map((o,i)=>`<tr><td>${o.type}</td><td>${o.qty}</td><td>${fmt(o.w)}×${fmt(o.h)} m</td><td><button class="btn danger" onclick="window.delOpen(${i})">×</button></td></tr>`).join('')};window.delOpen=i=>{state.openings.splice(i,1);renderOpenings();saveProject(false)};
+
+  function updateReadout(){const areaRooms=state.rooms.reduce((s,r)=>s+r.area,0),wallM=state.walls.reduce((s,w)=>s+w.length,0);$('statEscala').textContent=state.metersPerPixel?(state.scaleDen?`1:${state.scaleDen}`:'Calibrada'):'—';$('statAmb').textContent=state.rooms.length;$('statArea').textContent=fmt(areaRooms)+' m²';$('statWalls').textContent=state.walls.length;$('statWallM').textContent=fmt(wallM)+' m';if(state.metersPerPixel)$('scaleBox').textContent=state.scaleDen?`Escala lida do PDF: 1:${state.scaleDen}. Confirme se o arquivo foi plotado corretamente ou calibre por uma cota conhecida.`:'Escala calibrada manualmente.'}
+
+  $('analisarBtn').onclick=async()=>{if(!state.pdf){alert('Selecione um PDF primeiro.');return}await renderPage();renderRooms();renderWalls();renderOpenings();renderAutoRead();renderScopeStatus();showView('planta')};
+  $('salvarBtn').onclick=()=>{saveProject();alert('Projeto salvo neste dispositivo.')};
+  $('calcularBtn').onclick=()=>{calculate();showView('quant')};
+
+  function calculate(){
+    const manualLength=state.walls.reduce((s,w)=>s+w.length,0),override=num($('wallLengthOverride').value),autoLength=state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():state.autoWallLength;let wallLength=0,wallSource='Sem geometria';let gross=0;if(state.walls.length){wallLength=manualLength;gross=state.walls.reduce((s,w)=>s+w.length*w.height,0);wallSource='Paredes conferidas manualmente'}else if(override>0){wallLength=override;gross=override*height();wallSource='Comprimento ajustado pelo usuário'}else if(autoLength>0){wallLength=autoLength;gross=autoLength*height();wallSource='Leitura automática do PDF'}const open=state.openings.reduce((s,o)=>s+o.qty*o.w*o.h,0);const net=Math.max(0,gross-open);const L=loss();const factor=1+L;const faces=num($('facesReboco').value);const coatArea=net*faces;const floor=num($('areaConstruida').value)||state.floorAreas.reduce((s,r)=>s+r.area,0)||state.rooms.reduce((s,r)=>s+r.area,0);const rod=$('rodape').value==='sim'?num($('perimetroRodape').value):0;const paintArea=(($('pintInterna').value==='sim'||$('pintExterna').value==='sim')?coatArea:0);const c=state.coef;const primaryBrick=$('tijolo').value;
+    const mats=[];const add=(stage,material,q,unit,scopeId)=>{if(q>0 && (!scopeId||state.scope.has(scopeId)))mats.push({stage,material,q,unit,scopeId})};
+    add('5. Alvenarias e vedações',`Tijolo ${primaryBrick.replace('.',',')}×19×19 cm`,Math.ceil(net*c.bricks*factor),'un.','alvenaria');
+    add('5. Alvenarias e vedações','Argamassa de assentamento',Math.ceil(net*c.mortar*factor/c.bag),'sacos','argAssent');
+    if($('revInterno').value!=='Sem revestimento'||$('revExterno').value!=='Sem revestimento'){add('17. Revestimentos de paredes e fachadas','Argamassa para chapisco',Math.ceil(coatArea*c.chap*factor/c.bag),'sacos','chapisco');add('17. Revestimentos de paredes e fachadas',$('revInterno').value==='Gesso'?'Revestimento / gesso':'Argamassa para reboco',Math.ceil(coatArea*c.plaster*factor/c.bag),'sacos',$('revInterno').value==='Gesso'?'gessoParede':'reboco');}
+    add('18. Pisos, contrapisos e rodapés',`Piso / ${$('piso').value}`,floor*factor,'m²','piso');add('18. Pisos, contrapisos e rodapés','Argamassa colante',Math.ceil(floor*c.tileadh*factor/c.bag),'sacos','argColante');add('18. Pisos, contrapisos e rodapés','Rejunte',floor*c.grout*factor,'kg','rejunte');if(rod)add('18. Pisos, contrapisos e rodapés','Rodapé',rod*factor,'m','rodape');
+    if(paintArea){add('20. Pinturas e acabamentos superficiais','Selador',paintArea*c.primer*factor,'L','selador');add('20. Pinturas e acabamentos superficiais','Massa corrida',paintArea*c.putty*factor,'kg','massa');add('20. Pinturas e acabamentos superficiais','Tinta acabamento',paintArea*c.paint*factor,'L','tintaInterna');}
+    const roof=num($('areaCobertura').value);if($('cobertura').value!=='nao'&&roof)add('7. Cobertura e drenagem pluvial',$('cobertura').value,roof*factor,'m²','telhas');
+    const doors=state.openings.filter(o=>/porta/i.test(o.type)),wins=state.openings.filter(o=>/janela/i.test(o.type));const doorQty=doors.reduce((s,o)=>s+o.qty,0),winQty=wins.reduce((s,o)=>s+o.qty,0);if(doorQty){add('8. Esquadrias, vidros e serralheria','Portas',doorQty,'un.','portas');add('8. Esquadrias, vidros e serralheria','Conjuntos de ferragens de portas',doorQty,'cj.','ferragens');add('8. Esquadrias, vidros e serralheria','Soleiras',doors.reduce((s,o)=>s+o.qty*o.w,0)*factor,'m','soleiras')}if(winQty){add('8. Esquadrias, vidros e serralheria','Janelas',winQty,'un.','janelas');add('8. Esquadrias, vidros e serralheria','Vidros de esquadrias',wins.reduce((s,o)=>s+o.qty*o.w*o.h,0)*factor,'m²','vidros');add('8. Esquadrias, vidros e serralheria','Peitoris',wins.reduce((s,o)=>s+o.qty*o.w,0)*factor,'m','peitoris')}
+    state.customItems.forEach(x=>mats.push({...x,scopeId:'outros'}));
+    complementaryDefs.forEach(([id,label,unit,stage,scopeId,applyLoss])=>{const q=$(id)?num($(id).value):0;if(q>0)add(stage,label,q*(applyLoss?factor:1),unit,scopeId)});
+    state.materials=mats;state.metrics={gross,open,net,floor,coatArea,paintArea,wallLength,wallSource};renderMaterials();renderScopeStatus();saveProject(false);
+  }
+  function renderMaterials(){const m=state.metrics||{gross:0,open:0,net:0,floor:0,paintArea:0};$('qAreaWall').textContent=fmt(m.net);$('qOpen').textContent=fmt(m.open);$('qFloor').textContent=fmt(m.floor);$('qPaint').textContent=fmt(m.paintArea);if($('quantSource'))$('quantSource').textContent=m.wallSource||'Aguardando cálculo';const bricks=state.materials.find(x=>x.material.startsWith('Tijolo'));$('qBricks').textContent=bricks?Math.round(bricks.q).toLocaleString('pt-BR'):'0';$('materialsBody').innerHTML=state.materials.map(x=>`<tr><td>${x.stage}</td><td>${x.material}</td><td class="num">${fmt(x.q,x.unit==='un.'||x.unit==='sacos'?0:2)}</td><td>${x.unit}</td></tr>`).join('')||'<tr><td colspan="4">Nenhum quantitativo calculado ainda.</td></tr>';renderScopeStatus()}
+
+  function loadCoef(){const saved=JSON.parse(localStorage.getItem('lang-coef')||'null');state.coef=saved||{...defaultCoef};for(const [k,v] of Object.entries(state.coef))$('c_'+k).value=v}
+  $('saveCoef').onclick=()=>{for(const k of Object.keys(defaultCoef))state.coef[k]=num($('c_'+k).value);localStorage.setItem('lang-coef',JSON.stringify(state.coef));alert('Coeficientes salvos.');if(state.walls.length)calculate()};$('resetCoef').onclick=()=>{state.coef={...defaultCoef};localStorage.removeItem('lang-coef');loadCoef()};
+
+  function getForm(){const ids=['obra','cliente','endereco','tipoObra','pavimentos','peDireito','peCustom','tijolo','facesReboco','revInterno','revExterno','piso','rodape','forro','cobertura','pintInterna','pintExterna','perdas','perdasCustom','areaCobertura','areaConstruida','perimetroRodape','wallLengthOverride','fundacaoTipo','estruturaTipo','lajeTipo','aguaQuente','esgotoSistema','gasSistema','climatizacao','solarSistema','incendioSistema','spdaSistema','elevadorSistema','piscinaSistema',...complementaryDefs.map(x=>x[0])];const out={};ids.forEach(id=>{if($(id))out[id]=$(id).value});return out}
+  function setForm(f={}){for(const [k,v] of Object.entries(f))if($(k))$(k).value=v}
+  function saveProject(show=true){const data={form:getForm(),pdfName:state.pdfName,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems};localStorage.setItem('lang-quant-project',JSON.stringify(data));$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
+  function loadProject(){const d=JSON.parse(localStorage.getItem('lang-quant-project')||'null');if(!d)return;setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.openingDefinitions=d.openingDefinitions||[];renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o PDF para visualizar a planta.`}
+
+  document.querySelectorAll('[data-report]').forEach(b=>b.addEventListener('click',()=>generateReport(b.dataset.report)));
+  function generateReport(type){if(!state.materials.length)calculate();const f=getForm();const title=type==='resumo'?'Resumo Geral de Materiais':type==='completo'?'Quantitativo Completo e Memória de Cálculo':'Materiais por Etapa da Obra';let body='';
+    if(type==='resumo'){
+      const map={};state.materials.forEach(x=>{const k=x.material+'|'+x.unit;map[k]=(map[k]||0)+x.q});body='<h2>Materiais consolidados</h2>'+tableHtml(Object.entries(map).map(([k,q])=>{const [m,u]=k.split('|');return [m,fmt(q,u==='un.'||u==='sacos'?0:2),u]}),['Material','Quantidade','Unidade']);
+    } else if(type==='etapas'){
+      const stages=componentCatalog.map(g=>g.stage).filter(st=>componentCatalog.find(g=>g.stage===st).items.some(i=>state.scope.has(i[0])));body=stages.map(st=>{const rows=state.materials.filter(x=>x.stage===st).map(x=>[x.material,fmt(x.q,x.unit==='un.'||x.unit==='sacos'?0:2),x.unit]);const pending=componentCatalog.find(g=>g.stage===st).items.filter(i=>state.scope.has(i[0])&&!quantifiedScopeIds().has(i[0])).map(i=>[i[1],'PENDENTE','—']);return `<h2>${st}</h2>${tableHtml([...rows,...pending],['Material / serviço','Quantidade','Unidade'])}`}).join('');
+    } else {
+      const m=state.metrics||{};body=`<h2>Parâmetros adotados</h2>${tableHtml([['Tipo de obra',f.tipoObra],['Pavimentos',f.pavimentos],['Pé-direito',fmt(height())+' m'],['Tijolo padrão',f.tijolo.replace('.',',')+'×19×19 cm'],['Perda',fmt(loss()*100,1)+'%'],['Faces de revestimento',f.facesReboco]],['Parâmetro','Valor'])}<h2>Memória geométrica</h2>${tableHtml([['Comprimento total de paredes',fmt(m.wallLength||state.walls.reduce((s,w)=>s+w.length,0))+' m'],['Origem da geometria',m.wallSource||'—'],['Área bruta de alvenaria',fmt(m.gross)+' m²'],['Vãos descontados',fmt(m.open)+' m²'],['Área líquida de alvenaria',fmt(m.net)+' m²'],['Área de piso',fmt(m.floor)+' m²'],['Área de revestimento',fmt(m.coatArea)+' m²']],['Item','Resultado'])}<h2>Paredes conferidas</h2>${tableHtml(state.walls.map((w,i)=>[i+1,w.page,fmt(w.length)+' m',fmt(w.height)+' m',w.brick.replace('.',',')+'×19×19']),['#','Página','Comprimento','Altura','Tijolo'])}<h2>Materiais e serviços</h2>${tableHtml(state.materials.map(x=>[x.stage,x.material,fmt(x.q,x.unit==='un.'||x.unit==='sacos'?0:2),x.unit]),['Etapa','Material','Quantidade','Unidade'])}<h2>Controle de escopo</h2>${tableHtml(componentCatalog.flatMap(g=>g.items.filter(i=>state.scope.has(i[0])).map(i=>[g.stage,i[1],quantifiedScopeIds().has(i[0])?'Quantificado':'Pendente',i[2]])),['Etapa','Componente','Situação','Fonte'])}`;
+    }
+    const html=`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>body{font-family:Arial,sans-serif;color:#182631;margin:38px}header{border-bottom:3px solid #0d2742;padding-bottom:14px;margin-bottom:24px}h1{font-size:24px;color:#0d2742;margin:0}h2{font-size:16px;color:#0d2742;margin:24px 0 10px}p{font-size:12px;color:#61717d}table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px}th,td{border-bottom:1px solid #d8e1e6;padding:8px;text-align:left}th{background:#eef4f8;color:#405261}.meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 30px;font-size:12px}.note{margin-top:26px;padding:10px;background:#f6f8fa;border:1px solid #dce4e9;font-size:10px;color:#667783}@media print{button{display:none}}</style></head><body><header><h1>LANG Engenharia</h1><p>${esc(title)}</p></header><div class="meta"><div><b>Obra:</b> ${esc(f.obra||'—')}</div><div><b>Cliente:</b> ${esc(f.cliente||'—')}</div><div><b>Endereço:</b> ${esc(f.endereco||'—')}</div><div><b>Data:</b> ${new Date().toLocaleDateString('pt-BR')}</div></div>${body}<div class="note">Quantitativos gerados a partir da planta fornecida, medidas conferidas e parâmetros informados pelo usuário. Coeficientes de consumo devem ser validados conforme materiais, sistema executivo e especificações dos fornecedores.</div><script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`;
+    const w=window.open('','_blank');w.document.open();w.document.write(html);w.document.close();
+  }
+  function tableHtml(rows,heads){return '<table><thead><tr>'+heads.map(h=>`<th>${esc(String(h))}</th>`).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>`<td>${esc(String(c??''))}</td>`).join('')+'</tr>').join('')+'</tbody></table>'}
+  function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+
+  renderComplementaryInputs();renderScope();renderCustomItems();initStepNavigation();loadCoef();loadProject();renderAutoRead();renderScopeStatus();
+  if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+</script>
+</body>
+</html>
