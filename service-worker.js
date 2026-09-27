@@ -1,21 +1,5 @@
-const CACHE='lang-quantitativos-v3';
-self.addEventListener('install',event=>{
-  self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then(cache=>cache.add('/').catch(()=>null)));
-});
-self.addEventListener('activate',event=>{
-  event.waitUntil(Promise.all([
-    caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))),
-    self.clients.claim()
-  ]));
-});
-self.addEventListener('fetch',event=>{
-  if(event.request.method!=='GET'||event.request.mode!=='navigate')return;
-  event.respondWith(
-    fetch(event.request,{cache:'no-store'}).then(response=>{
-      const copy=response.clone();
-      caches.open(CACHE).then(cache=>cache.put('/',copy)).catch(()=>{});
-      return response;
-    }).catch(()=>caches.match('/'))
-  );
-});
+const CACHE='lang-quantitativos-v4';
+const BASE=new URL('./',self.location).href;
+self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['index.html','manifest.json','vendor/pdf.min.mjs','vendor/pdf.worker.min.mjs'].map(p=>new URL(p,BASE).href))))});
+self.addEventListener('activate',e=>e.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('lang-quantitativos-')&&k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()])));
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!e.request.url.startsWith(BASE))return;e.respondWith(fetch(e.request).then(r=>{if(r.ok)caches.open(CACHE).then(c=>c.put(e.request,r.clone()));return r}).catch(async()=>await caches.match(e.request)|| (e.request.mode==='navigate'?await caches.match(new URL('index.html',BASE).href):Response.error())))});
