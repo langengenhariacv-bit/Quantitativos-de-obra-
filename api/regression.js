@@ -19,13 +19,13 @@ const PLANS=[
  {id:16,name:'Sobrado brasileiro 5x25',kind:'Brasil cotada',url:'https://www.gaprojetos.com/assets/site/uploader/projetos/1000a/planta_com_medidas_-PLOT-A4_page-0001.jpg'},
  {id:17,name:'Casa brasileira 3 quartos',kind:'Brasil mobiliada',url:'https://i.pinimg.com/736x/75/b7/bd/75b7bd0e24abf3f6a6322b3134288263.jpg'},
  {id:18,name:'Apartamento A2 técnico',kind:'Brasil técnico',url:'https://imgv2-2-f.scribdassets.com/img/document/931688771/original/392c32c2e9/1?v=1'},
- {id:19,name:'Apartamento Dubai 1 quarto',kind:'P/B mobiliada',url:'https://terrarealestate.com/img/3665/terra-696f699bc25fa.jpg'},
+ {id:19,name:'Casa Metricon 4 quartos',kind:'P/B mobiliada',url:'https://files.openlot.com.au/p/home_stock/Lot%20238%20Westringia%20Approach%20by%20Metricon%20Homes___6902_floorplan_1725970020.jpg'},
  {id:20,name:'Ranch 1400 sq ft',kind:'P/B densa',url:'https://i.pinimg.com/originals/01/b2/e4/01b2e413cfc774006d4a00a9a3315c2d.jpg'},
  {id:21,name:'UNCW 3 quartos',kind:'P/B fina',url:'https://uncw.edu/media/images/application-assets/housing/village-3-br-notpad-housing.png'},
- {id:22,name:'Apartamento Ashbury',kind:'P/B imobiliária',url:'https://images1.apartments.com/i2/_Vsh81qXoKse34o_YFGsS8lSAWqf-owc_XDuC_IyiLA/111/ashbury-court-dekalb-il-heat-included-in-rent.jpg'},
+ {id:22,name:'Casa MCMV compacta',kind:'P/B imobiliária',url:'https://i.pinimg.com/originals/25/b3/74/25b374e105cd3a1ed9442578579c83ae.png'},
  {id:23,name:'Casa com pátio central',kind:'curvas/pátio',url:'https://i.pinimg.com/736x/82/c9/d1/82c9d1a8abeeba993a5dfc25dabe5108.jpg'},
  {id:24,name:'Casa em U',kind:'U complexa',url:'https://i.pinimg.com/originals/97/e4/1f/97e41f01df188685ed643ac2d57bca7c.jpg'},
- {id:25,name:'Apartamento Dinamarca',kind:'P/B escala gráfica',url:'https://image-lambda.boligportal.dk/d23b44d364abf67b5e6c2ce7e60001b3?h=400&w=600'},
+ {id:25,name:'Casa modular 64 m²',kind:'P/B escala gráfica',url:'https://optim.tildacdn.net/tild3437-6633-4035-b731-633266336133/-/format/webp/7.jpg.webp'},
  {id:26,name:'Split level',kind:'níveis',url:'https://hel1.your-objectstorage.com/old-web/remodelai/seo1/split-level-house-floor-plans/5.jpg'},
  {id:27,name:'Garagem + apartamento',kind:'dois desenhos',url:'https://i.ebayimg.com/images/g/kTgAAOSwLF1X-jrj/s-l1200.jpg'},
  {id:28,name:'Prancha universitária A1',kind:'carimbo/cotas',url:'https://website-assets.studocu.com/img/document_thumbnails/da624d7c2555a882cd0ec4c68dbf1a1f/thumb_1200_848.png'},
@@ -83,8 +83,8 @@ function analyzeSegments(seg,roi){
 }
 function metrics(gray,w,h){
  const roi=bounds(gray,w,h),dm=darkMask(gray,w,h,roi),minDim=Math.min(roi.x1-roi.x0,roi.y1-roi.y0),minLen=Math.max(14,Math.round(minDim*.013)),hRuns=cluster(scan(dm.mask,w,roi,'h',minLen),roi,'h',minLen),vRuns=cluster(scan(dm.mask,w,roi,'v',minLen),roi,'v',minLen),merged=merge([...hRuns,...vRuns],roi),g=analyzeSegments(merged,roi),a=g.accepted,u=g.uncertain,total=a.reduce((s,r)=>s+r.len,0),cand=merged.reduce((s,r)=>s+r.len,0),conn=a.filter(r=>r.connections>0).length,q=a.length?Math.max(0,Math.min(1,.48*total/Math.max(1,cand)+.30*conn/a.length+.22*Math.min(1,a.length/14))):0;
- let minX=1e9,maxX=-1,minY=1e9,maxY=-1;for(const r of a){if(r.axis==='h'){minX=Math.min(minX,r.a);maxX=Math.max(maxX,r.b);minY=Math.min(minY,r.pos);maxY=Math.max(maxY,r.pos)}else{minX=Math.min(minX,r.pos);maxX=Math.max(maxX,r.pos);minY=Math.min(minY,r.a);maxY=Math.max(maxY,r.b)}}const bw=maxX>=minX?(maxX-minX)/(roi.x1-roi.x0):0,bh=maxY>=minY?(maxY-minY)/(roi.y1-roi.y0):0,dom=(g.comps[0]?.length||0)/Math.max(1,cand),unc=u.length/Math.max(1,merged.length),hv=[a.filter(x=>x.axis==='h').length,a.filter(x=>x.axis==='v').length],pass=a.length>=4&&q>=.33&&dom>=.32&&(bw>=.28||bh>=.28)&&unc<=.82;
- return{pass,threshold:dm.threshold,accepted:a.length,uncertain:u.length,quality:+q.toFixed(3),dominant:+dom.toFixed(3),bboxWidth:+bw.toFixed(3),bboxHeight:+bh.toFixed(3),horizontal:hv[0],vertical:hv[1],lengthPx:Math.round(total),roi:{w:roi.x1-roi.x0,h:roi.y1-roi.y0},reason:pass?'ok':a.length<4?'few-segments':q<.33?'low-quality':dom<.32?'fragmented':unc>.82?'too-uncertain':'small-coverage'};
+ let minX=1e9,maxX=-1,minY=1e9,maxY=-1;for(const r of a){if(r.axis==='h'){minX=Math.min(minX,r.a);maxX=Math.max(maxX,r.b);minY=Math.min(minY,r.pos);maxY=Math.max(maxY,r.pos)}else{minX=Math.min(minX,r.pos);maxX=Math.max(maxX,r.pos);minY=Math.min(minY,r.a);maxY=Math.max(maxY,r.b)}}const bw=maxX>=minX?(maxX-minX)/(roi.x1-roi.x0):0,bh=maxY>=minY?(maxY-minY)/(roi.y1-roi.y0):0,dom=(g.comps[0]?.length||0)/Math.max(1,cand),unc=u.length/Math.max(1,merged.length),hv=[a.filter(x=>x.axis==='h').length,a.filter(x=>x.axis==='v').length],network=Math.sqrt(Math.max(0,bw*bh)),multiOk=q>=.72&&a.length>=16&&network>=.42&&unc<=.80,pass=a.length>=4&&q>=.33&&(dom>=.30||multiOk)&&(bw>=.28||bh>=.28)&&unc<=.82;
+ return{pass,threshold:dm.threshold,accepted:a.length,uncertain:u.length,quality:+q.toFixed(3),dominant:+dom.toFixed(3),bboxWidth:+bw.toFixed(3),bboxHeight:+bh.toFixed(3),networkCoverage:+network.toFixed(3),horizontal:hv[0],vertical:hv[1],lengthPx:Math.round(total),roi:{w:roi.x1-roi.x0,h:roi.y1-roi.y0},reason:pass?'ok':a.length<4?'few-segments':q<.33?'low-quality':(!multiOk&&dom<.30)?'fragmented':unc>.82?'too-uncertain':'small-coverage'};
 }
 async function one(p){
  try{
