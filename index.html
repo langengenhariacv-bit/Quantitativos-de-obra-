@@ -354,11 +354,13 @@
     const wetPerim=rooms.filter(function(r){return /bwc|banheiro|wc|lavabo|servi[cç]o|lavanderia/.test(nm(r))}).reduce(function(s,r){return s+4*Math.sqrt(Math.max(0,r.area))},0);
     const roofSel=$('cobertura')?$('cobertura').value:'nao',roofInput=num($('areaCobertura')&&$('areaCobertura').value),roofArea=roofInput||(roofSel==='nao'?0:(/laje/i.test(roofSel)?foot:foot*bench.roof));
     const isMulti=/multifamiliar/i.test($('tipoObra')?$('tipoObra').value:'');
-    const structural=isMulti?{conc:.178,concMin:.146,concMax:.210,steel:18.472,steelMin:15.125,steelMax:22.601,form:1.494,formMin:1.149,formMax:1.798}:{conc:.187,concMin:.145,concMax:.242,steel:19.288,steelMin:14.652,steelMax:23.809,form:1.709,formMin:1.186,formMax:2.674};
+    const structureType=$('estruturaTipo')?$('estruturaTipo').value:'Concreto armado',concreteStructure=/concreto armado|mista/i.test(structureType),usePP4=concreteStructure&&isMulti&&pav>=3;
+    const structural=usePP4?{conc:.178,concMin:.146,concMax:.210,steel:18.472,steelMin:15.125,steelMax:22.601,form:1.494,formMin:1.149,formMax:1.798}:{conc:.187,concMin:.145,concMax:.242,steel:19.288,steelMin:14.652,steelMax:23.809,form:1.709,formMin:1.186,formMax:2.674};
+    const structuralLabel=usePP4?'CBC PP-4 (edifício multifamiliar ≥3 pavimentos)':'CBC R1 (edificação residencial baixa)';
     const electrical=electricRoomEstimate(rooms);
     const population=Math.max(units*2,beds*2);
     const coldPoints=Math.max(units*5,bwc*3+kitchens+services);
-    return{A:A,pav:pav,foot:foot,h:h,wallLen:wallLen,rooms:rooms,roomFloor:roomFloor,floorCoverage:floorCoverage,kitchens:kitchens,bwc:bwc,services:services,beds:beds,living:living,units:units,stairs:stairs,eqPerim:eqPerim,extPerim:extPerim,wetArea:wetArea,wetPerim:wetPerim,roofArea:roofArea,structural:structural,isMulti:isMulti,electrical:electrical,population:population,coldPoints:coldPoints};
+    return{A:A,pav:pav,foot:foot,h:h,wallLen:wallLen,rooms:rooms,roomFloor:roomFloor,floorCoverage:floorCoverage,kitchens:kitchens,bwc:bwc,services:services,beds:beds,living:living,units:units,stairs:stairs,eqPerim:eqPerim,extPerim:extPerim,wetArea:wetArea,wetPerim:wetPerim,roofArea:roofArea,structural:structural,structuralLabel:structuralLabel,structureType:structureType,concreteStructure:concreteStructure,isMulti:isMulti,electrical:electrical,population:population,coldPoints:coldPoints};
   }
   function buildParametricEstimates(directIds){
     directIds=directIds||new Set();const x=projectContext(),items=[],status={},text=(state.pdfText||'').toLowerCase();
@@ -368,6 +370,12 @@
       const range=(low!=null&&high!=null)?{low:Number(low),high:Number(high)}:null;
       items.push({stage:ci.stage,material:material||ci.label,q:q,unit:unit,scopeId:id,originType:'estimate',origin:source,basis:basis||'',confidence:confidence,range:range});
       status[id]={kind:'estimate',label:'Estimativa estatística',source:source,basis:basis||'',confidence:confidence,q:q,unit:unit,range:range};
+    };
+    const addGroup=function(id,rows,source,basis,confidence){
+      const ci=catalogItem(id),valid=(rows||[]).filter(function(r){return Number(r.q)>0});confidence=confidence||'média';
+      if(!valid.length){status[id]={kind:'na',label:'Não aplicável',source:'Sem quantidade defensável',basis:basis||''};return}
+      valid.forEach(function(r){items.push({stage:ci.stage,material:r.material,q:Number(r.q),unit:r.unit,scopeId:id,originType:'estimate',origin:source,basis:r.basis||basis||'',confidence:confidence,range:null})});
+      status[id]={kind:'estimate',label:'Estimativa estatística',source:source,basis:basis||'',confidence:confidence,groupCount:valid.length};
     };
     const na=function(id,reason){status[id]={kind:'na',label:'Não aplicável',source:'Parâmetros/evidência da obra',basis:reason}};
     const direct=function(id){status[id]={kind:'direct',label:'Quantificado',source:'Leitura, geometria ou dado informado',basis:'Quantidade derivada do projeto/dados do usuário'}};
@@ -414,10 +422,10 @@
         case 'fundForma':{const ft=$('fundacaoTipo')?$('fundacaoTipo').value:'';if(/radier/i.test(ft))add(id,x.foot*bench.radierForma,'m²','AGEHAB Casa UNI — radier 12 cm','3,79 m² de fôrma / 55,40 m² de base','média');else add(id,x.foot*bench.fundForma,'m²',estimatorSources.casa,'Composições 01 e 02: fôrmas de sapatas e baldrame, normalizadas por 43,20 m²','média');break;}
         case 'impermeabFund':add(id,x.foot*bench.impermeabFund,'m²',estimatorSources.casa,'14,70 m² / 43,20 m² de impermeabilização de baldrames','média');break;
         case 'chumbadores':add(id,Math.max(x.wallLen/x.pav,x.extPerim),'m de interface',estimatorSources.model,'Extensão de interface; quantidade de peças exige projeto estrutural','baixa');break;
-        case 'estruturaConcreto':add(id,x.A*x.structural.conc,'m³',estimatorSources.cbc,'Média estatística por m² estrutural','alta',x.A*x.structural.concMin,x.A*x.structural.concMax);break;
-        case 'estruturaAco':add(id,x.A*x.structural.steel,'kg',estimatorSources.cbc,'Média estatística por m² estrutural','alta',x.A*x.structural.steelMin,x.A*x.structural.steelMax);break;
-        case 'estruturaForma':add(id,x.A*x.structural.form,'m²',estimatorSources.cbc,'Média estatística por m² estrutural','alta',x.A*x.structural.formMin,x.A*x.structural.formMax);break;
-        case 'pilares':case 'vigas':add(id,x.A,'m² de área estrutural',estimatorSources.cbc,'Coberto pelo índice estrutural global; não foi inventada repartição entre elementos','média');break;
+        case 'estruturaConcreto':if(x.concreteStructure)add(id,x.A*x.structural.conc,'m³',estimatorSources.cbc,x.structuralLabel+' — média estatística por m² estrutural','alta',x.A*x.structural.concMin,x.A*x.structural.concMax);else na(id,'Índice de concreto não aplicado porque a estrutura selecionada é '+x.structureType+'.');break;
+        case 'estruturaAco':if(x.concreteStructure)add(id,x.A*x.structural.steel,'kg',estimatorSources.cbc,x.structuralLabel+' — média estatística por m² estrutural','alta',x.A*x.structural.steelMin,x.A*x.structural.steelMax);else na(id,'Índice de aço CA-50/60 não aplicado porque a estrutura selecionada é '+x.structureType+'.');break;
+        case 'estruturaForma':if(x.concreteStructure)add(id,x.A*x.structural.form,'m²',estimatorSources.cbc,x.structuralLabel+' — média estatística por m² estrutural','alta',x.A*x.structural.formMin,x.A*x.structural.formMax);else na(id,'Índice de fôrmas não aplicado porque a estrutura selecionada é '+x.structureType+'.');break;
+        case 'pilares':case 'vigas':if(x.concreteStructure)add(id,x.A,'m² de área estrutural',estimatorSources.cbc,x.structuralLabel+' — grandeza atendida pelo índice global; não foi inventada repartição entre pilares e vigas','média');else na(id,'Quantitativo de pilares/vigas depende do sistema '+x.structureType+' e do projeto correspondente.');break;
         case 'lajes':add(id,x.foot*Math.max(1,x.pav-1),'m²',estimatorSources.model,'Implantação × níveis estruturais','média');break;
         case 'escadasEstr':add(id,Math.max(1,x.stairs),'un.',estimatorSources.geo,'Ligações verticais por unidade/pavimento','média');break;
         case 'escoramento':add(id,x.foot*Math.max(1,x.pav-1),'m²',estimatorSources.model,'Área de laje como base de escoramento','média');break;
@@ -434,12 +442,28 @@
         case 'rufos':if(x.roofArea)add(id,x.extPerim,'m',estimatorSources.model,'Perímetro equivalente','baixa');else na(id,'Cobertura não ativada.');break;
         case 'calhas':if(x.roofArea)add(id,2*Math.sqrt(x.foot),'m',estimatorSources.model,'Modelo equivalente de duas águas','baixa');else na(id,'Cobertura não ativada.');break;
         case 'condutores':case 'pluvial':if(x.roofArea)add(id,Math.max(2,x.units)*x.h*x.pav,'m',estimatorSources.model,'Prumada equivalente por unidade × altura','baixa');else na(id,'Rede pluvial não ativada.');break;
-        case 'aguaFria':add(id,x.A*bench.aguaFria,'m',estimatorSources.casa,'23,00 m de tubos de água fria / 43,20 m²','média');break;
-        case 'registros':add(id,x.units*6,'un.',estimatorSources.casa,'Referência por unidade: 3 gaveta + 2 esfera + 1 pressão','média');break;
-        case 'esgoto':add(id,x.A*bench.esgoto,'m',estimatorSources.casa,'12,00 m de tubos de esgoto / 43,20 m²','média');break;
+        case 'aguaFria':{const k=x.A/43.20;addGroup(id,[
+          {material:'Tubo PVC soldável água fria Ø25 mm',q:18*k,unit:'m',basis:'18 m / 43,20 m²'},
+          {material:'Tubo PVC soldável água fria Ø32 mm',q:5*k,unit:'m',basis:'5 m / 43,20 m²'},
+          {material:'Pontos terminais de água fria',q:x.coldPoints,unit:'pontos',basis:'Ambientes sanitários/cozinha/serviço identificados'}
+        ],estimatorSources.casa,'Planilha pública catarinense + pontos derivados dos ambientes','média');break;}
+        case 'registros':addGroup(id,[
+          {material:'Registro de gaveta Ø25 mm',q:x.units*3,unit:'un.',basis:'3 por unidade'},
+          {material:'Registro de esfera 2 pol.',q:x.units,unit:'un.',basis:'1 por unidade'},
+          {material:'Registro de esfera 1 1/4 pol.',q:x.units,unit:'un.',basis:'1 por unidade'},
+          {material:'Registro de pressão',q:x.units,unit:'un.',basis:'1 por unidade'}
+        ],estimatorSources.casa,'Tipos e quantidades por unidade da planilha pública catarinense','média');break;
+        case 'esgoto':{const k=x.A/43.20;addGroup(id,[
+          {material:'Tubo PVC esgoto Ø100 mm',q:3*k,unit:'m',basis:'3 m / 43,20 m²'},
+          {material:'Tubo PVC esgoto Ø75 mm',q:7*k,unit:'m',basis:'7 m / 43,20 m²'},
+          {material:'Tubo PVC esgoto Ø40 mm',q:2*k,unit:'m',basis:'2 m / 43,20 m²'}
+        ],estimatorSources.casa,'Tubulações inclusive conexões, normalizadas pela área construída','média');break;}
         case 'ventSanitaria':add(id,Math.max(x.units,x.bwc)*x.h,'m',estimatorSources.model,'1 prumada de ventilação equivalente por unidade/BWC × pé-direito; confirmar projeto sanitário','baixa');break;
         case 'ralos':add(id,Math.max(1,x.bwc),'un.',estimatorSources.casa,'Referência catarinense: 1 ralo por BWC; áreas de serviço devem ser conferidas','média');break;
-        case 'caixas':add(id,x.units*2,'un.',estimatorSources.casa,'1 caixa de gordura + 1 caixa de inspeção por unidade na referência','média');break;
+        case 'caixas':addGroup(id,[
+          {material:'Caixa de gordura PVC 18 L',q:x.units,unit:'un.',basis:'1 por unidade'},
+          {material:'Caixa de inspeção 60×60×60 cm',q:x.units,unit:'un.',basis:'1 por unidade'}
+        ],estimatorSources.casa,'1 caixa de gordura + 1 caixa de inspeção por unidade','média');break;
         case 'reservatorios':add(id,x.units,'un.',estimatorSources.casa,'1 reservatório por unidade na referência; capacidade deve seguir população/projeto de abastecimento','média',null,null,'Reservatórios de água');break;
         case 'loucas':add(id,Math.max(x.units*2,x.bwc*2),'un.',estimatorSources.casa,'1 vaso + 1 lavatório por unidade, ajustado aos BWCs','média');break;
         case 'metais':add(id,Math.max(x.units*3,x.bwc+x.kitchens+x.services),'un.',estimatorSources.casa,'Lavatório + pia + tanque por unidade','média');break;
@@ -448,14 +472,33 @@
         case 'gasAbrigo':add(id,/central/i.test(gas)?1:x.units,'un.',estimatorSources.model,/central/i.test(gas)?'1 central':'1 abrigo por unidade','média');break;
         case 'gasValv':case 'gasVent':add(id,x.units,'un.',estimatorSources.model,'1 conjunto por unidade','média');break;
         case 'entradaEnergia':case 'quadros':add(id,x.units,'un.',estimatorSources.casa,'1 por unidade na referência','média');break;
-        case 'protecoes':add(id,Math.ceil(x.A*bench.protecaoEletrica),'un.',estimatorSources.casa,'10 dispositivos de proteção / 43,20 m²','média');break;
-        case 'eletrodutos':add(id,x.A*bench.eletroduto,'m',estimatorSources.casa,'100,00 m de eletrodutos / 43,20 m²','média');break;
-        case 'cabos':add(id,x.A*bench.cabos,'m',estimatorSources.casa,'322,00 m de cabos de cobre / 43,20 m²','média');break;
+        case 'protecoes':addGroup(id,[
+          {material:'Disjuntor DIN 16 A',q:x.units,unit:'un.',basis:'1 por unidade'},
+          {material:'Disjuntor DIN 20 A',q:x.units*5,unit:'un.',basis:'5 por unidade'},
+          {material:'Disjuntor DIN 25 A',q:x.units,unit:'un.',basis:'1 por unidade'},
+          {material:'Disjuntor DIN 40 A',q:x.units*2,unit:'un.',basis:'2 por unidade'},
+          {material:'Dispositivo DR 2P 30 mA 25 A',q:x.units,unit:'un.',basis:'1 por unidade'}
+        ],estimatorSources.casa,'Distribuição de proteções da unidade habitacional pública de referência','média');break;
+        case 'eletrodutos':{const k=x.A/43.20;addGroup(id,[
+          {material:'Eletroduto PVC flexível Ø3/4 pol. em parede',q:55*k,unit:'m',basis:'55 m / 43,20 m²'},
+          {material:'Eletroduto PVC flexível Ø3/4 pol. em forro',q:45*k,unit:'m',basis:'45 m / 43,20 m²'},
+          {material:'Canaleta PVC 20×10 mm',q:3*k,unit:'m',basis:'3 m / 43,20 m²'}
+        ],estimatorSources.casa,'Distribuição por aplicação na planilha pública catarinense','média');break;}
+        case 'cabos':{const k=x.A/43.20;addGroup(id,[
+          {material:'Cabo de cobre 1,5 mm²',q:83*k,unit:'m',basis:'83 m / 43,20 m²'},
+          {material:'Cabo de cobre 2,5 mm²',q:185*k,unit:'m',basis:'185 m / 43,20 m²'},
+          {material:'Cabo de cobre 6 mm²',q:30*k,unit:'m',basis:'30 m / 43,20 m²'},
+          {material:'Cabo de cobre 10 mm²',q:24*k,unit:'m',basis:'24 m / 43,20 m²'}
+        ],estimatorSources.casa,'Bitolas da planilha pública catarinense, normalizadas pela área construída','média');break;}
         case 'caixasEletricas':add(id,Math.max(x.electrical.caixas,Math.ceil(x.A*bench.caixasEletricas)),'un.',x.rooms.length?estimatorSources.nbr5410:estimatorSources.casa,x.rooms.length?'Tomadas + interruptores + pontos de luz derivados dos ambientes':'20 caixas / 43,20 m² na referência catarinense','média');break;
         case 'tomadas':add(id,x.rooms.length?x.electrical.tomadas:Math.ceil(x.A*bench.tomadas),'un.',x.rooms.length?estimatorSources.nbr5410:estimatorSources.casa,x.rooms.length?'Mínimos por ambiente usando perímetro equivalente 4√área; cozinhas/serviço 3,5 m e demais ambientes 5 m':'16 tomadas / 43,20 m²','média');break;
         case 'interruptores':add(id,x.rooms.length?x.electrical.interruptores:Math.ceil(x.A*bench.interruptores),'un.',x.rooms.length?estimatorSources.geo:estimatorSources.casa,x.rooms.length?'1 comando mínimo por ambiente identificado':'5 interruptores / 43,20 m²','média');break;
         case 'luminarias':add(id,x.rooms.length?x.electrical.luzes:Math.ceil(x.A*bench.luz),'un.',x.rooms.length?estimatorSources.nbr5410:estimatorSources.casa,x.rooms.length?'1 ponto de luz mínimo por ambiente; carga mínima calculada separadamente':'7 pontos / 43,20 m²','média');break;
-        case 'aterramento':add(id,x.units*2,'m de condutor',estimatorSources.casa,'2,00 m de cobre nu + 1 haste + 1 caixa por unidade na referência; malha final depende do projeto','baixa');break;
+        case 'aterramento':addGroup(id,[
+          {material:'Haste de aterramento 5/8 pol.',q:x.units,unit:'un.',basis:'1 por unidade'},
+          {material:'Caixa de inspeção de aterramento Ø300 mm',q:x.units,unit:'un.',basis:'1 por unidade'},
+          {material:'Cabo de cobre nu 16 mm²',q:x.units*2,unit:'m',basis:'2 m por unidade'}
+        ],estimatorSources.casa,'Aterramento da planilha de referência; equipotencialização final depende do projeto','baixa');break;
         case 'dados':add(id,Math.max(x.units,x.beds+x.living),'pontos',estimatorSources.model,'1 por dormitório/sala, mínimo 1 por unidade','baixa');break;
         case 'tv':case 'interfone':add(id,x.units,'pontos',estimatorSources.model,'1 por unidade','média');break;
         case 'spdaCap':if(spda==='Sim')add(id,x.extPerim,'m',estimatorSources.model,'Perímetro equivalente; confirmar NBR 5419','baixa');else na(id,'SPDA não confirmado.');break;
@@ -475,10 +518,10 @@
         case 'hidrantes':add(id,x.pav,'pontos de cobertura',estimatorSources.model,'1 ponto-base por pavimento; dimensionamento final pela IN 7','baixa');break;
         case 'sprinklers':add(id,x.A,'m² protegidos',estimatorSources.geo,'Área total protegida; quantidade de bicos exige projeto/IN 15','média');break;
         case 'reservaInc':add(id,1,'sistema',estimatorSources.model,'1 reserva técnica; volume exige cálculo','baixa');break;
-        case 'emboço':add(id,(state.metrics&&state.metrics.coatArea)||x.wallLen*x.h,'m²',estimatorSources.geo,'Superfície geométrica de paredes','alta');break;
+        case 'emboço':add(id,(state.metrics&&state.metrics.ceramicWall)||x.A*bench.cerParede,'m²',state.metrics&&state.metrics.ceramicWall?estimatorSources.geo:estimatorSources.casa,'Base para revestimento cerâmico de parede; não aplicado sobre toda a alvenaria','média');break;
         case 'ceramicaParede':add(id,x.A*bench.cerParede,'m²',estimatorSources.casa,'24,08 m² / 43,20 m²','média');break;
         case 'fachada':add(id,x.extPerim*x.h*x.pav,'m²',estimatorSources.model,'Perímetro equivalente × altura total','média');break;
-        case 'lastroPiso':case 'contrapiso':add(id,x.A*bench.contrapisoArea,'m²',estimatorSources.casa,'66,88 m² de base/regularização / 43,20 m²; inclui áreas externas na referência e deve ser conferido','baixa');break;
+        case 'lastroPiso':case 'contrapiso':add(id,(state.metrics&&state.metrics.floor)||x.roomFloor||x.A,'m²',state.metrics&&state.metrics.floor?estimatorSources.geo:estimatorSources.casa,'Área de piso acabável da própria obra; evita importar áreas externas da obra de referência','alta');break;
         case 'rodape':add(id,x.A*bench.rodape,'m',estimatorSources.casa,'35,87 m / 43,20 m²','média');break;
         case 'juntasPiso':add(id,x.eqPerim,'m de perímetro equivalente',estimatorSources.model,'Perímetros equivalentes dos ambientes','baixa');break;
         case 'forro':case 'estruturaForro':if(/sem forro|laje/i.test(forro))na(id,'Forro leve não selecionado.');else if(/pvc/i.test(forro))add(id,x.A*bench.forroPVC,'m²',estimatorSources.casa,'57,75 m² / 43,20 m² incluindo beirais na referência','média');else add(id,x.roomFloor||x.A,'m²',estimatorSources.geo,'Área de ambientes identificados como base de teto/forro','média');break;
@@ -516,13 +559,13 @@
   function renderScopeStatus(){
     if(!$('scopeStatusBody'))return;
     const directIds=new Set((state.materials||[]).filter(function(x){return x.originType!=='estimate'}).map(function(x){return x.scopeId}).filter(Boolean));
-    if(!state.scopeStatus||!Object.keys(state.scopeStatus).length)state.scopeStatus=buildParametricEstimates(directIds).status;
+    state.scopeStatus=buildParametricEstimates(directIds).status;
     let selected=0,directN=0,estimated=0,naN=0;const rows=[];
     componentCatalog.forEach(function(g){g.items.forEach(function(it){
       const id=it[0],label=it[1];if(!state.scope.has(id))return;selected++;const s=state.scopeStatus[id]||{kind:'wait',label:'Aguardando planta',source:'—',basis:'—'};
       if(s.kind==='direct')directN++;else if(s.kind==='estimate')estimated++;else if(s.kind==='na')naN++;
       const cls=s.kind==='direct'?'scope-status-ok':s.kind==='estimate'?'scope-status-warn':'scope-status-off';
-      let qtxt='';if(s.kind==='estimate'&&s.q){qtxt='<br><small>'+fmt(s.q,(s.unit==='un.'||s.unit==='pontos'||s.unit==='conj.')?0:2)+' '+esc(s.unit||'')+'</small>'}
+      let qtxt='';if(s.kind==='estimate'&&s.groupCount){qtxt='<br><small>'+s.groupCount+' subitens detalhados</small>'}else if(s.kind==='estimate'&&s.q){qtxt='<br><small>'+fmt(s.q,(s.unit==='un.'||s.unit==='pontos'||s.unit==='conj.')?0:2)+' '+esc(s.unit||'')+'</small>'}
       rows.push('<tr><td>'+esc(g.stage)+'</td><td>'+esc(label)+'</td><td class="'+cls+'">'+esc(s.label)+qtxt+'</td><td>'+esc(s.source||'—')+'<br><small>'+esc(s.basis||'')+'</small></td></tr>');
     })});
     $('scopeStatusBody').innerHTML=rows.join('');$('scopeSelected').textContent=selected;$('scopeDone').textContent=directN;$('scopePending').textContent=estimated;$('scopeNA').textContent=naN;$('scopeCoverage').textContent=selected?'100%':'0%';updateScopeCount();
@@ -654,7 +697,9 @@
     try{
       const cfgOn=await state.pdf.getOptionalContentConfig({intent:'display'}),groups=cfgOn&&cfgOn.getGroups?cfgOn.getGroups():null;
       if(!groups)return null;
-      const wallIds=Object.keys(groups).filter(id=>/alvenaria|parede|wall/i.test(String(groups[id]&&groups[id].name||'')));
+      const allWallIds=Object.keys(groups).filter(id=>/alvenaria|parede|wall/i.test(String(groups[id]&&groups[id].name||'')));
+      const cutWallIds=allWallIds.filter(id=>/alvenaria\s*corte|parede\s*corte|wall.*cut|cut.*wall/i.test(String(groups[id]&&groups[id].name||'')));
+      const wallIds=cutWallIds.length?cutWallIds:allWallIds;
       if(!wallIds.length)return null;
       const cfgOff=await state.pdf.getOptionalContentConfig({intent:'display'});
       wallIds.forEach(id=>{try{cfgOn.setVisibility(id,true);cfgOff.setVisibility(id,false)}catch(e){}});
