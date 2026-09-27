@@ -39,7 +39,7 @@ function bounds(gray,w,h){
  for(let x=0;x<w;x++){let l=0;for(let y=0;y<h;y+=2)if(gray[y*w+x]>205)l++;col[x]=l/Math.ceil(h/2)}
  const longest=(a,m)=>{let bs=0,be=a.length-1,s=-1,best=0;for(let i=0;i<=a.length;i++){const on=i<a.length&&a[i]>=m;if(on&&s<0)s=i;if((!on||i===a.length)&&s>=0){if(i-s>best){best=i-s;bs=s;be=i-1}s=-1}}return[bs,be]};
  const rx=longest(col,.18),ry=longest(row,.18);let r={x0:rx[0],x1:rx[1]+1,y0:ry[0],y1:ry[1]+1};
- if((r.x1-r.x0)*(r.y1-r.y0)<w*h*.18)r={x0:0,y0:0,x1:w,y1:h};
+ if((r.x1-r.x0)*(r.y1-r.y0)<w*h*.18||(r.x1-r.x0)<w*.45||(r.y1-r.y0)<h*.45)r={x0:0,y0:0,x1:w,y1:h};
  const mx=Math.max(2,Math.round((r.x1-r.x0)*.004)),my=Math.max(2,Math.round((r.y1-r.y0)*.004));
  return{x0:Math.min(r.x1-1,r.x0+mx),x1:Math.max(r.x0+1,r.x1-mx),y0:Math.min(r.y1-1,r.y0+my),y1:Math.max(r.y0+1,r.y1-my)};
 }
