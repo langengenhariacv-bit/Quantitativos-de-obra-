@@ -123,11 +123,24 @@ async function commonsCategory(category,limit=250){
     return{name:String(p.title||'').replace(/^File:/,''),url:u,mime};
   }).filter(Boolean);
 }
+async function commonsSearch(query,limit=100){
+  const url='https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent(query)+'&gsrnamespace=6&gsrlimit='+limit+'&prop=imageinfo&iiprop=url|mime&iiurlwidth=1200&format=json&formatversion=2&origin=*';
+  const r=await fetch(url,{headers:{'user-agent':'LANG-Quantitativos-Regressao/1.0'}});
+  if(!r.ok)throw new Error('Commons search '+r.status);
+  const j=await r.json(),pages=j.query&&j.query.pages||[];
+  return pages.map(p=>{
+    const ii=p.imageinfo&&p.imageinfo[0];if(!ii)return null;
+    const mime=ii.mime||'',u=ii.thumburl||ii.url||'';
+    if(!/^image\/(jpeg|png|webp)$/i.test(mime)||!u)return null;
+    return{name:String(p.title||'').replace(/^File:/,''),url:u,mime};
+  }).filter(Boolean);
+}
 async function buildDataset100(){
   if(DATASET100)return DATASET100;
   const pools=[];
-  for(const cat of ['Floor_plans_of_houses']){
-    try{pools.push(...await commonsCategory(cat,500))}catch(e){}
+  try{pools.push(...await commonsCategory('Floor_plans_of_houses',500))}catch(e){}
+  for(const q of ['"floor plan" house','"house plan" floor','"apartment plan" floor','"ground floor plan" house','"first floor plan" house','"residential floor plan"']){
+    try{pools.push(...await commonsSearch(q,100))}catch(e){}
   }
   const seen=new Set(PLANS.map(p=>p.url)),unique=[];
   for(const p of pools){
