@@ -74,7 +74,7 @@ function merge(list,roi){
 }
 function connected(a,b,t){if(a.axis!==b.axis){const H=a.axis==='h'?a:b,V=a.axis==='v'?a:b;return V.pos>=H.a-t&&V.pos<=H.b+t&&H.pos>=V.a-t&&H.pos<=V.b+t}return Math.abs(a.pos-b.pos)<=t&&Math.max(a.a,b.a)<=Math.min(a.b,b.b)+t*2}
 function analyzeSegments(seg,roi){
- const tol=Math.max(4,Math.round(Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.008)),adj=seg.map(()=>[]);
+ const tol=Math.max(4,Math.round(Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.014)),adj=seg.map(()=>[]);
  for(let i=0;i<seg.length;i++)for(let j=i+1;j<seg.length;j++)if(connected(seg[i],seg[j],tol)){adj[i].push(j);adj[j].push(i)}
  const seen=new Uint8Array(seg.length),comps=[];for(let i=0;i<seg.length;i++){if(seen[i])continue;const st=[i],ids=[];seen[i]=1;while(st.length){const n=st.pop();ids.push(n);for(const q of adj[n])if(!seen[q]){seen[q]=1;st.push(q)}}comps.push({ids,length:ids.reduce((s,k)=>s+seg[k].len,0),nodes:ids.length})}comps.sort((a,b)=>b.length-a.length);
  const largest=comps[0]?.length||1,ids=new Set();for(const cp of comps)if(cp===comps[0]||((cp.length>=largest*.08||cp.nodes>=3)&&(cp.nodes>=2||cp.length>=largest*.22)))for(const id of cp.ids)ids.add(id);
