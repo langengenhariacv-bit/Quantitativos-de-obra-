@@ -97,7 +97,7 @@
             <div class="field"><label>Área líquida de fachada conhecida (m²)</label><input id="areaFachadaManual" type="number" step="0.01" placeholder="Opcional; melhora pintura externa"></div>
             <div class="field"><label>Perímetro para rodapé (m)</label><input id="perimetroRodape" type="number" step="0.01" placeholder="Pode ser ajustado depois"></div>
           </div>
-          <div class="actions" style="margin-top:16px"><button class="btn primary" id="analisarBtn">Analisar PDF e ir para conferência</button><button class="btn secondary" id="salvarBtn">Salvar projeto</button></div>
+          <div class="actions" style="margin-top:16px"><button class="btn primary" id="analisarBtn">Analisar PDF e ir para conferência</button><button class="btn secondary" id="salvarBtn">Salvar projeto</button><button class="btn ghost" id="exportBackupBtn">Exportar backup</button><button class="btn ghost" id="importBackupBtn">Importar backup</button><input id="backupInput" type="file" accept="application/json,.json" style="display:none"></div>
         </div>
         <div class="card">
           <h2>Sistemas construtivos</h2>
@@ -217,7 +217,7 @@
           </div>
         </div>
       </section>
-      <div class="footer">LANG Quantitativos • MVP 2.0 • levantamento residencial com escopo completo</div>
+      <div class="footer">LANG Quantitativos • versão 3.0 • leitura vetorial, estimativas rastreáveis e auditoria de precisão</div>
     </main>
   </div>
 </div>
@@ -899,6 +899,26 @@
   function saveProject(show=true){const data={form:getForm(),pdfName:state.pdfName,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,autoWallMethod:state.autoWallMethod,autoWallLayers:state.autoWallLayers,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus};localStorage.setItem('lang-quant-project',JSON.stringify(data));$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
   function loadProject(){const d=JSON.parse(localStorage.getItem('lang-quant-project')||'null');if(!d)return;setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.autoWallMethod=d.autoWallMethod||'';state.autoWallLayers=d.autoWallLayers||[];state.openingDefinitions=d.openingDefinitions||[];renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o PDF para visualizar a planta.`}
 
+  function exportBackup(){
+    saveProject(false);
+    const project=JSON.parse(localStorage.getItem('lang-quant-project')||'null');if(!project){alert('Não há projeto salvo para exportar.');return}
+    const payload={format:'LANG-Quantitativos',version:3,exportedAt:new Date().toISOString(),project:project,coefficients:JSON.parse(localStorage.getItem('lang-coef')||'null')};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),a=document.createElement('a'),url=URL.createObjectURL(blob),name=(project.form&&project.form.obra?project.form.obra:'projeto').replace(/[^a-z0-9_-]+/gi,'-');
+    a.href=url;a.download='LANG-Quantitativos-'+name+'-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  async function importBackup(file){
+    try{
+      const payload=JSON.parse(await file.text()),project=payload&&payload.project?payload.project:payload;
+      if(!project||!project.form||!Array.isArray(project.scope))throw new Error('Arquivo não reconhecido como backup do LANG Quantitativos.');
+      localStorage.setItem('lang-quant-project',JSON.stringify(project));
+      if(payload.coefficients)localStorage.setItem('lang-coef',JSON.stringify(payload.coefficients));
+      alert('Backup importado. O projeto será recarregado. O PDF original precisa ser selecionado novamente para visualizar a prancha.');
+      location.reload();
+    }catch(err){alert('Não foi possível importar o backup: '+err.message)}
+  }
+  if($('exportBackupBtn'))$('exportBackupBtn').onclick=exportBackup;
+  if($('importBackupBtn'))$('importBackupBtn').onclick=()=>$('backupInput').click();
+  if($('backupInput'))$('backupInput').onchange=e=>{const file=e.target.files&&e.target.files[0];if(file)importBackup(file);e.target.value=''};
   document.querySelectorAll('[data-report]').forEach(b=>b.addEventListener('click',()=>generateReport(b.dataset.report)));
   function generateReport(type){if(!state.materials.length)calculate();const f=getForm();const title=type==='resumo'?'Resumo Geral de Materiais':type==='completo'?'Quantitativo Completo e Memória de Cálculo':'Materiais por Etapa da Obra';let body='';
     if(type==='resumo'){
