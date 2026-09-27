@@ -62,11 +62,11 @@
           </div>
         </div>
         <div class="card">
-          <h2>Planta baixa em PDF</h2>
+          <h2>Planta baixa em PDF ou imagem</h2>
           <div class="upload">
-            <strong>Selecione o arquivo da planta</strong><br><span class="hint">O app extrai textos do PDF para tentar localizar escala, áreas e nomes de ambientes. Depois você confere as paredes diretamente sobre a planta.</span>
-            <br><input id="pdfInput" type="file" accept="application/pdf" />
-            <div id="pdfInfo" class="hint" style="margin-top:10px">Nenhum PDF carregado.</div>
+            <strong>Selecione o arquivo da planta</strong><br><span class="hint">Aceita PDF, JPG/JPEG, PNG e WebP. No PDF, o app também tenta extrair escala, áreas, ambientes e esquadrias. Em imagens, a leitura das paredes funciona por pixels e a escala precisa ser calibrada por uma medida conhecida.</span>
+            <br><input id="pdfInput" type="file" accept="application/pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+            <div id="pdfInfo" class="hint" style="margin-top:10px">Nenhum arquivo carregado.</div>
           </div>
         </div>
         <div class="card">
@@ -277,7 +277,7 @@
     ['q_elevador','Elevadores','un.','25. Transporte vertical','elevador',false],['q_limpeza','Limpeza pós-obra','m²','26. Serviços finais','limpezaFinal',false]
   ];
   const defaultScope=new Set(componentCatalog.flatMap(g=>g.items.map(i=>i[0])));
-  const state={pdf:null,pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
+  const state={pdf:null,image:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
   let autosaveTimer;
 
   function fmt(n,d=2){return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})}
@@ -608,7 +608,23 @@
   $('selectAllScope').onclick=()=>{state.scope=new Set(defaultScope);renderScope();renderScopeStatus();saveProject(false)};
   $('basicScope').onclick=()=>{const optional=new Set(['solarFV','solarTermico','inversor','elevador','plataforma','pocoElev','piscina','spdaCap','spdaDesc','spdaTerra','spdaConex','sprinklers','hidrantes','reservaInc','automacao','cftv','alarme','dutos','marcenaria','deck']);state.scope=new Set([...defaultScope].filter(x=>!optional.has(x)));renderScope();renderScopeStatus();saveProject(false)};
 
-  $('pdfInput').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;state.pdfName=f.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.floorAreas=[];const data=await f.arrayBuffer();state.pdf=await pdfjsLib.getDocument({data}).promise;state.pages=state.pdf.numPages;state.page=1;$('pdfInfo').textContent=`${f.name} • ${state.pages} página(s) • analisando...`;await extractPdfText();await renderPage();renderOpenings();renderAutoRead();saveProject(false)});
+  $('pdfInput').addEventListener('change',async e=>{
+  const file=e.target.files[0];if(!file)return;
+  state.pdfName=file.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];state.floorAreas=[];state.pdfText='';state.pageTexts=[];state.page=1;state.metersPerPixel=null;state.scaleDen=null;
+  const isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
+  const isImage=/^image\/(jpeg|png|webp)$/i.test(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name);
+  if(isPdf){
+    state.sourceType='pdf';state.image=null;const data=await file.arrayBuffer();state.pdf=await pdfjsLib.getDocument({data}).promise;state.pages=state.pdf.numPages;
+    $('pdfInfo').textContent=file.name+' • '+state.pages+' página(s) • analisando PDF...';await extractPdfText();await renderPage();
+  }else if(isImage){
+    state.sourceType='image';state.pdf=null;state.pages=1;
+    try{state.image=await loadPlanImage(file)}catch(err){state.image=null;state.sourceType='';alert('Não foi possível abrir esta imagem. Use JPG, JPEG, PNG ou WebP.');return}
+    $('pdfInfo').textContent=file.name+' • imagem carregada • calibre a escala por uma cota conhecida';await renderPage();
+  }else{alert('Formato não suportado. Use PDF, JPG/JPEG, PNG ou WebP.');return}
+  renderRooms();renderOpenings();renderAutoRead();saveProject(false);
+});
+function loadPlanImage(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Falha ao abrir imagem'))};img.src=url})}
+function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height))}
 
   async function extractPdfText(){
     if(!state.pdf)return;let all=[];let rooms=[];state.pageTexts=[];
