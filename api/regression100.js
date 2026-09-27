@@ -161,6 +161,7 @@ module.exports=async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   let dataset;
   try{dataset=await buildDataset100()}catch(e){return res.status(500).json({error:String(e&&e.message||e)})}
+  if(req.query.list)return res.status(200).json({dataset:dataset.length,items:dataset.map(({id,name,kind,url,source})=>({id,name,kind,url,source}))});
   const start=Math.max(0,Math.min(dataset.length-1,Number(req.query.start||0))),
         count=Math.max(1,Math.min(5,Number(req.query.count||5))),
         slice=dataset.slice(start,start+count),
