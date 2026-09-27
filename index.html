@@ -377,6 +377,7 @@
       valid.forEach(function(r){items.push({stage:ci.stage,material:r.material,q:Number(r.q),unit:r.unit,scopeId:id,originType:'estimate',origin:source,basis:r.basis||basis||'',confidence:confidence,range:null})});
       status[id]={kind:'estimate',label:'Estimativa estatística',source:source,basis:basis||'',confidence:confidence,groupCount:valid.length};
     };
+    const covered=function(id,reason){status[id]={kind:'covered',label:'Quantificado em outra etapa',source:'Consolidação sem duplicidade',basis:reason}};
     const na=function(id,reason){status[id]={kind:'na',label:'Não aplicável',source:'Parâmetros/evidência da obra',basis:reason}};
     const direct=function(id){status[id]={kind:'direct',label:'Quantificado',source:'Leitura, geometria ou dado informado',basis:'Quantidade derivada do projeto/dados do usuário'}};
     const wait=function(id){status[id]={kind:'wait',label:'Aguardando planta',source:'Sem área-base',basis:'Carregue a planta para gerar a estimativa'}};
@@ -418,7 +419,7 @@
         case 'drenagemProv':add(id,x.extPerim,'m',estimatorSources.model,'Perímetro equivalente da implantação','baixa');break;
         case 'lastro':{const ft=$('fundacaoTipo')?$('fundacaoTipo').value:'';if(/radier/i.test(ft))add(id,x.foot*bench.radierBrita,'m³','AGEHAB Casa UNI — radier 12 cm','2,77 m³ de brita / 55,40 m²','média');else if(/estacas|brocas/i.test(ft))add(id,x.units*bench.estacaBrita,'m³',estimatorSources.estaca,'1,50 m³ de lastro de brita por unidade habitacional de referência','média');else add(id,x.foot,'m² de base',estimatorSources.model,'Área de implantação atendida; volume do lastro depende da solução de fundação','baixa');break;}
         case 'fundacoes':{const ft=$('fundacaoTipo')?$('fundacaoTipo').value:'Não informado';if(/radier/i.test(ft))add(id,x.foot,'m²','AGEHAB Casa UNI — radier 12 cm','Área de implantação adotada como área de radier','média');else if(/estacas|brocas/i.test(ft))add(id,x.units*bench.estacaM,'m',estimatorSources.estaca,'27 m de estacas/brocas por unidade habitacional de referência','média');else add(id,1,'sistema',estimatorSources.casa,'Cenário preliminar de sapatas/blocos + vigas baldrame; tipo final depende de sondagem/projeto','baixa');break;}
-        case 'baldrame':add(id,Math.max(x.wallLen/x.pav,x.extPerim),'m',estimatorSources.model,'Maior entre paredes do térreo e perímetro equivalente','média');break;
+        case 'baldrame':{const ft=$('fundacaoTipo')?$('fundacaoTipo').value:'';if(/radier/i.test(ft))na(id,'Radier selecionado: viga baldrame não adotada como item separado.');else add(id,Math.max(x.wallLen/Math.max(1,x.pav),x.extPerim),'m',estimatorSources.model,/estacas|brocas/i.test(ft)?'Comprimento-base de vigas de fundação após estacas/brocas; confirmar projeto':'Maior entre paredes do térreo e perímetro equivalente','baixa');break;}
         case 'fundConcreto':{const ft=$('fundacaoTipo')?$('fundacaoTipo').value:'';if(/radier/i.test(ft))add(id,x.foot*bench.radierConc,'m³','AGEHAB Casa UNI — radier 12 cm','6,65 m³ / 55,40 m² de base de radier','média');else if(/estacas|brocas/i.test(ft))add(id,x.units*bench.estacaConc,'m³',estimatorSources.estaca,'3,84 m³ de concreto de fundação por unidade de referência','média');else add(id,x.foot*bench.fundConc,'m³',estimatorSources.casa,'0,86 m³ fundações + 1,47 m³ baldrame / 43,20 m²','média');break;}
         case 'fundAco':{const ft=$('fundacaoTipo')?$('fundacaoTipo').value:'';if(/radier/i.test(ft))add(id,x.foot*bench.radierAco,'kg','AGEHAB Casa UNI — radier 12 cm','240,17 kg de aço / 55,40 m² de base','média');else if(/estacas|brocas/i.test(ft))add(id,x.units*bench.estacaAco,'kg',estimatorSources.estaca,'227,64 kg de aço de fundação por unidade de referência','média');else add(id,x.foot*bench.fundAco,'kg',estimatorSources.casa,'Composições 01 e 02: aço de sapatas e vigas baldrame, normalizado por 43,20 m²','média');break;}
         case 'fundForma':{const ft=$('fundacaoTipo')?$('fundacaoTipo').value:'';if(/radier/i.test(ft))add(id,x.foot*bench.radierForma,'m²','AGEHAB Casa UNI — radier 12 cm','3,79 m² de fôrma / 55,40 m² de base','média');else if(/estacas|brocas/i.test(ft))add(id,x.units*bench.estacaForma,'m²',estimatorSources.estaca,'26,25 m² de fôrmas de fundação por unidade de referência','média');else add(id,x.foot*bench.fundForma,'m²',estimatorSources.casa,'Composições 01 e 02: fôrmas de sapatas e baldrame, normalizadas por 43,20 m²','média');break;}
@@ -427,10 +428,10 @@
         case 'estruturaConcreto':if(x.concreteStructure)add(id,x.A*x.structural.conc,'m³',estimatorSources.cbc,x.structuralLabel+' — média estatística por m² estrutural','alta',x.A*x.structural.concMin,x.A*x.structural.concMax);else na(id,'Índice de concreto não aplicado porque a estrutura selecionada é '+x.structureType+'.');break;
         case 'estruturaAco':if(x.concreteStructure)add(id,x.A*x.structural.steel,'kg',estimatorSources.cbc,x.structuralLabel+' — média estatística por m² estrutural','alta',x.A*x.structural.steelMin,x.A*x.structural.steelMax);else na(id,'Índice de aço CA-50/60 não aplicado porque a estrutura selecionada é '+x.structureType+'.');break;
         case 'estruturaForma':if(x.concreteStructure)add(id,x.A*x.structural.form,'m²',estimatorSources.cbc,x.structuralLabel+' — média estatística por m² estrutural','alta',x.A*x.structural.formMin,x.A*x.structural.formMax);else na(id,'Índice de fôrmas não aplicado porque a estrutura selecionada é '+x.structureType+'.');break;
-        case 'pilares':case 'vigas':if(x.concreteStructure)add(id,x.A,'m² de área estrutural',estimatorSources.cbc,x.structuralLabel+' — grandeza atendida pelo índice global; não foi inventada repartição entre pilares e vigas','média');else na(id,'Quantitativo de pilares/vigas depende do sistema '+x.structureType+' e do projeto correspondente.');break;
-        case 'lajes':add(id,x.foot*Math.max(1,x.pav-1),'m²',estimatorSources.model,'Implantação × níveis estruturais','média');break;
+        case 'pilares':case 'vigas':if(x.concreteStructure)covered(id,'Concreto, aço e fôrmas de pilares/vigas estão consolidados nos índices estruturais CBC, sem repartição artificial entre elementos.');else na(id,'Quantitativo de pilares/vigas depende do sistema '+x.structureType+' e do projeto correspondente.');break;
+        case 'lajes':{const lt=$('lajeTipo')?$('lajeTipo').value:'Não informado';if(/sem laje/i.test(lt))na(id,'Sistema definido como sem laje.');else if(x.pav>1)add(id,x.foot*(x.pav-1),'m²',estimatorSources.model,'Área de implantação × número de lajes entre pavimentos','média');else if(!/não informado/i.test(lt))add(id,x.foot,'m²',estimatorSources.geo,'Área de implantação para laje selecionada','média');else na(id,'Edificação térrea sem tipo de laje informado.');break;}
         case 'escadasEstr':add(id,Math.max(1,x.stairs),'un.',estimatorSources.geo,'Ligações verticais por unidade/pavimento','média');break;
-        case 'escoramento':add(id,x.foot*Math.max(1,x.pav-1),'m²',estimatorSources.model,'Área de laje como base de escoramento','média');break;
+        case 'escoramento':{const lt=$('lajeTipo')?$('lajeTipo').value:'Não informado';if(/sem laje/i.test(lt))na(id,'Sem laje: escoramento não aplicado.');else if(x.pav>1)add(id,x.foot*(x.pav-1),'m²',estimatorSources.model,'Área das lajes entre pavimentos como base de escoramento','média');else if(!/não informado/i.test(lt))add(id,x.foot,'m²',estimatorSources.model,'Área de laje selecionada como base de escoramento','baixa');else na(id,'Sem área de laje confirmada para estimar escoramento.');break;}
         case 'graute':if(/alvenaria estrutural/i.test($('estruturaTipo')?$('estruturaTipo').value:''))qA(id,1,'m² de área estrutural',estimatorSources.sinapi,'Área estrutural atendida; consumo exige modulação','baixa');else na(id,'Estrutura não definida como alvenaria estrutural.');break;
         case 'vergas':{const q=state.openings.reduce(function(s,o){return s+o.qty*((/janela/i.test(o.type)?2:1)*(o.w+.40))},0);add(id,q,'m',estimatorSources.geo,'Portas: largura + 0,40 m; janelas: verga + contraverga','alta');break}
         case 'encunhamento':add(id,x.wallLen,'m',estimatorSources.geo,'Comprimento total de paredes','alta');break;
@@ -439,8 +440,9 @@
         case 'impermeabLajes':{const a=state.rooms.filter(function(r){return /sacada|terra[cç]o|varanda/i.test(r.name)}).reduce(function(s,r){return s+r.area},0);if(a)add(id,a,'m²',estimatorSources.geo,'Sacadas/terraços lidos','alta');else na(id,'Laje exposta/sacada não identificada.');break}
         case 'impermeabReserv':na(id,'Reservatório/piscina impermeabilizado não identificado.');break;
         case 'juntas':add(id,x.wetPerim||x.extPerim,'m',estimatorSources.model,'Perímetro equivalente das áreas de arremate','baixa');break;
-        case 'estruturaCobertura':case 'mantaCobertura':if(x.roofArea)add(id,x.roofArea,'m²',estimatorSources.casa,'Área informada ou 61,32/48,07 × implantação','média');else na(id,'Cobertura não ativada.');break;
-        case 'cumeeiras':if(x.roofArea)add(id,x.foot*bench.cumeeira,'m',estimatorSources.casa,'7,80 m / 43,20 m²','média');else na(id,'Cobertura não ativada.');break;
+        case 'estruturaCobertura':{const cob=$('cobertura')?$('cobertura').value:'';if(/laje/i.test(cob))covered(id,'Cobertura em laje consolidada na etapa estrutural.');else if(x.roofArea)add(id,x.roofArea,'m²',estimatorSources.casa,'Área de cobertura como grandeza da estrutura do telhado','média');else na(id,'Cobertura não ativada.');break;}
+        case 'mantaCobertura':if(/manta|subcobertura|isolamento/i.test(text)&&x.roofArea)add(id,x.roofArea,'m²',estimatorSources.geo,'Sistema de manta/subcobertura identificado na prancha','média');else na(id,'Manta/subcobertura não identificada no projeto.');break;
+        case 'cumeeiras':{const cob=$('cobertura')?$('cobertura').value:'';if(x.roofArea&&!/laje/i.test(cob))add(id,x.foot*bench.cumeeira,'m',estimatorSources.casa,'7,80 m / 43,20 m²','média');else na(id,/laje/i.test(cob)?'Cobertura em laje não possui cumeeira de telhado.':'Cobertura não ativada.');break;}
         case 'rufos':if(x.roofArea)add(id,x.extPerim,'m',estimatorSources.model,'Perímetro equivalente','baixa');else na(id,'Cobertura não ativada.');break;
         case 'calhas':if(x.roofArea)add(id,2*Math.sqrt(x.foot),'m',estimatorSources.model,'Modelo equivalente de duas águas','baixa');else na(id,'Cobertura não ativada.');break;
         case 'condutores':case 'pluvial':if(x.roofArea)add(id,Math.max(2,x.units)*x.h*x.pav,'m',estimatorSources.model,'Prumada equivalente por unidade × altura','baixa');else na(id,'Rede pluvial não ativada.');break;
@@ -467,8 +469,8 @@
           {material:'Caixa de inspeção 60×60×60 cm',q:x.units,unit:'un.',basis:'1 por unidade'}
         ],estimatorSources.casa,'1 caixa de gordura + 1 caixa de inspeção por unidade','média');break;
         case 'reservatorios':add(id,x.units,'un.',estimatorSources.casa,'1 reservatório por unidade na referência; capacidade deve seguir população/projeto de abastecimento','média',null,null,'Reservatórios de água');break;
-        case 'loucas':add(id,Math.max(x.units*2,x.bwc*2),'un.',estimatorSources.casa,'1 vaso + 1 lavatório por unidade, ajustado aos BWCs','média');break;
-        case 'metais':add(id,Math.max(x.units*3,x.bwc+x.kitchens+x.services),'un.',estimatorSources.casa,'Lavatório + pia + tanque por unidade','média');break;
+        case 'loucas':covered(id,'Vasos e lavatórios são quantificados individualmente na etapa 22 — Equipamentos, louças e acessórios.');break;
+        case 'metais':covered(id,'Torneiras, misturadores e acessórios são quantificados individualmente na etapa 22.');break;
         case 'tratamentoEsgoto':add(id,x.units,'conj.',estimatorSources.casa,'1 fossa + sumidouro por unidade na referência; confirmar solução local','baixa');break;
         case 'gasTub':add(id,x.units*(2*Math.sqrt(x.A/x.units)+x.h*Math.max(0,x.pav-1)),'m',estimatorSources.model,'Percurso equivalente por unidade','baixa');break;
         case 'gasAbrigo':add(id,/central/i.test(gas)?1:x.units,'un.',estimatorSources.model,/central/i.test(gas)?'1 central':'1 abrigo por unidade','média');break;
@@ -533,11 +535,11 @@
         case 'esmalte':{const metal=state.openings.filter(function(o){return /vidro|ferro|alum/i.test(o.type)}).reduce(function(s,o){return s+o.qty*o.w*o.h*2},0);if(metal)add(id,metal,'m²',estimatorSources.geo,'Duas faces equivalentes das esquadrias metálicas/vidro identificadas; conferir acabamento real','baixa');else na(id,'Esquadrias pintáveis não identificadas.');break;}
         case 'verniz':{const wood=state.openings.filter(function(o){return /porta p3|porta p4|madeira/i.test(o.type)}).reduce(function(s,o){return s+o.qty*o.w*o.h*2},0);if(wood)add(id,wood,'m²',estimatorSources.geo,'Duas faces das portas de madeira','média');else na(id,'Madeira envernizada não identificada.');break}
         case 'bancadas':add(id,Math.max(1,x.kitchens)*(.54*1.20),'m²',estimatorSources.casa,'Pia 1,20 × 0,54 m por cozinha','média');break;
-        case 'cubas':add(id,Math.max(x.units*2,x.kitchens+x.services+x.bwc),'un.',estimatorSources.casa,'Pia/tanque da referência + ambientes identificados','média');break;
+        case 'cubas':add(id,Math.max(x.units*2,x.kitchens+x.services),'un.',estimatorSources.casa,'Cubas/pias de cozinha e tanques de serviço; lavatórios de BWC ficam na etapa 22','média');break;
         case 'vasos':case 'lavatorios':case 'chuveiros':case 'boxes':add(id,Math.max(x.units,x.bwc),'un.',estimatorSources.geo,'1 por BWC/unidade','alta');break;
         case 'torneiras':add(id,Math.max(x.units*3,x.bwc+x.kitchens+x.services),'un.',estimatorSources.casa,'Lavatório + cozinha + tanque por unidade','média');break;
         case 'acessoriosBwc':add(id,Math.max(x.units,x.bwc),'kits',estimatorSources.geo,'1 kit por BWC/unidade','média');break;
-        case 'calcadas':case 'pavExt':add(id,x.foot,'m² de área-base',estimatorSources.model,'Área de implantação usada somente como grandeza preliminar; área externa real exige planta de implantação','baixa');break;
+        case 'calcadas':case 'pavExt':na(id,'Área externa varia independentemente da área construída; informe a quantidade complementar ou forneça planta de implantação para não inventar metragem.');break;
         case 'drenExt':add(id,x.extPerim,'m',estimatorSources.model,'Perímetro equivalente','baixa');break;
         case 'muros':if(/muro/i.test(text))add(id,x.extPerim*x.h,'m² de referência',estimatorSources.model,'Perímetro equivalente × pé-direito','baixa');else na(id,'Muro/contenção não identificado.');break;
         case 'cercas':case 'paisagismo':na(id,'Implantação externa não fornece geometria suficiente para este item.');break;
@@ -586,7 +588,7 @@
     }
     return{items:items,status:status,context:x};
   }
-  function quantifiedScopeIds(){return new Set(Object.entries(state.scopeStatus||{}).filter(function(e){return e[1].kind==='direct'||e[1].kind==='estimate'}).map(function(e){return e[0]}))}
+  function quantifiedScopeIds(){return new Set(Object.entries(state.scopeStatus||{}).filter(function(e){return e[1].kind==='direct'||e[1].kind==='estimate'||e[1].kind==='covered'}).map(function(e){return e[0]}))}
   function renderScopeStatus(){
     if(!$('scopeStatusBody'))return;
     const directIds=new Set((state.materials||[]).filter(function(x){return x.originType!=='estimate'}).map(function(x){return x.scopeId}).filter(Boolean));
@@ -594,8 +596,8 @@
     let selected=0,directN=0,estimated=0,naN=0;const rows=[];
     componentCatalog.forEach(function(g){g.items.forEach(function(it){
       const id=it[0],label=it[1];if(!state.scope.has(id))return;selected++;const s=state.scopeStatus[id]||{kind:'wait',label:'Aguardando planta',source:'—',basis:'—'};
-      if(s.kind==='direct')directN++;else if(s.kind==='estimate')estimated++;else if(s.kind==='na')naN++;
-      const cls=s.kind==='direct'?'scope-status-ok':s.kind==='estimate'?'scope-status-warn':'scope-status-off';
+      if(s.kind==='direct'||s.kind==='covered')directN++;else if(s.kind==='estimate')estimated++;else if(s.kind==='na')naN++;
+      const cls=(s.kind==='direct'||s.kind==='covered')?'scope-status-ok':s.kind==='estimate'?'scope-status-warn':'scope-status-off';
       let qtxt='';if(s.kind==='estimate'&&s.groupCount){qtxt='<br><small>'+s.groupCount+' subitens detalhados</small>'}else if(s.kind==='estimate'&&s.q){qtxt='<br><small>'+fmt(s.q,(s.unit==='un.'||s.unit==='pontos'||s.unit==='conj.')?0:2)+' '+esc(s.unit||'')+'</small>'}
       rows.push('<tr><td>'+esc(g.stage)+'</td><td>'+esc(label)+'</td><td class="'+cls+'">'+esc(s.label)+qtxt+'</td><td>'+esc(s.source||'—')+'<br><small>'+esc(s.basis||'')+'</small></td></tr>');
     })});
@@ -901,8 +903,8 @@
 
   function updateQualityAudit(){
     if(!$('qualityScore'))return null;
-    const x=projectContext(),statuses=Object.values(state.scopeStatus||{}),applicable=statuses.filter(s=>s.kind!=='na'),direct=applicable.filter(s=>s.kind==='direct').length,estimated=applicable.filter(s=>s.kind==='estimate').length,low=applicable.filter(s=>s.kind==='estimate'&&s.confidence==='baixa').length;
-    let points=0,count=0;for(const s of applicable){count++;if(s.kind==='direct')points+=1;else if(s.kind==='estimate')points+=s.confidence==='alta'?.9:s.confidence==='média'?.72:.45;else points+=.25}
+    const x=projectContext(),statuses=Object.values(state.scopeStatus||{}),applicable=statuses.filter(s=>s.kind!=='na'),direct=applicable.filter(s=>s.kind==='direct'||s.kind==='covered').length,estimated=applicable.filter(s=>s.kind==='estimate').length,low=applicable.filter(s=>s.kind==='estimate'&&s.confidence==='baixa').length;
+    let points=0,count=0;for(const s of applicable){count++;if(s.kind==='direct'||s.kind==='covered')points+=1;else if(s.kind==='estimate')points+=s.confidence==='alta'?.9:s.confidence==='média'?.72:.45;else points+=.25}
     let score=count?points/count*100:0;const issues=[];
     if(!state.scaleDen&&!state.metersPerPixel){score-=12;issues.push('Escala não confirmada: calibre por dois pontos antes do quantitativo executivo.')}
     if(!state.autoWallLength&&!state.walls.length&&!num($('wallLengthOverride').value)){score-=18;issues.push('Paredes sem geometria confirmada.')}
