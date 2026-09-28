@@ -4,9 +4,9 @@ Aplicativo de levantamento preliminar e conferência de quantitativos de constru
 
 ## Como usar
 
-1. Abra o link publicado ou extraia o ZIP e abra `index.html` em um navegador atualizado. O leitor de PDF acompanha o aplicativo em arquivos locais; não precisa de API, chave ou CDN.
+1. Abra o link publicado em Vercel. O leitor local de PDF acompanha o aplicativo e funciona como fallback; na versão v4.6, a leitura semântica por IA usa a rota server-side `/api/analyze-plan`, sem expor credenciais no navegador.
 2. Informe área construída, pavimentos, unidades, sistemas e acabamentos. Confira os coeficientes: valores iniciais são hipóteses de orçamento.
-3. Carregue PDF, JPG, PNG ou WebP. Calibre com dois pontos de uma cota conhecida. Em PDFs com escalas diferentes ou digitalizados, calibre cada página utilizada.
+3. Carregue PDF, JPG, PNG ou WebP. O app seleciona as páginas mais prováveis de conter planta baixa, rasteriza em alta definição e solicita leitura multimodal estruturada ao GPT-5.6 Sol. Calibre com dois pontos de uma cota conhecida quando a escala não puder ser confirmada.
 4. Confira as marcações automáticas. Corrija paredes omitidas manualmente; escolha somar ou substituir a leitura. Não desenhe novamente uma parede já detectada no modo somar.
 5. Em imagens sem texto, informe os ambientes e suas áreas. A ferramenta de polígono mede área de piso após a calibração. Fotografias em perspectiva não são métricas sem retificação prévia.
 6. Informe quantidades de projetos complementares quando existirem. Para o levantamento preliminar, o app aplica as premissas estruturais configuradas: sapatas, vigas e pilares são desdobrados em concreto, barras/comprimentos de aço, massa de aço e fôrmas. Quantidades informadas pelo usuário substituem as estimativas automáticas.
@@ -27,6 +27,10 @@ Aplicativo de levantamento preliminar e conferência de quantitativos de constru
 - Cache com caminho relativo, compatível com publicação em subpastas.
 - v4.5: filtro de cotas reforçado por espessura/conectividade e preferência pela malha estrutural filtrada; sapatas/pilares podem ser estimados pelos apoios da malha e vigas pelo comprimento reconhecido de paredes.
 - v4.5: padrão paramétrico estrutural adotado quando não houver substituição manual: sapata 1,00×1,00 m com Ø10 c/15 cm e dobra 15 cm; vigas 12×40 cm com 2Ø10 inferiores + 2Ø8 superiores; pilares 12×35 cm com 4Ø10.
+- v4.6: leitura multimodal server-side via Vercel AI Gateway e GPT-5.6 Sol. O prompt proíbe explicitamente interpretar cotas, eixos, chamadas, textos, mobiliário, hachuras, carimbo e moldura como paredes.
+- v4.6: saída da IA usa JSON Schema rígido para área, paredes, ambientes, vãos, estrutura, acabamentos, confiança, base da medição e avisos. Dados sem evidência devem retornar `null`, não um valor inventado.
+- v4.6: o algoritmo geométrico local permanece como conferência e fallback. Divergências relevantes podem disparar uma segunda leitura no modelo de produção.
+- v4.6: falha em uma página não invalida as páginas já lidas; falha do serviço de IA mantém automaticamente a leitura geométrica local.
 
 ## Alcance e limitações
 
@@ -34,15 +38,22 @@ O catálogo original contempla as etapas principais e componentes opcionais. Nen
 
 Os índices históricos do código original foram preservados como cenários de referência. Não há validação estatística de sua adequação à obra atual. Quantidades de estrutura, fundação e instalações devem ser conferidas e substituídas pelos projetos respectivos quando disponíveis. As premissas estruturais do app são critérios paramétricos de quantitativo, não cálculo estrutural executivo. Estribos, cobrimentos, ancoragens e emendas não são inventados quando não houver parâmetro.
 
-A detecção de paredes usa análise de pixels e linhas, não compreensão integral do projeto ou OCR. Textos, móveis, hachuras, cortes, outras vistas e paredes diagonais podem gerar omissões ou falsos positivos. A máscara precisa ser conferida. PDFs de múltiplas vistas ou escalas exigem medição manual ou páginas separadas.
+A leitura principal v4.6 combina compreensão multimodal da prancha com análise geométrica local. O leitor local de pixels/linhas continua sujeito a omissões e falsos positivos; por isso a IA recebe instrução específica para distinguir paredes reais de cotas, textos, mobiliário, hachuras, eixos e carimbos. Ainda assim, o resultado é quantitativo preliminar e deve ser conferido quando houver projeto executivo.
 
-Dados ficam no navegador/dispositivo; não há sincronização em nuvem nem envio de plantas para uma conversa do ChatGPT. Limpar dados do navegador remove o projeto; exporte backup.
+Os dados do projeto continuam salvos no navegador/dispositivo. Na versão publicada, as imagens das páginas selecionadas são enviadas temporariamente ao backend Vercel para análise pelo modelo via AI Gateway; não são enviadas para esta conversa do ChatGPT. Limpar dados do navegador remove o projeto; exporte backup.
 
 ## Validação desta entrega
 
-Dez verificações automatizadas fornecidas com esta revisão cobrem inicialização, cálculos, composição do contrapiso, ausência de duplicidade, parâmetros desativados, substituição por zero, estados de conferência, salvamento e massa de aço. Resultados em `VALIDACAO.json`.
+Em 27/09/2026 foi executada uma bateria atualizada sobre a base fixa de projetos públicos da internet:
 
-A execução de navegador foi bloqueada pelo ambiente (criação de socket não permitida). Portanto, importação/renderização visual de PDF e imagem e layout móvel não foram validados de ponta a ponta nesta entrega. Não foi aferido um erro percentual de levantamento contra uma planta real.
+- **50/50** casos passaram no runner geométrico/fallback `/api/regression100`.
+- Qualidade média do runner nesses 50 casos: **0,9425**; mediana **0,9515**; faixa **0,787–0,998**.
+- Na checagem direta das fontes, **52 de 55** imagens foram baixadas e decodificadas como JPEG, PNG ou WebP. Três respostas rápidas do Wikimedia retornaram HTTP 429; o runner principal possui retry/backoff e os mesmos casos passaram posteriormente.
+- A rota de IA foi publicada e sua autenticação OIDC foi validada (`auth: true`, `authType: oidc`).
+- A primeira inferência real pelo AI Gateway recebeu HTTP 403 porque a conta Vercel ainda exige cadastro de cartão para liberar requisições/créditos. Por isso, **não há alegação de 50 inferências de IA executadas**. O app mantém o fallback local até a cobrança do Gateway ser habilitada.
+- Resultado detalhado e auditável em `AI_INTEGRATION_TEST_50_2026-09-27.json`.
+
+A bateria mede robustez do carregamento, decodificação e reconhecimento geométrico; não constitui certificação de exatidão métrica contra projeto estrutural executivo.
 
 ## Referências
 
