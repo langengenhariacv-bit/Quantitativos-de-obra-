@@ -9,7 +9,7 @@ Aplicativo de levantamento preliminar e conferência de quantitativos de constru
 3. Carregue PDF, JPG, PNG ou WebP. Calibre com dois pontos de uma cota conhecida. Em PDFs com escalas diferentes ou digitalizados, calibre cada página utilizada.
 4. Confira as marcações automáticas. Corrija paredes omitidas manualmente; escolha somar ou substituir a leitura. Não desenhe novamente uma parede já detectada no modo somar.
 5. Em imagens sem texto, informe os ambientes e suas áreas. A ferramenta de polígono mede área de piso após a calibração. Fotografias em perspectiva não são métricas sem retificação prévia.
-6. Informe quantidades de projetos complementares. Há calculadora por dimensões para volumes de concreto e massa de aço. Ela quantifica elementos dimensionados; não dimensiona fundações, peças ou armaduras.
+6. Informe quantidades de projetos complementares quando existirem. Para o levantamento preliminar, o app aplica as premissas estruturais configuradas: sapatas, vigas e pilares são desdobrados em concreto, barras/comprimentos de aço, massa de aço e fôrmas. Quantidades informadas pelo usuário substituem as estimativas automáticas.
 7. Calcule, confira materiais e escopo. Exporte CSV, relatório ou backup JSON. O backup preserva dados e parâmetros; o arquivo original da planta precisa ser anexado novamente para visualizar. Reanexar arquivo de mesmo nome preserva correções manuais.
 
 ## Alterações
@@ -25,12 +25,14 @@ Aplicativo de levantamento preliminar e conferência de quantitativos de constru
 - Correção de escadas indevidas em edificação térrea e respeito às opções de pintura e revestimento.
 - Exportação CSV, pesquisa de materiais, recuperação de dados locais inválidos e conservação dos parâmetros no backup.
 - Cache com caminho relativo, compatível com publicação em subpastas.
+- v4.5: filtro de cotas reforçado por espessura/conectividade e preferência pela malha estrutural filtrada; sapatas/pilares podem ser estimados pelos apoios da malha e vigas pelo comprimento reconhecido de paredes.
+- v4.5: padrão paramétrico estrutural adotado quando não houver substituição manual: sapata 1,00×1,00 m com Ø10 c/15 cm e dobra 15 cm; vigas 12×40 cm com 2Ø10 inferiores + 2Ø8 superiores; pilares 12×35 cm com 4Ø10.
 
 ## Alcance e limitações
 
 O catálogo original contempla as etapas principais e componentes opcionais. Nenhuma planta arquitetônica contém todos os insumos executivos. Componentes sem base mensurável ficam identificados para conferência; ausência de dados não significa ausência do componente. Somente sistemas expressamente desligados ou quantidade zero confirmada são tratados como excluídos quando há essa informação.
 
-Os índices históricos do código original foram preservados como cenários de referência. Não há validação estatística de sua adequação à obra atual. Quantidades de estrutura, fundação e instalações devem ser substituídas pelos projetos respectivos. Bitolas e dispositivos elétricos de referência não servem para dimensionamento ou compra definitiva. Aço e concreto não são desdobrados em peças/traços sem especificação executiva.
+Os índices históricos do código original foram preservados como cenários de referência. Não há validação estatística de sua adequação à obra atual. Quantidades de estrutura, fundação e instalações devem ser conferidas e substituídas pelos projetos respectivos quando disponíveis. As premissas estruturais do app são critérios paramétricos de quantitativo, não cálculo estrutural executivo. Estribos, cobrimentos, ancoragens e emendas não são inventados quando não houver parâmetro.
 
 A detecção de paredes usa análise de pixels e linhas, não compreensão integral do projeto ou OCR. Textos, móveis, hachuras, cortes, outras vistas e paredes diagonais podem gerar omissões ou falsos positivos. A máscara precisa ser conferida. PDFs de múltiplas vistas ou escalas exigem medição manual ou páginas separadas.
 
