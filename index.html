@@ -54,7 +54,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
     <main>
       <section id="view-novo" class="view active">
-        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF, DXF ou DWG. Arquivos CAD são lidos vetorialmente; informe apenas o que não puder ser identificado com segurança.</p></div><span class="pill">v4.8 • filtro de cotas + estrutura paramétrica</span></div>
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF, DXF ou DWG. Arquivos CAD são lidos vetorialmente; informe apenas o que não puder ser identificado com segurança.</p></div><span class="pill">v4.8.1 • filtro de cotas + estrutura paramétrica</span></div>
         <div class="card">
           <h2>Dados da obra</h2>
           <div class="grid g3">
@@ -740,17 +740,32 @@ function normalizeDwgEntity(e){
   return{type:name||'UNKNOWN',layer};
 }
 async function parseDwgLocal(file){
+  const base='https://cdn.jsdelivr.net/npm/@mlightcad/libredwg-web@0.7.14';
   let mod;
-  try{mod=await import('https://cdn.jsdelivr.net/npm/@mlightcad/libredwg-web@0.7.14/dist/libredwg-web.js')}catch(e){throw new Error('Não foi possível carregar o leitor DWG local. Verifique a conexão com a internet e tente novamente.')}
+  try{mod=await import(base+'/dist/libredwg-web.js')}catch(e){throw new Error('Não foi possível carregar o leitor DWG local. Verifique a conexão com a internet e tente novamente.')}
   let lib=null,raw=null;
   try{
-    lib=await mod.LibreDwg.create('https://cdn.jsdelivr.net/npm/@mlightcad/libredwg-web@0.7.14/wasm/');
-    const bytes=new Uint8Array(await file.arrayBuffer()),result=lib.dwg_read_data(bytes,mod.Dwg_File_Type.DWG);
+    try{
+      lib=await mod.LibreDwg.create(base+'/wasm');
+    }catch(primaryErr){
+      console.warn('Carregamento padrão do WASM falhou; tentando wasmBinary explícito.',primaryErr);
+      const [rawModule,wasmResp]=await Promise.all([
+        import(base+'/wasm/libredwg-web.js'),
+        fetch(base+'/wasm/libredwg-web.wasm',{mode:'cors',cache:'force-cache'})
+      ]);
+      if(!wasmResp.ok)throw new Error('Falha ao baixar WebAssembly do leitor DWG (HTTP '+wasmResp.status+').');
+      const wasmBinary=await wasmResp.arrayBuffer();
+      const createModule=rawModule.default||rawModule.createModule;
+      if(typeof createModule!=='function')throw new Error('Módulo WebAssembly DWG inválido.');
+      const wasmInstance=await createModule({wasmBinary,noInitialRun:true});
+      lib=mod.LibreDwg.createByWasmInstance(wasmInstance);
+    }
+    const bytes=await file.arrayBuffer(),result=lib.dwg_read_data(bytes,mod.Dwg_File_Type.DWG);
     if(!result)throw new Error('LibreDWG não retornou dados.');
     raw=result?.data||result;if(result?.error&&Number(result.error)!==0)throw new Error('Código LibreDWG '+result.error);
-    const db=lib.convert(raw),records=db?.tables?.blockRecords||db?.blockRecords||[],model=Array.from(records||[]).find(b=>/MODEL[_ ]?SPACE/i.test(String(b?.name||'')))||Array.from(records||[])[0];
+    const db=lib.convert(raw),records=db?.tables?.blockRecords||db?.blockRecords||db?.blockTableRecords||[],model=Array.from(records||[]).find(b=>/MODEL[_ ]?SPACE/i.test(String(b?.name||'')))||Array.from(records||[])[0];
     const src=Array.from(model?.entities||db?.entities||[]),entities=src.map(normalizeDwgEntity).filter(Boolean);
-    let unitsCode=Number(db?.header?.insUnits??db?.header?.INSUNITS??db?.headerVariables?.insUnits??0)||0;
+    let unitsCode=Number(db?.header?.insUnits??db?.header?.INSUNITS??db?.headerVariables?.insUnits??db?.header?.insunits??0)||0;
     if(!entities.length)throw new Error('DWG aberto, mas nenhuma entidade do Model Space pôde ser normalizada. Salve uma cópia em DXF ASCII para leitura integral.');
     return finalizeCadData({format:'DWG',entities,unitsCode});
   }catch(e){throw new Error('Falha ao interpretar o DWG: '+(e?.message||e)+' Se necessário, salve o mesmo desenho como DXF ASCII.')}
