@@ -54,7 +54,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
     <main>
       <section id="view-novo" class="view active">
-        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF ou imagem e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">v4.7.3 • filtro de cotas + estrutura paramétrica</span></div>
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF, DXF ou DWG. Arquivos CAD são lidos vetorialmente; informe apenas o que não puder ser identificado com segurança.</p></div><span class="pill">v4.8 • filtro de cotas + estrutura paramétrica</span></div>
         <div class="card">
           <h2>Dados da obra</h2>
           <div class="grid g3">
@@ -64,10 +64,10 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
           </div>
         </div>
         <div class="card">
-          <h2>Planta baixa em PDF ou imagem</h2>
+          <h2>Planta baixa em PDF, DXF ou DWG</h2>
           <div class="upload">
-            <strong>Selecione o arquivo da planta</strong><br><span class="hint">Aceita PDF, JPG/JPEG, PNG e WebP. No PDF, o app também tenta extrair escala, áreas, ambientes e esquadrias. Em imagens, a leitura das paredes funciona por pixels e a escala precisa ser calibrada por uma medida conhecida.</span>
-            <br><input id="pdfInput" type="file" accept="application/pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+            <strong>Selecione o arquivo da planta</strong><br><span class="hint">Aceita PDF, DXF e DWG. DXF/DWG são lidos como desenho CAD: entidades, layers e coordenadas são preservados e cotas/textos/hachuras são excluídos da busca de paredes. PDF continua disponível para projetos antigos.</span>
+            <br><input id="pdfInput" type="file" accept="application/pdf,.pdf,.dxf,.dwg,application/dxf,application/x-dxf,application/acad,application/x-acad,image/vnd.dwg" />
             <div id="pdfInfo" class="hint" style="margin-top:10px">Nenhum arquivo carregado.</div>
             <div class="notice" style="margin-top:14px">
               <b>Análise com seu ChatGPT — sem API paga</b>
@@ -160,7 +160,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
       </section>
 
       <section id="view-planta" class="view">
-        <div class="page-title"><div><h1>Conferir planta</h1><p>Confirme a escala e marque as paredes. O comprimento é calculado diretamente sobre o PDF.</p></div></div>
+        <div class="page-title"><div><h1>Conferir planta</h1><p>Confira a geometria reconhecida. Em DXF/DWG, o comprimento é obtido diretamente das coordenadas CAD; em PDF, permanece disponível a conferência/calibração.</p></div></div>
         <div class="split">
           <div class="card">
             <div class="pdf-tools no-print">
@@ -169,19 +169,19 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
               <button class="btn primary" id="paredeBtn">Adicionar parede</button>
               <button class="btn ghost" id="cancelMode">Cancelar ferramenta</button>
             </div>
-            <div id="scaleBox" class="notice" style="margin-bottom:10px">Carregue e analise um PDF para iniciar.</div>
+            <div id="scaleBox" class="notice" style="margin-bottom:10px">Carregue e analise um PDF, DXF ou DWG para iniciar.</div>
             <div class="canvas-wrap" id="canvasWrap"><canvas id="pdfCanvas"></canvas><canvas id="autoWallCanvas" class="auto-wall-canvas"></canvas><svg id="overlay" class="overlay"></svg></div>
           </div>
           <div class="sidepanel">
             <div class="card"><h2>Leitura encontrada</h2><div class="stats"><div class="stat"><b id="statEscala">—</b><span>Escala</span></div><div class="stat"><b id="statAmb">0</b><span>Ambientes</span></div><div class="stat"><b id="statArea">0</b><span>Área lida</span></div><div class="stat"><b id="statWalls">0</b><span>Paredes</span></div><div class="stat"><b id="statWallM">0</b><span>Metros de parede</span></div></div></div>
-            <div class="card" id="aiReadCard"><h2>Análise importada do ChatGPT</h2><div id="aiReadSummary" class="auto-summary"><div class="auto-item"><b>—</b><span>Aguardando upload</span></div></div><p class="source-note">O resultado usado no quantitativo vem do arquivo ANALISE_LANG.json gerado no seu ChatGPT. A leitura geométrica local fica apenas como apoio e não substitui silenciosamente a análise importada.</p></div>
-            <div class="card"><h2>Leitura automática do PDF</h2><div id="autoReadSummary" class="auto-summary"><div class="auto-item"><b>—</b><span>Aguardando análise</span></div></div>
+            <div class="card" id="aiReadCard"><h2>Análise importada do ChatGPT</h2><div id="aiReadSummary" class="auto-summary"><div class="auto-item"><b>—</b><span>Aguardando upload</span></div></div><p class="source-note">Para DXF/DWG, o LANG usa diretamente a geometria CAD. Para PDF, você ainda pode importar ANALISE_LANG.json do ChatGPT quando quiser uma conferência visual adicional.</p></div>
+            <div class="card"><h2>Leitura automática da planta</h2><div id="autoReadSummary" class="auto-summary"><div class="auto-item"><b>—</b><span>Aguardando análise</span></div></div>
               <div class="field" style="margin-top:12px"><label>Ajuste opcional — comprimento total de paredes (m)</label><input id="wallLengthOverride" type="number" min="0" step="0.01" placeholder="Deixe vazio para usar a leitura automática"></div>
               <div class="field" style="margin-top:10px"><label>Como tratar paredes marcadas manualmente</label><select id="wallManualMode"><option value="add" selected>Somar como correções à leitura automática</option><option value="replace">Substituir toda a leitura automática</option></select></div>
               <div class="actions" style="margin-top:10px"><button class="btn secondary" id="relerAutoBtn">Refazer leitura automática</button></div>
               <p class="source-note">Por padrão, paredes desenhadas por você são correções adicionais. Use “Substituir” somente se redesenhar toda a alvenaria manualmente. Um valor digitado no comprimento total sempre prevalece.</p></div>
             <div class="card"><h2>Vãos</h2><div class="grid g2"><div class="field"><label>Tipo</label><select id="vaoTipo"><option>Porta</option><option>Janela</option></select></div><div class="field"><label>Quantidade</label><input id="vaoQtd" type="number" min="1" value="1"></div><div class="field"><label>Largura (m)</label><input id="vaoLarg" type="number" step="0.01" value="0.80"></div><div class="field"><label>Altura (m)</label><input id="vaoAlt" type="number" step="0.01" value="2.10"></div></div><button class="btn secondary" id="addVao" style="margin-top:10px">Adicionar vão</button><div class="scroll" style="margin-top:10px"><table><thead><tr><th>Tipo</th><th>Qtd.</th><th>Dim.</th><th></th></tr></thead><tbody id="vaoBody"></tbody></table></div></div>
-            <div class="card"><h2>Ambientes lidos do PDF</h2><div id="roomsList" class="scroll empty">Nenhum ambiente identificado ainda.</div></div>
+            <div class="card"><h2>Ambientes identificados</h2><div id="roomsList" class="scroll empty">Nenhum ambiente identificado ainda.</div></div>
           </div>
         </div>
         <div class="card"><h2>Paredes marcadas</h2><div class="scroll"><table><thead><tr><th>#</th><th>Página</th><th>Comprimento</th><th>Altura</th><th>Tijolo</th><th></th></tr></thead><tbody id="wallBody"></tbody></table></div></div>
@@ -302,7 +302,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
     ['q_elevador','Elevadores','un.','25. Transporte vertical','elevador',false],['q_limpeza','Limpeza pós-obra','m²','26. Serviços finais','limpezaFinal',false]
   ];
   const defaultScope=new Set(componentCatalog.flatMap(g=>g.items.map(i=>i[0])));
-  const state={pdf:null,image:null,sourceFile:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],pageScales:{},pageDenominators:{},confirmed:false,autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],autoWallDiagnostics:{},autoWallGeometry:{},aiRead:null,aiPages:[],aiStatus:'',aiError:'',chatGPTImported:false,materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
+  const state={pdf:null,image:null,cadData:null,cadDisplay:null,sourceFile:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],pageScales:{},pageDenominators:{},confirmed:false,autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],autoWallDiagnostics:{},autoWallGeometry:{},aiRead:null,aiPages:[],aiStatus:'',aiError:'',chatGPTImported:false,materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
   let autosaveTimer;
 
   function fmt(n,d=2){return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})}
@@ -634,23 +634,39 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
   $('basicScope').onclick=()=>{const optional=new Set(['solarFV','solarTermico','inversor','elevador','plataforma','pocoElev','piscina','spdaCap','spdaDesc','spdaTerra','spdaConex','sprinklers','hidrantes','reservaInc','automacao','cftv','alarme','dutos','marcenaria','deck']);state.scope=new Set([...defaultScope].filter(x=>!optional.has(x)));renderScope();renderScopeStatus();saveProject(false)};
 
   $('pdfInput').addEventListener('change',async e=>{
-  const file=e.target.files[0];if(!file)return; if(file.size>60*1024*1024){alert('Use um arquivo com até 60 MB.');return} state.sourceFile=file; e.target.disabled=true; try{ const prior=state.pdfName===file.name?{walls:state.walls,rooms:state.rooms.filter(r=>r.source==='manual'),openings:state.openings.filter(o=>o.source!=='PDF'),scales:state.pageScales,confirmed:state.confirmed}:null; const pdfFile=/\.pdf$/i.test(file.name)||file.type==='application/pdf';let preparedPdf=null,preparedImage=null;if(pdfFile){await ensurePDF();preparedPdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise}else if(/^image\/(jpeg|png|webp)$/i.test(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name)){preparedImage=await loadPlanImage(file)}else{alert('Use PDF, JPG, PNG ou WebP.');return}
-  state.pageScales={};state.pageDenominators={};state.confirmed=false;state.openingDefinitions=[];state.scopeStatus={};state.pdf=null;state.image=null;state.viewport=null;state.pdfName=file.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;
-  if(!prior){for(const id of ['areaConstruida','areaPisoManual','areaFachadaManual','perimetroRodape','wallLengthOverride'])if($(id))$(id).value='';}state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];state.autoWallDiagnostics={};state.autoWallGeometry={};state.aiRead=null;state.aiPages=[];state.aiStatus='';state.aiError='';state.chatGPTImported=false;state.floorAreas=[];state.pdfText='';state.pageTexts=[];state.page=1;state.metersPerPixel=null;state.scaleDen=null;
-  const isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
-  const isImage=/^image\/(jpeg|png|webp)$/i.test(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name);
-  if(isPdf){
-    state.sourceType='pdf';state.image=null;state.pdf=preparedPdf;state.pages=state.pdf.numPages;
-    $('pdfInfo').textContent=file.name+' • '+state.pages+' página(s) • analisando PDF...';await extractPdfText();await renderPage();
-  }else if(isImage){
-    state.sourceType='image';state.pdf=null;state.pages=1;
-    try{state.image=preparedImage}catch(err){state.image=null;state.sourceType='';alert('Não foi possível abrir esta imagem. Use JPG, JPEG, PNG ou WebP.');return}
-    $('pdfInfo').textContent=file.name+' • imagem carregada • calibre a escala por uma cota conhecida';await renderPage();await estimateWallsFromPdf();
-  }else{alert('Formato não suportado. Use PDF, JPG/JPEG, PNG ou WebP.');return}
-  if(prior){state.walls=prior.walls;state.rooms.push(...prior.rooms);state.openings.push(...prior.openings);state.pageScales=prior.scales||{};state.confirmed=prior.confirmed;state.metersPerPixel=state.pageScales[1]||state.metersPerPixel;await estimateWallsFromPdf();await renderPage()}
-  state.aiStatus='waiting';state.aiError='';if($('autoWallCanvas'))$('autoWallCanvas').style.display='none';if($('chatGPTFlowStatus'))$('chatGPTFlowStatus').textContent='Planta carregada. Toque em “1. Preparar para análise no ChatGPT”.';renderRooms();renderWalls();renderOpenings();renderAutoRead();renderAIRead();renderMaterials();saveProject(false);
-}catch(err){$('pdfInfo').textContent='Falha ao abrir: '+err.message;alert($('pdfInfo').textContent)}finally{e.target.disabled=false;e.target.value=''}
-});
+    const file=e.target.files[0];if(!file)return;
+    if(file.size>60*1024*1024){alert('Use um arquivo com até 60 MB.');return}
+    state.sourceFile=file;e.target.disabled=true;
+    try{
+      const prior=state.pdfName===file.name?{walls:state.walls,rooms:state.rooms.filter(r=>r.source==='manual'),openings:state.openings.filter(o=>o.source==='manual'),scales:state.pageScales,confirmed:state.confirmed}:null;
+      const isPdf=/\.pdf$/i.test(file.name)||file.type==='application/pdf';
+      const isDxf=/\.dxf$/i.test(file.name);
+      const isDwg=/\.dwg$/i.test(file.name);
+      if(!isPdf&&!isDxf&&!isDwg){alert('Use PDF, DXF ou DWG. Imagens JPG/PNG/WebP não são mais usadas como arquivo principal.');return}
+      let preparedPdf=null;
+      if(isPdf){await ensurePDF();preparedPdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise}
+      state.pageScales={};state.pageDenominators={};state.confirmed=false;state.openingDefinitions=[];state.scopeStatus={};state.pdf=null;state.image=null;state.cadData=null;state.cadDisplay=null;state.viewport=null;state.pdfName=file.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;
+      if(!prior){for(const id of ['areaConstruida','areaPisoManual','areaFachadaManual','perimetroRodape','wallLengthOverride'])if($(id))$(id).value=''}
+      state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];state.autoWallDiagnostics={};state.autoWallGeometry={};state.aiRead=null;state.aiPages=[];state.aiStatus='';state.aiError='';state.chatGPTImported=false;state.floorAreas=[];state.pdfText='';state.pageTexts=[];state.page=1;state.metersPerPixel=null;state.scaleDen=null;
+      if(isPdf){
+        state.sourceType='pdf';state.pdf=preparedPdf;state.pages=state.pdf.numPages;
+        $('pdfInfo').textContent=file.name+' • '+state.pages+' página(s) • analisando PDF...';
+        await extractPdfText();await renderPage();
+        state.aiStatus='waiting';if($('chatGPTFlowStatus'))$('chatGPTFlowStatus').textContent='PDF carregado. Você pode usar a leitura local ou enviar ao ChatGPT para conferência.';
+      }else{
+        state.sourceType='cad';state.pages=1;
+        $('pdfInfo').textContent=file.name+' • lendo '+(isDwg?'DWG':'DXF')+' vetorial...';
+        state.cadData=isDxf?parseDxfAscii(await file.text()):await parseDwgLocal(file);
+        analyzeCadData();await renderPage();
+        if($('chatGPTFlowStatus'))$('chatGPTFlowStatus').textContent='CAD lido diretamente no navegador. Não é necessário enviar ao ChatGPT para obter a geometria.';
+      }
+      if(prior&&isPdf){state.walls=prior.walls;state.rooms.push(...prior.rooms);state.openings.push(...prior.openings);state.pageScales=prior.scales||{};state.confirmed=prior.confirmed;state.metersPerPixel=state.pageScales[1]||state.metersPerPixel;await estimateWallsFromPdf();await renderPage()}
+      if($('autoWallCanvas'))$('autoWallCanvas').style.display=state.sourceType==='cad'?'none':'';
+      renderRooms();renderWalls();renderOpenings();renderAutoRead();renderAIRead();renderMaterials();updateReadout();saveProject(false);
+    }catch(err){
+      console.error(err);$('pdfInfo').textContent='Falha ao abrir: '+(err?.message||err);alert($('pdfInfo').textContent);
+    }finally{e.target.disabled=false;e.target.value=''}
+  });
 function loadPlanImage(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Falha ao abrir imagem'))};img.src=url})}
 
 function chatGPTAnalysisPrompt(){
