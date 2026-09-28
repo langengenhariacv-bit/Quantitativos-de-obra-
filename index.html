@@ -54,7 +54,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
     <main>
       <section id="view-novo" class="view active">
-        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF ou imagem e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">v4.7 • filtro de cotas + estrutura paramétrica</span></div>
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF ou imagem e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">v4.7.1 • filtro de cotas + estrutura paramétrica</span></div>
         <div class="card">
           <h2>Dados da obra</h2>
           <div class="grid g3">
@@ -755,7 +755,7 @@ async function importChatGPTResult(file){
     const st=a.structure||{};if(Number(st.footingsQty)>0&&$('strSapQtd'))$('strSapQtd').value=Math.round(Number(st.footingsQty));if(Number(st.beamsLengthM)>0&&$('strVigaM'))$('strVigaM').value=Number(st.beamsLengthM).toFixed(2);if(Number(st.columnsQty)>0&&$('strPilarQtd'))$('strPilarQtd').value=Math.round(Number(st.columnsQty));if(Number(st.slabAreaM2)>0&&$('q_laje'))$('q_laje').value=Number(st.slabAreaM2).toFixed(2);
     state.autoWallMethod='Análise importada do ChatGPT';
     if($('autoWallCanvas'))$('autoWallCanvas').style.display='none';
-    renderRooms();renderOpenings();renderAutoRead();renderAIRead();updateStats();saveProject(false);
+    renderRooms();renderOpenings();renderAutoRead();renderAIRead();updateReadout();renderScopeStatus();saveProject(false);
     setChatGPTFlowStatus('Resultado importado com sucesso. O LANG agora usará a análise do ChatGPT no quantitativo.');
     alert('Análise do ChatGPT importada com sucesso. Agora você pode conferir a planta e calcular os materiais.');
   }catch(err){alert('Não foi possível importar a análise: '+(err?.message||err));setChatGPTFlowStatus('Falha ao importar. Selecione o arquivo ANALISE_LANG.json gerado pelo ChatGPT.')}
