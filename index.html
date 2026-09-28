@@ -1060,6 +1060,32 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if(winQty){add('8. Esquadrias, vidros e serralheria','Janelas',winQty,'un.','janelas','Quadro/códigos lidos do PDF','direct','Contagem de códigos de janelas');add('8. Esquadrias, vidros e serralheria','Peitoris',wins.reduce((s,o)=>s+o.qty*o.w,0)*factor,'m','peitoris','Janelas lidas do PDF','direct','Soma das larguras × perdas');}
     const glassArea=[...wins,...glassDoors].reduce((s,o)=>s+o.qty*o.w*o.h,0);if(glassArea)add('8. Esquadrias, vidros e serralheria','Vidros de esquadrias',glassArea*factor,'m²','vidros','Esquadrias identificadas como vidro','direct','Área dos vãos envidraçados × perdas');
 
+    const steelKgM=d=>Math.PI/4*Math.pow(d/1000,2)*7850;
+    const sapQtd=Math.floor(ext('strSapQtd')),sapX=ext('strSapX')||1,sapY=ext('strSapY')||1,sapAlt=ext('strSapAlt'),sapD=ext('strSapDiam')||10,sapEsp=ext('strSapEsp')||.15,sapDobra=ext('strSapDobra');
+    if(sapQtd>0){
+      const nx=Math.ceil(sapY/sapEsp)+1,ny=Math.ceil(sapX/sapEsp)+1,lenX=sapX+2*sapDobra,lenY=sapY+2*sapDobra,steelM=sapQtd*(nx*lenX+ny*lenY),steelKg=steelM*steelKgM(sapD);
+      add('3. Fundações e infraestrutura','Sapatas isoladas '+fmt(sapX,2)+'×'+fmt(sapY,2)+' m',sapQtd,'un.','fundacoes','Premissa estrutural informada','direct','Dimensões em planta fornecidas pelo usuário');
+      add('3. Fundações e infraestrutura','Aço Ø'+fmt(sapD,0)+' mm — malha das sapatas',steelKg*factor,'kg','fundAco','Premissa estrutural informada','direct',nx+' barras em uma direção + '+ny+' na outra por sapata; comprimentos '+fmt(lenX,2)+' m e '+fmt(lenY,2)+' m; espaçamento '+fmt(sapEsp,2)+' m; dobra '+fmt(sapDobra,2)+' m em cada extremidade; '+fmt(steelM,2)+' m de aço antes das perdas');
+      if(sapAlt>0)add('3. Fundações e infraestrutura','Concreto das sapatas',sapQtd*sapX*sapY*sapAlt*factor,'m³','fundConcreto','Premissa estrutural informada','direct',sapQtd+' × '+fmt(sapX,2)+' × '+fmt(sapY,2)+' × '+fmt(sapAlt,2)+' m');
+    }
+
+    const vM=ext('strVigaM'),vB=ext('strVigaB')||.12,vH=ext('strVigaH')||.40,vIQ=Math.floor(ext('strVigaInfQtd')||2),vID=ext('strVigaInfDiam')||10,vSQ=Math.floor(ext('strVigaSupQtd')||2),vSD=ext('strVigaSupDiam')||8;
+    if(vM>0){
+      add('4. Estrutura','Vigas '+fmt(vB*100,0)+'×'+fmt(vH*100,0)+' cm — comprimento considerado',vM,'m','vigas','Premissa estrutural informada','direct','Comprimento total informado pelo usuário');
+      add('4. Estrutura','Concreto das vigas '+fmt(vB*100,0)+'×'+fmt(vH*100,0)+' cm',vM*vB*vH*factor,'m³','estruturaConcreto','Premissa estrutural informada','direct',fmt(vM,2)+' × '+fmt(vB,2)+' × '+fmt(vH,2)+' m');
+      add('4. Estrutura','Aço inferior das vigas — '+vIQ+'Ø'+fmt(vID,0),vM*vIQ*steelKgM(vID)*factor,'kg','estruturaAco','Premissa estrutural informada','direct',vIQ+' barras contínuas × '+fmt(vM,2)+' m; sem ancoragens/emendas adicionais');
+      add('4. Estrutura','Aço superior das vigas — '+vSQ+'Ø'+fmt(vSD,0),vM*vSQ*steelKgM(vSD)*factor,'kg','estruturaAco','Premissa estrutural informada','direct',vSQ+' barras contínuas × '+fmt(vM,2)+' m; sem ancoragens/emendas adicionais');
+      add('4. Estrutura','Fôrmas laterais e fundo das vigas',vM*(2*vH+vB)*factor,'m²','estruturaForma','Geometria da seção informada','direct','3 faces: comprimento × (2×altura + largura)');
+    }
+
+    const pQtd=Math.floor(ext('strPilarQtd')),pB=ext('strPilarB')||.12,pH=ext('strPilarH')||.35,pAlt=ext('strPilarAlt')||height(),pBars=Math.floor(ext('strPilarBarras')||4),pD=ext('strPilarDiam')||10;
+    if(pQtd>0&&pAlt>0){
+      add('4. Estrutura','Pilares '+fmt(pB*100,0)+'×'+fmt(pH*100,0)+' cm',pQtd,'un.','pilares','Premissa estrutural informada','direct','Quantidade informada; altura considerada '+fmt(pAlt,2)+' m');
+      add('4. Estrutura','Concreto dos pilares '+fmt(pB*100,0)+'×'+fmt(pH*100,0)+' cm',pQtd*pB*pH*pAlt*factor,'m³','estruturaConcreto','Premissa estrutural informada','direct',pQtd+' × '+fmt(pB,2)+' × '+fmt(pH,2)+' × '+fmt(pAlt,2)+' m');
+      add('4. Estrutura','Aço longitudinal dos pilares — '+pBars+'Ø'+fmt(pD,0),pQtd*pBars*pAlt*steelKgM(pD)*factor,'kg','estruturaAco','Premissa estrutural informada','direct',pQtd+' pilares × '+pBars+' barras × '+fmt(pAlt,2)+' m; sem emendas/ancoragens adicionais');
+      add('4. Estrutura','Fôrmas dos pilares',pQtd*2*(pB+pH)*pAlt*factor,'m²','estruturaForma','Geometria da seção informada','direct','Perímetro da seção × altura × quantidade');
+    }
+
     state.customItems.forEach(x=>mats.push({...x,scopeId:'outros',origin:'Entrada manual',originType:'direct',basis:'Quantidade informada pelo usuário'}));
     complementaryDefs.forEach(([id,label,unit,stage,scopeId,applyLoss])=>{const q=$(id)?num($(id).value):0;if(q>0){for(let i=mats.length-1;i>=0;i--)if(mats[i].scopeId===scopeId)mats.splice(i,1);add(stage,label,q*(applyLoss?factor:1),unit,scopeId,'Projeto complementar / entrada manual','direct','Quantidade informada pelo usuário')}});
 
@@ -1209,6 +1235,37 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   function initExtensions(){
     $('view-coef').insertAdjacentHTML('beforeend',`<div class="card"><h2>Insumos e espessuras</h2><p class="notice">Valores iniciais são hipóteses de orçamento, não medições nem dosagem estrutural. Confirme espessuras, traço, rendimento e perdas conforme o material escolhido. O traço 1:4 do contrapiso é uma referência de execução; fator seco e massa aparente devem ser conferidos na obra.</p><div class="extension-grid">${extraDefs.map(([id,label,v])=>`<div class="field"><label for="${id}">${label}</label><input data-extra id="${id}" type="number" min="0" step="any" value="${v}"></div>`).join('')}</div><p><a href="https://bra.sika.com/portokoll/pt/noticias/4-dicas-essenciais-sobre-como-fazer-contrapiso.html" target="_blank" rel="noopener">Referência de execução de contrapiso — Sika</a></p><p class="hint">Os índices históricos do arquivo original são mantidos como cenários preliminares. A adequação a esta obra não foi comprovada. Não use bitolas ou dispositivos elétricos estimados para dimensionamento.</p></div>`);
     $('view-escopo').insertAdjacentHTML('beforeend',`<div class="card"><h2>Quantidade confirmada por componente</h2><p class="hint">Substitui a estimativa deste componente. Campo vazio usa o estimador; zero registra ausência confirmada. Use os campos complementares para itens com desdobramento automático.</p><div class="extension-grid"><div class="field"><label for="overrideScope">Componente</label><select id="overrideScope">${componentCatalog.map(g=>`<optgroup label="${esc(g.stage)}">${g.items.map(i=>`<option value="${i[0]}">${esc(i[1])}</option>`).join('')}</optgroup>`).join('')}</select></div><div class="field"><label for="overrideQ">Quantidade líquida</label><input id="overrideQ" type="number" min="0" step="any"></div><div class="field"><label for="overrideUnit">Unidade</label><select id="overrideUnit"><option>un.</option><option>m</option><option>m²</option><option>m³</option><option>kg</option><option>L</option><option>cj.</option></select></div><div class="field"><label for="overrideNote">Origem / documento</label><input id="overrideNote" placeholder="Projeto, página, revisão ou medição"></div></div><button class="btn primary" id="applyOverride">Aplicar quantidade</button><input type="hidden" data-extra id="componentOverrides" value="{}"><p id="overrideMessage" role="status"></p></div>`);
+    $('view-escopo').insertAdjacentHTML('beforeend',`<div class="card"><h2>Premissas estruturais para quantitativo</h2>
+      <p class="notice"><b>Premissas fornecidas pelo usuário.</b> Servem para levantamento de materiais e não substituem projeto/cálculo estrutural. Estribos, cobrimento, ancoragens e emendas não são acrescentados sem parâmetro informado.</p>
+      <h3>Sapatas isoladas</h3><div class="extension-grid">
+        <div class="field"><label>Quantidade de sapatas</label><input data-extra id="strSapQtd" type="number" min="0" step="1" placeholder="Informar"></div>
+        <div class="field"><label>Dimensão X (m)</label><input data-extra id="strSapX" type="number" min="0" step="any" value="1"></div>
+        <div class="field"><label>Dimensão Y (m)</label><input data-extra id="strSapY" type="number" min="0" step="any" value="1"></div>
+        <div class="field"><label>Espessura/altura (m)</label><input data-extra id="strSapAlt" type="number" min="0" step="any" placeholder="Não informada"></div>
+        <div class="field"><label>Aço da malha (mm)</label><input data-extra id="strSapDiam" type="number" min="0" step="any" value="10"></div>
+        <div class="field"><label>Espaçamento (m)</label><input data-extra id="strSapEsp" type="number" min="0" step="any" value="0.15"></div>
+        <div class="field"><label>Dobra em cada extremidade (m)</label><input data-extra id="strSapDobra" type="number" min="0" step="any" value="0.15"></div>
+      </div>
+      <h3 style="margin-top:18px">Vigas</h3><div class="extension-grid">
+        <div class="field"><label>Comprimento total de vigas (m)</label><input data-extra id="strVigaM" type="number" min="0" step="any" placeholder="Informar do estrutural"></div>
+        <div class="field"><label>Largura (m)</label><input data-extra id="strVigaB" type="number" min="0" step="any" value="0.12"></div>
+        <div class="field"><label>Altura (m)</label><input data-extra id="strVigaH" type="number" min="0" step="any" value="0.40"></div>
+        <div class="field"><label>Barras inferiores</label><input data-extra id="strVigaInfQtd" type="number" min="0" step="1" value="2"></div>
+        <div class="field"><label>Ø inferiores (mm)</label><input data-extra id="strVigaInfDiam" type="number" min="0" step="any" value="10"></div>
+        <div class="field"><label>Barras superiores</label><input data-extra id="strVigaSupQtd" type="number" min="0" step="1" value="2"></div>
+        <div class="field"><label>Ø superiores (mm)</label><input data-extra id="strVigaSupDiam" type="number" min="0" step="any" value="8"></div>
+      </div>
+      <h3 style="margin-top:18px">Pilares</h3><div class="extension-grid">
+        <div class="field"><label>Quantidade de pilares</label><input data-extra id="strPilarQtd" type="number" min="0" step="1" placeholder="Informar"></div>
+        <div class="field"><label>Lado 1 (m)</label><input data-extra id="strPilarB" type="number" min="0" step="any" value="0.12"></div>
+        <div class="field"><label>Lado 2 (m)</label><input data-extra id="strPilarH" type="number" min="0" step="any" value="0.35"></div>
+        <div class="field"><label>Altura de cada pilar (m)</label><input data-extra id="strPilarAlt" type="number" min="0" step="any" placeholder="Vazio = pé-direito"></div>
+        <div class="field"><label>Barras longitudinais</label><input data-extra id="strPilarBarras" type="number" min="0" step="1" value="4"></div>
+        <div class="field"><label>Ø longitudinal (mm)</label><input data-extra id="strPilarDiam" type="number" min="0" step="any" value="10"></div>
+      </div>
+      <p class="hint">Para fechar o quantitativo estrutural, informe apenas as três grandezas que a planta arquitetônica não determina com segurança: quantidade de sapatas, comprimento total de vigas e quantidade de pilares. A altura dos pilares usa o pé-direito quando ficar vazia.</p>
+    </div>`);
+
     $('view-planta').insertAdjacentHTML('beforeend',`<div class="card"><h2>Conferência da planta</h2><p class="notice">A detecção automática é uma sugestão visual. <b>Azul = parede aceita pelo conjunto estrutural; amarelo = trecho duvidoso para conferência.</b> Cotas, mobiliário e hachuras são filtrados por espessura, continuidade e conexão, mas ainda podem exigir correção. Em PDF digitalizado, calibre cada página utilizada. Fotografias em perspectiva devem ser retificadas antes de medir.</p><div class="actions"><button class="btn secondary" id="areaMode">Medir área por polígono</button><button class="btn secondary" id="finishArea">Concluir área e usar como piso</button></div><p class="hint" id="polygonStatus">Calibre a escala, clique nos vértices da área e conclua. Esta ferramenta substitui o campo de área líquida de piso.</p></div>`);
     $('view-quant').insertAdjacentHTML('afterbegin',`<div class="card"><div class="actions"><button id="csvExport" class="btn secondary">Exportar CSV</button><input id="materialSearch" aria-label="Buscar material" placeholder="Buscar material ou etapa"><select id="originFilter" aria-label="Filtrar origem"><option value="">Todas as origens</option><option value="direct">Dados informados / medidos</option><option value="estimate">Estimativas</option></select></div><p class="hint">Quantidade líquida, perdas e arredondamentos constam na memória de cálculo. Componentes sem base suficiente ficam visíveis na conferência de escopo.</p></div>`);
 
