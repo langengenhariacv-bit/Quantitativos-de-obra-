@@ -54,7 +54,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
     <main>
       <section id="view-novo" class="view active">
-        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF, DXF ou DWG. O arquivo é preparado para análise no ChatGPT; depois importe o ANALISE_LANG.json e o LANG calcula os quantitativos.</p></div><span class="pill">v4.10.1 • filtro de cotas + estrutura paramétrica</span></div>
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF, DXF ou DWG. O arquivo é preparado para análise no ChatGPT; depois importe o ANALISE_LANG.json e o LANG calcula os quantitativos.</p></div><span class="pill">v4.10.2 • filtro de cotas + estrutura paramétrica</span></div>
         <div class="card">
           <h2>Dados da obra</h2>
           <div class="grid g3">
@@ -66,7 +66,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
         <div class="card">
           <h2>Planta baixa em PDF, DXF ou DWG</h2>
           <div class="upload">
-            <strong>Selecione o arquivo da planta</strong><br><span class="hint">Aceita PDF, DXF e DWG. DXF é enviado diretamente ao ChatGPT; DWG é convertido automaticamente para DXF antes do envio. Depois importe o ANALISE_LANG.json.</span>
+            <strong>Selecione o arquivo da planta</strong><br><span class="hint">Aceita PDF, DXF e DWG. DXF é preparado como texto DXF compatível com o app ChatGPT; DWG é convertido automaticamente para DXF e depois embalado como .dxf.txt. Depois importe o ANALISE_LANG.json.</span>
             <br><input id="pdfInput" type="file" accept="application/pdf,.pdf,.dxf,.dwg,application/dxf,application/x-dxf,application/acad,application/x-acad,image/vnd.dwg" />
             <div id="pdfInfo" class="hint" style="margin-top:10px">Nenhum arquivo carregado.</div>
             <div class="notice" style="margin-top:14px">
@@ -980,21 +980,45 @@ function openChatGPTNative(){
     try{location.href=intent}catch{}
   }
 }
+async function wrapDxfForChatGPT(file){
+  if(!/\.dxf$/i.test(file?.name||''))return file;
+  const text=await file.text();
+  if(!/SECTION/i.test(text)||!/ENTITIES/i.test(text))throw new Error('O DXF gerado não contém a estrutura ASCII esperada.');
+  const txtName=file.name+'.txt';
+  const header=[
+    'LANG_DXF_ASCII_WRAPPER_V1',
+    'ARQUIVO_DXF_ORIGINAL: '+file.name,
+    'INSTRUCAO: O conteúdo abaixo é um arquivo DXF ASCII completo. Trate-o como DXF, não como texto comum.',
+    '--- INICIO_DXF ---',
+    ''
+  ].join('\n');
+  const footer='\n--- FIM_DXF ---\n';
+  return new File([header,text,footer],txtName,{type:'text/plain;charset=utf-8',lastModified:Date.now()});
+}
 async function prepareForChatGPT(){
   if(!state.sourceFile){alert('Selecione novamente o arquivo da planta antes de preparar a análise.');return}
   let shareFile=state.sourceFile;
   const originalName=shareFile.name||'planta';
+  let analysisName=originalName;
   try{
     if(/\.dwg$/i.test(originalName)){
       shareFile=await convertDwgToDxfFile(shareFile);
-      setChatGPTFlowStatus('DWG convertido para '+shareFile.name+'. Abrindo o ChatGPT…');
+      analysisName=shareFile.name;
+      setChatGPTFlowStatus('DWG convertido para '+shareFile.name+'. Preparando anexo compatível com o app ChatGPT…');
+    }else if(/\.dxf$/i.test(originalName)){
+      analysisName=originalName;
+      setChatGPTFlowStatus('Preparando DXF para anexar no app ChatGPT…');
+    }
+    if(/\.dxf$/i.test(shareFile.name||'')){
+      shareFile=await wrapDxfForChatGPT(shareFile);
+      setChatGPTFlowStatus('DXF preparado como arquivo de texto compatível. Abrindo o compartilhamento…');
     }
   }catch(err){
     setChatGPTFlowStatus(err?.message||String(err));
     alert((err?.message||err)+' Se possível, exporte esse mesmo projeto como DXF ASCII e tente novamente.');
     return;
   }
-  const prompt=chatGPTAnalysisPrompt(shareFile.name);
+  const prompt=chatGPTAnalysisPrompt(shareFile.name)+'\n\nIMPORTANTE: se o anexo terminar em .dxf.txt, ele contém o DXF ASCII completo. Leia o conteúdo entre INICIO_DXF e FIM_DXF exatamente como um arquivo DXF.';
   try{if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(prompt)}catch{}
   try{
     if(navigator.share){
@@ -1017,7 +1041,7 @@ async function prepareForChatGPT(){
         }
       }
       if(shared){
-        setChatGPTFlowStatus('Arquivo compartilhado. Selecione o app ChatGPT no compartilhamento para continuar a análise.');
+        setChatGPTFlowStatus('Arquivo de projeto compartilhado. Selecione o app ChatGPT; o anexo deve aparecer como .dxf.txt quando o projeto for CAD.');
         return;
       }
     }
