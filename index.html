@@ -906,24 +906,21 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     entries.sort((a,b)=>b[1].segments.reduce((s,r)=>s+(r.len||0),0)-a[1].segments.reduce((s,r)=>s+(r.len||0),0));
     const [page,g]=entries[0],segs=g.segments,roi=g.roi||{x0:0,y0:0,x1:1000,y1:1000};
     const minDim=Math.max(1,Math.min(roi.x1-roi.x0,roi.y1-roi.y0)),tol=Math.max(5,minDim*.014),pts=[];
-    const addPt=(x,y,kind)=>{if(Number.isFinite(x)&&Number.isFinite(y))pts.push({x,y,kind})};
-    for(const r of segs){
-      if(r.axis==='h'){addPt(r.a,r.pos,'end');addPt(r.b,r.pos,'end')}
-      else{addPt(r.pos,r.a,'end');addPt(r.pos,r.b,'end')}
-    }
+    // Apoios automáticos só surgem em encontro/canto entre eixos de paredes.
+    // Pontas isoladas (inclusive vãos de portas) não viram pilar/sapata.
     for(let i=0;i<segs.length;i++)for(let j=i+1;j<segs.length;j++){
       const a=segs[i],b=segs[j];if(a.axis===b.axis)continue;
       const h=a.axis==='h'?a:b,v=a.axis==='v'?a:b;
-      if(v.pos>=h.a-tol&&v.pos<=h.b+tol&&h.pos>=v.a-tol&&h.pos<=v.b+tol)addPt(v.pos,h.pos,'junction');
+      if(v.pos>=h.a-tol&&v.pos<=h.b+tol&&h.pos>=v.a-tol&&h.pos<=v.b+tol)pts.push({x:v.pos,y:h.pos});
     }
     const clusters=[];
     for(const p of pts){
       let best=null,bestD=Infinity;
       for(const cl of clusters){const d=Math.hypot(p.x-cl.x,p.y-cl.y);if(d<bestD&&d<=tol*1.35){best=cl;bestD=d}}
-      if(best){best.x=(best.x*best.n+p.x)/(best.n+1);best.y=(best.y*best.n+p.y)/(best.n+1);best.n++;if(p.kind==='junction')best.junction=true}
-      else clusters.push({x:p.x,y:p.y,n:1,junction:p.kind==='junction'});
+      if(best){best.x=(best.x*best.n+p.x)/(best.n+1);best.y=(best.y*best.n+p.y)/(best.n+1);best.n++}
+      else clusters.push({x:p.x,y:p.y,n:1});
     }
-    return{supports:clusters.length,page:Number(page),source:'Cantos, términos e encontros da malha de paredes reconhecida',points:clusters};
+    return{supports:clusters.length,page:Number(page),source:'Cantos e encontros ortogonais da malha de paredes reconhecida',points:clusters};
   }
 
   async function estimateWallsFromPdf(){
@@ -1127,7 +1124,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
 
     const pManualQtd=Math.floor(ext('strPilarQtd')),pQtd=pManualQtd||autoSupportQty,pB=ext('strPilarB')||.12,pH=ext('strPilarH')||.35,pAlt=ext('strPilarAlt')||height(),pBars=Math.floor(ext('strPilarBarras')||4),pD=ext('strPilarDiam')||10;
     if(pQtd>0&&pAlt>0){
-      add('4. Estrutura','Pilares '+fmt(pB*100,0)+'×'+fmt(pH*100,0)+' cm',pQtd,'un.','pilares',pManualQtd?'Premissa estrutural informada':'Malha automática de paredes','direct',(pManualQtd?'Quantidade informada':'Cantos, términos e encontros reconhecidos na planta (página '+(structuralLayout.page||'—')+')')+'; altura considerada '+fmt(pAlt,2)+' m');
+      add('4. Estrutura','Pilares '+fmt(pB*100,0)+'×'+fmt(pH*100,0)+' cm',pQtd,'un.','pilares',pManualQtd?'Premissa estrutural informada':'Malha automática de paredes','direct',(pManualQtd?'Quantidade informada':'Cantos e encontros reconhecidos na planta (página '+(structuralLayout.page||'—')+')')+'; altura considerada '+fmt(pAlt,2)+' m');
       add('4. Estrutura','Concreto dos pilares '+fmt(pB*100,0)+'×'+fmt(pH*100,0)+' cm',pQtd*pB*pH*pAlt*factor,'m³','estruturaConcreto','Premissa estrutural paramétrica / informada','direct',pQtd+' × '+fmt(pB,2)+' × '+fmt(pH,2)+' × '+fmt(pAlt,2)+' m');
       add('4. Estrutura','Comprimento linear dos pilares — '+pBars+'Ø'+fmt(pD,0),pQtd*pBars*pAlt,'m','estruturaAco','Premissa estrutural paramétrica / informada','direct',pQtd+' pilares × '+pBars+' barras × '+fmt(pAlt,2)+' m');
       add('4. Estrutura','Aço longitudinal dos pilares — '+pBars+'Ø'+fmt(pD,0),pQtd*pBars*pAlt*steelKgM(pD)*factor,'kg','estruturaAco','Premissa estrutural paramétrica / informada','direct',pQtd+' pilares × '+pBars+' barras × '+fmt(pAlt,2)+' m; sem emendas/ancoragens adicionais');
