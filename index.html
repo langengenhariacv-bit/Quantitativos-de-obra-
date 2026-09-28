@@ -54,7 +54,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
     <main>
       <section id="view-novo" class="view active">
-        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF ou imagem e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">v4.7.1 • filtro de cotas + estrutura paramétrica</span></div>
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF ou imagem e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">v4.7.2 • filtro de cotas + estrutura paramétrica</span></div>
         <div class="card">
           <h2>Dados da obra</h2>
           <div class="grid g3">
@@ -672,6 +672,9 @@ Ao terminar, gere para download um arquivo chamado ANALISE_LANG.json, em JSON v�
     "comprimento_total_m":null,
     "area_bruta_m2":null,
     "espessuras_m":[],
+    "segmentos":[
+      {"id":"P01","comprimento_m":null,"espessura_m":null,"externa":false,"pagina":1,"confianca":0.0,"base":""}
+    ],
     "observacoes":[]
   },
   "ambientes":[
@@ -695,7 +698,10 @@ Ao terminar, gere para download um arquivo chamado ANALISE_LANG.json, em JSON v�
 }
 
 Regras:
-- comprimento_total_m = soma dos comprimentos reais/eixos das paredes, sem contar as duas faces da mesma parede;
+- identifique cada parede/trecho mensurável separadamente em "segmentos";
+- cada segmento deve usar o eixo/comprimento real da parede e nunca a linha de cota;
+- comprimento_total_m = soma dos segmentos confiáveis, sem contar as duas faces da mesma parede;
+- se o total não puder ser fechado, mantenha comprimento_total_m como null, mas ainda retorne todos os segmentos que puder medir com segurança;
 - não transformar encontro de paredes automaticamente em pilar;
 - pilares, vigas e sapatas só devem ser informados se identificáveis ou se houver base explícita na planta;
 - portas e janelas devem ser agrupadas quando forem iguais;
@@ -728,13 +734,25 @@ function langResultToAI(payload){
   if(payload?.format!=='LANG-ANALISE-CHATGPT')throw new Error('O arquivo não foi reconhecido como ANALISE_LANG.json.');
   const cg=Number(payload?.confianca?.geral),cw=Number(payload?.confianca?.paredes);
   const geral=Number.isFinite(cg)?Math.max(0,Math.min(1,cg)):0.65;
-  const paredes=Number.isFinite(cw)?Math.max(0,Math.min(1,cw)):geral;
+  const paredesConf=Number.isFinite(cw)?Math.max(0,Math.min(1,cw)):geral;
+  const rawSegs=Array.isArray(payload?.paredes?.segmentos)?payload.paredes.segmentos:(Array.isArray(payload?.paredes)?payload.paredes:(Array.isArray(payload?.walls?.segments)?payload.walls.segments:[]));
+  const segments=rawSegs.map((s,i)=>({
+    label:String(s.id||s.label||('P'+String(i+1).padStart(2,'0'))),
+    lengthM:Number(s.comprimento_m??s.lengthM??s.comprimento??s.length)||null,
+    thicknessM:Number(s.espessura_m??s.thicknessM??s.espessura??s.thickness)||null,
+    external:Boolean(s.externa??s.external),
+    confidence:Number.isFinite(Number(s.confianca??s.confidence))?Math.max(0,Math.min(1,Number(s.confianca??s.confidence))):paredesConf,
+    basis:String(s.base||s.basis||'')
+  })).filter(s=>Number(s.lengthM)>0);
+  const segmentTotal=segments.reduce((sum,s)=>sum+Number(s.lengthM||0),0);
+  const explicitTotal=Number(payload?.paredes?.comprimento_total_m??payload?.paredes?.total_m??payload?.walls?.totalLengthM);
+  const totalLength=explicitTotal>0?explicitTotal:(segmentTotal>0?segmentTotal:null);
   return{
     meta:{page:1,drawingType:'Planta importada do ChatGPT',isFloorPlan:true,level:'',scaleDenominator:null,overallConfidence:geral,measurementBasis:'Análise visual no ChatGPT'},
     areas:{builtAreaM2:Number(payload.area_construida_m2)||null,floorAreaM2:Number(payload.area_construida_m2)||null,roofAreaM2:null,slabAreaM2:Number(payload?.estrutura?.laje_area_m2)||null},
-    walls:{totalLengthM:Number(payload?.paredes?.comprimento_total_m)||null,averageHeightM:Number(payload.pe_direito_m)||null,grossAreaM2:Number(payload?.paredes?.area_bruta_m2)||null,thicknessesM:Array.isArray(payload?.paredes?.espessuras_m)?payload.paredes.espessuras_m.map(Number).filter(x=>x>0):[],confidence:paredes,basis:(payload?.paredes?.observacoes||[]).join('; '),segments:[]},
-    rooms:(payload.ambientes||[]).map(r=>({name:String(r.nome||'Ambiente'),areaM2:Number(r.area_m2)||null,perimeterM:Number(r.perimetro_m)||null,confidence:geral})),
-    openings:(payload.vaos||[]).filter(v=>Number(v.quantidade)>0).map(v=>({kind:String(v.tipo||'Vão'),code:String(v.codigo||''),quantity:Math.max(1,Math.round(Number(v.quantidade)||1)),widthM:Number(v.largura_m)||null,heightM:Number(v.altura_m)||null,confidence:geral})),
+    walls:{totalLengthM:totalLength,averageHeightM:Number(payload.pe_direito_m)||null,grossAreaM2:Number(payload?.paredes?.area_bruta_m2)||null,thicknessesM:Array.isArray(payload?.paredes?.espessuras_m)?payload.paredes.espessuras_m.map(Number).filter(x=>x>0):[],confidence:paredesConf,basis:(payload?.paredes?.observacoes||[]).join('; '),segments},
+    rooms:(payload.ambientes||[]).map(r=>({name:String(r.nome||'Ambiente'),areaM2:Number(r.area_m2)||null,perimeterM:Number(r.perimetro_m)||null,confidence:geral,page:Number(r.pagina)||1})),
+    openings:(payload.vaos||[]).filter(v=>Number(v.quantidade)>0).map(v=>({kind:String(v.tipo||'Vão'),code:String(v.codigo||''),quantity:Math.max(1,Math.round(Number(v.quantidade)||1)),widthM:Number(v.largura_m)||null,heightM:Number(v.altura_m)||null,confidence:geral,page:Number(v.pagina)||1})),
     structure:{columnsQty:Number.isFinite(Number(payload?.estrutura?.pilares_quantidade))?Number(payload.estrutura.pilares_quantidade):null,beamsLengthM:Number(payload?.estrutura?.vigas_comprimento_m)||null,footingsQty:Number.isFinite(Number(payload?.estrutura?.sapatas_quantidade))?Number(payload.estrutura.sapatas_quantidade):null,slabAreaM2:Number(payload?.estrutura?.laje_area_m2)||null,confidence:geral,notes:Array.isArray(payload?.estrutura?.observacoes)?payload.estrutura.observacoes:[]},
     finishes:{ceramicFloorAreaM2:null,ceramicWallAreaM2:null,wetAreaM2:null},
     excluded:{dimensionLinesIgnored:true,textFurnitureIgnored:true,notes:['Resultado importado do ChatGPT pelo usuário']},
@@ -747,7 +765,7 @@ async function importChatGPTResult(file){
     state.aiRead=a;state.aiPages=[];state.aiStatus='imported';state.aiError='';state.chatGPTImported=true;
     applyAIRead(a);
     const importedWall=Number(a?.walls?.totalLengthM)||0,importedArea=Number(a?.areas?.builtAreaM2||a?.areas?.floorAreaM2)||0,importedH=Number(a?.walls?.averageHeightM)||0;
-    if(importedWall>0){state.autoWallLength=importedWall;state.autoWallFootprint=importedWall*brickFinishedThickness();state.autoWallConfidence=(Number(a?.walls?.confidence)||0)>=.8?'alta':(Number(a?.walls?.confidence)||0)>=.6?'média':'baixa'}
+    state.autoWallLength=importedWall>0?importedWall:0;state.autoWallFootprint=importedWall>0?importedWall*brickFinishedThickness():0;state.autoWallConfidence=(Number(a?.walls?.confidence)||0)>=.8?'alta':(Number(a?.walls?.confidence)||0)>=.6?'média':'baixa';
     if(importedArea>0)$('areaConstruida').value=importedArea.toFixed(2);
     if(importedH>=2&&importedH<=6){$('peDireito').value='custom';if($('peCustom'))$('peCustom').value=importedH.toFixed(2)}
     const importedRooms=(a.rooms||[]).filter(r=>Number(r.areaM2)>0).map(r=>({name:r.name||'Ambiente',area:Number(r.areaM2),perimeter:Number(r.perimeterM)||0,page:Number(r.page)||1,x:0,y:0}));if(importedRooms.length)state.rooms=dedupeRooms(importedRooms);
@@ -768,7 +786,7 @@ function renderAIRead(){
   const conf=Math.round((Number(a.meta?.overallConfidence)||0)*100),wl=Number(a.walls?.totalLengthM)||0,area=Number(a.areas?.builtAreaM2||a.areas?.floorAreaM2)||0;
   const reviewed=state.aiPages.some(x=>x.reviewed),imported=state.chatGPTImported;
   box.innerHTML='<div class="auto-item"><b>'+conf+'%</b><span>'+(imported?'Confiança informada pelo ChatGPT':'Confiança da IA')+(reviewed?' • dupla revisão':'')+'</span></div>'+
-    '<div class="auto-item"><b>'+(wl?fmt(wl)+' m':'—')+'</b><span>Paredes sem linhas de cota</span></div>'+
+    '<div class="auto-item"><b>'+(wl?fmt(wl)+' m':'Não medido')+'</b><span>Paredes sem linhas de cota</span></div>'+
     '<div class="auto-item"><b>'+(area?fmt(area)+' m²':'—')+'</b><span>Área reconhecida</span></div>'+
     '<div class="auto-item"><b>'+((a.rooms||[]).length)+'</b><span>Ambientes reconhecidos</span></div>'+
     '<div class="auto-item"><b>'+((a.openings||[]).reduce((s,o)=>s+(Number(o.quantity)||0),0))+'</b><span>Portas/janelas reconhecidas</span></div>'+
@@ -1243,7 +1261,18 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   $('addVao').onclick=()=>{state.openings.push({type:$('vaoTipo').value,qty:Math.max(1,num($('vaoQtd').value)),w:num($('vaoLarg').value),h:num($('vaoAlt').value)});renderOpenings();saveProject(false)};
   function renderOpenings(){$('vaoBody').innerHTML=state.openings.map((o,i)=>`<tr><td>${esc(o.type)}</td><td>${o.qty}</td><td>${fmt(o.w)}×${fmt(o.h)} m</td><td><button class="btn danger" onclick="window.delOpen(${i})">×</button></td></tr>`).join('')};window.delOpen=i=>{state.openings.splice(i,1);renderOpenings();saveProject(false)};
 
-  function updateReadout(){const areaRooms=num($('areaConstruida')&&$('areaConstruida').value)||state.floorAreas.reduce((s,r)=>s+r.area,0)||state.rooms.reduce((s,r)=>s+r.area,0),manualWallM=state.walls.reduce((s,w)=>s+w.length,0),wallM=manualWallM||state.autoWallLength||0;$('statEscala').textContent=state.pageScales[state.page]?'Calibrada':(state.pageDenominators[state.page]?`1:${state.pageDenominators[state.page]}`:(state.scaleDen?`1:${state.scaleDen}`:'—'));$('statAmb').textContent=state.rooms.length;$('statArea').textContent=fmt(areaRooms)+' m²';$('statWalls').textContent=state.walls.length?state.walls.length:(state.autoWallLength?'AUTO':'0');$('statWallM').textContent=fmt(wallM)+' m';if(state.metersPerPixel)$('scaleBox').textContent=state.scaleDen?`Escala lida do PDF: 1:${state.scaleDen}. Confirme se o arquivo foi plotado corretamente ou calibre por uma cota conhecida.`:'Escala calibrada manualmente.'}
+  function updateReadout(){
+  const areaRooms=num($('areaConstruida')&&$('areaConstruida').value)||state.floorAreas.reduce((s,r)=>s+r.area,0)||state.rooms.reduce((s,r)=>s+r.area,0);
+  const manualWallM=state.walls.reduce((s,w)=>s+w.length,0);
+  const importedSegCount=Array.isArray(state.aiRead?.walls?.segments)?state.aiRead.walls.segments.filter(s=>Number(s.lengthM)>0).length:0;
+  const wallM=manualWallM||state.autoWallLength||0,hasWallMeasurement=wallM>0;
+  $('statEscala').textContent=state.pageScales[state.page]?'Calibrada':(state.pageDenominators[state.page]?'1:'+state.pageDenominators[state.page]:(state.scaleDen?'1:'+state.scaleDen:'—'));
+  $('statAmb').textContent=state.rooms.length;
+  $('statArea').textContent=fmt(areaRooms)+' m²';
+  $('statWalls').textContent=state.walls.length?state.walls.length:(importedSegCount||(state.chatGPTImported&&!hasWallMeasurement?'—':(state.autoWallLength?'AUTO':'0')));
+  $('statWallM').textContent=hasWallMeasurement?fmt(wallM)+' m':(state.chatGPTImported?'Não medido':'0,00 m');
+  if(state.metersPerPixel)$('scaleBox').textContent=state.scaleDen?'Escala lida do PDF: 1:'+state.scaleDen+'. Confirme se o arquivo foi plotado corretamente ou calibre por uma cota conhecida.':'Escala calibrada manualmente.';
+}
 
   $('analisarBtn').onclick=async()=>{if(!state.pdf&&!state.image){alert('Selecione um PDF ou imagem primeiro.');return}await renderPage();renderRooms();renderWalls();renderOpenings();renderAutoRead();renderScopeStatus();showView('planta')};
   $('salvarBtn').onclick=()=>{saveProject();alert('Projeto salvo neste dispositivo.')};
@@ -1253,6 +1282,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     for(const el of document.querySelectorAll('input[type=number]'))if(el.value!==''&&(!Number.isFinite(Number(el.value))||Number(el.value)<0)){alert('Revise os valores numéricos: não são aceitos valores negativos ou inválidos.');el.focus();return}
     const manualLength=state.walls.reduce((s,w)=>s+w.length,0),manualGross=state.walls.reduce((s,w)=>s+w.length*w.height,0),override=num($('wallLengthOverride').value),manualMode=$('wallManualMode')?$('wallManualMode').value:'add',localAutoLength=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0),autoLength=state.chatGPTImported?localAutoLength:0;
     if(!state.chatGPTImported&&override<=0&&manualLength<=0){alert('Para evitar que linhas de cota sejam tratadas como paredes, importe primeiro o resultado do ChatGPT pelo botão 2 ou informe/marque as paredes manualmente.');showView('novo');return}
+    if(state.chatGPTImported&&autoLength<=0&&override<=0&&manualLength<=0){alert('A análise importada reconheceu a planta, mas não trouxe um comprimento de paredes confiável. O LANG não vai tratar isso como zero. Gere uma nova análise com os segmentos de parede ou informe/marque as paredes manualmente.');showView('novo');return}
     let wallLength=0,wallSource='Sem geometria',gross=0;
     if(override>0){wallLength=override;gross=override*height();wallSource='Comprimento total ajustado pelo usuário'}
     else if(manualMode==='replace'&&manualLength>0){wallLength=manualLength;gross=manualGross;wallSource='Paredes manuais substituindo a leitura automática'}
