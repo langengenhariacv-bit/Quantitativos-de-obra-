@@ -2,6 +2,20 @@ const {getVercelOidcToken}=require('@vercel/oidc');
 const MODEL_PROD='openai/gpt-5.6-sol';
 const MODEL_TEST='openai/gpt-5.6-luna';
 const GATEWAY='https://ai-gateway.vercel.sh/v1/chat/completions';
+const rateStore=globalThis.__LANG_AI_RATE_STORE||(globalThis.__LANG_AI_RATE_STORE=new Map());
+function sameOrigin(req){
+  const origin=String(req.headers?.origin||'').trim(),host=String(req.headers?.host||'').trim();
+  if(!origin||!host)return false;
+  try{return new URL(origin).host===host}catch{return false}
+}
+function takeRate(req){
+  const raw=String(req.headers?.['x-forwarded-for']||req.headers?.['x-real-ip']||'unknown');
+  const ip=raw.split(',')[0].trim().slice(0,120),now=Date.now(),windowMs=10*60*1000,limit=30;
+  let row=rateStore.get(ip);if(!row||now-row.start>=windowMs)row={start:now,count:0};
+  row.count++;rateStore.set(ip,row);
+  if(rateStore.size>2000)for(const [k,v] of rateStore)if(now-v.start>=windowMs)rateStore.delete(k);
+  return row.count<=limit;
+}
 
 const nnullable={anyOf:[{type:'number'},{type:'null'}]};
 const schema={
@@ -110,6 +124,8 @@ module.exports=async(req,res)=>{
     return res.status(200).json({ok:true,service:'LANG multimodal plan reader',model:MODEL_PROD,auth:Boolean(process.env.AI_GATEWAY_API_KEY)||oidc,authType:process.env.AI_GATEWAY_API_KEY?'api-key':oidc?'oidc':'none'});
   }
   if(req.method!=='POST')return res.status(405).json({error:'Use POST.'});
+  if(!sameOrigin(req))return res.status(403).json({ok:false,error:'Origem não autorizada.'});
+  if(!takeRate(req))return res.status(429).json({ok:false,error:'Limite temporário de análises atingido. Tente novamente mais tarde.'});
   try{
     const body=typeof req.body==='string'?JSON.parse(req.body):req.body||{};
     if((body.imageData&&String(body.imageData).length>7_000_000))return res.status(413).json({error:'Imagem muito grande. Reduza a resolução.'});
