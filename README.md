@@ -31,6 +31,8 @@ Aplicativo de levantamento preliminar e conferência de quantitativos de constru
 - v4.6: saída da IA usa JSON Schema rígido para área, paredes, ambientes, vãos, estrutura, acabamentos, confiança, base da medição e avisos. Dados sem evidência devem retornar `null`, não um valor inventado.
 - v4.6: o algoritmo geométrico local permanece como conferência e fallback. Divergências relevantes podem disparar uma segunda leitura no modelo de produção.
 - v4.6: falha em uma página não invalida as páginas já lidas; falha do serviço de IA mantém automaticamente a leitura geométrica local.
+- v4.7: modo gratuito sem API paga: botão **1. Preparar para análise no ChatGPT** compartilha a planta (quando o navegador permite) e copia o prompt padronizado; botão **2. Importar resultado do ChatGPT** recebe `ANALISE_LANG.json` e aplica paredes, áreas, ambientes, vãos e estrutura ao quantitativo.
+- v4.7: o upload não chama mais o AI Gateway automaticamente. Sem `ANALISE_LANG.json`, a leitura geométrica local é apenas auxiliar e não pode assumir silenciosamente o comprimento de paredes no cálculo.
 
 ## Alcance e limitações
 
