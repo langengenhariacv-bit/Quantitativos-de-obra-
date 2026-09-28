@@ -908,7 +908,7 @@ Depois de gerar o arquivo, diga apenas que ele está pronto para ser importado n
 }
 function setChatGPTFlowStatus(msg){if($('chatGPTFlowStatus'))$('chatGPTFlowStatus').textContent=msg}
 async function prepareForChatGPT(){
-  if(!state.sourceFile){alert('Selecione novamente o PDF ou a imagem da planta antes de preparar a análise.');return}
+  if(!state.sourceFile){alert('Selecione novamente o arquivo da planta antes de preparar a análise.');return}if(state.sourceType==='cad'){alert('DXF/DWG já são lidos diretamente pelo LANG. Use o ChatGPT apenas se quiser uma conferência adicional do projeto em PDF.');return}
   const prompt=chatGPTAnalysisPrompt();
   try{if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(prompt)}catch{}
   try{
@@ -1424,10 +1424,11 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   function drawAutoWallMask(){
     const c=$('autoWallCanvas');if(!c||!state.viewport)return;const src=state.autoWallMasks[state.page];c.width=state.viewport.width;c.height=state.viewport.height;c.style.width=state.viewport.width+'px';c.style.height=state.viewport.height+'px';const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);if(src)ctx.drawImage(src,0,0,c.width,c.height);
   }
-  function renderAutoRead(){if(!$('autoReadSummary'))return;const autoLen=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0);const floor=num($('areaConstruida').value)||state.floorAreas.reduce((s,x)=>s+x.area,0);const openQty=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty,0);$('autoReadSummary').innerHTML=`<div class="auto-item"><b>${floor?fmt(floor)+' m²':'—'}</b><span>Área construída identificada</span></div><div class="auto-item"><b>${autoLen?fmt(autoLen)+' m':'—'}</b><span>Comprimento de paredes reconhecido</span></div><div class="auto-item"><b>${openQty||0}</b><span>Portas + janelas lidas</span></div><div class="auto-item"><b>${num($('unidades')&&$('unidades').value)||projectContext().units}</b><span>Unidades residenciais consideradas</span></div><div class="auto-item"><b>${state.autoWallConfidence||'—'}</b><span>Confiança automática</span></div><div class="auto-item"><b>${state.autoWallDiagnostics.accepted??'—'}</b><span>Trechos estruturais aceitos</span></div><div class="auto-item"><b>${state.autoWallDiagnostics.uncertain??'—'}</b><span>Trechos em amarelo para conferir</span></div><div class="auto-item"><b>${esc(state.autoWallMethod||'—')}</b><span>Método de leitura de paredes</span></div><div class="auto-item"><b>${state.autoWallLayers.length?state.autoWallLayers.map(esc).join(', '):'—'}</b><span>Camadas usadas</span></div>`;}
+  function renderAutoRead(){if(!$('autoReadSummary'))return;const autoLen=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0);const floor=num($('areaConstruida').value)||state.floorAreas.reduce((s,x)=>s+x.area,0)||state.rooms.reduce((s,x)=>s+(Number(x.area)||0),0);const openQty=state.openings.filter(o=>o.source==='PDF'||o.source==='CAD').reduce((s,o)=>s+o.qty,0);$('autoReadSummary').innerHTML=`<div class="auto-item"><b>${floor?fmt(floor)+' m²':'—'}</b><span>Área construída identificada</span></div><div class="auto-item"><b>${autoLen?fmt(autoLen)+' m':'—'}</b><span>Comprimento de paredes reconhecido</span></div><div class="auto-item"><b>${openQty||0}</b><span>Portas + janelas lidas</span></div><div class="auto-item"><b>${num($('unidades')&&$('unidades').value)||projectContext().units}</b><span>Unidades residenciais consideradas</span></div><div class="auto-item"><b>${state.autoWallConfidence||'—'}</b><span>Confiança automática</span></div><div class="auto-item"><b>${state.autoWallDiagnostics.accepted??'—'}</b><span>Trechos estruturais aceitos</span></div><div class="auto-item"><b>${state.autoWallDiagnostics.uncertain??'—'}</b><span>Trechos em amarelo para conferir</span></div><div class="auto-item"><b>${esc(state.autoWallMethod||'—')}</b><span>Método de leitura de paredes</span></div><div class="auto-item"><b>${state.autoWallLayers.length?state.autoWallLayers.map(esc).join(', '):'—'}</b><span>Camadas usadas</span></div>`;}
 
 
   async function renderPage(){
+    if(state.sourceType==='cad'&&state.cadData){renderCadPage();return}
     if(!state.pdf&&!state.image)return;
     const canvas=$('pdfCanvas'),ctx=canvas.getContext('2d');let viewport,scale=1;
     if(state.pdf){
@@ -1442,7 +1443,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     drawAutoWallMask();$('pageLabel').textContent=state.page+' / '+state.pages;drawOverlay();updateReadout();
   }
   $('prevPage').onclick=async()=>{if(state.page>1){state.page--;await renderPage()}};$('nextPage').onclick=async()=>{if(state.page<state.pages){state.page++;await renderPage()}};
-  $('relerAutoBtn').onclick=async()=>{if(!state.pdf&&!state.image){alert('Recarregue a planta primeiro.');return}const b=$('relerAutoBtn');b.disabled=true;b.textContent='Analisando...';try{await estimateWallsFromPdf();await renderPage();saveProject(false)}catch(e){alert('Falha na leitura: '+e.message)}finally{b.disabled=false;b.textContent='Refazer leitura automática'}};
+  $('relerAutoBtn').onclick=async()=>{if(!state.pdf&&!state.image&&!state.cadData){alert('Recarregue a planta primeiro.');return}const b=$('relerAutoBtn');b.disabled=true;b.textContent='Analisando...';try{if(state.sourceType==='cad')analyzeCadData();else await estimateWallsFromPdf();await renderPage();saveProject(false)}catch(e){alert('Falha na leitura: '+e.message)}finally{b.disabled=false;b.textContent='Refazer leitura automática'}};
 
   function setMode(m){state.mode=m;state.tempPts=[];$('overlay').classList.toggle('active',!!m);$('scaleBox').textContent=m==='cal'?'Clique em dois pontos de uma dimensão conhecida.':m==='wall'?'Clique no início e no fim da parede.':'Ferramenta cancelada.';drawOverlay()}
   $('calibrarBtn').onclick=()=>setMode('cal');$('paredeBtn').onclick=()=>setMode('wall');$('cancelMode').onclick=()=>setMode(null);
@@ -1462,7 +1463,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   const manualWallM=state.walls.reduce((s,w)=>s+w.length,0);
   const importedSegCount=Array.isArray(state.aiRead?.walls?.segments)?state.aiRead.walls.segments.filter(s=>Number(s.lengthM)>0).length:0;
   const wallM=manualWallM||state.autoWallLength||0,hasWallMeasurement=wallM>0;
-  $('statEscala').textContent=state.pageScales[state.page]?'Calibrada':(state.pageDenominators[state.page]?'1:'+state.pageDenominators[state.page]:(state.scaleDen?'1:'+state.scaleDen:'—'));
+  $('statEscala').textContent=state.sourceType==='cad'?(state.cadData?.unitsLabel||'CAD 1:1'):(state.pageScales[state.page]?'Calibrada':(state.pageDenominators[state.page]?'1:'+state.pageDenominators[state.page]:(state.scaleDen?'1:'+state.scaleDen:'—')));
   $('statAmb').textContent=state.rooms.length;
   $('statArea').textContent=fmt(areaRooms)+' m²';
   $('statWalls').textContent=state.walls.length?state.walls.length:(importedSegCount||(state.chatGPTImported&&!hasWallMeasurement?'—':(state.autoWallLength?'AUTO':'0')));
@@ -1470,15 +1471,15 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   if(state.metersPerPixel)$('scaleBox').textContent=state.scaleDen?'Escala lida do PDF: 1:'+state.scaleDen+'. Confirme se o arquivo foi plotado corretamente ou calibre por uma cota conhecida.':'Escala calibrada manualmente.';
 }
 
-  $('analisarBtn').onclick=async()=>{if(!state.pdf&&!state.image){alert('Selecione um PDF ou imagem primeiro.');return}await renderPage();renderRooms();renderWalls();renderOpenings();renderAutoRead();renderScopeStatus();showView('planta')};
+  $('analisarBtn').onclick=async()=>{if(!state.pdf&&!state.image&&!state.cadData){alert('Selecione um PDF, DXF ou DWG primeiro.');return}await renderPage();renderRooms();renderWalls();renderOpenings();renderAutoRead();renderScopeStatus();showView('planta')};
   $('salvarBtn').onclick=()=>{saveProject();alert('Projeto salvo neste dispositivo.')};
   $('calcularBtn').onclick=()=>{calculate();showView('quant')};
 
   function calculate(){
     for(const el of document.querySelectorAll('input[type=number]'))if(el.value!==''&&(!Number.isFinite(Number(el.value))||Number(el.value)<0)){alert('Revise os valores numéricos: não são aceitos valores negativos ou inválidos.');el.focus();return}
-    const manualLength=state.walls.reduce((s,w)=>s+w.length,0),manualGross=state.walls.reduce((s,w)=>s+w.length*w.height,0),override=num($('wallLengthOverride').value),manualMode=$('wallManualMode')?$('wallManualMode').value:'add',localAutoLength=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0),autoLength=state.chatGPTImported?localAutoLength:0;
-    if(!state.chatGPTImported&&override<=0&&manualLength<=0){alert('Para evitar que linhas de cota sejam tratadas como paredes, importe primeiro o resultado do ChatGPT pelo botão 2 ou informe/marque as paredes manualmente.');showView('novo');return}
-    if(state.chatGPTImported&&autoLength<=0&&override<=0&&manualLength<=0){alert('A análise importada reconheceu a planta, mas não trouxe um comprimento de paredes confiável. O LANG não vai tratar isso como zero. Gere uma nova análise com os segmentos de parede ou informe/marque as paredes manualmente.');showView('novo');return}
+    const manualLength=state.walls.reduce((s,w)=>s+w.length,0),manualGross=state.walls.reduce((s,w)=>s+w.length*w.height,0),override=num($('wallLengthOverride').value),manualMode=$('wallManualMode')?$('wallManualMode').value:'add',localAutoLength=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0),autoLength=(state.chatGPTImported||state.sourceType==='cad')?localAutoLength:0;
+    if(!state.chatGPTImported&&state.sourceType!=='cad'&&override<=0&&manualLength<=0){alert('Para evitar que linhas de cota sejam tratadas como paredes, importe primeiro o resultado do ChatGPT pelo botão 2 ou informe/marque as paredes manualmente.');showView('novo');return}
+    if((state.chatGPTImported||state.sourceType==='cad')&&autoLength<=0&&override<=0&&manualLength<=0){alert(state.sourceType==='cad'?'O CAD foi aberto, mas nenhuma parede pôde ser reconhecida com segurança. Confira os layers ou marque/informe as paredes manualmente.':'A análise importada reconheceu a planta, mas não trouxe um comprimento de paredes confiável. O LANG não vai tratar isso como zero. Gere uma nova análise com os segmentos de parede ou informe/marque as paredes manualmente.');showView('novo');return}
     let wallLength=0,wallSource='Sem geometria',gross=0;
     if(override>0){wallLength=override;gross=override*height();wallSource='Comprimento total ajustado pelo usuário'}
     else if(manualMode==='replace'&&manualLength>0){wallLength=manualLength;gross=manualGross;wallSource='Paredes manuais substituindo a leitura automática'}
@@ -1591,7 +1592,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     const x=projectContext(),statuses=Object.values(state.scopeStatus||{}),applicable=statuses.filter(s=>s.kind!=='na'),direct=applicable.filter(s=>s.kind==='direct'||s.kind==='covered').length,estimated=applicable.filter(s=>s.kind==='estimate').length,low=applicable.filter(s=>s.kind==='estimate'&&s.confidence==='baixa').length;
     let points=0,count=0;for(const s of applicable){count++;if(s.kind==='direct'||s.kind==='covered')points+=1;else if(s.kind==='estimate')points+=s.confidence==='alta'?.9:s.confidence==='média'?.72:.45;else points+=.25}
     let score=count?points/count*100:0;const issues=[];
-    if(!state.scaleDen&&!state.metersPerPixel&&!(state.chatGPTImported&&state.autoWallLength>0)){score-=12;issues.push('Escala não confirmada: calibre por dois pontos antes do quantitativo executivo.')}
+    if(state.sourceType!=='cad'&&!state.scaleDen&&!state.metersPerPixel&&!(state.chatGPTImported&&state.autoWallLength>0)){score-=12;issues.push('Escala não confirmada: calibre por dois pontos antes do quantitativo executivo.')}
     if(state.openings.reduce((n,o)=>n+o.qty*o.w*o.h,0)>(state.metrics?.gross||0)&&state.metrics?.gross)issues.push('Área de vãos maior que a área bruta de paredes: confira dimensões e duplicidades.');
     if(!state.autoWallLength&&!state.walls.length&&!num($('wallLengthOverride').value)){score-=18;issues.push('Paredes sem geometria confirmada.')}
     else if(state.autoWallMethod&&/Leitura raster preliminar/i.test(state.autoWallMethod)){/* motor raster validado nesta planta; não penalizar automaticamente */}
