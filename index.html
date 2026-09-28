@@ -54,7 +54,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
     <main>
       <section id="view-novo" class="view active">
-        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF ou imagem e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">v4.6 • filtro de cotas + estrutura paramétrica</span></div>
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF ou imagem e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">v4.7 • filtro de cotas + estrutura paramétrica</span></div>
         <div class="card">
           <h2>Dados da obra</h2>
           <div class="grid g3">
@@ -69,6 +69,16 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
             <strong>Selecione o arquivo da planta</strong><br><span class="hint">Aceita PDF, JPG/JPEG, PNG e WebP. No PDF, o app também tenta extrair escala, áreas, ambientes e esquadrias. Em imagens, a leitura das paredes funciona por pixels e a escala precisa ser calibrada por uma medida conhecida.</span>
             <br><input id="pdfInput" type="file" accept="application/pdf,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
             <div id="pdfInfo" class="hint" style="margin-top:10px">Nenhum arquivo carregado.</div>
+            <div class="notice" style="margin-top:14px">
+              <b>Análise com seu ChatGPT — sem API paga</b>
+              <p class="hint" style="margin:7px 0 10px">1. Envie a mesma planta ao ChatGPT com o pedido preparado pelo LANG. 2. Importe aqui o arquivo <b>ANALISE_LANG.json</b> devolvido pelo ChatGPT.</p>
+              <div class="actions">
+                <button class="btn primary" id="prepareChatGPTBtn">1. Preparar para análise no ChatGPT</button>
+                <button class="btn secondary" id="importChatGPTResultBtn">2. Importar resultado do ChatGPT</button>
+                <input id="chatGPTResultInput" type="file" accept="application/json,.json" style="display:none">
+              </div>
+              <div id="chatGPTFlowStatus" class="hint" style="margin-top:10px">Carregue a planta primeiro.</div>
+            </div>
           </div>
         </div>
         <div class="card">
@@ -164,7 +174,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
           </div>
           <div class="sidepanel">
             <div class="card"><h2>Leitura encontrada</h2><div class="stats"><div class="stat"><b id="statEscala">—</b><span>Escala</span></div><div class="stat"><b id="statAmb">0</b><span>Ambientes</span></div><div class="stat"><b id="statArea">0</b><span>Área lida</span></div><div class="stat"><b id="statWalls">0</b><span>Paredes</span></div><div class="stat"><b id="statWallM">0</b><span>Metros de parede</span></div></div></div>
-            <div class="card" id="aiReadCard"><h2>Leitura multimodal por IA</h2><div id="aiReadSummary" class="auto-summary"><div class="auto-item"><b>—</b><span>Aguardando upload</span></div></div><p class="source-note">O GPT‑5.6 Sol interpreta a prancha e separa paredes reais de cotas, textos, mobiliário e eixos. O algoritmo geométrico local continua como conferência e fallback.</p></div>
+            <div class="card" id="aiReadCard"><h2>Análise importada do ChatGPT</h2><div id="aiReadSummary" class="auto-summary"><div class="auto-item"><b>—</b><span>Aguardando upload</span></div></div><p class="source-note">O resultado usado no quantitativo vem do arquivo ANALISE_LANG.json gerado no seu ChatGPT. A leitura geométrica local fica apenas como apoio e não substitui silenciosamente a análise importada.</p></div>
             <div class="card"><h2>Leitura automática do PDF</h2><div id="autoReadSummary" class="auto-summary"><div class="auto-item"><b>—</b><span>Aguardando análise</span></div></div>
               <div class="field" style="margin-top:12px"><label>Ajuste opcional — comprimento total de paredes (m)</label><input id="wallLengthOverride" type="number" min="0" step="0.01" placeholder="Deixe vazio para usar a leitura automática"></div>
               <div class="field" style="margin-top:10px"><label>Como tratar paredes marcadas manualmente</label><select id="wallManualMode"><option value="add" selected>Somar como correções à leitura automática</option><option value="replace">Substituir toda a leitura automática</option></select></div>
@@ -292,7 +302,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
     ['q_elevador','Elevadores','un.','25. Transporte vertical','elevador',false],['q_limpeza','Limpeza pós-obra','m²','26. Serviços finais','limpezaFinal',false]
   ];
   const defaultScope=new Set(componentCatalog.flatMap(g=>g.items.map(i=>i[0])));
-  const state={pdf:null,image:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],pageScales:{},pageDenominators:{},confirmed:false,autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],autoWallDiagnostics:{},autoWallGeometry:{},aiRead:null,aiPages:[],aiStatus:'',aiError:'',materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
+  const state={pdf:null,image:null,sourceFile:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],pageScales:{},pageDenominators:{},confirmed:false,autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],autoWallDiagnostics:{},autoWallGeometry:{},aiRead:null,aiPages:[],aiStatus:'',aiError:'',chatGPTImported:false,materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
   let autosaveTimer;
 
   function fmt(n,d=2){return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})}
@@ -624,9 +634,9 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
   $('basicScope').onclick=()=>{const optional=new Set(['solarFV','solarTermico','inversor','elevador','plataforma','pocoElev','piscina','spdaCap','spdaDesc','spdaTerra','spdaConex','sprinklers','hidrantes','reservaInc','automacao','cftv','alarme','dutos','marcenaria','deck']);state.scope=new Set([...defaultScope].filter(x=>!optional.has(x)));renderScope();renderScopeStatus();saveProject(false)};
 
   $('pdfInput').addEventListener('change',async e=>{
-  const file=e.target.files[0];if(!file)return; if(file.size>60*1024*1024){alert('Use um arquivo com até 60 MB.');return} e.target.disabled=true; try{ const prior=state.pdfName===file.name?{walls:state.walls,rooms:state.rooms.filter(r=>r.source==='manual'),openings:state.openings.filter(o=>o.source!=='PDF'),scales:state.pageScales,confirmed:state.confirmed}:null; const pdfFile=/\.pdf$/i.test(file.name)||file.type==='application/pdf';let preparedPdf=null,preparedImage=null;if(pdfFile){await ensurePDF();preparedPdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise}else if(/^image\/(jpeg|png|webp)$/i.test(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name)){preparedImage=await loadPlanImage(file)}else{alert('Use PDF, JPG, PNG ou WebP.');return}
+  const file=e.target.files[0];if(!file)return; if(file.size>60*1024*1024){alert('Use um arquivo com até 60 MB.');return} state.sourceFile=file; e.target.disabled=true; try{ const prior=state.pdfName===file.name?{walls:state.walls,rooms:state.rooms.filter(r=>r.source==='manual'),openings:state.openings.filter(o=>o.source!=='PDF'),scales:state.pageScales,confirmed:state.confirmed}:null; const pdfFile=/\.pdf$/i.test(file.name)||file.type==='application/pdf';let preparedPdf=null,preparedImage=null;if(pdfFile){await ensurePDF();preparedPdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise}else if(/^image\/(jpeg|png|webp)$/i.test(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name)){preparedImage=await loadPlanImage(file)}else{alert('Use PDF, JPG, PNG ou WebP.');return}
   state.pageScales={};state.pageDenominators={};state.confirmed=false;state.openingDefinitions=[];state.scopeStatus={};state.pdf=null;state.image=null;state.viewport=null;state.pdfName=file.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;
-  if(!prior){for(const id of ['areaConstruida','areaPisoManual','areaFachadaManual','perimetroRodape','wallLengthOverride'])if($(id))$(id).value='';}state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];state.autoWallDiagnostics={};state.autoWallGeometry={};state.aiRead=null;state.aiPages=[];state.aiStatus='';state.aiError='';state.floorAreas=[];state.pdfText='';state.pageTexts=[];state.page=1;state.metersPerPixel=null;state.scaleDen=null;
+  if(!prior){for(const id of ['areaConstruida','areaPisoManual','areaFachadaManual','perimetroRodape','wallLengthOverride'])if($(id))$(id).value='';}state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];state.autoWallDiagnostics={};state.autoWallGeometry={};state.aiRead=null;state.aiPages=[];state.aiStatus='';state.aiError='';state.chatGPTImported=false;state.floorAreas=[];state.pdfText='';state.pageTexts=[];state.page=1;state.metersPerPixel=null;state.scaleDen=null;
   const isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
   const isImage=/^image\/(jpeg|png|webp)$/i.test(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name);
   if(isPdf){
@@ -638,18 +648,119 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
     $('pdfInfo').textContent=file.name+' • imagem carregada • calibre a escala por uma cota conhecida';await renderPage();await estimateWallsFromPdf();
   }else{alert('Formato não suportado. Use PDF, JPG/JPEG, PNG ou WebP.');return}
   if(prior){state.walls=prior.walls;state.rooms.push(...prior.rooms);state.openings.push(...prior.openings);state.pageScales=prior.scales||{};state.confirmed=prior.confirmed;state.metersPerPixel=state.pageScales[1]||state.metersPerPixel;await estimateWallsFromPdf();await renderPage()}
-  await runAIPlanAnalysis();renderRooms();renderWalls();renderOpenings();renderAutoRead();renderAIRead();renderMaterials();saveProject(false);
+  state.aiStatus='waiting';state.aiError='';if($('autoWallCanvas'))$('autoWallCanvas').style.display='none';if($('chatGPTFlowStatus'))$('chatGPTFlowStatus').textContent='Planta carregada. Toque em “1. Preparar para análise no ChatGPT”.';renderRooms();renderWalls();renderOpenings();renderAutoRead();renderAIRead();renderMaterials();saveProject(false);
 }catch(err){$('pdfInfo').textContent='Falha ao abrir: '+err.message;alert($('pdfInfo').textContent)}finally{e.target.disabled=false;e.target.value=''}
 });
 function loadPlanImage(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(url);resolve(img)};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Falha ao abrir imagem'))};img.src=url})}
+
+function chatGPTAnalysisPrompt(){
+  const name=state.pdfName||state.sourceFile?.name||'planta';
+  return `Analise o arquivo anexado para o aplicativo LANG Quantitativos.
+
+OBJETIVO: extrair somente dados construtivos sustentados pela planta. Não confunda linhas de cota, linhas auxiliares, eixos, chamadas, setas, hachuras, mobiliário, louças, textos, carimbos ou molduras com paredes. Números de cota podem ser usados como medida, mas a linha gráfica da cota nunca deve entrar no comprimento de paredes. Não invente dimensões. Quando não houver evidência suficiente, use null.
+
+Arquivo esperado: ${name}
+
+Ao terminar, gere para download um arquivo chamado ANALISE_LANG.json, em JSON válido, exatamente com esta estrutura:
+{
+  "format":"LANG-ANALISE-CHATGPT",
+  "version":1,
+  "arquivo":"${name}",
+  "area_construida_m2":null,
+  "pe_direito_m":null,
+  "paredes":{
+    "comprimento_total_m":null,
+    "area_bruta_m2":null,
+    "espessuras_m":[],
+    "observacoes":[]
+  },
+  "ambientes":[
+    {"nome":"","area_m2":null,"perimetro_m":null,"pagina":1}
+  ],
+  "vaos":[
+    {"tipo":"Porta ou Janela","codigo":"","quantidade":1,"largura_m":null,"altura_m":null,"pagina":1}
+  ],
+  "estrutura":{
+    "sapatas_quantidade":null,
+    "vigas_comprimento_m":null,
+    "pilares_quantidade":null,
+    "laje_area_m2":null,
+    "observacoes":[]
+  },
+  "confianca":{
+    "geral":0.0,
+    "paredes":0.0
+  },
+  "avisos":[]
+}
+
+Regras:
+- comprimento_total_m = soma dos comprimentos reais/eixos das paredes, sem contar as duas faces da mesma parede;
+- não transformar encontro de paredes automaticamente em pilar;
+- pilares, vigas e sapatas só devem ser informados se identificáveis ou se houver base explícita na planta;
+- portas e janelas devem ser agrupadas quando forem iguais;
+- a confiança deve variar de 0 a 1;
+- mantenha null para qualquer medida não sustentada pelo desenho;
+- não calcule aço, concreto, blocos ou materiais: o LANG fará essa etapa.
+Depois de gerar o arquivo, diga apenas que ele está pronto para ser importado no LANG.`;
+}
+function setChatGPTFlowStatus(msg){if($('chatGPTFlowStatus'))$('chatGPTFlowStatus').textContent=msg}
+async function prepareForChatGPT(){
+  if(!state.sourceFile){alert('Selecione novamente o PDF ou a imagem da planta antes de preparar a análise.');return}
+  const prompt=chatGPTAnalysisPrompt();
+  try{if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(prompt)}catch{}
+  try{
+    if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[state.sourceFile]}))){
+      setChatGPTFlowStatus('Abrindo o compartilhamento. Escolha o ChatGPT e envie o arquivo com o texto preparado.');
+      await navigator.share({title:'Analisar planta para LANG Quantitativos',text:prompt,files:[state.sourceFile]});
+      setChatGPTFlowStatus('Planta compartilhada. No ChatGPT, aguarde o arquivo ANALISE_LANG.json e depois volte ao LANG para importar.');
+      return;
+    }
+  }catch(err){if(err?.name==='AbortError'){setChatGPTFlowStatus('Compartilhamento cancelado. O pedido continua copiado para a área de transferência.');return}}
+  const blob=new Blob([prompt],{type:'text/plain;charset=utf-8'}),a=document.createElement('a'),url=URL.createObjectURL(blob);
+  a.href=url;a.download='PEDIDO_ANALISE_LANG.txt';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  setChatGPTFlowStatus('Pedido copiado e salvo. Abra o ChatGPT, anexe a mesma planta e cole o texto. Depois importe ANALISE_LANG.json.');
+  alert('O pedido foi copiado para a área de transferência. Abra o ChatGPT, anexe esta mesma planta e cole o pedido. Depois volte ao LANG e use o botão 2.');
+}
+function langResultToAI(payload){
+  if(payload?.extraction?.meta&&payload?.extraction?.walls)return payload.extraction;
+  if(payload?.meta&&payload?.walls&&payload?.areas)return payload;
+  if(payload?.format!=='LANG-ANALISE-CHATGPT')throw new Error('O arquivo não foi reconhecido como ANALISE_LANG.json.');
+  const cg=Number(payload?.confianca?.geral),cw=Number(payload?.confianca?.paredes);
+  const geral=Number.isFinite(cg)?Math.max(0,Math.min(1,cg)):0.65;
+  const paredes=Number.isFinite(cw)?Math.max(0,Math.min(1,cw)):geral;
+  return{
+    meta:{page:1,drawingType:'Planta importada do ChatGPT',isFloorPlan:true,level:'',scaleDenominator:null,overallConfidence:geral,measurementBasis:'Análise visual no ChatGPT'},
+    areas:{builtAreaM2:Number(payload.area_construida_m2)||null,floorAreaM2:Number(payload.area_construida_m2)||null,roofAreaM2:null,slabAreaM2:Number(payload?.estrutura?.laje_area_m2)||null},
+    walls:{totalLengthM:Number(payload?.paredes?.comprimento_total_m)||null,averageHeightM:Number(payload.pe_direito_m)||null,grossAreaM2:Number(payload?.paredes?.area_bruta_m2)||null,thicknessesM:Array.isArray(payload?.paredes?.espessuras_m)?payload.paredes.espessuras_m.map(Number).filter(x=>x>0):[],confidence:paredes,basis:(payload?.paredes?.observacoes||[]).join('; '),segments:[]},
+    rooms:(payload.ambientes||[]).map(r=>({name:String(r.nome||'Ambiente'),areaM2:Number(r.area_m2)||null,perimeterM:Number(r.perimetro_m)||null,confidence:geral})),
+    openings:(payload.vaos||[]).filter(v=>Number(v.quantidade)>0).map(v=>({kind:String(v.tipo||'Vão'),code:String(v.codigo||''),quantity:Math.max(1,Math.round(Number(v.quantidade)||1)),widthM:Number(v.largura_m)||null,heightM:Number(v.altura_m)||null,confidence:geral})),
+    structure:{columnsQty:Number.isFinite(Number(payload?.estrutura?.pilares_quantidade))?Number(payload.estrutura.pilares_quantidade):null,beamsLengthM:Number(payload?.estrutura?.vigas_comprimento_m)||null,footingsQty:Number.isFinite(Number(payload?.estrutura?.sapatas_quantidade))?Number(payload.estrutura.sapatas_quantidade):null,slabAreaM2:Number(payload?.estrutura?.laje_area_m2)||null,confidence:geral,notes:Array.isArray(payload?.estrutura?.observacoes)?payload.estrutura.observacoes:[]},
+    finishes:{ceramicFloorAreaM2:null,ceramicWallAreaM2:null,wetAreaM2:null},
+    excluded:{dimensionLinesIgnored:true,textFurnitureIgnored:true,notes:['Resultado importado do ChatGPT pelo usuário']},
+    warnings:Array.isArray(payload.avisos)?payload.avisos:[]
+  };
+}
+async function importChatGPTResult(file){
+  try{
+    const payload=JSON.parse(await file.text()),a=langResultToAI(payload);
+    state.aiRead=a;state.aiPages=[];state.aiStatus='imported';state.aiError='';state.chatGPTImported=true;
+    applyAIRead(a);
+    state.autoWallMethod='Análise importada do ChatGPT';
+    if($('autoWallCanvas'))$('autoWallCanvas').style.display='none';
+    renderRooms();renderOpenings();renderAutoRead();renderAIRead();updateStats();saveProject(false);
+    setChatGPTFlowStatus('Resultado importado com sucesso. O LANG agora usará a análise do ChatGPT no quantitativo.');
+    alert('Análise do ChatGPT importada com sucesso. Agora você pode conferir a planta e calcular os materiais.');
+  }catch(err){alert('Não foi possível importar a análise: '+(err?.message||err));setChatGPTFlowStatus('Falha ao importar. Selecione o arquivo ANALISE_LANG.json gerado pelo ChatGPT.')}
+}
 function renderAIRead(){
   const box=$('aiReadSummary');if(!box)return;
   if(state.aiStatus==='loading'){box.innerHTML='<div class="auto-item"><b>Analisando…</b><span>'+esc(state.aiError||'GPT‑5.6 Sol está lendo a planta')+'</span></div>';return}
-  if(state.aiError&&!state.aiRead){box.innerHTML='<div class="auto-item"><b>Fallback local</b><span>'+esc(state.aiError)+'</span></div>';return}
-  const a=state.aiRead;if(!a){box.innerHTML='<div class="auto-item"><b>—</b><span>Aguardando upload</span></div>';return}
+  if(state.aiError&&!state.aiRead){box.innerHTML='<div class="auto-item"><b>Sem análise importada</b><span>'+esc(state.aiError)+'</span></div>';return}
+  const a=state.aiRead;if(!a){box.innerHTML='<div class="auto-item"><b>—</b><span>Aguardando ANALISE_LANG.json</span></div>';return}
   const conf=Math.round((Number(a.meta?.overallConfidence)||0)*100),wl=Number(a.walls?.totalLengthM)||0,area=Number(a.areas?.builtAreaM2||a.areas?.floorAreaM2)||0;
-  const reviewed=state.aiPages.some(x=>x.reviewed);
-  box.innerHTML='<div class="auto-item"><b>'+conf+'%</b><span>Confiança da IA'+(reviewed?' • dupla revisão':'')+'</span></div>'+
+  const reviewed=state.aiPages.some(x=>x.reviewed),imported=state.chatGPTImported;
+  box.innerHTML='<div class="auto-item"><b>'+conf+'%</b><span>'+(imported?'Confiança informada pelo ChatGPT':'Confiança da IA')+(reviewed?' • dupla revisão':'')+'</span></div>'+
     '<div class="auto-item"><b>'+(wl?fmt(wl)+' m':'—')+'</b><span>Paredes sem linhas de cota</span></div>'+
     '<div class="auto-item"><b>'+(area?fmt(area)+' m²':'—')+'</b><span>Área reconhecida</span></div>'+
     '<div class="auto-item"><b>'+((a.rooms||[]).length)+'</b><span>Ambientes reconhecidos</span></div>'+
@@ -1133,7 +1244,8 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
 
   function calculate(){
     for(const el of document.querySelectorAll('input[type=number]'))if(el.value!==''&&(!Number.isFinite(Number(el.value))||Number(el.value)<0)){alert('Revise os valores numéricos: não são aceitos valores negativos ou inválidos.');el.focus();return}
-    const manualLength=state.walls.reduce((s,w)=>s+w.length,0),manualGross=state.walls.reduce((s,w)=>s+w.length*w.height,0),override=num($('wallLengthOverride').value),manualMode=$('wallManualMode')?$('wallManualMode').value:'add',autoLength=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0);
+    const manualLength=state.walls.reduce((s,w)=>s+w.length,0),manualGross=state.walls.reduce((s,w)=>s+w.length*w.height,0),override=num($('wallLengthOverride').value),manualMode=$('wallManualMode')?$('wallManualMode').value:'add',localAutoLength=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0),autoLength=state.chatGPTImported?localAutoLength:0;
+    if(!state.chatGPTImported&&override<=0&&manualLength<=0){alert('Para evitar que linhas de cota sejam tratadas como paredes, importe primeiro o resultado do ChatGPT pelo botão 2 ou informe/marque as paredes manualmente.');showView('novo');return}
     let wallLength=0,wallSource='Sem geometria',gross=0;
     if(override>0){wallLength=override;gross=override*height();wallSource='Comprimento total ajustado pelo usuário'}
     else if(manualMode==='replace'&&manualLength>0){wallLength=manualLength;gross=manualGross;wallSource='Paredes manuais substituindo a leitura automática'}
@@ -1280,8 +1392,8 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
 
   function getForm(){const ids=['obra','cliente','endereco','tipoObra','pavimentos','unidades','peDireito','peCustom','tijolo','facesReboco','revInterno','revExterno','piso','rodape','forro','cobertura','pintInterna','pintExterna','perdas','perdasCustom','areaCobertura','areaConstruida','areaPisoManual','areaFachadaManual','perimetroRodape','wallLengthOverride','wallManualMode','fundacaoTipo','estruturaTipo','lajeTipo','aguaQuente','esgotoSistema','gasSistema','climatizacao','solarSistema','incendioSistema','spdaSistema','elevadorSistema','piscinaSistema',...complementaryDefs.map(x=>x[0])];const out={};ids.forEach(id=>{if($(id))out[id]=$(id).value});return out}
   function setForm(f={}){for(const [k,v] of Object.entries(f))if($(k))$(k).value=v}
-  function saveProject(show=true){const data={pageScales:state.pageScales,pageDenominators:state.pageDenominators,confirmed:state.confirmed,extras:extraValues(),form:getForm(),pdfName:state.pdfName,sourceType:state.sourceType,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,autoWallMethod:state.autoWallMethod,autoWallLayers:state.autoWallLayers,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus};const saved=storage.setItem('lang-quant-project',JSON.stringify(data));if(saved)$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
-  function loadProject(){const d=storedJSON('lang-quant-project');if(!d)return;state.pageScales=d.pageScales||{};state.pageDenominators=d.pageDenominators||{};state.confirmed=d.confirmed||false;setExtra(d.extras||{});setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.sourceType=d.sourceType||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.autoWallMethod=d.autoWallMethod||'';state.autoWallLayers=d.autoWallLayers||[];state.openingDefinitions=d.openingDefinitions||[];renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o arquivo original para visualizar a planta.`}
+  function saveProject(show=true){const data={pageScales:state.pageScales,pageDenominators:state.pageDenominators,confirmed:state.confirmed,extras:extraValues(),form:getForm(),pdfName:state.pdfName,sourceType:state.sourceType,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,autoWallMethod:state.autoWallMethod,autoWallLayers:state.autoWallLayers,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus,chatGPTImported:state.chatGPTImported,aiRead:state.aiRead};const saved=storage.setItem('lang-quant-project',JSON.stringify(data));if(saved)$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
+  function loadProject(){const d=storedJSON('lang-quant-project');if(!d)return;state.pageScales=d.pageScales||{};state.pageDenominators=d.pageDenominators||{};state.confirmed=d.confirmed||false;setExtra(d.extras||{});setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.sourceType=d.sourceType||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.autoWallMethod=d.autoWallMethod||'';state.autoWallLayers=d.autoWallLayers||[];state.openingDefinitions=d.openingDefinitions||[];state.chatGPTImported=Boolean(d.chatGPTImported);state.aiRead=d.aiRead||null;state.aiStatus=state.chatGPTImported?'imported':'';renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderAIRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o arquivo original para visualizar a planta.`}
 
   function exportBackup(){
     saveProject(false);
@@ -1300,6 +1412,9 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
       location.reload();
     }catch(err){alert('Não foi possível importar o backup: '+err.message)}
   }
+  if($('prepareChatGPTBtn'))$('prepareChatGPTBtn').onclick=prepareForChatGPT;
+  if($('importChatGPTResultBtn'))$('importChatGPTResultBtn').onclick=()=>$('chatGPTResultInput').click();
+  if($('chatGPTResultInput'))$('chatGPTResultInput').onchange=e=>{const file=e.target.files&&e.target.files[0];if(file)importChatGPTResult(file);e.target.value=''};
   if($('exportBackupBtn'))$('exportBackupBtn').onclick=exportBackup;
   if($('importBackupBtn'))$('importBackupBtn').onclick=()=>$('backupInput').click();
   if($('backupInput'))$('backupInput').onchange=e=>{const file=e.target.files&&e.target.files[0];if(file)importBackup(file);e.target.value=''};
