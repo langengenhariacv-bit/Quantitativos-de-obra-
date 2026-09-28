@@ -1120,6 +1120,9 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if(!state.openings.length){score-=8;issues.push('Nenhuma porta/janela foi identificada; o desconto de vãos precisa de conferência.')}
     if(low>Math.max(3,applicable.length*.2)){score-=8;issues.push(low+' componentes ainda dependem de estimativas de baixa confiança.')}
     if(($('fundacaoTipo')&&$('fundacaoTipo').value)==='Não informado')issues.push('Tipo de fundação não informado: fundações permanecem paramétricas até haver sondagem/projeto.');
+    if(/sapatas/i.test($('fundacaoTipo')?$('fundacaoTipo').value:'')&&!ext('strSapQtd'))issues.push('Sapatas 1,00×1,00 m estão parametrizadas, mas falta informar quantas sapatas existem.');
+    if(/concreto armado|mista/i.test($('estruturaTipo')?$('estruturaTipo').value:'')&&!ext('strVigaM'))issues.push('A seção das vigas está parametrizada em 12×40 cm, mas falta o comprimento total das vigas.');
+    if(/concreto armado|mista/i.test($('estruturaTipo')?$('estruturaTipo').value:'')&&!ext('strPilarQtd'))issues.push('A seção dos pilares está parametrizada em 12×35 cm, mas falta informar a quantidade de pilares.');
     if($('pintExterna')&&$('pintExterna').value==='sim'&&!num($('areaFachadaManual')&&$('areaFachadaManual').value))issues.push('Fachada calculada por perímetro equivalente. Informe a área líquida de fachada se já a possuir.');
     if(!num($('areaPisoManual')&&$('areaPisoManual').value))issues.push('Piso calculado por geometria (área construída menos projeção das paredes). A área manual pode substituir essa estimativa.');
     score=Math.max(0,Math.min(100,Math.round(score)));const grade=score>=85?'Alta':score>=70?'Boa':score>=55?'Moderada':'Baixa';
