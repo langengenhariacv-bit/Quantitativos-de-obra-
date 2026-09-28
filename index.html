@@ -1073,7 +1073,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if($('pintExterna')&&$('pintExterna').value==='sim'&&!num($('areaFachadaManual')&&$('areaFachadaManual').value))issues.push('Fachada calculada por perímetro equivalente. Informe a área líquida de fachada se já a possuir.');
     if(!num($('areaPisoManual')&&$('areaPisoManual').value))issues.push('Piso calculado por geometria (área construída menos projeção das paredes). A área manual pode substituir essa estimativa.');
     score=Math.max(0,Math.min(100,Math.round(score)));const grade=score>=85?'Alta':score>=70?'Boa':score>=55?'Moderada':'Baixa';
-    $('qualityScore').textContent=direct+' / '+applicable.length;$('qualityGrade').textContent='Componentes com dados informados';$('qualityDirect').textContent=direct;$('qualityEstimated').textContent=estimated;$('qualityLow').textContent=low;$('qualityRoomCoverage').textContent=cov?Math.round(cov*100)+'%':'—';
+    $('qualityScore').textContent=score+'%';$('qualityGrade').textContent='Confiança '+grade;$('qualityDirect').textContent=direct;$('qualityEstimated').textContent=estimated;$('qualityLow').textContent=low;$('qualityRoomCoverage').textContent=cov?Math.round(cov*100)+'%':'—';
     const box=$('qualityIssues');if(!issues.length){box.className='notice okbox';box.innerHTML='<b>Sem alertas críticos.</b> A leitura atual está consistente com os dados disponíveis.'}else{box.className='notice';box.innerHTML='<b>Pontos para elevar a precisão:</b><ul style="margin:7px 0 0 18px;padding:0">'+issues.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'}
     state.qualityAudit={score:score,grade:grade,direct:direct,estimated:estimated,low:low,roomCoverage:cov,issues:issues};return state.qualityAudit;
   }
