@@ -1406,15 +1406,14 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if(!state.openings.length){score-=8;issues.push('Nenhuma porta/janela foi identificada; o desconto de vãos precisa de conferência.')}
     if(low>Math.max(3,applicable.length*.2)){score-=8;issues.push(low+' componentes ainda dependem de estimativas de baixa confiança.')}
     if(($('fundacaoTipo')&&$('fundacaoTipo').value)==='Não informado')issues.push('Tipo de fundação não informado: fundações permanecem paramétricas até haver sondagem/projeto.');
-    const sapQtdAudit=ext('strSapQtd'),sapAltAudit=ext('strSapAlt'),vigaMAudit=ext('strVigaM'),pilarQtdAudit=ext('strPilarQtd');
-    if(/sapatas isoladas/i.test($('fundacaoTipo')?.value||'')&&!sapQtdAudit)issues.push('Sapatas isoladas selecionadas, mas a quantidade de sapatas ainda não foi informada.');
-    if(sapQtdAudit>0&&!sapAltAudit)issues.push('A armadura das sapatas pode ser quantificada, mas o volume de concreto ainda não fecha porque a altura/espessura da sapata não foi informada.');
-    if(/concreto armado|mista/i.test($('estruturaTipo')?.value||'')&&!vigaMAudit)issues.push('Comprimento total das vigas ainda não foi informado; a armadura longitudinal 2Ø10 inferior + 2Ø8 superior não pode ser fechada.');
-    if(/concreto armado|mista/i.test($('estruturaTipo')?.value||'')&&!pilarQtdAudit)issues.push('Quantidade de pilares ainda não foi informada; a armadura longitudinal 4Ø10 não pode ser fechada.');
-    if(vigaMAudit>0||pilarQtdAudit>0)issues.push('Estribos de vigas/pilares não entram no quantitativo porque diâmetro e espaçamento não foram informados.');
-    if(/sapatas/i.test($('fundacaoTipo')?$('fundacaoTipo').value:'')&&!ext('strSapQtd'))issues.push('Sapatas 1,00×1,00 m estão parametrizadas, mas falta informar quantas sapatas existem.');
-    if(/concreto armado|mista/i.test($('estruturaTipo')?$('estruturaTipo').value:'')&&!ext('strVigaM'))issues.push('A seção das vigas está parametrizada em 12×40 cm, mas falta o comprimento total das vigas.');
-    if(/concreto armado|mista/i.test($('estruturaTipo')?$('estruturaTipo').value:'')&&!ext('strPilarQtd'))issues.push('A seção dos pilares está parametrizada em 12×35 cm, mas falta informar a quantidade de pilares.');
+    const sapQtdAudit=ext('strSapQtd'),sapAltAudit=ext('strSapAlt'),vigaMAudit=ext('strVigaM'),pilarQtdAudit=ext('strPilarQtd'),identifiedPillarsAudit=Math.max(0,Math.floor(Number(state.aiRead?.structure?.columnsQty)||0)),effectivePillarsAudit=pilarQtdAudit||identifiedPillarsAudit,effectiveSapAudit=sapQtdAudit||(/sapatas isoladas/i.test($('fundacaoTipo')?.value||'')?effectivePillarsAudit:0),effectiveVigaAudit=vigaMAudit||(state.metrics?.wallLength||state.autoWallLength||0);
+    if(/sapatas isoladas/i.test($('fundacaoTipo')?.value||'')&&!effectiveSapAudit)issues.push('Sapatas isoladas selecionadas, mas não há pilares/apoios suficientes para estimar a quantidade.');
+    if(effectiveSapAudit>0&&!sapAltAudit)issues.push('A armadura das sapatas foi quantificada; o volume de concreto ainda não fecha porque a altura/espessura da sapata não foi informada.');
+    if(!sapQtdAudit&&effectiveSapAudit>0)issues.push('Quantidade de sapatas estimada em '+Math.round(effectiveSapAudit)+' un., adotando 1 sapata isolada por pilar identificado.');
+    if(/concreto armado|mista/i.test($('estruturaTipo')?.value||'')&&!effectiveVigaAudit)issues.push('Não há comprimento de paredes/vigas suficiente para fechar a armadura longitudinal das vigas.');
+    if(!vigaMAudit&&effectiveVigaAudit>0&&/concreto armado|mista/i.test($('estruturaTipo')?.value||''))issues.push('Comprimento das vigas estimado em '+fmt(effectiveVigaAudit,2)+' m, adotando o comprimento das paredes como extensão paramétrica.');
+    if(/concreto armado|mista/i.test($('estruturaTipo')?.value||'')&&!effectivePillarsAudit)issues.push('Quantidade de pilares ainda não foi identificada; a armadura longitudinal 4Ø10 não pode ser fechada.');
+    if(effectiveVigaAudit>0||effectivePillarsAudit>0)issues.push('Estribos de vigas/pilares não entram no quantitativo porque diâmetro e espaçamento não foram informados.');
     if($('pintExterna')&&$('pintExterna').value==='sim'&&!num($('areaFachadaManual')&&$('areaFachadaManual').value))issues.push('Fachada calculada por perímetro equivalente. Informe a área líquida de fachada se já a possuir.');
     if(!num($('areaPisoManual')&&$('areaPisoManual').value))issues.push('Piso calculado por geometria (área construída menos projeção das paredes). A área manual pode substituir essa estimativa.');
     score=Math.max(0,Math.min(100,Math.round(score)));const grade=score>=85?'Alta':score>=70?'Boa':score>=55?'Moderada':'Baixa';
