@@ -1,3 +1,4 @@
+const {getVercelOidcToken}=require('@vercel/oidc');
 const MODEL_PROD='openai/gpt-5.6-sol';
 const MODEL_TEST='openai/gpt-5.6-luna';
 const GATEWAY='https://ai-gateway.vercel.sh/v1/chat/completions';
@@ -64,8 +65,9 @@ Retorne a leitura técnica estruturada. Priorize precisão a preenchimento.`;
 }
 
 async function ask({body,model,prompt}){
-  const token=process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN;
-  if(!token)throw Object.assign(new Error('AI Gateway sem credencial OIDC/API.'),{status:503});
+  let token=process.env.AI_GATEWAY_API_KEY;
+  if(!token){try{token=await getVercelOidcToken({project:'prj_5sL43a1HSIwTHbdFlgIhizzG91XC',team:'team_znY0BtI5yphevDDCpDDf5oAE',expirationBufferMs:60000})}catch(e){console.warn('OIDC indisponível',e?.message||e)}}
+  if(!token)throw Object.assign(new Error('AI Gateway sem credencial OIDC/API. Ative OIDC no projeto ou configure AI_GATEWAY_API_KEY.'),{status:503});
   const image=body.imageData||body.imageUrl;
   if(!image)throw Object.assign(new Error('Imagem da planta ausente.'),{status:400});
   const response=await fetch(GATEWAY,{method:'POST',headers:{
@@ -104,7 +106,8 @@ function needsReview(data,alg){
 module.exports=async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   if(req.method==='GET'&&req.query?.health==='1'){
-    return res.status(200).json({ok:true,service:'LANG multimodal plan reader',model:MODEL_PROD,auth:Boolean(process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN)});
+    let oidc=false;try{oidc=Boolean(await getVercelOidcToken({project:'prj_5sL43a1HSIwTHbdFlgIhizzG91XC',team:'team_znY0BtI5yphevDDCpDDf5oAE',expirationBufferMs:60000}))}catch{}
+    return res.status(200).json({ok:true,service:'LANG multimodal plan reader',model:MODEL_PROD,auth:Boolean(process.env.AI_GATEWAY_API_KEY)||oidc,authType:process.env.AI_GATEWAY_API_KEY?'api-key':oidc?'oidc':'none'});
   }
   if(req.method!=='POST')return res.status(405).json({error:'Use POST.'});
   try{
