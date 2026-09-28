@@ -63,3 +63,13 @@ A bateria mede robustez do carregamento, decodificação e reconhecimento geomé
 - Sika, execução de contrapiso e referência de traço 1:4: https://bra.sika.com/portokoll/pt/noticias/4-dicas-essenciais-sobre-como-fazer-contrapiso.html
 - Os demais links das referências históricas estão na aba Coeficientes. Não são uma certificação das estimativas para esta obra.
 - PDF.js: Mozilla, licença Apache-2.0; avisos de licença preservados nos arquivos em `vendor/`.
+
+## v4.8 — PDF + DXF + DWG
+
+- A entrada principal agora aceita PDF, DXF e DWG; JPG/PNG/WebP foram removidos do seletor principal.
+- DXF ASCII é lido diretamente no navegador: entidades, layers, unidades e coordenadas são preservados.
+- O motor CAD ignora entidades de dimensão, texto e hachura na busca de paredes; layers com nomes de cotas, mobiliário, eixos, esquadrias e instalações também são excluídos.
+- Quando existem layers explícitos de paredes (ex.: PAREDE, ALVENARIA, A-WALL), eles têm prioridade. Sem padrão de layers, o app procura pares de linhas paralelas compatíveis com espessura de parede e gera o eixo central.
+- DWG é lido localmente no navegador com LibreDWG/WebAssembly. O arquivo não precisa ser enviado a uma API paga. Se uma versão/entidade DWG não puder ser normalizada, o app pede uma cópia em DXF ASCII em vez de inventar geometria.
+- A visualização CAD destaca em azul somente os eixos de paredes usados no quantitativo.
+- Arquivos CAD passam a poder alimentar diretamente o cálculo de paredes, sem depender do fluxo ChatGPT/JSON.
