@@ -54,7 +54,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
     <main>
       <section id="view-novo" class="view active">
-        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF, DXF ou DWG. O arquivo é preparado para análise no ChatGPT; depois importe o ANALISE_LANG.json e o LANG calcula os quantitativos.</p></div><span class="pill">v4.10.4 • filtro de cotas + estrutura paramétrica</span></div>
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF, DXF ou DWG. O arquivo é preparado para análise no ChatGPT; depois importe o ANALISE_LANG.json e o LANG calcula os quantitativos.</p></div><span class="pill">v4.10.5 • filtro de cotas + estrutura paramétrica</span></div>
         <div class="card">
           <h2>Dados da obra</h2>
           <div class="grid g3">
@@ -1778,10 +1778,9 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   }
   if($('prepareChatGPTBtn'))$('prepareChatGPTBtn').onclick=prepareForChatGPT;
   if($('downloadPreparedCadBtn'))$('downloadPreparedCadBtn').onclick=()=>{setChatGPTFlowStatus('Download solicitado. Quando terminar, toque em “2B. Abrir app ChatGPT” e anexe o arquivo baixado.')};
-  if($('openPreparedChatGPTBtn'))$('openPreparedChatGPTBtn').onclick=async()=>{
+  if($('openPreparedChatGPTBtn'))$('openPreparedChatGPTBtn').onclick=()=>{
     if(!state.preparedChatGPTPrompt){alert('Prepare o arquivo primeiro pelo botão 1.');return}
-    try{if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(state.preparedChatGPTPrompt)}catch{}
-    setChatGPTFlowStatus('Pedido copiado. Abrindo o app ChatGPT. Anexe o arquivo .dxf.txt que você acabou de baixar.');
+    setChatGPTFlowStatus('Abrindo o app ChatGPT. O pedido já foi copiado no passo 1; anexe o arquivo .dxf.txt que você acabou de baixar.');
     openChatGPTNative();
   };
   if($('importChatGPTResultBtn'))$('importChatGPTResultBtn').onclick=()=>$('chatGPTResultInput').click();
