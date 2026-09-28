@@ -127,4 +127,3 @@ module.exports=async(req,res)=>{
     return res.status(err?.status&&err.status>=400&&err.status<600?err.status:500).json({ok:false,error:err?.message||'Falha na análise multimodal.'});
   }
 };
-module.exports._internals={ask,basePrompt,MODEL_PROD,MODEL_TEST,needsReview};
