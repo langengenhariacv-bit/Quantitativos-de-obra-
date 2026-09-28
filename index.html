@@ -624,7 +624,8 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
   $('pdfInput').addEventListener('change',async e=>{
   const file=e.target.files[0];if(!file)return; if(file.size>60*1024*1024){alert('Use um arquivo com até 60 MB.');return} e.target.disabled=true; try{ const prior=state.pdfName===file.name?{walls:state.walls,rooms:state.rooms.filter(r=>r.source==='manual'),openings:state.openings.filter(o=>o.source!=='PDF'),scales:state.pageScales,confirmed:state.confirmed}:null; const pdfFile=/\.pdf$/i.test(file.name)||file.type==='application/pdf';let preparedPdf=null,preparedImage=null;if(pdfFile){await ensurePDF();preparedPdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise}else if(/^image\/(jpeg|png|webp)$/i.test(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name)){preparedImage=await loadPlanImage(file)}else{alert('Use PDF, JPG, PNG ou WebP.');return}
-  state.pageScales={};state.pageDenominators={};state.confirmed=false;state.openingDefinitions=[];state.scopeStatus={};state.pdf=null;state.image=null;state.viewport=null;state.pdfName=file.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];state.autoWallDiagnostics={};state.floorAreas=[];state.pdfText='';state.pageTexts=[];state.page=1;state.metersPerPixel=null;state.scaleDen=null;
+  state.pageScales={};state.pageDenominators={};state.confirmed=false;state.openingDefinitions=[];state.scopeStatus={};state.pdf=null;state.image=null;state.viewport=null;state.pdfName=file.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;
+  if(!prior){for(const id of ['areaConstruida','areaPisoManual','areaFachadaManual','perimetroRodape','wallLengthOverride'])if($(id))$(id).value='';}state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];state.autoWallDiagnostics={};state.floorAreas=[];state.pdfText='';state.pageTexts=[];state.page=1;state.metersPerPixel=null;state.scaleDen=null;
   const isPdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
   const isImage=/^image\/(jpeg|png|webp)$/i.test(file.type)||/\.(jpe?g|png|webp)$/i.test(file.name);
   if(isPdf){
@@ -644,6 +645,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
 
   async function extractPdfText(){
     if(!state.pdf)return;let all=[],rooms=[];state.pageTexts=[];state.pageDenominators={};
+    const commonRoom=/sala|cozinha|quarto|dormit|bwc|banheiro|lavabo|circula|hall|servi[cç]o|lavanderia|dep[oó]sito|garagem|sacada|varanda|escrit[oó]rio|su[ií]te|closet|despensa/i;
     for(let p=1;p<=state.pdf.numPages;p++){
       const page=await state.pdf.getPage(p),tc=await page.getTextContent();
       const items=tc.items.map(i=>({s:String(i.str||'').trim(),x:i.transform?.[4]||0,y:i.transform?.[5]||0,w:i.width||0,h:i.height||0})).filter(i=>i.s);
@@ -651,34 +653,49 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
       const pageText=items.map(i=>i.s).join(' ');state.pageTexts.push(pageText);all.push(pageText);
       const dens=[...new Set([...pageText.matchAll(/\b1\s*[:/]\s*(20|25|30|40|50|75|100|125|150|200|250|500)\b/g)].map(m=>num(m[1])))];
       if(dens.length===1)state.pageDenominators[p]=dens[0];
-      const used=new Set();
+
+      const areaAnchors=[];
       for(let i=0;i<items.length;i++){
-        const s=items[i].s,areaMatch=s.match(/(?:^|\b)(?:A(?:rea)?\.?\s*[:=]?\s*)?(\d{1,4}[,.]\d{1,2})\s*m[²2]\b/i);
-        if(!areaMatch)continue;const area=num(areaMatch[1]);if(!(area>0&&area<1000))continue;
-        const x=items[i].x,y=items[i].y;
-        const candidates=items.map((it,j)=>({it,j,dy:Math.abs(it.y-y),dx:Math.abs(it.x-x)}))
-          .filter(o=>o.j!==i&&o.dy<38&&o.it.s.length>1&&!/^(?:A|P|Área|Per[ií]metro)\s*[:=]?/i.test(o.it.s)&&!/^\d/.test(o.it.s)&&!/\bm[²2]\b/i.test(o.it.s))
-          .sort((a,b)=>(a.dy*2+a.dx*.04)-(b.dy*2+b.dx*.04));
-        let label=candidates[0]?.it.s||'Ambiente';label=label.replace(/\s+/g,' ').trim();if(label.length>60)label=label.slice(0,60);
-        let perimeter=0;const nearby=items.filter((it,j)=>j!==i&&Math.abs(it.y-y)<26&&Math.abs(it.x-x)<170).map(it=>it.s).join(' ');
+        const s=items[i].s,m=s.match(/(\d{1,4}[,.]\d{1,2})\s*m[²2]\b/i);
+        if(m){areaAnchors.push({area:num(m[1]),x:items[i].x,y:items[i].y,item:i});continue}
+        if(/^Área\s*:?\s*$/i.test(s)){
+          const near=items.map((it,j)=>({it,j,dy:Math.abs(it.y-items[i].y),dx:it.x-items[i].x,m:it.s.match(/(\d{1,4}[,.]\d{1,2})\s*m?[²2]?/i)}))
+            .filter(o=>o.j!==i&&o.m&&o.dy<10&&o.dx>-20&&o.dx<160).sort((a,b)=>Math.abs(a.dx)-Math.abs(b.dx))[0];
+          if(near)areaAnchors.push({area:num(near.m[1]),x:near.it.x,y:near.it.y,item:near.j});
+        }
+      }
+      const seen=new Set();
+      for(const a of areaAnchors){
+        if(!(a.area>0&&a.area<100))continue;
+        const candidates=items.map((it,j)=>{
+          const dy=it.y-a.y,adx=Math.abs(it.x-a.x);let score=Math.abs(dy)*2+adx*.035+(dy<0?16:0);if(commonRoom.test(it.s))score-=35;return{it,j,score,dy,adx};
+        }).filter(o=>o.j!==a.item&&o.adx<180&&Math.abs(o.dy)<58&&/[A-Za-zÀ-ÿ]/.test(o.it.s)&&
+          !/^(?:A|P|Área|Per[ií]metro|Escala|Prancha|Projeto|Revis|C[oó]digo|Descri[cç][aã]o|Largura|Altura|Peitoril)\s*[:=]?$/i.test(o.it.s)&&
+          !/Planta\s+Baixa|PROJETO\s+ARQUIT|QUADRO\s+DE|Proje[cç][aã]o\s+pavimento/i.test(o.it.s))
+          .sort((x,y)=>x.score-y.score);
+        const label=(candidates[0]?.it.s||'Ambiente').replace(/\s+/g,' ').trim().slice(0,60);
+        if(label==='Ambiente')continue;
+        let perimeter=0;const nearby=items.filter((it,j)=>j!==a.item&&Math.abs(it.y-a.y)<32&&Math.abs(it.x-a.x)<190).map(it=>it.s).join(' ');
         const pm=nearby.match(/(?:P|Per[ií]metro)\s*[:=]?\s*(\d{1,4}[,.]\d{1,2})\s*m\b/i);if(pm)perimeter=num(pm[1]);
-        const key=p+'|'+Math.round(x/5)+'|'+Math.round(y/5)+'|'+area;if(!used.has(key)){used.add(key);rooms.push({name:label,area,perimeter,page:p,x,y});}
+        const key=p+'|'+Math.round(a.x/5)+'|'+Math.round(a.y/5)+'|'+a.area;if(!seen.has(key)){seen.add(key);rooms.push({name:label,area:a.area,perimeter,page:p,x:a.x,y:a.y});}
       }
     }
     state.pdfText=all.join('\n');state.rooms=dedupeRooms(rooms);
     const uniqueDen=[...new Set(Object.values(state.pageDenominators))];state.scaleDen=uniqueDen.length===1?uniqueDen[0]:null;
-    state.floorAreas=extractFloorAreasFromText(state.pdfText);
+    let floors=extractFloorAreasFromText(state.pdfText);
+    const roomSum=state.rooms.reduce((s,r)=>s+r.area,0),floorSum=floors.reduce((s,r)=>s+r.area,0);
+    if(floors.length&&roomSum>0&&floorSum<roomSum*.55)floors=[];
+    state.floorAreas=floors;
     if(state.floorAreas.length)$('areaConstruida').value=state.floorAreas.reduce((a,b)=>a+b.area,0).toFixed(2);
     if(/multifamiliar/i.test(state.pdfText))$('tipoObra').value='Residencial multifamiliar';
     const hasInf=/pavto\.?\s*inferior|pavimento\s+inferior/i.test(state.pdfText),hasSup=/pavto\.?\s*superior|pavimento\s+superior/i.test(state.pdfText);if(hasInf&&hasSup)$('pavimentos').value=2;
-    extractOpeningsFromText();
-    await estimateWallsFromPdf();
+    extractOpeningsFromText();await estimateWallsFromPdf();
     const scaleText=state.scaleDen?' • escala 1:'+state.scaleDen:(Object.keys(state.pageDenominators).length?' • escalas por página detectadas':'');
     $('pdfInfo').textContent=state.pdfName+' • '+state.pages+' página(s)'+scaleText+(num($('areaConstruida').value)?' • área '+fmt(num($('areaConstruida').value))+' m²':'');
     updateReadout();renderRooms();renderOpenings();renderAutoRead();
   }
   function dedupeRooms(arr){const seen=new Set();return arr.filter(r=>{const k=r.page+'|'+Math.round((r.x||0)/6)+'|'+Math.round((r.y||0)/6)+'|'+r.area;if(seen.has(k))return false;seen.add(k);return r.area>0&&r.area<10000})}
-  function extractFloorAreasFromText(text){const found=[];const patterns=[/Planta\s+Baixa\s+(?:Pavto\.?|Pavimento)?\s*(Inferior|Superior|T[eé]rreo|Cobertura)?[\s\S]{0,55}?Área\s*[:\-]?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]/gi,/(?:Pavto\.?|Pavimento)\s*(Inferior|Superior|T[eé]rreo)[\s\S]{0,55}?Área\s*[:\-]?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]/gi];for(const re of patterns){for(const m of text.matchAll(re)){const area=num(m[2]),label=(m[1]||'Pavimento').trim();if(area>0&&area<10000&&!found.some(x=>Math.abs(x.area-area)<.001&&x.label===label))found.push({label,area})}if(found.length)break}return found}
+  function extractFloorAreasFromText(text){const found=[];const re=/Planta\s+Baixa\s+(?:Pavto\.?|Pavimento)\s*(Inferior|Superior|T[eé]rreo|Cobertura)[\s\S]{0,90}?Área\s*[:\-]?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]/gi;for(const m of text.matchAll(re)){const area=num(m[2]),label=m[1].trim();if(area>0&&area<10000&&!found.some(x=>Math.abs(x.area-area)<.001&&x.label===label))found.push({label,area})}return found}
   function extractOpeningsFromText(){
     const text=state.pdfText.replace(/\s+/g,' '),codes=[...new Set([...text.matchAll(/\b([JP]\d{1,2})\b/gi)].map(m=>m[1].toUpperCase()))],defs=[];
     for(const code of codes){
@@ -944,7 +961,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   function drawAutoWallMask(){
     const c=$('autoWallCanvas');if(!c||!state.viewport)return;const src=state.autoWallMasks[state.page];c.width=state.viewport.width;c.height=state.viewport.height;c.style.width=state.viewport.width+'px';c.style.height=state.viewport.height+'px';const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);if(src)ctx.drawImage(src,0,0,c.width,c.height);
   }
-  function renderAutoRead(){if(!$('autoReadSummary'))return;const autoLen=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0);const floor=state.floorAreas.reduce((s,x)=>s+x.area,0)||num($('areaConstruida').value);const openQty=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty,0);$('autoReadSummary').innerHTML=`<div class="auto-item"><b>${floor?fmt(floor)+' m²':'—'}</b><span>Área construída identificada</span></div><div class="auto-item"><b>${autoLen?fmt(autoLen)+' m':'—'}</b><span>Comprimento de paredes reconhecido</span></div><div class="auto-item"><b>${openQty||0}</b><span>Portas + janelas lidas</span></div><div class="auto-item"><b>${num($('unidades')&&$('unidades').value)||projectContext().units}</b><span>Unidades residenciais consideradas</span></div><div class="auto-item"><b>${state.autoWallConfidence||'—'}</b><span>Confiança automática</span></div><div class="auto-item"><b>${state.autoWallDiagnostics.accepted??'—'}</b><span>Trechos estruturais aceitos</span></div><div class="auto-item"><b>${state.autoWallDiagnostics.uncertain??'—'}</b><span>Trechos em amarelo para conferir</span></div><div class="auto-item"><b>${esc(state.autoWallMethod||'—')}</b><span>Método de leitura de paredes</span></div><div class="auto-item"><b>${state.autoWallLayers.length?state.autoWallLayers.map(esc).join(', '):'—'}</b><span>Camadas usadas</span></div>`;}
+  function renderAutoRead(){if(!$('autoReadSummary'))return;const autoLen=state.autoWallLength||(state.autoWallFootprint?state.autoWallFootprint/brickFinishedThickness():0);const floor=num($('areaConstruida').value)||state.floorAreas.reduce((s,x)=>s+x.area,0);const openQty=state.openings.filter(o=>o.source==='PDF').reduce((s,o)=>s+o.qty,0);$('autoReadSummary').innerHTML=`<div class="auto-item"><b>${floor?fmt(floor)+' m²':'—'}</b><span>Área construída identificada</span></div><div class="auto-item"><b>${autoLen?fmt(autoLen)+' m':'—'}</b><span>Comprimento de paredes reconhecido</span></div><div class="auto-item"><b>${openQty||0}</b><span>Portas + janelas lidas</span></div><div class="auto-item"><b>${num($('unidades')&&$('unidades').value)||projectContext().units}</b><span>Unidades residenciais consideradas</span></div><div class="auto-item"><b>${state.autoWallConfidence||'—'}</b><span>Confiança automática</span></div><div class="auto-item"><b>${state.autoWallDiagnostics.accepted??'—'}</b><span>Trechos estruturais aceitos</span></div><div class="auto-item"><b>${state.autoWallDiagnostics.uncertain??'—'}</b><span>Trechos em amarelo para conferir</span></div><div class="auto-item"><b>${esc(state.autoWallMethod||'—')}</b><span>Método de leitura de paredes</span></div><div class="auto-item"><b>${state.autoWallLayers.length?state.autoWallLayers.map(esc).join(', '):'—'}</b><span>Camadas usadas</span></div>`;}
 
 
   async function renderPage(){
@@ -977,7 +994,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   $('addVao').onclick=()=>{state.openings.push({type:$('vaoTipo').value,qty:Math.max(1,num($('vaoQtd').value)),w:num($('vaoLarg').value),h:num($('vaoAlt').value)});renderOpenings();saveProject(false)};
   function renderOpenings(){$('vaoBody').innerHTML=state.openings.map((o,i)=>`<tr><td>${esc(o.type)}</td><td>${o.qty}</td><td>${fmt(o.w)}×${fmt(o.h)} m</td><td><button class="btn danger" onclick="window.delOpen(${i})">×</button></td></tr>`).join('')};window.delOpen=i=>{state.openings.splice(i,1);renderOpenings();saveProject(false)};
 
-  function updateReadout(){const areaRooms=state.floorAreas.length?state.floorAreas.reduce((s,r)=>s+r.area,0):state.rooms.reduce((s,r)=>s+r.area,0),manualWallM=state.walls.reduce((s,w)=>s+w.length,0),wallM=manualWallM||state.autoWallLength||0;$('statEscala').textContent=state.pageScales[state.page]?'Calibrada':(state.pageDenominators[state.page]?`1:${state.pageDenominators[state.page]}`:(state.scaleDen?`1:${state.scaleDen}`:'—'));$('statAmb').textContent=state.rooms.length;$('statArea').textContent=fmt(areaRooms)+' m²';$('statWalls').textContent=state.walls.length?state.walls.length:(state.autoWallLength?'AUTO':'0');$('statWallM').textContent=fmt(wallM)+' m';if(state.metersPerPixel)$('scaleBox').textContent=state.scaleDen?`Escala lida do PDF: 1:${state.scaleDen}. Confirme se o arquivo foi plotado corretamente ou calibre por uma cota conhecida.`:'Escala calibrada manualmente.'}
+  function updateReadout(){const areaRooms=num($('areaConstruida')&&$('areaConstruida').value)||state.floorAreas.reduce((s,r)=>s+r.area,0)||state.rooms.reduce((s,r)=>s+r.area,0),manualWallM=state.walls.reduce((s,w)=>s+w.length,0),wallM=manualWallM||state.autoWallLength||0;$('statEscala').textContent=state.pageScales[state.page]?'Calibrada':(state.pageDenominators[state.page]?`1:${state.pageDenominators[state.page]}`:(state.scaleDen?`1:${state.scaleDen}`:'—'));$('statAmb').textContent=state.rooms.length;$('statArea').textContent=fmt(areaRooms)+' m²';$('statWalls').textContent=state.walls.length?state.walls.length:(state.autoWallLength?'AUTO':'0');$('statWallM').textContent=fmt(wallM)+' m';if(state.metersPerPixel)$('scaleBox').textContent=state.scaleDen?`Escala lida do PDF: 1:${state.scaleDen}. Confirme se o arquivo foi plotado corretamente ou calibre por uma cota conhecida.`:'Escala calibrada manualmente.'}
 
   $('analisarBtn').onclick=async()=>{if(!state.pdf&&!state.image){alert('Selecione um PDF ou imagem primeiro.');return}await renderPage();renderRooms();renderWalls();renderOpenings();renderAutoRead();renderScopeStatus();showView('planta')};
   $('salvarBtn').onclick=()=>{saveProject();alert('Projeto salvo neste dispositivo.')};
