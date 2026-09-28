@@ -54,7 +54,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
     <main>
       <section id="view-novo" class="view active">
-        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF ou imagem e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">v4.3 • leitura híbrida 100-modelos</span></div>
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF ou imagem e informe apenas o que não puder ser lido com segurança.</p></div><span class="pill">v4.4 • filtro de cotas + estrutura paramétrica</span></div>
         <div class="card">
           <h2>Dados da obra</h2>
           <div class="grid g3">
@@ -221,7 +221,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
           </div>
         </div>
       </section>
-      <div class="footer">LANG Quantitativos • versão 4.3 • leitura híbrida e regressão com 100 plantas</div>
+      <div class="footer">LANG Quantitativos • versão 4.4 • filtro de cotas e estrutura paramétrica</div>
     </main>
   </div>
 </div>
@@ -857,7 +857,16 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
       if(comp===components[0]||((comp.length>=largest*.08||comp.nodes>=3)&&connectedEnough))for(const id of comp.ids)acceptedIds.add(id);
     }
     let accepted=[],uncertain=[];
-    segments.forEach((r,i)=>{const degree=adj[i].length,thicknessScore=Math.min(1,r.thick/5),lengthScore=Math.min(1,r.len/Math.max(1,Math.min(roi.x1-roi.x0,roi.y1-roi.y0)*.12)),score=.42*thicknessScore+.28*lengthScore+.30*Math.min(1,degree/2);r.score=score;r.connections=degree;(acceptedIds.has(i)&&score>=.28&&(degree>0||r.thick>=3)?accepted:uncertain).push(r)});
+    const minDim=Math.min(roi.x1-roi.x0,roi.y1-roi.y0);
+    segments.forEach((r,i)=>{
+      const degree=adj[i].length,thicknessScore=Math.min(1,r.thick/5),lengthScore=Math.min(1,r.len/Math.max(1,minDim*.12)),score=.42*thicknessScore+.28*lengthScore+.30*Math.min(1,degree/2);
+      const thin=r.thick<3,edgePos=r.axis==='h'?(r.pos-roi.y0)/(roi.y1-roi.y0):(r.pos-roi.x0)/(roi.x1-roi.x0),nearOuterBand=edgePos<.10||edgePos>.90;
+      const thinStructural=thin&&degree>=3&&!nearOuterBand&&score>=.42;
+      const dimensionLike=thin&&(degree<=2||nearOuterBand)&&r.len>=minDim*.10;
+      r.score=score;r.connections=degree;r.dimensionLike=dimensionLike;
+      const ok=acceptedIds.has(i)&&!dimensionLike&&((!thin&&score>=.28&&(degree>0||r.thick>=3))||thinStructural);
+      (ok?accepted:uncertain).push(r);
+    });
     if(!accepted.length&&uncertain.length>=6){
       const minDim=Math.min(roi.x1-roi.x0,roi.y1-roi.y0),strong=uncertain.filter(r=>r.thick>=3&&r.len>=minDim*.055);
       if(strong.length>=4){
@@ -1065,6 +1074,8 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if(sapQtd>0){
       const nx=Math.ceil(sapY/sapEsp)+1,ny=Math.ceil(sapX/sapEsp)+1,lenX=sapX+2*sapDobra,lenY=sapY+2*sapDobra,steelM=sapQtd*(nx*lenX+ny*lenY),steelKg=steelM*steelKgM(sapD);
       add('3. Fundações e infraestrutura','Sapatas isoladas '+fmt(sapX,2)+'×'+fmt(sapY,2)+' m',sapQtd,'un.','fundacoes','Premissa estrutural informada','direct','Dimensões em planta fornecidas pelo usuário');
+      add('3. Fundações e infraestrutura','Barras Ø'+fmt(sapD,0)+' mm das sapatas',sapQtd*(nx+ny),'un.','fundAco','Premissa estrutural informada','direct',sapQtd+' sapatas × '+(nx+ny)+' barras por sapata');
+      add('3. Fundações e infraestrutura','Comprimento linear Ø'+fmt(sapD,0)+' mm das sapatas',steelM,'m','fundAco','Premissa estrutural informada','direct','Sem desconto de cobrimento: '+nx+' barras de '+fmt(lenX,2)+' m + '+ny+' barras de '+fmt(lenY,2)+' m por sapata');
       add('3. Fundações e infraestrutura','Aço Ø'+fmt(sapD,0)+' mm — malha das sapatas',steelKg*factor,'kg','fundAco','Premissa estrutural informada','direct',nx+' barras em uma direção + '+ny+' na outra por sapata; comprimentos '+fmt(lenX,2)+' m e '+fmt(lenY,2)+' m; espaçamento '+fmt(sapEsp,2)+' m; dobra '+fmt(sapDobra,2)+' m em cada extremidade; '+fmt(steelM,2)+' m de aço antes das perdas');
       if(sapAlt>0)add('3. Fundações e infraestrutura','Concreto das sapatas',sapQtd*sapX*sapY*sapAlt*factor,'m³','fundConcreto','Premissa estrutural informada','direct',sapQtd+' × '+fmt(sapX,2)+' × '+fmt(sapY,2)+' × '+fmt(sapAlt,2)+' m');
     }
@@ -1073,7 +1084,9 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if(vM>0){
       add('4. Estrutura','Vigas '+fmt(vB*100,0)+'×'+fmt(vH*100,0)+' cm — comprimento considerado',vM,'m','vigas','Premissa estrutural informada','direct','Comprimento total informado pelo usuário');
       add('4. Estrutura','Concreto das vigas '+fmt(vB*100,0)+'×'+fmt(vH*100,0)+' cm',vM*vB*vH*factor,'m³','estruturaConcreto','Premissa estrutural informada','direct',fmt(vM,2)+' × '+fmt(vB,2)+' × '+fmt(vH,2)+' m');
+      add('4. Estrutura','Comprimento linear inferior — '+vIQ+'Ø'+fmt(vID,0),vM*vIQ,'m','estruturaAco','Premissa estrutural informada','direct',vIQ+' barras longitudinais × '+fmt(vM,2)+' m');
       add('4. Estrutura','Aço inferior das vigas — '+vIQ+'Ø'+fmt(vID,0),vM*vIQ*steelKgM(vID)*factor,'kg','estruturaAco','Premissa estrutural informada','direct',vIQ+' barras contínuas × '+fmt(vM,2)+' m; sem ancoragens/emendas adicionais');
+      add('4. Estrutura','Comprimento linear superior — '+vSQ+'Ø'+fmt(vSD,0),vM*vSQ,'m','estruturaAco','Premissa estrutural informada','direct',vSQ+' barras longitudinais × '+fmt(vM,2)+' m');
       add('4. Estrutura','Aço superior das vigas — '+vSQ+'Ø'+fmt(vSD,0),vM*vSQ*steelKgM(vSD)*factor,'kg','estruturaAco','Premissa estrutural informada','direct',vSQ+' barras contínuas × '+fmt(vM,2)+' m; sem ancoragens/emendas adicionais');
       add('4. Estrutura','Fôrmas laterais e fundo das vigas',vM*(2*vH+vB)*factor,'m²','estruturaForma','Geometria da seção informada','direct','3 faces: comprimento × (2×altura + largura)');
     }
@@ -1082,6 +1095,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if(pQtd>0&&pAlt>0){
       add('4. Estrutura','Pilares '+fmt(pB*100,0)+'×'+fmt(pH*100,0)+' cm',pQtd,'un.','pilares','Premissa estrutural informada','direct','Quantidade informada; altura considerada '+fmt(pAlt,2)+' m');
       add('4. Estrutura','Concreto dos pilares '+fmt(pB*100,0)+'×'+fmt(pH*100,0)+' cm',pQtd*pB*pH*pAlt*factor,'m³','estruturaConcreto','Premissa estrutural informada','direct',pQtd+' × '+fmt(pB,2)+' × '+fmt(pH,2)+' × '+fmt(pAlt,2)+' m');
+      add('4. Estrutura','Comprimento linear dos pilares — '+pBars+'Ø'+fmt(pD,0),pQtd*pBars*pAlt,'m','estruturaAco','Premissa estrutural informada','direct',pQtd+' pilares × '+pBars+' barras × '+fmt(pAlt,2)+' m');
       add('4. Estrutura','Aço longitudinal dos pilares — '+pBars+'Ø'+fmt(pD,0),pQtd*pBars*pAlt*steelKgM(pD)*factor,'kg','estruturaAco','Premissa estrutural informada','direct',pQtd+' pilares × '+pBars+' barras × '+fmt(pAlt,2)+' m; sem emendas/ancoragens adicionais');
       add('4. Estrutura','Fôrmas dos pilares',pQtd*2*(pB+pH)*pAlt*factor,'m²','estruturaForma','Geometria da seção informada','direct','Perímetro da seção × altura × quantidade');
     }
@@ -1120,6 +1134,12 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if(!state.openings.length){score-=8;issues.push('Nenhuma porta/janela foi identificada; o desconto de vãos precisa de conferência.')}
     if(low>Math.max(3,applicable.length*.2)){score-=8;issues.push(low+' componentes ainda dependem de estimativas de baixa confiança.')}
     if(($('fundacaoTipo')&&$('fundacaoTipo').value)==='Não informado')issues.push('Tipo de fundação não informado: fundações permanecem paramétricas até haver sondagem/projeto.');
+    const sapQtdAudit=ext('strSapQtd'),sapAltAudit=ext('strSapAlt'),vigaMAudit=ext('strVigaM'),pilarQtdAudit=ext('strPilarQtd');
+    if(/sapatas isoladas/i.test($('fundacaoTipo')?.value||'')&&!sapQtdAudit)issues.push('Sapatas isoladas selecionadas, mas a quantidade de sapatas ainda não foi informada.');
+    if(sapQtdAudit>0&&!sapAltAudit)issues.push('A armadura das sapatas pode ser quantificada, mas o volume de concreto ainda não fecha porque a altura/espessura da sapata não foi informada.');
+    if(/concreto armado|mista/i.test($('estruturaTipo')?.value||'')&&!vigaMAudit)issues.push('Comprimento total das vigas ainda não foi informado; a armadura longitudinal 2Ø10 inferior + 2Ø8 superior não pode ser fechada.');
+    if(/concreto armado|mista/i.test($('estruturaTipo')?.value||'')&&!pilarQtdAudit)issues.push('Quantidade de pilares ainda não foi informada; a armadura longitudinal 4Ø10 não pode ser fechada.');
+    if(vigaMAudit>0||pilarQtdAudit>0)issues.push('Estribos de vigas/pilares não entram no quantitativo porque diâmetro e espaçamento não foram informados.');
     if(/sapatas/i.test($('fundacaoTipo')?$('fundacaoTipo').value:'')&&!ext('strSapQtd'))issues.push('Sapatas 1,00×1,00 m estão parametrizadas, mas falta informar quantas sapatas existem.');
     if(/concreto armado|mista/i.test($('estruturaTipo')?$('estruturaTipo').value:'')&&!ext('strVigaM'))issues.push('A seção das vigas está parametrizada em 12×40 cm, mas falta o comprimento total das vigas.');
     if(/concreto armado|mista/i.test($('estruturaTipo')?$('estruturaTipo').value:'')&&!ext('strPilarQtd'))issues.push('A seção dos pilares está parametrizada em 12×35 cm, mas falta informar a quantidade de pilares.');
@@ -1269,7 +1289,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
       <p class="hint">Para fechar o quantitativo estrutural, informe apenas as três grandezas que a planta arquitetônica não determina com segurança: quantidade de sapatas, comprimento total de vigas e quantidade de pilares. A altura dos pilares usa o pé-direito quando ficar vazia.</p>
     </div>`);
 
-    $('view-planta').insertAdjacentHTML('beforeend',`<div class="card"><h2>Conferência da planta</h2><p class="notice">A detecção automática é uma sugestão visual. <b>Azul = parede aceita pelo conjunto estrutural; amarelo = trecho duvidoso para conferência.</b> Cotas, mobiliário e hachuras são filtrados por espessura, continuidade e conexão, mas ainda podem exigir correção. Em PDF digitalizado, calibre cada página utilizada. Fotografias em perspectiva devem ser retificadas antes de medir.</p><div class="actions"><button class="btn secondary" id="areaMode">Medir área por polígono</button><button class="btn secondary" id="finishArea">Concluir área e usar como piso</button></div><p class="hint" id="polygonStatus">Calibre a escala, clique nos vértices da área e conclua. Esta ferramenta substitui o campo de área líquida de piso.</p></div>`);
+    $('view-planta').insertAdjacentHTML('beforeend',`<div class="card"><h2>Conferência da planta</h2><p class="notice">A detecção automática é uma sugestão visual. <b>Azul = parede aceita pelo conjunto estrutural; amarelo = trecho duvidoso para conferência. Linhas finas compatíveis com cotas não entram automaticamente no comprimento das paredes.</b> Cotas, mobiliário e hachuras são filtrados por espessura, continuidade e conexão, mas ainda podem exigir correção. Em PDF digitalizado, calibre cada página utilizada. Fotografias em perspectiva devem ser retificadas antes de medir.</p><div class="actions"><button class="btn secondary" id="areaMode">Medir área por polígono</button><button class="btn secondary" id="finishArea">Concluir área e usar como piso</button></div><p class="hint" id="polygonStatus">Calibre a escala, clique nos vértices da área e conclua. Esta ferramenta substitui o campo de área líquida de piso.</p></div>`);
     $('view-quant').insertAdjacentHTML('afterbegin',`<div class="card"><div class="actions"><button id="csvExport" class="btn secondary">Exportar CSV</button><input id="materialSearch" aria-label="Buscar material" placeholder="Buscar material ou etapa"><select id="originFilter" aria-label="Filtrar origem"><option value="">Todas as origens</option><option value="direct">Dados informados / medidos</option><option value="estimate">Estimativas</option></select></div><p class="hint">Quantidade líquida, perdas e arredondamentos constam na memória de cálculo. Componentes sem base suficiente ficam visíveis na conferência de escopo.</p></div>`);
 
     $('view-planta').insertAdjacentHTML('beforeend',`<div class="card"><h2>Ambientes de imagem ou PDF sem texto</h2><div class="extension-grid"><div class="field"><label for="roomName">Nome do ambiente</label><input id="roomName" placeholder="Cozinha, quarto, banheiro..."></div><div class="field"><label for="roomArea">Área líquida (m²)</label><input id="roomArea" type="number" min="0" step="any"></div><div class="field"><label for="roomPerimeter">Perímetro real (m), se conhecido</label><input id="roomPerimeter" type="number" min="0" step="any"></div></div><button id="addRoom" class="btn secondary">Adicionar ambiente</button><button id="clearRooms" class="btn ghost">Limpar ambientes</button><p class="hint">Insira cada ambiente uma única vez. A soma não substitui automaticamente a área construída.</p></div><div class="card"><h2>Quantidades por dimensões</h2><p class="hint">Calculadora para elementos já dimensionados pelo projetista. As quantidades substituem o campo complementar escolhido.</p><div class="extension-grid"><div class="field"><label for="measureKind">Elemento</label><select id="measureKind"><option value="q_fundConcreto">Concreto de fundação</option><option value="q_estruturaConcreto">Concreto estrutural</option><option value="q_fundAco">Aço de fundação</option><option value="q_estruturaAco">Aço estrutural</option></select></div><div class="field"><label for="measureCount">Número de peças</label><input id="measureCount" type="number" min="1" step="1" value="1"></div><div class="field"><label for="measureLength">Comprimento de cada peça (m)</label><input id="measureLength" type="number" min="0" step="any"></div><div class="field"><label for="measureWidth">Largura do concreto (m)</label><input id="measureWidth" type="number" min="0" step="any"></div><div class="field"><label for="measureHeight">Altura do concreto (m)</label><input id="measureHeight" type="number" min="0" step="any"></div><div class="field"><label for="measureDiameter">Diâmetro do aço (mm)</label><input id="measureDiameter" type="number" min="0" step="any" value="10"></div></div><button id="applyDimensions" class="btn secondary">Calcular e aplicar</button><p id="dimensionResult" role="status"></p></div>`);
