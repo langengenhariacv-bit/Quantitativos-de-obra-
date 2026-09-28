@@ -841,7 +841,7 @@ async function runAIPlanAnalysis(){
     if(!state.aiPages.length)throw new Error(pageErrors[0]?.message||'Nenhuma página pôde ser analisada pela IA');
     state.aiRead=mergeAIExtractions(state.aiPages);applyAIRead(state.aiRead);state.aiStatus='done';
     state.aiError=pageErrors.length?pageErrors.length+' página(s) não puderam ser lidas pela IA; resultados válidos das demais páginas foram mantidos.':'';
-    renderRooms();renderOpenings();renderAutoRead();renderAIRead();updateStats();saveProject(false);
+    renderRooms();renderOpenings();renderAutoRead();renderAIRead();updateReadout();renderScopeStatus();saveProject(false);
   }catch(err){
     state.aiStatus='error';
     const raw=String(err?.message||err);
