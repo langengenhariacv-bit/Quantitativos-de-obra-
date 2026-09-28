@@ -653,7 +653,8 @@ function renderAIRead(){
     '<div class="auto-item"><b>'+(wl?fmt(wl)+' m':'—')+'</b><span>Paredes sem linhas de cota</span></div>'+
     '<div class="auto-item"><b>'+(area?fmt(area)+' m²':'—')+'</b><span>Área reconhecida</span></div>'+
     '<div class="auto-item"><b>'+((a.rooms||[]).length)+'</b><span>Ambientes reconhecidos</span></div>'+
-    '<div class="auto-item"><b>'+((a.openings||[]).reduce((s,o)=>s+(Number(o.quantity)||0),0))+'</b><span>Portas/janelas reconhecidas</span></div>';
+    '<div class="auto-item"><b>'+((a.openings||[]).reduce((s,o)=>s+(Number(o.quantity)||0),0))+'</b><span>Portas/janelas reconhecidas</span></div>'+
+    (state.aiError?'<div class="auto-item"><b>Atenção</b><span>'+esc(state.aiError)+'</span></div>':'');
 }
 function aiCandidatePages(){
   if(state.sourceType!=='pdf')return[1];
@@ -707,18 +708,29 @@ function applyAIRead(a){
 async function runAIPlanAnalysis(){
   if(!state.pdf&&!state.image)return;
   state.aiStatus='loading';state.aiError='Preparando páginas para a IA…';state.aiPages=[];state.aiRead=null;renderAIRead();
+  const pageErrors=[];
   try{
     const pages=aiCandidatePages(),alg=aiAlgorithmSnapshot();
     for(let i=0;i<pages.length;i++){
       const p=pages[i];state.aiError='Lendo página '+p+' ('+(i+1)+'/'+pages.length+')…';renderAIRead();
-      const imageData=await aiPageDataUrl(p);
-      const r=await fetch('/api/analyze-plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageData,page:p,filename:state.pdfName||'planta',pageText:state.pageTexts?.[p-1]||'',algorithm:alg})});
-      const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.error||('Falha HTTP '+r.status));
-      state.aiPages.push(j);
+      try{
+        const imageData=await aiPageDataUrl(p);
+        const r=await fetch('/api/analyze-plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageData,page:p,filename:state.pdfName||'planta',pageText:state.pageTexts?.[p-1]||'',algorithm:alg})});
+        const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.error||('Falha HTTP '+r.status));
+        state.aiPages.push(j);
+      }catch(pageErr){pageErrors.push({page:p,message:String(pageErr?.message||pageErr)});console.warn('IA página '+p,pageErr)}
     }
-    state.aiRead=mergeAIExtractions(state.aiPages);applyAIRead(state.aiRead);state.aiError='';state.aiStatus='done';
+    if(!state.aiPages.length)throw new Error(pageErrors[0]?.message||'Nenhuma página pôde ser analisada pela IA');
+    state.aiRead=mergeAIExtractions(state.aiPages);applyAIRead(state.aiRead);state.aiStatus='done';
+    state.aiError=pageErrors.length?pageErrors.length+' página(s) não puderam ser lidas pela IA; resultados válidos das demais páginas foram mantidos.':'';
     renderRooms();renderOpenings();renderAutoRead();renderAIRead();updateStats();saveProject(false);
-  }catch(err){state.aiStatus='error';state.aiError='IA indisponível: '+(err?.message||err)+'. Mantida a leitura geométrica local.';renderAIRead();console.warn(err)}
+  }catch(err){
+    state.aiStatus='error';
+    const raw=String(err?.message||err);
+    const billing=/valid credit card|credit card|free credits|billing/i.test(raw);
+    state.aiError=billing?'IA integrada, porém o AI Gateway do projeto ainda precisa ter a cobrança ativada no Vercel. A leitura geométrica local foi mantida automaticamente.':'IA indisponível: '+raw+'. Mantida a leitura geométrica local.';
+    renderAIRead();console.warn(err)
+  }
 }
 
 function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height))}
