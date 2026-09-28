@@ -746,6 +746,13 @@ async function importChatGPTResult(file){
     const payload=JSON.parse(await file.text()),a=langResultToAI(payload);
     state.aiRead=a;state.aiPages=[];state.aiStatus='imported';state.aiError='';state.chatGPTImported=true;
     applyAIRead(a);
+    const importedWall=Number(a?.walls?.totalLengthM)||0,importedArea=Number(a?.areas?.builtAreaM2||a?.areas?.floorAreaM2)||0,importedH=Number(a?.walls?.averageHeightM)||0;
+    if(importedWall>0){state.autoWallLength=importedWall;state.autoWallFootprint=importedWall*brickFinishedThickness();state.autoWallConfidence=(Number(a?.walls?.confidence)||0)>=.8?'alta':(Number(a?.walls?.confidence)||0)>=.6?'média':'baixa'}
+    if(importedArea>0)$('areaConstruida').value=importedArea.toFixed(2);
+    if(importedH>=2&&importedH<=6){$('peDireito').value='custom';if($('peCustom'))$('peCustom').value=importedH.toFixed(2)}
+    const importedRooms=(a.rooms||[]).filter(r=>Number(r.areaM2)>0).map(r=>({name:r.name||'Ambiente',area:Number(r.areaM2),perimeter:Number(r.perimeterM)||0,page:Number(r.page)||1,x:0,y:0}));if(importedRooms.length)state.rooms=dedupeRooms(importedRooms);
+    const importedOpenings=(a.openings||[]).filter(o=>Number(o.quantity)>0&&Number(o.widthM)>0&&Number(o.heightM)>0).map(o=>({type:(o.kind||'Vão')+(o.code?' '+o.code:''),qty:Math.max(1,Math.round(Number(o.quantity)||1)),w:Number(o.widthM),h:Number(o.heightM),source:'ChatGPT'}));if(importedOpenings.length)state.openings=importedOpenings;
+    const st=a.structure||{};if(Number(st.footingsQty)>0&&$('strSapQtd'))$('strSapQtd').value=Math.round(Number(st.footingsQty));if(Number(st.beamsLengthM)>0&&$('strVigaM'))$('strVigaM').value=Number(st.beamsLengthM).toFixed(2);if(Number(st.columnsQty)>0&&$('strPilarQtd'))$('strPilarQtd').value=Math.round(Number(st.columnsQty));if(Number(st.slabAreaM2)>0&&$('q_laje'))$('q_laje').value=Number(st.slabAreaM2).toFixed(2);
     state.autoWallMethod='Análise importada do ChatGPT';
     if($('autoWallCanvas'))$('autoWallCanvas').style.display='none';
     renderRooms();renderOpenings();renderAutoRead();renderAIRead();updateStats();saveProject(false);
