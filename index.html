@@ -54,7 +54,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
     <main>
       <section id="view-novo" class="view active">
-        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF, DXF ou DWG. O arquivo é preparado para análise no ChatGPT; depois importe o ANALISE_LANG.json e o LANG calcula os quantitativos.</p></div><span class="pill">v4.10 • filtro de cotas + estrutura paramétrica</span></div>
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF, DXF ou DWG. O arquivo é preparado para análise no ChatGPT; depois importe o ANALISE_LANG.json e o LANG calcula os quantitativos.</p></div><span class="pill">v4.10.1 • filtro de cotas + estrutura paramétrica</span></div>
         <div class="card">
           <h2>Dados da obra</h2>
           <div class="grid g3">
@@ -73,7 +73,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
               <b>Análise pelo ChatGPT — fluxo principal</b>
               <p class="hint" style="margin:7px 0 10px">1. Envie o arquivo carregado ao ChatGPT com o pedido preparado pelo LANG. 2. Importe aqui o arquivo <b>ANALISE_LANG.json</b> devolvido pelo ChatGPT.</p>
               <div class="actions">
-                <button class="btn primary" id="prepareChatGPTBtn">1. Abrir no ChatGPT com o arquivo</button>
+                <button class="btn primary" id="prepareChatGPTBtn">1. Abrir no app ChatGPT com o arquivo</button>
                 <button class="btn secondary" id="importChatGPTResultBtn">2. Importar resultado do ChatGPT</button>
                 <input id="chatGPTResultInput" type="file" accept="application/json,.json" style="display:none">
               </div>
@@ -652,7 +652,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
         state.sourceType='pdf';state.pdf=preparedPdf;state.pages=state.pdf.numPages;
         $('pdfInfo').textContent=file.name+' • '+state.pages+' página(s) • analisando PDF...';
         await extractPdfText();await renderPage();
-        state.aiStatus='waiting';if($('chatGPTFlowStatus'))$('chatGPTFlowStatus').textContent='PDF carregado. Toque em “1. Abrir no ChatGPT com o arquivo”.';
+        state.aiStatus='waiting';if($('chatGPTFlowStatus'))$('chatGPTFlowStatus').textContent='PDF carregado. Toque em “1. Abrir no app ChatGPT com o arquivo”.';
       }else{
         state.sourceType='cad';state.pages=1;state.cadData=null;state.cadDisplay=null;
         $('pdfInfo').textContent=file.name+' • '+(isDwg?'DWG':'DXF')+' carregado • aguardando análise no ChatGPT';
@@ -970,6 +970,16 @@ Regras:
 Depois de gerar o arquivo, diga apenas que ele está pronto para ser importado no LANG.`;
 }
 function setChatGPTFlowStatus(msg){if($('chatGPTFlowStatus'))$('chatGPTFlowStatus').textContent=msg}
+function openChatGPTNative(){
+  const scheme='chatgpt://';
+  const intent='intent://#Intent;scheme=chatgpt;package=com.openai.chatgpt;end';
+  try{
+    location.href=scheme;
+    setTimeout(()=>{try{location.href=intent}catch{}},700);
+  }catch{
+    try{location.href=intent}catch{}
+  }
+}
 async function prepareForChatGPT(){
   if(!state.sourceFile){alert('Selecione novamente o arquivo da planta antes de preparar a análise.');return}
   let shareFile=state.sourceFile;
@@ -989,36 +999,39 @@ async function prepareForChatGPT(){
   try{
     if(navigator.share){
       let candidate=shareFile;
-      let canShareFile=!navigator.canShare||navigator.canShare({files:[candidate]});
-      if(!canShareFile){
+      let shared=false;
+      try{
+        await navigator.share({title:'Analisar planta para LANG Quantitativos',text:prompt,files:[candidate]});
+        shared=true;
+      }catch(firstErr){
+        if(firstErr?.name==='AbortError'){setChatGPTFlowStatus('Compartilhamento cancelado. O pedido continua copiado.');return}
+        console.warn('Compartilhamento original falhou; tentando MIME genérico.',firstErr);
         try{
           const buf=await candidate.arrayBuffer();
           candidate=new File([buf],candidate.name,{type:'application/octet-stream',lastModified:candidate.lastModified||Date.now()});
-          canShareFile=!navigator.canShare||navigator.canShare({files:[candidate]});
-        }catch{}
+          await navigator.share({title:'Analisar planta para LANG Quantitativos',text:prompt,files:[candidate]});
+          shared=true;
+        }catch(secondErr){
+          if(secondErr?.name==='AbortError'){setChatGPTFlowStatus('Compartilhamento cancelado. O pedido continua copiado.');return}
+          console.warn('Compartilhamento genérico também falhou.',secondErr);
+        }
       }
-      if(canShareFile){
-        setChatGPTFlowStatus('Abrindo o compartilhamento com '+candidate.name+' e o pedido preparados.');
-        await navigator.share({title:'Analisar planta para LANG Quantitativos',text:prompt,files:[candidate]});
-        setChatGPTFlowStatus('Arquivo enviado. No ChatGPT, aguarde o ANALISE_LANG.json e depois volte ao LANG para importar.');
+      if(shared){
+        setChatGPTFlowStatus('Arquivo compartilhado. Selecione o app ChatGPT no compartilhamento para continuar a análise.');
         return;
       }
     }
-  }catch(err){
-    if(err?.name==='AbortError'){setChatGPTFlowStatus('Compartilhamento cancelado. O pedido continua copiado para a área de transferência.');return}
-    console.warn('Falha ao compartilhar arquivo com ChatGPT',err);
-  }
+  }catch(err){console.warn('Web Share indisponível',err)}
   if(shareFile!==state.sourceFile){
-    const a=document.createElement('a'),url=URL.createObjectURL(shareFile);
-    a.href=url;a.download=shareFile.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
-    setChatGPTFlowStatus('O DXF convertido foi salvo no aparelho e o pedido está copiado. Abra o ChatGPT e anexe '+shareFile.name+'.');
+    try{
+      const a=document.createElement('a'),url=URL.createObjectURL(shareFile);
+      a.href=url;a.download=shareFile.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+    }catch{}
+    setChatGPTFlowStatus('O Android não permitiu anexar automaticamente. O DXF convertido foi salvo e o pedido está copiado. Abrindo o app ChatGPT.');
   }else{
-    setChatGPTFlowStatus('O Android não permitiu anexar automaticamente. O pedido já está copiado; abra o ChatGPT e anexe o arquivo.');
+    setChatGPTFlowStatus('O Android não permitiu anexar automaticamente. O pedido está copiado. Abrindo o app ChatGPT.');
   }
-  try{
-    const win=window.open('https://chatgpt.com/','_blank','noopener');
-    if(!win)location.href='https://chatgpt.com/';
-  }catch{location.href='https://chatgpt.com/'}
+  openChatGPTNative();
 }
 function langResultToAI(payload){
   if(payload?.extraction?.meta&&payload?.extraction?.walls)return payload.extraction;
