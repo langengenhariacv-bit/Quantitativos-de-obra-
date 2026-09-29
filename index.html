@@ -943,6 +943,22 @@ async function convertDwgToDxfFile(file){
     throw new Error('Não foi possível converter este DWG para DXF automaticamente: '+(err?.message||err));
   }
 }
+function cadPromptChecklist(){
+  const m=state.cadManifest;if(!m)return '';
+  const rooms=m.ambientes_estruturados||[],floors=m.pavimentos_estruturados||[],open=m.esquadrias?.itens||[],occ=open.reduce((s,x)=>s+(Number(x.quantidade)||0),0),pw=m.paredes_preanalise||{};
+  const floorArea=floors.reduce((s,x)=>s+(Number(x.area_m2)||0),0);
+  return [
+    '',
+    'CHECKLIST AUTOMÁTICO DO LANG — use para detectar omissões:',
+    '- Entidades filtradas do Model Space: '+(m.inventario?.modelspace_entidades??'—')+'.',
+    '- Pavimentos estruturados: '+floors.length+(floorArea>0?'; soma das áreas rotuladas = '+floorArea.toFixed(2)+' m².':'') ,
+    '- Ocorrências de ambientes rotulados: '+rooms.length+'. Não deduplicar por nome/área.',
+    '- Tipos de esquadria no quadro vigente: '+open.length+'; ocorrências codificadas no Model Space: '+occ+'.',
+    '- Eixos sólidos de paredes na pré-análise: '+(pw.trechos_eixo_solido?.length||0)+(Number(pw.soma_eixos_solidos_m)>0?'; soma sólida = '+Number(pw.soma_eixos_solidos_m).toFixed(2)+' m':'')+'.',
+    Number(pw.comprimento_bruto_candidato_m)>0?'- Comprimento bruto candidato após reconexão colinear: '+Number(pw.comprimento_bruto_candidato_m).toFixed(2)+' m; audite antes de aceitar.':'',
+    'Se o JSON final trouxer menos ambientes/esquadrias do que esses campos estruturados, explique objetivamente em avisos por que cada omissão ocorreu. Não omita silenciosamente.'
+  ].filter(Boolean).join('\n');
+}
 function chatGPTAnalysisPrompt(attachedName){
   const name=state.pdfName||state.sourceFile?.name||'planta',attached=attachedName||name;
   return `Analise o arquivo anexado para o aplicativo LANG Quantitativos.
@@ -967,6 +983,10 @@ AUDITORIA CAD OBRIGATÓRIA ANTES DO RESULTADO:
 11. REGIÕES E COTAS: analise "regioes_planta_m" pavimento por pavimento. Em cada região, use "dimensoes" para validar envelope, módulos e extensões (por exemplo cotas externas e espaçamentos entre paredes), "faces_alvenaria" para confirmar a existência física das faces e "codigos_vaos" para localizar interrupções. Não use cotas de outra região/corte/fachada.
 12. COMPRIMENTO BRUTO DE PAREDES: use "paredes_preanalise" como ponto de partida. "trechos_eixo_solido" são eixos entre pares de faces paralelas, restritos às regiões de planta baixa. "trechos_eixo_bruto_candidato" e "comprimento_bruto_candidato_m" fazem apenas uma primeira reconexão. Complete paredes quando cotas, faces e encontros comprovarem a continuidade; NÃO encerre uma parede na borda de um vão. O comprimento_total_m deve ser o eixo bruto contínuo auditado de TODOS os pavimentos, sem duplicar paredes geminadas. O LANG descontará a área dos vãos depois. Se ainda faltar trecho inequívoco, mantenha comprimento_total_m=null e explique exatamente quais trechos faltaram.
 13. REVISÕES/BLOCOS: Model Space e os campos estruturados do LANG_CAD têm prioridade. Definições de bloco antigas, não inseridas ou anônimas não substituem a geometria vigente.
+14. ÁREA CONSTRUÍDA: se "pavimentos_estruturados" trouxer pavimentos distintos da edificação com área explícita, some uma vez cada pavimento arquitetônico válido para area_construida_m2. Não some cobertura, implantação, passeio, terreno ou área permeável como área construída.
+15. AMBIENTES: quando "ambientes_estruturados" existir, transcreva TODAS as ocorrências como ambientes separados. Não deduza perímetro sem geometria fechada; use null quando não houver perímetro sustentado.
+16. ESQUADRIAS: quando "esquadrias.itens" existir, cada código com quantidade >0 deve aparecer em vaos com a quantidade e dimensões do quadro selecionado. A descrição do quadro pode orientar o tipo/material, mas não invente dimensões.
+17. CONSISTÊNCIA DO ARQUIVO: o campo "arquivo" do ANALISE_LANG.json deve manter o nome do arquivo original informado pelo LANG, mesmo quando o anexo efetivo for LANG_CAD_*.json.
 
 Ao terminar, gere para download um arquivo chamado ANALISE_LANG.json, em JSON válido, exatamente com esta estrutura:
 {
@@ -1467,7 +1487,7 @@ async function prepareForChatGPT(){
     return;
   }
 
-  const prompt=chatGPTAnalysisPrompt(shareFile.name)+'\n\nIMPORTANTE: se o anexo for LANG_CAD_*.json, faça a auditoria CAD completa usando o inventário, todos os textos/MTEXT, layers candidatos, entidades em metros e blocos relevantes antes de produzir ANALISE_LANG.json.';
+  const prompt=chatGPTAnalysisPrompt(shareFile.name)+cadPromptChecklist()+'\n\nIMPORTANTE: se o anexo for LANG_CAD_*.json, faça a auditoria CAD completa usando o inventário, os campos estruturados, todos os textos/MTEXT, layers candidatos, entidades em metros e blocos relevantes antes de produzir ANALISE_LANG.json.';
   state.preparedChatGPTFile=shareFile;
   state.preparedChatGPTPrompt=prompt;
 
