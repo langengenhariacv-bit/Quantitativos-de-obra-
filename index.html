@@ -1158,6 +1158,34 @@ function inferUnitsFromImportedRooms(rooms){
   const choices=Object.entries(freq).map(([n,k])=>({n:Number(n),keys:k})).filter(x=>x.keys>=3).sort((a,b)=>b.keys-a.keys||b.n-a.n);
   return choices[0]?.n||1;
 }
+function cadPlanRegions(rooms,floors){
+  const pts=(rooms||[]).filter(r=>Array.isArray(r.p)&&Number.isFinite(Number(r.p[0]))&&Number.isFinite(Number(r.p[1])));
+  if(!pts.length)return[];
+  const floorNames=[...new Set((floors||[]).map(f=>String(f.pavimento||'').toLowerCase().trim()).filter(Boolean))],k=Math.max(1,Math.min(floorNames.length||1,pts.length));
+  let axis=0;
+  const fp=(floors||[]).filter(f=>Array.isArray(f.p));
+  if(fp.length>1){
+    const xs=fp.map(f=>Number(f.p[0])),ys=fp.map(f=>Number(f.p[1]));
+    axis=(Math.max(...ys)-Math.min(...ys))>(Math.max(...xs)-Math.min(...xs))?1:0;
+  }
+  const vals=pts.map(r=>Number(r.p[axis])).sort((a,b)=>a-b);
+  let centers=Array.from({length:k},(_,j)=>vals[Math.min(vals.length-1,Math.floor((j+.5)*vals.length/k))]);
+  let labels=new Array(pts.length).fill(0);
+  for(let it=0;it<25;it++){
+    labels=pts.map(r=>{const v=Number(r.p[axis]);let bi=0,bd=Infinity;centers.forEach((cc,j)=>{const d=Math.abs(v-cc);if(d<bd){bd=d;bi=j}});return bi});
+    const next=centers.map((cc,j)=>{const a=pts.filter((_,i)=>labels[i]===j).map(r=>Number(r.p[axis]));return a.length?a.reduce((s,v)=>s+v,0)/a.length:cc});
+    if(next.every((v,j)=>Math.abs(v-centers[j])<1e-6)){centers=next;break}centers=next;
+  }
+  const order=centers.map((v,i)=>({v,i})).sort((a,b)=>a.v-b.v);
+  const floorOrder=fp.map(f=>({v:Number(f.p[axis]),name:f.pavimento})).sort((a,b)=>a.v-b.v);
+  const out=[];
+  for(let oi=0;oi<order.length;oi++){
+    const j=order[oi].i,g=pts.filter((_,i)=>labels[i]===j);if(!g.length)continue;
+    const xs=g.map(r=>Number(r.p[0])),ys=g.map(r=>Number(r.p[1])),margin=2;
+    out.push({pavimento:floorOrder[oi]?.name||('Planta '+(oi+1)),minX:Math.min(...xs)-margin,maxX:Math.max(...xs)+margin,minY:Math.min(...ys)-margin,maxY:Math.max(...ys)+margin,ambientes:g.length});
+  }
+  return out;
+}
 async function buildCadManifestFile(dxfFile,originalName){
   const text=await dxfFile.text(),pairs=dxfCompactPairs(text);
   if(!pairs.length||!text.toUpperCase().includes('ENTITIES'))throw new Error('O DXF convertido não pôde ser estruturado.');
@@ -1237,6 +1265,11 @@ async function buildCadManifestFile(dxfFile,originalName){
     const t=e.text_limpo||'',m=t.match(/Planta\s+Baixa\s+(?:Pavto\.?|Pavimento)\s*([^\n]+?)(?:\n|\s)+[ÁA]rea\s*:?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]?/i);
     return m?{pavimento:m[1].trim(),area_m2:Number(m[2].replace(',','.')),p:e.p}:null;
   }).filter(Boolean);
+  const regioesPlanta=cadPlanRegions(ambientesEstruturados,pavimentosEstruturados);
+  if(regioesPlanta.length&&paredesPre.trechos_eixo_solido.length){
+    const pw=paredesPre.trechos_eixo_solido.filter(w=>{const mx=(w.a_m[0]+w.b_m[0])/2,my=(w.a_m[1]+w.b_m[1])/2;return regioesPlanta.some(r=>mx>=r.minX&&mx<=r.maxX&&my>=r.minY&&my<=r.maxY)});
+    if(pw.length>=5)paredesPre={...paredesPre,trechos_eixo_solido:pw,soma_eixos_solidos_m:round(pw.reduce((s,w)=>s+w.comprimento_m,0))};
+  }
   const manifest={
     format:'LANG-CAD-EXTRACAO',version:2,
     arquivo_original:originalName,arquivo_dxf:dxfFile.name,
@@ -1254,6 +1287,7 @@ async function buildCadManifestFile(dxfFile,originalName){
     textos:{todos:texts,rotulos_area:areaLabels,rotulos_ambiente:roomLabels},
     ambientes_estruturados:ambientesEstruturados,
     pavimentos_estruturados:pavimentosEstruturados,
+    regioes_planta_m:regioesPlanta,
     esquadrias,
     paredes_preanalise:paredesPre,
     blocos_relevantes:relevantBlocks,
@@ -1266,7 +1300,7 @@ async function buildCadManifestFile(dxfFile,originalName){
       'Para paredes desenhadas por duas faces paralelas, medir uma única vez pelo eixo médio.',
       'Antes do resultado final, conferir pavimentos_estruturados, ambientes_estruturados, esquadrias, rotulos_area, rotulos_ambiente, candidatos de aberturas, candidatos de paredes e blocos_relevantes.',
       'Em esquadrias.itens, quantidade é a contagem de códigos no Model Space; largura_m/altura_m/peitoril_m vêm do quadro de esquadrias quando disponível.',
-      'paredes_preanalise.trechos_eixo_solido contém somente eixos obtidos de pares de faces paralelas de alvenaria. Esses trechos podem estar interrompidos por vãos; não use soma_eixos_solidos_m como comprimento bruto final sem reconstruir as continuidades.'
+      'paredes_preanalise.trechos_eixo_solido contém somente eixos obtidos de pares de faces paralelas de alvenaria dentro das regiões de planta baixa localizadas pelos ambientes. Esses trechos podem estar interrompidos por vãos; não use soma_eixos_solidos_m como comprimento bruto final sem reconstruir as continuidades.'
     ]
   };
   state.cadManifest=manifest;
