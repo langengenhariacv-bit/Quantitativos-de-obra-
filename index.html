@@ -54,7 +54,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
 
     <main>
       <section id="view-novo" class="view active">
-        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF, DXF ou DWG. O arquivo é preparado para análise no ChatGPT; depois importe o ANALISE_LANG.json e o LANG calcula os quantitativos.</p></div><span class="pill">v4.10.5 • filtro de cotas + estrutura paramétrica</span></div>
+        <div class="page-title"><div><h1>Novo quantitativo</h1><p>Carregue a planta em PDF, DXF ou DWG. O arquivo é preparado para análise no ChatGPT; depois importe o ANALISE_LANG.json e o LANG calcula os quantitativos.</p></div><span class="pill">v4.11 • filtro de cotas + estrutura paramétrica</span></div>
         <div class="card">
           <h2>Dados da obra</h2>
           <div class="grid g3">
@@ -66,7 +66,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
         <div class="card">
           <h2>Planta baixa em PDF, DXF ou DWG</h2>
           <div class="upload">
-            <strong>Selecione o arquivo da planta</strong><br><span class="hint">Aceita PDF, DXF e DWG. Para CAD, o LANG prepara um arquivo .dxf.txt. Toque no botão de download que aparecer e depois abra o app ChatGPT para anexá-lo manualmente. Depois importe o ANALISE_LANG.json.</span>
+            <strong>Selecione o arquivo da planta</strong><br><span class="hint">Aceita PDF, DXF e DWG. Para CAD, o LANG converte o DWG para DXF e gera um LANG_CAD_*.json estruturado, com entidades, layers, textos, cotas e blocos relevantes. Baixe esse arquivo e anexe no ChatGPT. Depois importe o ANALISE_LANG.json.</span>
             <br><input id="pdfInput" type="file" accept="application/pdf,.pdf,.dxf,.dwg,application/dxf,application/x-dxf,application/acad,application/x-acad,image/vnd.dwg" />
             <div id="pdfInfo" class="hint" style="margin-top:10px">Nenhum arquivo carregado.</div>
             <div class="notice" style="margin-top:14px">
@@ -78,7 +78,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
                 <input id="chatGPTResultInput" type="file" accept="application/json,.json" style="display:none">
               </div>
               <div id="preparedCadActions" class="actions" style="display:none;margin-top:10px">
-                <a class="btn primary" id="downloadPreparedCadBtn" href="#" download>2A. Baixar DXF convertido</a>
+                <a class="btn primary" id="downloadPreparedCadBtn" href="#" download>2A. Baixar arquivo CAD para análise</a>
                 <button class="btn secondary" id="openPreparedChatGPTBtn" type="button">2B. Abrir app ChatGPT</button>
               </div>
               <div id="chatGPTFlowStatus" class="hint" style="margin-top:10px">Carregue a planta primeiro.</div>
@@ -925,7 +925,17 @@ OBJETIVO: extrair somente dados construtivos sustentados pela planta. Se o arqui
 
 Arquivo original do projeto: ${name}
 Arquivo efetivamente anexado para análise: ${attached}
-Se o original era DWG e o anexo é DXF, trate o DXF convertido como a representação vetorial do mesmo projeto e use suas entidades, layers, blocos e coordenadas.
+Se o original era DWG e o anexo é DXF ou LANG_CAD_*.json, trate a conversão/extração como representação vetorial do mesmo projeto. Se o anexo for LANG_CAD_*.json, ele já contém coordenadas em metros, inventário de entidades, layers, textos, cotas, blocos relevantes e candidatos por categoria.
+
+AUDITORIA CAD OBRIGATÓRIA ANTES DO RESULTADO:
+1. Confira "inventario" e não finalize a análise sem considerar todos os tipos relevantes de entidade existentes no Model Space.
+2. PAREDES: examine primeiro os layers candidatos de parede/alvenaria. Diferencie faces paralelas da mesma parede; meça uma única vez pelo eixo. Não some contornos duplos.
+3. AMBIENTES E ÁREAS: percorra TODOS os textos/MTEXT, especialmente "rotulos_area" e "rotulos_ambiente". Textos como "Planta Baixa Pavto. ... Área: ..." podem indicar área total do pavimento; não confunda com área de ambiente, área permeável, terreno ou cobertura. Se houver mais de um pavimento, identifique-os separadamente antes de definir a área construída total.
+4. PORTAS E JANELAS: examine layers candidatos de aberturas, arcos/linhas de abertura, INSERTs e "blocos_relevantes". Não conclua "nenhuma porta/janela" enquanto existirem layers ou blocos com nomes PORTA/JANELA/ESQUADRIA/VIDRO sem terem sido verificados. Definição de bloco é apenas template e NÃO conta como ocorrência por si só.
+5. COTAS: use valores e pontos de DIMENSION para confirmar medidas, mas nunca some a linha gráfica da cota como parede.
+6. REPETIÇÕES: se houver unidades ou pavimentos repetidos, não descarte rótulos repetidos automaticamente; confirme se são instâncias distintas pela posição.
+7. ESTRUTURA: só informe pilar, viga, sapata e laje quando houver entidade/layer/bloco/texto que sustente isso. Não derive pilar apenas de encontro de paredes.
+8. COMPLETUDE: antes de gerar o JSON, confronte o que foi quantificado com os candidatos existentes. Se houver layer/bloco claramente relevante que não pôde ser quantificado, registre isso em "avisos" em vez de simplesmente omiti-lo.
 
 Ao terminar, gere para download um arquivo chamado ANALISE_LANG.json, em JSON válido, exatamente com esta estrutura:
 {
@@ -987,6 +997,160 @@ function openChatGPTNative(){
     try{location.href=intent}catch{}
   }
 }
+
+function dxfCompactPairs(text){
+  let src=String(text||'').replace(/^\uFEFF/,'').replace(/\r/g,'');
+  const wm='--- INICIO_DXF ---',we='--- FIM_DXF ---',a=src.indexOf(wm),b=src.lastIndexOf(we);
+  if(a>=0&&b>a)src=src.slice(a+wm.length,b).replace(/^\n+/,'');
+  const lines=src.split('\n'),pairs=[];
+  for(let i=0;i+1<lines.length;i+=2){
+    const code=parseInt(lines[i].trim(),10);
+    if(Number.isFinite(code))pairs.push({code,value:lines[i+1]??''});
+  }
+  return pairs;
+}
+function dxfCompactVal(groups,code,def=null){
+  const g=groups.find(x=>x.code===code);
+  return g?String(g.value).trim():def;
+}
+function dxfCompactNum(groups,code,def=null){
+  const v=dxfCompactVal(groups,code,null),n=Number(v);
+  return Number.isFinite(n)?n:def;
+}
+function dxfCompactText(groups){
+  const chunks=groups.filter(g=>g.code===3).map(g=>String(g.value||''));
+  const tail=groups.filter(g=>g.code===1).map(g=>String(g.value||''));
+  return [...chunks,...tail].join('').replace(/\\P/g,'\n').trim();
+}
+function dxfCompactEntity(type,groups){
+  const t=String(type||'').toUpperCase(),layer=dxfCompactVal(groups,8,'0')||'0',h=dxfCompactVal(groups,5,'')||'';
+  const p=(cx,cy)=>{const x=dxfCompactNum(groups,cx,null),y=dxfCompactNum(groups,cy,null);return Number.isFinite(x)&&Number.isFinite(y)?[x,y]:null};
+  const base={t,l:layer};if(h)base.h=h;
+  if(t==='LINE')return{...base,a:p(10,20),b:p(11,21)};
+  if(t==='LWPOLYLINE'){
+    const v=[];let cur=null;
+    for(const g of groups){if(g.code===10){cur=[Number(g.value)||0,0];v.push(cur)}else if(g.code===20&&cur)cur[1]=Number(g.value)||0}
+    return{...base,v,closed:((dxfCompactNum(groups,70,0)||0)&1)===1};
+  }
+  if(t==='ARC')return{...base,c:p(10,20),r:dxfCompactNum(groups,40,null),a0:dxfCompactNum(groups,50,null),a1:dxfCompactNum(groups,51,null)};
+  if(t==='CIRCLE')return{...base,c:p(10,20),r:dxfCompactNum(groups,40,null)};
+  if(t==='INSERT')return{...base,n:dxfCompactVal(groups,2,''),p:p(10,20),sx:dxfCompactNum(groups,41,1),sy:dxfCompactNum(groups,42,1),rot:dxfCompactNum(groups,50,0)};
+  if(t==='TEXT'||t==='MTEXT')return{...base,text:dxfCompactText(groups),p:p(10,20)};
+  if(t==='DIMENSION')return{...base,text:dxfCompactVal(groups,1,''),m:dxfCompactNum(groups,42,null),def:p(10,20),p1:p(13,23),p2:p(14,24)};
+  if(t==='HATCH'||t==='LEADER'||t==='MULTILEADER'||t==='SOLID'||t==='IMAGE'||t==='ACAD_TABLE')return base;
+  return base;
+}
+function dxfCompactBounds(entities){
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  const add=p=>{if(!p||p.length<2)return;const x=Number(p[0]),y=Number(p[1]);if(!Number.isFinite(x)||!Number.isFinite(y))return;minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y)};
+  for(const e of entities||[]){
+    add(e.a);add(e.b);add(e.c);add(e.p);add(e.def);add(e.p1);add(e.p2);
+    for(const p of e.v||[])add(p);
+  }
+  return Number.isFinite(minX)?{minX,minY,maxX,maxY,width:maxX-minX,height:maxY-minY}:null;
+}
+function dxfCompactBlockSummary(block,factor){
+  const counts={},layers={},bbox=dxfCompactBounds(block.entities);
+  for(const e of block.entities){counts[e.t]=(counts[e.t]||0)+1;layers[e.l]=(layers[e.l]||0)+1}
+  const scalePoint=p=>p?[Number((p[0]*factor).toFixed(6)),Number((p[1]*factor).toFixed(6))]:null;
+  const mapE=e=>{
+    const o={t:e.t,l:e.l};if(e.h)o.h=e.h;
+    if(e.a)o.a=scalePoint(e.a);if(e.b)o.b=scalePoint(e.b);if(e.c)o.c=scalePoint(e.c);if(e.p)o.p=scalePoint(e.p);
+    if(e.v)o.v=e.v.map(scalePoint);if(e.closed!=null)o.closed=e.closed;
+    if(Number.isFinite(e.r))o.r=Number((e.r*factor).toFixed(6));
+    if(e.a0!=null)o.a0=e.a0;if(e.a1!=null)o.a1=e.a1;
+    if(e.n)o.n=e.n;if(e.text)o.text=e.text;
+    return o;
+  };
+  return{name:block.name,entity_count:block.entities.length,entity_types:counts,layers,geometry_m:block.entities.slice(0,300).map(mapE),bbox_raw:bbox};
+}
+async function buildCadManifestFile(dxfFile,originalName){
+  const text=await dxfFile.text(),pairs=dxfCompactPairs(text);
+  if(!pairs.length||!text.toUpperCase().includes('ENTITIES'))throw new Error('O DXF convertido não pôde ser estruturado.');
+  let unitsCode=0;
+  for(let i=0;i<pairs.length;i++)if(pairs[i].code===9&&String(pairs[i].value).trim()==='$INSUNITS'){
+    for(let j=i+1;j<Math.min(i+10,pairs.length);j++)if(pairs[j].code===70){unitsCode=Number(pairs[j].value)||0;break}
+  }
+  const model=[],blocks=[],layerNames=new Set();let section='',currentBlock=null;
+  const readGroups=i=>{let j=i+1,g=[];while(j<pairs.length&&pairs[j].code!==0){g.push(pairs[j]);j++}return[g,j]};
+  for(let i=0;i<pairs.length;){
+    const p=pairs[i],val=String(p.value||'').trim();
+    if(p.code===0&&val==='SECTION'){section=(pairs[i+1]?.code===2?String(pairs[i+1].value).trim():'');i+=2;continue}
+    if(p.code===0&&val==='ENDSEC'){section='';currentBlock=null;i++;continue}
+    if(section==='TABLES'&&p.code===0&&val==='LAYER'){
+      const [g,j]=readGroups(i),n=dxfCompactVal(g,2,'');if(n)layerNames.add(n);i=j;continue;
+    }
+    if(section==='BLOCKS'&&p.code===0&&val==='BLOCK'){
+      const [g,j]=readGroups(i);currentBlock={name:dxfCompactVal(g,2,dxfCompactVal(g,3,''))||'',entities:[]};blocks.push(currentBlock);i=j;continue;
+    }
+    if(section==='BLOCKS'&&p.code===0&&val==='ENDBLK'){currentBlock=null;const [,j]=readGroups(i);i=j;continue}
+    if((section==='ENTITIES'||(section==='BLOCKS'&&currentBlock))&&p.code===0&&!['ENDSEC','EOF','BLOCK','ENDBLK','SEQEND','VERTEX'].includes(val)){
+      const type=val.toUpperCase();
+      if(type==='POLYLINE'){
+        let j=i+1,header=[];while(j<pairs.length&&pairs[j].code!==0){header.push(pairs[j]);j++}
+        const v=[];let layer=dxfCompactVal(header,8,'0')||'0',closed=((dxfCompactNum(header,70,0)||0)&1)===1;
+        while(j<pairs.length&&pairs[j].code===0&&String(pairs[j].value).trim()==='VERTEX'){
+          let k=j+1,vg=[];while(k<pairs.length&&pairs[k].code!==0){vg.push(pairs[k]);k++}
+          const x=dxfCompactNum(vg,10,null),y=dxfCompactNum(vg,20,null);if(Number.isFinite(x)&&Number.isFinite(y))v.push([x,y]);
+          if(layer==='0')layer=dxfCompactVal(vg,8,'0')||'0';j=k;
+        }
+        const ent={t:'POLYLINE',l:layer,v,closed};
+        if(section==='ENTITIES')model.push(ent);else currentBlock.entities.push(ent);
+        i=(j<pairs.length&&pairs[j].code===0&&String(pairs[j].value).trim()==='SEQEND')?j+1:j;continue;
+      }
+      const [g,j]=readGroups(i),ent=dxfCompactEntity(type,g);
+      if(ent?.l)layerNames.add(ent.l);
+      if(section==='ENTITIES')model.push(ent);else currentBlock.entities.push(ent);
+      i=j;continue;
+    }
+    i++;
+  }
+  const rawBounds=dxfCompactBounds(model),unitMap={1:[.0254,'in'],2:[.3048,'ft'],4:[.001,'mm'],5:[.01,'cm'],6:[1,'m'],7:[1000,'km'],14:[.1,'dm'],21:[1200/3937,'us-ft']};
+  let factor=unitMap[unitsCode]?.[0]||null,label=unitMap[unitsCode]?.[1]||'unknown';
+  if(!factor){const d=Math.max(rawBounds?.width||0,rawBounds?.height||0);factor=d>500?.001:1;label=d>500?'mm-inferred':'m-inferred'}
+  const round=n=>Number.isFinite(Number(n))?Number(Number(n).toFixed(6)):null,sp=p=>p?[round(p[0]*factor),round(p[1]*factor)]:null;
+  const modelM=model.map(e=>{
+    const o={t:e.t,l:e.l};if(e.h)o.h=e.h;if(e.a)o.a=sp(e.a);if(e.b)o.b=sp(e.b);if(e.c)o.c=sp(e.c);if(e.p)o.p=sp(e.p);if(e.def)o.def=sp(e.def);if(e.p1)o.p1=sp(e.p1);if(e.p2)o.p2=sp(e.p2);
+    if(e.v)o.v=e.v.map(sp);if(e.closed!=null)o.closed=e.closed;if(Number.isFinite(e.r))o.r=round(e.r*factor);if(e.a0!=null)o.a0=e.a0;if(e.a1!=null)o.a1=e.a1;
+    if(e.n)o.n=e.n;if(e.text)o.text=e.text;if(Number.isFinite(e.m))o.m=round(e.m*factor);return o;
+  });
+  const typeCounts={},layerStats={};for(const e of modelM){typeCounts[e.t]=(typeCounts[e.t]||0)+1;(layerStats[e.l]??={count:0,types:{}}).count++;layerStats[e.l].types[e.t]=(layerStats[e.l].types[e.t]||0)+1}
+  const inserts=modelM.filter(e=>e.t==='INSERT'&&e.n),referenced=new Set(inserts.map(e=>e.n));
+  const relevantRe=/(PAREDE|ALVEN|WALL|MURO|PORTA|DOOR|JANEL|WINDOW|ESQUADR|VIDRO|PILAR|COLUMN|VIGA|BEAM|SAPATA|FOOT|LAJE|SLAB|ESCADA|STAIR|COBERT|ROOF)/i;
+  const relevantBlocks=blocks.filter(b=>relevantRe.test(b.name)||referenced.has(b.name)||b.entities.some(e=>relevantRe.test(e.l||''))).map(b=>dxfCompactBlockSummary(b,factor));
+  const texts=modelM.filter(e=>e.t==='TEXT'||e.t==='MTEXT').filter(e=>e.text);
+  const areaLabels=texts.filter(e=>/(ÁREA|AREA)\s*:?\s*\d|PLANTA\s+BAIXA|PAVTO|PAVIMENTO/i.test(e.text)).slice(0,500);
+  const roomLabels=texts.filter(e=>/(SALA|COZINHA|QUARTO|DORM|BWC|BANHEIRO|LAVABO|GARAGEM|SERVI[CÇ]O|LAVAND|SU[IÍ]TE|CIRCULA[CÇ][AÃ]O|HALL|VARANDA|SACADA|DEP[ÓO]SITO|CLOSET|ESCRIT[ÓO]RIO)/i.test(e.text)).slice(0,500);
+  const candidate=(re)=>Object.entries(layerStats).filter(([n])=>re.test(n)).map(([name,s])=>({name,...s}));
+  const manifest={
+    format:'LANG-CAD-EXTRACAO',version:2,
+    arquivo_original:originalName,arquivo_dxf:dxfFile.name,
+    unidades:{insunits:unitsCode,label,unit_to_m:factor},
+    limites_raw:rawBounds,
+    inventario:{modelspace_entidades:modelM.length,tipos:typeCounts,layers_total:layerNames.size,blocos_total:blocks.length,inserts_total:inserts.length},
+    layers:Object.entries(layerStats).map(([name,s])=>({name,...s})).sort((a,b)=>b.count-a.count),
+    candidatos:{
+      paredes:candidate(/PAREDE|ALVEN|WALL|MURO|VEDA[CÇ]/i),
+      aberturas:candidate(/PORTA|DOOR|JANEL|WINDOW|ESQUADR|VIDRO/i),
+      cotas:candidate(/COTA|DIM/i),
+      textos:candidate(/TEXT|TEXTO/i),
+      estrutura:candidate(/PILAR|COLUMN|VIGA|BEAM|SAPATA|FOOT|LAJE|SLAB/i)
+    },
+    textos:{todos:texts,rotulos_area:areaLabels,rotulos_ambiente:roomLabels},
+    blocos_relevantes:relevantBlocks,
+    nomes_blocos:blocks.map(b=>b.name).filter(Boolean),
+    entidades_modelspace_m:modelM,
+    regras_de_leitura:[
+      'Coordenadas e comprimentos de entidades_modelspace_m estão normalizados em metros.',
+      'Definições de bloco são modelos/templates; não contam como ocorrência sem INSERT ou geometria correspondente no Model Space.',
+      'Linhas de cotas, textos, mobiliário, hachuras e molduras não são paredes.',
+      'Para paredes desenhadas por duas faces paralelas, medir uma única vez pelo eixo médio.',
+      'Antes do resultado final, conferir rotulos_area, rotulos_ambiente, candidatos de aberturas, candidatos de paredes e blocos_relevantes.'
+    ]
+  };
+  const safe=(originalName||'projeto').replace(/\.(dwg|dxf)$/i,'').replace(/[^\wÀ-ÿ ._-]+/g,'_');
+  return new File([JSON.stringify(manifest,null,2)],'LANG_CAD_'+safe+'.json',{type:'application/json',lastModified:Date.now()});
+}
 async function wrapDxfForChatGPT(file){
   if(!/\.dxf$/i.test(file?.name||''))return file;
   const text=await file.text();
@@ -1012,10 +1176,11 @@ async function prepareForChatGPT(){
     if(/\.dwg$/i.test(originalName)){
       setChatGPTFlowStatus('Convertendo DWG para DXF…');
       shareFile=await convertDwgToDxfFile(shareFile);
-      setChatGPTFlowStatus('DWG convertido. Preparando arquivo compatível…');
+      setChatGPTFlowStatus('DWG convertido. Estruturando entidades, layers, textos, blocos e cotas…');
     }
     if(/\.dxf$/i.test(shareFile.name||'')){
-      shareFile=await wrapDxfForChatGPT(shareFile);
+      shareFile=await buildCadManifestFile(shareFile,originalName);
+      setChatGPTFlowStatus('Extração CAD estruturada concluída.');
     }
   }catch(err){
     setChatGPTFlowStatus(err?.message||String(err));
@@ -1023,7 +1188,7 @@ async function prepareForChatGPT(){
     return;
   }
 
-  const prompt=chatGPTAnalysisPrompt(shareFile.name)+'\n\nIMPORTANTE: se o anexo terminar em .dxf.txt, ele contém o DXF ASCII completo. Leia o conteúdo entre INICIO_DXF e FIM_DXF exatamente como um arquivo DXF.';
+  const prompt=chatGPTAnalysisPrompt(shareFile.name)+'\n\nIMPORTANTE: se o anexo for LANG_CAD_*.json, faça a auditoria CAD completa usando o inventário, todos os textos/MTEXT, layers candidatos, entidades em metros e blocos relevantes antes de produzir ANALISE_LANG.json.';
   state.preparedChatGPTFile=shareFile;
   state.preparedChatGPTPrompt=prompt;
 
@@ -1780,7 +1945,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   if($('downloadPreparedCadBtn'))$('downloadPreparedCadBtn').onclick=()=>{setChatGPTFlowStatus('Download solicitado. Quando terminar, toque em “2B. Abrir app ChatGPT” e anexe o arquivo baixado.')};
   if($('openPreparedChatGPTBtn'))$('openPreparedChatGPTBtn').onclick=()=>{
     if(!state.preparedChatGPTPrompt){alert('Prepare o arquivo primeiro pelo botão 1.');return}
-    setChatGPTFlowStatus('Abrindo o app ChatGPT. O pedido já foi copiado no passo 1; anexe o arquivo .dxf.txt que você acabou de baixar.');
+    setChatGPTFlowStatus('Abrindo o app ChatGPT. O pedido já foi copiado no passo 1; anexe o arquivo LANG_CAD_*.json que você acabou de baixar.');
     openChatGPTNative();
   };
   if($('importChatGPTResultBtn'))$('importChatGPTResultBtn').onclick=()=>$('chatGPTResultInput').click();
