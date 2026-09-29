@@ -1117,7 +1117,11 @@ async function buildCadManifestFile(dxfFile,originalName){
   const typeCounts={},layerStats={};for(const e of modelM){typeCounts[e.t]=(typeCounts[e.t]||0)+1;(layerStats[e.l]??={count:0,types:{}}).count++;layerStats[e.l].types[e.t]=(layerStats[e.l].types[e.t]||0)+1}
   const inserts=modelM.filter(e=>e.t==='INSERT'&&e.n),referenced=new Set(inserts.map(e=>e.n));
   const relevantRe=/(PAREDE|ALVEN|WALL|MURO|PORTA|DOOR|JANEL|WINDOW|ESQUADR|VIDRO|PILAR|COLUMN|VIGA|BEAM|SAPATA|FOOT|LAJE|SLAB|ESCADA|STAIR|COBERT|ROOF)/i;
-  const relevantBlocks=blocks.filter(b=>relevantRe.test(b.name)||referenced.has(b.name)||b.entities.some(e=>relevantRe.test(e.l||''))).map(b=>dxfCompactBlockSummary(b,factor));
+  const relevantBlocks=blocks.filter(b=>{
+    const name=String(b.name||'');
+    if(/^\*(MODEL|PAPER)_SPACE/i.test(name)||/^\*D\d+/i.test(name))return false;
+    return relevantRe.test(name)||referenced.has(name);
+  }).map(b=>dxfCompactBlockSummary(b,factor));
   const texts=modelM.filter(e=>e.t==='TEXT'||e.t==='MTEXT').filter(e=>e.text);
   const areaLabels=texts.filter(e=>/(ÁREA|AREA)\s*:?\s*\d|PLANTA\s+BAIXA|PAVTO|PAVIMENTO/i.test(e.text)).slice(0,500);
   const roomLabels=texts.filter(e=>/(SALA|COZINHA|QUARTO|DORM|BWC|BANHEIRO|LAVABO|GARAGEM|SERVI[CÇ]O|LAVAND|SU[IÍ]TE|CIRCULA[CÇ][AÃ]O|HALL|VARANDA|SACADA|DEP[ÓO]SITO|CLOSET|ESCRIT[ÓO]RIO)/i.test(e.text)).slice(0,500);
@@ -1149,7 +1153,7 @@ async function buildCadManifestFile(dxfFile,originalName){
     ]
   };
   const safe=(originalName||'projeto').replace(/\.(dwg|dxf)$/i,'').replace(/[^\wÀ-ÿ ._-]+/g,'_');
-  return new File([JSON.stringify(manifest,null,2)],'LANG_CAD_'+safe+'.json',{type:'application/json',lastModified:Date.now()});
+  return new File([JSON.stringify(manifest)],'LANG_CAD_'+safe+'.json',{type:'application/json',lastModified:Date.now()});
 }
 async function wrapDxfForChatGPT(file){
   if(!/\.dxf$/i.test(file?.name||''))return file;
