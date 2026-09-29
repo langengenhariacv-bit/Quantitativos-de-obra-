@@ -1128,16 +1128,21 @@ function cadOpeningSchedules(blocks,modelM){
     }
     if(items.length)schedules.push({bloco:String(b.name||''),itens:items});
   }
-  const defs=new Map();
-  for(const s of schedules)for(const it of s.itens)if(!defs.has(it.codigo))defs.set(it.codigo,it);
   const occurrences={};
   for(const e of modelM||[]){
     if(e.t!=='TEXT'&&e.t!=='MTEXT')continue;
     const code=cadPlainText(e.text).toUpperCase();
     if(/^[PJ]\d{1,3}$/.test(code))occurrences[code]=(occurrences[code]||0)+1;
   }
-  const itens=[...defs.values()].map(it=>({...it,quantidade:Number(occurrences[it.codigo]||0)}));
-  return{quadros:schedules,itens,ocorrencias:occurrences};
+  const score=s=>{
+    let matched=0,missing=0,occ=0;
+    for(const it of s.itens){const n=Number(occurrences[it.codigo]||0);if(n>0){matched++;occ+=n}else missing++}
+    return matched*100+occ-missing*35;
+  };
+  const ranked=schedules.map(s=>({...s,_score:score(s)})).sort((a,b)=>b._score-a._score);
+  const selected=ranked[0]||{bloco:'',itens:[]};
+  const itens=(selected.itens||[]).map(it=>({...it,quantidade:Number(occurrences[it.codigo]||0)}));
+  return{quadros:schedules.map(s=>({...s,score_aderencia_modelspace:score(s)})),quadro_selecionado:selected.bloco||'',itens,ocorrencias:occurrences};
 }
 function inferUnitsFromImportedRooms(rooms){
   const counts=new Map();
