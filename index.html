@@ -1210,8 +1210,8 @@ function cadPlanRegions(rooms,floors){
   const out=[];
   for(let oi=0;oi<order.length;oi++){
     const j=order[oi].i,g=pts.filter((_,i)=>labels[i]===j);if(!g.length)continue;
-    const xs=g.map(r=>Number(r.p[0])),ys=g.map(r=>Number(r.p[1])),margin=2;
-    out.push({pavimento:floorOrder[oi]?.name||('Planta '+(oi+1)),minX:Math.min(...xs)-margin,maxX:Math.max(...xs)+margin,minY:Math.min(...ys)-margin,maxY:Math.max(...ys)+margin,ambientes:g.length});
+    const xs=g.map(r=>Number(r.p[0])),ys=g.map(r=>Number(r.p[1])),maxArea=Math.max(0,...g.map(r=>Number(r.area_m2)||0)),margin=Math.max(2.5,Math.min(5,Math.sqrt(maxArea||9)));
+    out.push({pavimento:floorOrder[oi]?.name||('Planta '+(oi+1)),minX:Math.min(...xs)-margin,maxX:Math.max(...xs)+margin,minY:Math.min(...ys)-margin,maxY:Math.max(...ys)+margin,ambientes:g.length,margem_m:margin});
   }
   return out;
 }
