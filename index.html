@@ -1376,6 +1376,9 @@ async function importChatGPTResult(file){
       state.rooms=importedRooms;
       const inferredUnits=inferUnitsFromImportedRooms(importedRooms);
       if(inferredUnits>1&&$('unidades')&&num($('unidades').value)<=1)$('unidades').value=inferredUnits;
+      if(inferredUnits>1&&$('tipoObra'))$('tipoObra').value='Residencial multifamiliar';
+      const floorNames=[...new Set((state.cadManifest?.pavimentos_estruturados||[]).map(x=>String(x.pavimento||'').toLowerCase().trim()).filter(Boolean))];
+      if(floorNames.length>1&&$('pavimentos'))$('pavimentos').value=floorNames.length;
     }
     const cadDefs=new Map((state.cadManifest?.esquadrias?.itens||[]).map(d=>[String(d.codigo||'').toUpperCase(),d]));
     const importedOpenings=(a.openings||[]).filter(o=>Number(o.quantity)>0).map(o=>{
@@ -1908,7 +1911,9 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     else if(manualMode==='replace'&&manualLength>0){wallLength=manualLength;gross=manualGross;wallSource='Paredes manuais substituindo a leitura automática'}
     else if(autoLength>0){wallLength=autoLength+manualLength;gross=autoLength*height()+manualGross;wallSource=manualLength>0?(state.autoWallMethod||'Leitura automática')+' + correções manuais':(state.autoWallMethod||'Leitura automática da planta')}
     else if(manualLength>0){wallLength=manualLength;gross=manualGross;wallSource='Paredes marcadas manualmente'}
-    const open=state.openings.reduce((s,o)=>s+o.qty*o.w*o.h,0),net=Math.max(0,gross-open),L=loss(),factor=1+L,faces=num($('facesReboco').value)||2,c=state.coef,primaryBrick=$('tijolo').value;
+    const openingAreaIdentified=state.openings.reduce((s,o)=>s+(Number(o.qty)||0)*(Number(o.w)||0)*(Number(o.h)||0),0);
+    const partialImportedWalls=state.chatGPTImported&&state.aiRead?.walls?.totalProvided===false&&override<=0&&manualMode!=='replace'&&autoLength>0;
+    const open=partialImportedWalls?0:openingAreaIdentified,net=Math.max(0,gross-open),L=loss(),factor=1+L,faces=num($('facesReboco').value)||2,c=state.coef,primaryBrick=$('tijolo').value;
     const built=num($('areaConstruida').value)||state.floorAreas.reduce((s,r)=>s+r.area,0)||state.rooms.filter(r=>r.area<100).reduce((s,r)=>s+r.area,0);
     const roomFloor=state.rooms.filter(r=>r.area>0&&r.area<100).reduce((s,r)=>s+r.area,0),manualFloor=num($('areaPisoManual')&&$('areaPisoManual').value);
     let wallFootprint=wallLength*brickFinishedThickness(),wallFootprintSource='Comprimento de paredes × espessura acabada paramétrica';
@@ -2004,12 +2009,12 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     state.customItems.forEach(x=>mats.push({...x,scopeId:'outros',origin:'Entrada manual',originType:'direct',basis:'Quantidade informada pelo usuário'}));
     complementaryDefs.forEach(([id,label,unit,stage,scopeId,applyLoss])=>{const q=$(id)?num($(id).value):0;if(q>0){for(let i=mats.length-1;i>=0;i--)if(mats[i].scopeId===scopeId)mats.splice(i,1);add(stage,label,q*(applyLoss?factor:1),unit,scopeId,'Projeto complementar / entrada manual','direct','Quantidade informada pelo usuário')}});
 
-    state.metrics={gross:gross,open:open,net:net,floor:floor,floorBuilt:built,roomFloor:roomFloor,roomCoverage:built?roomFloor/built:0,floorSource:floorSource,wallFootprint:wallFootprint,wallFootprintSource:wallFootprintSource,coatArea:coatArea,internalCoat:internalCoat,externalCoat:externalCoat,facadeGross:facadeGross,facadeNet:facadeNet,facadeSource:facadeSource,ceramicWall:ceramicWall,paintInternal:paintInternal,paintExternal:paintExternal,paintArea:paintArea,wallLength:wallLength,wallSource:wallSource};
+    state.metrics={gross:gross,open:open,openingAreaIdentified:openingAreaIdentified,partialImportedWalls:partialImportedWalls,net:net,floor:floor,floorBuilt:built,roomFloor:roomFloor,roomCoverage:built?roomFloor/built:0,floorSource:floorSource,wallFootprint:wallFootprint,wallFootprintSource:wallFootprintSource,coatArea:coatArea,internalCoat:internalCoat,externalCoat:externalCoat,facadeGross:facadeGross,facadeNet:facadeNet,facadeSource:facadeSource,ceramicWall:ceramicWall,paintInternal:paintInternal,paintExternal:paintExternal,paintArea:paintArea,wallLength:wallLength,wallSource:wallSource};
     const directIds=new Set(mats.map(x=>x.scopeId).filter(Boolean)),pack=buildParametricEstimates(directIds);pack.items.forEach(x=>mats.push(x));state.scopeStatus=pack.status;state.materials=enhanceMaterials(mats);syncScopeStatuses();
     renderMaterials();renderScopeStatus();updateQualityAudit();saveProject(false);
   }
   function renderMaterials(){
-    const m=state.metrics||{gross:0,open:0,net:0,floor:0,paintArea:0};$('qAreaWall').textContent=fmt(m.net);$('qOpen').textContent=fmt(m.open);$('qFloor').textContent=fmt(m.floor);$('qPaint').textContent=fmt(m.paintArea);if($('quantSource'))$('quantSource').textContent=m.wallSource||'Aguardando cálculo';
+    const m=state.metrics||{gross:0,open:0,net:0,floor:0,paintArea:0};$('qAreaWall').textContent=fmt(m.net);$('qOpen').textContent=fmt(m.partialImportedWalls?(m.openingAreaIdentified||0):m.open);$('qFloor').textContent=fmt(m.floor);$('qPaint').textContent=fmt(m.paintArea);if($('quantSource'))$('quantSource').textContent=m.wallSource||'Aguardando cálculo';
     const bricks=state.materials.find(function(x){return x.material.startsWith('Tijolo')});$('qBricks').textContent=bricks?Math.round(bricks.q).toLocaleString('pt-BR'):'0';
     $('materialsBody').innerHTML=state.materials.map(function(x){
       const integerUnits=['un.','pontos','conj.','kits','sistemas','sistema','lote'],d=integerUnits.includes(x.unit)?0:2;
@@ -2029,6 +2034,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if(!state.autoWallLength&&!state.walls.length&&!num($('wallLengthOverride').value)){score-=18;issues.push('Paredes sem geometria confirmada.')}
     else if(state.autoWallMethod&&/Leitura raster preliminar/i.test(state.autoWallMethod)){/* motor raster validado nesta planta; não penalizar automaticamente */}
     if(state.autoWallConfidence==='baixa'){score-=8;issues.push('A leitura automática de paredes está com confiança baixa.')}
+    if(state.metrics?.partialImportedWalls)issues.push('O ChatGPT não fechou o comprimento bruto total das paredes; o LANG está usando apenas os trechos mensurados e, para evitar desconto duplo, não subtrai novamente os vãos dessa soma. Gere nova análise CAD para fechar os eixos contínuos.')
     const cov=state.metrics&&state.metrics.roomCoverage||x.floorCoverage||0;
     if(cov&&cov<.65){score-=6;issues.push('Pouca área foi identificada por nome de ambiente ('+Math.round(cov*100)+'% da área construída). Confira pisos e ambientes sem rótulo.')}
     if(cov>1.05){score-=12;issues.push('A soma dos ambientes ultrapassa a área construída; pode haver rótulos duplicados no PDF.')}
