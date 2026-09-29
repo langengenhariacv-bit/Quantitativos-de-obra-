@@ -1462,8 +1462,16 @@ async function importChatGPTResult(file){
     const payload=JSON.parse(await file.text()),a=langResultToAI(payload);
     state.aiRead=a;state.aiPages=[];state.aiStatus='imported';state.aiError='';state.chatGPTImported=true;
     applyAIRead(a);
-    const importedWall=Number(a?.walls?.totalLengthM)||0,importedArea=Number(a?.areas?.builtAreaM2||a?.areas?.floorAreaM2)||0,importedH=Number(a?.walls?.averageHeightM)||0;
-    state.autoWallLength=importedWall>0?importedWall:0;state.autoWallFootprint=importedWall>0?importedWall*brickFinishedThickness():0;state.autoWallConfidence=(Number(a?.walls?.confidence)||0)>=.8?'alta':(Number(a?.walls?.confidence)||0)>=.6?'média':'baixa';
+    let importedWall=Number(a?.walls?.totalLengthM)||0;const importedArea=Number(a?.areas?.builtAreaM2||a?.areas?.floorAreaM2)||0,importedH=Number(a?.walls?.averageHeightM)||0;
+    const cadGross=Number(state.cadManifest?.paredes_preanalise?.comprimento_bruto_candidato_m)||0,cadGrossConf=Number(state.cadManifest?.paredes_preanalise?.confianca_bruto)||0;
+    const useCadGross=cadGross>0&&cadGrossConf>=.75&&(!a?.walls?.totalProvided||!(importedWall>0)||importedWall<cadGross*.90);
+    if(useCadGross){
+      importedWall=cadGross;
+      a.walls.totalLengthM=cadGross;a.walls.grossClosed=true;a.walls.grossClosedSource='Pré-análise geométrica CAD auditável';
+      a.walls.basis=[a.walls.basis,'Comprimento bruto candidato do CAD: '+cadGross.toFixed(2)+' m; eixos pareados restritos às regiões de planta e reconectados apenas por colinearidade/lacunas limitadas.'].filter(Boolean).join('; ');
+    }else a.walls.grossClosed=Boolean(a?.walls?.totalProvided);
+    state.autoWallLength=importedWall>0?importedWall:0;state.autoWallFootprint=importedWall>0?importedWall*brickFinishedThickness():0;
+    const conf=Math.max(Number(a?.walls?.confidence)||0,useCadGross?cadGrossConf:0);state.autoWallConfidence=conf>=.8?'alta':conf>=.6?'média':'baixa';
     const cadFloors=(state.cadManifest?.pavimentos_estruturados||[]).filter(x=>Number(x.area_m2)>0);
     const floorByName=new Map();for(const x of cadFloors){const k=String(x.pavimento||'').toLowerCase().trim();if(k&&!floorByName.has(k))floorByName.set(k,x)}
     const directFloorArea=[...floorByName.values()].reduce((s,x)=>s+Number(x.area_m2||0),0),builtArea=directFloorArea>0?directFloorArea:importedArea;
@@ -1492,7 +1500,7 @@ async function importChatGPTResult(file){
     }
     if(importedOpenings.length)state.openings=importedOpenings;
     const st=a.structure||{};if(Number(st.footingsQty)>0&&$('strSapQtd'))$('strSapQtd').value=Math.round(Number(st.footingsQty));if(Number(st.beamsLengthM)>0&&$('strVigaM'))$('strVigaM').value=Number(st.beamsLengthM).toFixed(2);if(Number(st.columnsQty)>0&&$('strPilarQtd'))$('strPilarQtd').value=Math.round(Number(st.columnsQty));if(Number(st.slabAreaM2)>0&&$('q_laje'))$('q_laje').value=Number(st.slabAreaM2).toFixed(2);
-    state.autoWallMethod=a?.walls?.totalProvided?'Análise CAD importada — comprimento total fechado':'Análise CAD importada — soma dos segmentos mensurados';
+    state.autoWallMethod=a?.walls?.grossClosedSource?('CAD — '+a.walls.grossClosedSource):(a?.walls?.totalProvided?'Análise CAD importada — comprimento total fechado':'Análise CAD importada — soma dos segmentos mensurados');
     if($('autoWallCanvas'))$('autoWallCanvas').style.display='none';
     renderRooms();renderOpenings();renderAutoRead();renderAIRead();updateReadout();renderScopeStatus();saveProject(false);
     setChatGPTFlowStatus('Resultado importado com sucesso. O LANG agora usará a análise do ChatGPT no quantitativo.');
@@ -2011,7 +2019,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     else if(autoLength>0){wallLength=autoLength+manualLength;gross=autoLength*height()+manualGross;wallSource=manualLength>0?(state.autoWallMethod||'Leitura automática')+' + correções manuais':(state.autoWallMethod||'Leitura automática da planta')}
     else if(manualLength>0){wallLength=manualLength;gross=manualGross;wallSource='Paredes marcadas manualmente'}
     const openingAreaIdentified=state.openings.reduce((s,o)=>s+(Number(o.qty)||0)*(Number(o.w)||0)*(Number(o.h)||0),0);
-    const partialImportedWalls=state.chatGPTImported&&state.aiRead?.walls?.totalProvided===false&&override<=0&&manualMode!=='replace'&&autoLength>0;
+    const partialImportedWalls=state.chatGPTImported&&!state.aiRead?.walls?.grossClosed&&state.aiRead?.walls?.totalProvided===false&&override<=0&&manualMode!=='replace'&&autoLength>0;
     const open=partialImportedWalls?0:openingAreaIdentified,net=Math.max(0,gross-open),L=loss(),factor=1+L,faces=num($('facesReboco').value)||2,c=state.coef,primaryBrick=$('tijolo').value;
     const built=num($('areaConstruida').value)||state.floorAreas.reduce((s,r)=>s+r.area,0)||state.rooms.filter(r=>r.area<100).reduce((s,r)=>s+r.area,0);
     const roomFloor=state.rooms.filter(r=>r.area>0&&r.area<100).reduce((s,r)=>s+r.area,0),manualFloor=num($('areaPisoManual')&&$('areaPisoManual').value);
@@ -2139,7 +2147,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if(!state.autoWallLength&&!state.walls.length&&!num($('wallLengthOverride').value)){score-=18;issues.push('Paredes sem geometria confirmada.')}
     else if(state.autoWallMethod&&/Leitura raster preliminar/i.test(state.autoWallMethod)){/* motor raster validado nesta planta; não penalizar automaticamente */}
     if(state.autoWallConfidence==='baixa'){score-=8;issues.push('A leitura automática de paredes está com confiança baixa.')}
-    if(state.metrics?.partialImportedWalls)issues.push('O ChatGPT não fechou o comprimento bruto total das paredes; o LANG está usando apenas os trechos mensurados e, para evitar desconto duplo, não subtrai novamente os vãos dessa soma. Gere nova análise CAD para fechar os eixos contínuos.')
+    if(state.metrics?.partialImportedWalls)issues.push('O comprimento bruto total das paredes ainda não pôde ser fechado. O LANG usa os trechos mensurados e evita descontar os vãos duas vezes. Refaça a análise CAD se quiser fechar os eixos contínuos.')
     const cov=state.metrics&&state.metrics.roomCoverage||x.floorCoverage||0;
     if(cov&&cov<.65){score-=6;issues.push('Pouca área foi identificada por nome de ambiente ('+Math.round(cov*100)+'% da área construída). Confira pisos e ambientes sem rótulo.')}
     if(cov>1.05){score-=12;issues.push('A soma dos ambientes ultrapassa a área construída; pode haver rótulos duplicados no PDF.')}
