@@ -18,18 +18,6 @@ async function upstream(url, options={}){
 module.exports = async function handler(req,res){
   res.setHeader('Cache-Control','no-store, max-age=0');
   try{
-    if(req.method==='GET' && String(req.query?.selftest||'')==='1'){
-      const id='l2b-'+crypto.randomUUID().replace(/-/g,'');
-      const url=BASE+id+'/'+PATH;
-      const a=await upstream(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({test:true,value:1})});
-      const b=await upstream(url);
-      const c=await upstream(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({test:true,value:2})});
-      const d=await upstream(url);
-      const e=await upstream(url,{method:'DELETE'});
-      const ok=a.r.ok&&b.r.ok&&c.r.ok&&d.r.ok&&d.body?.value===2;
-      return res.status(ok?200:502).json({ok,create:a.r.status,read1:b.r.status,update:c.r.status,read2:d.r.status,delete:e.r.status,value:d.body?.value});
-    }
-
     if(req.method==='POST'){
       const id='l2b-'+crypto.randomUUID().replace(/-/g,'');
       const {r,body}=await upstream(BASE+id+'/'+PATH,{
