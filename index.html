@@ -837,6 +837,30 @@ function detectCadWalls(cad){
   for(const w of walls){const pts=[w.a,w.b].sort((p,q)=>p.x-q.x||p.y-q.y),key=pts.map(p=>Math.round(p.x*50)+','+Math.round(p.y*50)).join('|');if(seen.has(key))continue;seen.add(key);dedup.push(w)}
   return{walls:dedup,allSegments:all,positiveLayers:[...positiveLayers],hasPositive,ignoredLayers:[...new Set(all.filter(s=>negative.test(s.layer)).map(s=>s.layer))]};
 }
+function detectCadWallPairsForManifest(cad){
+  const all=cadRawSegments(cad).filter(s=>s.len>=.15&&s.len<=200),positive=/(\bA[-_ ]?WALL\b|PAREDE|ALVEN|MASON|WALL|MURO|VEDA[CÇ]|ARQ.*PARE)/i;
+  const positiveLayers=new Set(all.filter(s=>positive.test(s.layer)).map(s=>s.layer));
+  if(!positiveLayers.size)return{walls:[],modes:[],positiveLayers:[]};
+  const candidates=all.filter(s=>positiveLayers.has(s.layer)),props=candidates.map((s,i)=>{const dx=s.b.x-s.a.x,dy=s.b.y-s.a.y,len=s.len;return{...s,i,ux:dx/len,uy:dy/len,angle:(Math.atan2(dy,dx)+Math.PI)%Math.PI}}),raw=[];
+  for(let i=0;i<props.length;i++){
+    const a=props[i];if(a.len<.30)continue;
+    for(let j=i+1;j<props.length;j++){
+      const b=props[j];if(b.len<.30||cadAngleDelta(a.angle,b.angle)>.035)continue;
+      const nx=-a.uy,ny=a.ux,signed=(b.a.x-a.a.x)*nx+(b.a.y-a.a.y)*ny,sep=Math.abs(signed);if(sep<.055||sep>.36)continue;
+      const p1=(b.a.x-a.a.x)*a.ux+(b.a.y-a.a.y)*a.uy,p2=(b.b.x-a.a.x)*a.ux+(b.b.y-a.a.y)*a.uy,lo=Math.max(0,Math.min(p1,p2)),hi=Math.min(a.len,Math.max(p1,p2)),overlap=hi-lo,minLen=Math.min(a.len,b.len);
+      if(overlap<.20||overlap/minLen<.45)continue;raw.push({a,lo,hi,overlap,signed,sep});
+    }
+  }
+  const bins=new Map();for(const p of raw){const k=Math.round(p.sep/.005)*.005;bins.set(k,(bins.get(k)||0)+p.overlap)}
+  let ranked=[...bins.entries()].filter(([k])=>k>=.09&&k<=.25).sort((a,b)=>b[1]-a[1]);if(!ranked.length)ranked=[...bins.entries()].sort((a,b)=>b[1]-a[1]);
+  const top=ranked[0]?.[1]||0,modes=ranked.filter(([k,w],i)=>i===0||w>=Math.max(2,top*.18)).map(([k])=>k),walls=[],seen=new Set();
+  for(const p of raw){
+    if(modes.length&&!modes.some(m=>Math.abs(p.sep-m)<=.0125))continue;
+    const a=p.a,nx=-a.uy,ny=a.ux,off=p.signed/2,A={x:a.a.x+a.ux*p.lo+nx*off,y:a.a.y+a.uy*p.lo+ny*off},B={x:a.a.x+a.ux*p.hi+nx*off,y:a.a.y+a.uy*p.hi+ny*off},pts=[A,B].sort((u,v)=>u.x-v.x||u.y-v.y),key=pts.map(q=>Math.round(q.x*100)+','+Math.round(q.y*100)).join('|')+'|'+Math.round(p.sep*200);
+    if(seen.has(key))continue;seen.add(key);walls.push({a:A,b:B,len:Math.hypot(B.x-A.x,B.y-A.y),layer:a.layer,paired:true,thickness:p.sep});
+  }
+  return{walls,modes,positiveLayers:[...positiveLayers]};
+}
 function polygonAreaM2(vertices,f){let a=0;for(let i=0,j=vertices.length-1;i<vertices.length;j=i++)a+=(vertices[j].x*f)*(vertices[i].y*f)-(vertices[i].x*f)*(vertices[j].y*f);return Math.abs(a)/2}
 function analyzeCadData(){
   const cad=state.cadData;if(!cad)return;
@@ -1305,9 +1329,9 @@ async function buildCadManifestFile(dxfFile,originalName){
       if((e.t==='LWPOLYLINE'||e.t==='POLYLINE')&&Array.isArray(e.v))return{type:e.t,layer:e.l,vertices:e.v.map(p=>({x:p[0],y:p[1]})),closed:Boolean(e.closed)};
       return null;
     }).filter(Boolean);
-    const det=detectCadWalls({entities:wallEntities,unitFactor:factor});
-    const paired=(det.walls||[]).filter(w=>w.paired&&Number(w.len)>0).map((w,i)=>({id:'W'+String(i+1).padStart(3,'0'),a_m:[round(w.a.x),round(w.a.y)],b_m:[round(w.b.x),round(w.b.y)],comprimento_m:round(w.len),espessura_m:round(w.thickness),layer:w.layer}));
-    paredesPre={trechos_eixo_solido:paired,soma_eixos_solidos_m:round(paired.reduce((s,w)=>s+w.comprimento_m,0)),layers:[...new Set(paired.map(w=>w.layer))]};
+    const det=detectCadWallPairsForManifest({entities:wallEntities,unitFactor:factor});
+    const paired=(det.walls||[]).filter(w=>Number(w.len)>0).map((w,i)=>({id:'W'+String(i+1).padStart(3,'0'),a_m:[round(w.a.x),round(w.a.y)],b_m:[round(w.b.x),round(w.b.y)],comprimento_m:round(w.len),espessura_m:round(w.thickness),layer:w.layer}));
+    paredesPre={trechos_eixo_solido:paired,soma_eixos_solidos_m:round(paired.reduce((s,w)=>s+w.comprimento_m,0)),layers:[...new Set(paired.map(w=>w.layer))],espessuras_dominantes_m:(det.modes||[]).map(round)};
   }catch(err){console.warn('Pré-análise de paredes CAD indisponível',err)}
   const inserts=modelM.filter(e=>e.t==='INSERT'&&e.n),referenced=new Set(inserts.map(e=>e.n));
   const relevantRe=/(PAREDE|ALVEN|WALL|MURO|PORTA|DOOR|JANEL|WINDOW|ESQUADR|VIDRO|PILAR|COLUMN|VIGA|BEAM|SAPATA|FOOT|LAJE|SLAB|ESCADA|STAIR|COBERT|ROOF)/i;
