@@ -195,12 +195,12 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
       <section id="view-quant" class="view">
         <div class="page-title"><div><h1>Quantitativos</h1><p>Resultado geométrico + coeficientes de consumo configuráveis.</p></div><span class="pill" id="quantSource">Aguardando cálculo</span></div>
         <div class="card"><div class="stats"><div class="stat"><b id="qAreaWall">0</b><span>Alvenaria líquida m²</span></div><div class="stat"><b id="qBricks">0</b><span>Tijolos</span></div><div class="stat"><b id="qFloor">0</b><span>Piso m²</span></div><div class="stat"><b id="qPaint">0</b><span>Pintura m²</span></div><div class="stat"><b id="qOpen">0</b><span>Vãos m²</span></div></div></div>
-        <div class="card"><div class="section-head"><div><h2>Conferência de dados</h2><p class="mini-note">O app verifica automaticamente qualidade da leitura, cobertura dos ambientes e dependência de estimativas.</p></div><span class="pill" id="qualityGrade">Aguardando cálculo</span></div>
-          <div class="stats"><div class="stat"><b id="qualityScore">—</b><span>Índice de confiança</span></div><div class="stat"><b id="qualityDirect">0</b><span>Diretos</span></div><div class="stat"><b id="qualityEstimated">0</b><span>Estimados</span></div><div class="stat"><b id="qualityLow">0</b><span>Baixa confiança</span></div><div class="stat"><b id="qualityRoomCoverage">—</b><span>Cobertura dos ambientes</span></div></div>
+        <div class="card"><div class="section-head"><div><h2>Conferência de dados</h2><p class="mini-note">O índice mede a confiabilidade do levantamento arquitetônico. Projetos complementares são acompanhados separadamente e não reduzem artificialmente a nota da leitura do CAD.</p></div><span class="pill" id="qualityGrade">Aguardando cálculo</span></div>
+          <div class="stats"><div class="stat"><b id="qualityScore">—</b><span>Confiança arquitetônica</span></div><div class="stat"><b id="qualityDirect">0</b><span>Arquitetônicos diretos</span></div><div class="stat"><b id="qualityEstimated">0</b><span>Arquitetônicos estimados</span></div><div class="stat"><b id="qualityLow">0</b><span>Complementares a confirmar</span></div><div class="stat"><b id="qualityRoomCoverage">—</b><span>Cobertura dos ambientes</span></div></div>
           <div id="qualityIssues" class="notice okbox" style="margin-top:12px">Calcule os quantitativos para executar a auditoria.</div></div>
         <div class="card"><h2>Materiais e serviços quantificados</h2><p class="mini-note">Leitura direta, derivação geométrica ou estimativa estatística/paramétrica. Toda estimativa informa a base adotada e não é apresentada como medição executiva.</p><table><thead><tr><th>Etapa</th><th>Material / serviço</th><th class="num">Quantidade</th><th>Unidade</th><th>Origem / base</th></tr></thead><tbody id="materialsBody"></tbody></table></div>
         <div class="card"><h2>Controle de escopo</h2><div class="stats" style="margin-bottom:12px"><div class="stat"><b id="scopeSelected">0</b><span>Selecionados</span></div><div class="stat"><b id="scopeDone">0</b><span>Quantificados</span></div><div class="stat"><b id="scopePending">0</b><span>Estimados</span></div><div class="stat"><b id="scopeNA">0</b><span>Não aplicáveis</span></div><div class="stat"><b id="scopeCoverage">0%</b><span>Cobertura do escopo</span></div></div><div class="scroll" style="max-height:460px"><table><thead><tr><th>Etapa</th><th>Componente</th><th>Situação</th><th>Fonte</th></tr></thead><tbody id="scopeStatusBody"></tbody></table></div></div>
-        <div class="notice"><b>Critério:</b> o app não encerra componentes aplicáveis como “Pendente”. Usa primeiro a planta e os dados informados; depois, referências estatísticas/paramétricas publicadas. Sistemas não previstos ou sem evidência suficiente ficam como “Não aplicável”, em vez de receber uma quantidade inventada.</div>
+        <div class="notice"><b>Critério:</b> leitura arquitetônica e projetos complementares são avaliados separadamente. O LANG usa primeiro dados medidos/identificados no projeto. Referências paramétricas servem apenas para orçamento preliminar e nunca são apresentadas como medição executiva. Quando um componente exige projeto complementar, isso é indicado explicitamente em vez de fabricar uma quantidade.</div>
       </section>
 
       <section id="view-relatorios" class="view">
@@ -2087,8 +2087,14 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
 
   function updateQualityAudit(){
     if(!$('qualityScore'))return null;
-    const x=projectContext(),statuses=Object.values(state.scopeStatus||{}),applicable=statuses.filter(s=>s.kind!=='na'),direct=applicable.filter(s=>s.kind==='direct'||s.kind==='covered').length,estimated=applicable.filter(s=>s.kind==='estimate').length,low=applicable.filter(s=>s.kind==='estimate'&&s.confidence==='baixa').length;
-    let points=0,count=0;for(const s of applicable){count++;if(s.kind==='direct'||s.kind==='covered')points+=1;else if(s.kind==='estimate')points+=s.confidence==='alta'?.9:s.confidence==='média'?.72:.45;else points+=.25}
+    const x=projectContext(),entries=Object.entries(state.scopeStatus||{}),applicableEntries=entries.filter(([,s])=>s.kind!=='na');
+    const archEntries=applicableEntries.filter(([id])=>scopeSource(id)==='arquitetônico');
+    const compEntries=applicableEntries.filter(([id])=>scopeSource(id)==='complementar');
+    const direct=archEntries.filter(([,s])=>s.kind==='direct'||s.kind==='covered').length;
+    const estimated=archEntries.filter(([,s])=>s.kind==='estimate').length;
+    const lowArch=archEntries.filter(([,s])=>s.kind==='estimate'&&s.confidence==='baixa').length;
+    const complementaryPending=compEntries.filter(([,s])=>!['direct','covered'].includes(s.kind)).length;
+    let points=0,count=0;for(const [,s] of archEntries){count++;if(s.kind==='direct'||s.kind==='covered')points+=1;else if(s.kind==='estimate')points+=s.confidence==='alta'?.9:s.confidence==='média'?.72:.45;else points+=.25}
     let score=count?points/count*100:0;const issues=[];
     if(!state.scaleDen&&!state.metersPerPixel&&!(state.chatGPTImported&&state.autoWallLength>0)){score-=12;issues.push('Escala não confirmada: calibre por dois pontos antes do quantitativo executivo.')}
     if(state.openings.reduce((n,o)=>n+o.qty*o.w*o.h,0)>(state.metrics?.gross||0)&&state.metrics?.gross)issues.push('Área de vãos maior que a área bruta de paredes: confira dimensões e duplicidades.');
@@ -2102,7 +2108,8 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     const openingQty=state.openings.reduce((n,o)=>n+(Number(o.qty)||0),0),openingIncomplete=state.openings.filter(o=>Number(o.qty)>0&&(!(Number(o.w)>0)||!(Number(o.h)>0))).reduce((n,o)=>n+(Number(o.qty)||0),0);
     if(!openingQty){score-=8;issues.push('Nenhuma porta/janela foi identificada; o desconto de vãos precisa de conferência.')}
     else if(openingIncomplete){score-=4;issues.push(openingIncomplete+' porta(s)/janela(s) foram contadas, mas ainda estão sem dimensão completa; elas não são descontadas da área de paredes até a medida ser confirmada.')}
-    if(low>Math.max(3,applicable.length*.2)){score-=8;issues.push(low+' componentes ainda dependem de estimativas de baixa confiança.')}
+    if(lowArch>Math.max(2,archEntries.length*.2)){score-=6;issues.push(lowArch+' item(ns) do próprio projeto arquitetônico ainda dependem de estimativa de baixa confiança.')}
+    const complementaryNote=complementaryPending?complementaryPending+' item(ns) selecionado(s) dependem de projeto complementar ou premissa específica. Eles não reduzem a confiança arquitetônica.':'';
     const fundSel=$('fundacaoTipo')?.value||'Não informado',structSel=$('estruturaTipo')?.value||'Não informado';
     const sapQtdAudit=ext('strSapQtd'),sapAltAudit=ext('strSapAlt'),vigaMAudit=ext('strVigaM'),pilarQtdAudit=ext('strPilarQtd'),
       aiSap=Math.max(0,Math.floor(Number(state.aiRead?.structure?.footingsQty)||0)),aiViga=Math.max(0,Number(state.aiRead?.structure?.beamsLengthM)||0),aiPilar=Math.max(0,Math.floor(Number(state.aiRead?.structure?.columnsQty)||0)),
@@ -2116,9 +2123,10 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if($('pintExterna')&&$('pintExterna').value==='sim'&&/perímetro equivalente/i.test(state.metrics?.facadeSource||''))issues.push('Fachada ainda está por perímetro equivalente porque o perímetro externo completo não foi fechado no CAD. Informe a área líquida ou gere uma análise CAD com eixos externos completos.');
     if(/projeção paramétrica|aproximação/i.test(state.metrics?.floorSource||''))issues.push('Piso ainda depende de aproximação geométrica. Ambientes nomeados ou uma área de piso informada substituem essa estimativa.');
     score=Math.max(0,Math.min(100,Math.round(score)));const grade=score>=85?'Alta':score>=70?'Boa':score>=55?'Moderada':'Baixa';
-    $('qualityScore').textContent=score+'%';$('qualityGrade').textContent='Confiança '+grade;$('qualityDirect').textContent=direct;$('qualityEstimated').textContent=estimated;$('qualityLow').textContent=low;$('qualityRoomCoverage').textContent=cov?Math.round(cov*100)+'%':'—';
-    const box=$('qualityIssues');if(!issues.length){box.className='notice okbox';box.innerHTML='<b>Sem alertas críticos.</b> A leitura atual está consistente com os dados disponíveis.'}else{box.className='notice';box.innerHTML='<b>Pontos para elevar a precisão:</b><ul style="margin:7px 0 0 18px;padding:0">'+issues.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'}
-    state.qualityAudit={score:score,grade:grade,direct:direct,estimated:estimated,low:low,roomCoverage:cov,issues:issues};return state.qualityAudit;
+    $('qualityScore').textContent=score+'%';$('qualityGrade').textContent='Confiança arquitetônica '+grade;$('qualityDirect').textContent=direct;$('qualityEstimated').textContent=estimated;$('qualityLow').textContent=complementaryPending;$('qualityRoomCoverage').textContent=cov?Math.round(cov*100)+'%':'—';
+    const box=$('qualityIssues'),compHtml=complementaryNote?'<p class="mini-note" style="margin:10px 0 0"><b>Projetos complementares:</b> '+esc(complementaryNote)+'</p>':'';
+    if(!issues.length){box.className='notice okbox';box.innerHTML='<b>Sem alertas críticos na leitura arquitetônica.</b> Os dados extraídos estão consistentes com as evidências disponíveis.'+compHtml}else{box.className='notice';box.innerHTML='<b>Pontos para elevar a precisão arquitetônica:</b><ul style="margin:7px 0 0 18px;padding:0">'+issues.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'+compHtml}
+    state.qualityAudit={score:score,grade:grade,direct:direct,estimated:estimated,lowArchitectural:lowArch,complementaryPending:complementaryPending,roomCoverage:cov,issues:issues};return state.qualityAudit;
   }
 
 
