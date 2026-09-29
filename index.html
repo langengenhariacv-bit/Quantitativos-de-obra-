@@ -2127,7 +2127,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     else{floor=built;floorSource='Área construída usada como aproximação de piso'}
     const foot=built/Math.max(1,num($('pavimentos').value)||1),extPerim=foot>0?4*Math.sqrt(foot):0,manualFacade=num($('areaFachadaManual')&&$('areaFachadaManual').value);
     const wins=state.openings.filter(o=>/janela/i.test(o.type)),doors=state.openings.filter(o=>/porta/i.test(o.type)),exteriorDoors=doors.filter(o=>/vidro|extern|porta\s+p1/i.test(o.type)),facadeOpen=wins.reduce((s,o)=>s+o.qty*(Number(o.w)||0)*(Number(o.h)||0),0)+exteriorDoors.reduce((s,o)=>s+o.qty*(Number(o.w)||0)*(Number(o.h)||0),0);
-    const importedExternalLen=state.aiRead?.walls?.totalProvided?(state.aiRead.walls.segments||[]).filter(s=>s.external).reduce((sum,s)=>sum+(Number(s.lengthM)||0),0):0;
+    const importedExternalExplicit=Number(state.aiRead?.walls?.externalLengthM)||0,importedExternalSeg=(state.aiRead?.walls?.segments||[]).filter(s=>s.external).reduce((sum,s)=>sum+(Number(s.lengthM)||0),0),importedExternalLen=importedExternalExplicit||importedExternalSeg;
     let facadeGross=0,facadeNet=0,facadeSource='';
     if(manualFacade>0){facadeGross=manualFacade;facadeNet=manualFacade;facadeSource='Área líquida de fachada informada'}
     else if(importedExternalLen>0){facadeGross=importedExternalLen*height();facadeNet=Math.max(0,facadeGross-facadeOpen);facadeSource='Eixos completos das paredes externas do CAD × pé-direito − vãos externos'}
