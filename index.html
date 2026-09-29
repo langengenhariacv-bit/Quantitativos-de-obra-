@@ -1031,7 +1031,8 @@ function dxfCompactText(groups){
 function dxfCompactEntity(type,groups){
   const t=String(type||'').toUpperCase(),layer=dxfCompactVal(groups,8,'0')||'0',h=dxfCompactVal(groups,5,'')||'';
   const p=(cx,cy)=>{const x=dxfCompactNum(groups,cx,null),y=dxfCompactNum(groups,cy,null);return Number.isFinite(x)&&Number.isFinite(y)?[x,y]:null};
-  const base={t,l:layer};if(h)base.h=h;
+  const space=Math.round(dxfCompactNum(groups,67,0)||0),layout=dxfCompactVal(groups,410,'')||'',visible=(dxfCompactNum(groups,60,0)||0)===0;
+  const base={t,l:layer,space,layout,visible};if(h)base.h=h;
   if(t==='LINE')return{...base,a:p(10,20),b:p(11,21)};
   if(t==='LWPOLYLINE'){
     const v=[];let cur=null;
@@ -1041,7 +1042,7 @@ function dxfCompactEntity(type,groups){
   if(t==='ARC')return{...base,c:p(10,20),r:dxfCompactNum(groups,40,null),a0:dxfCompactNum(groups,50,null),a1:dxfCompactNum(groups,51,null)};
   if(t==='CIRCLE')return{...base,c:p(10,20),r:dxfCompactNum(groups,40,null)};
   if(t==='INSERT')return{...base,n:dxfCompactVal(groups,2,''),p:p(10,20),sx:dxfCompactNum(groups,41,1),sy:dxfCompactNum(groups,42,1),rot:dxfCompactNum(groups,50,0)};
-  if(t==='TEXT'||t==='MTEXT')return{...base,text:dxfCompactText(groups),p:p(10,20)};
+  if(t==='TEXT'||t==='MTEXT'||t==='ATTRIB'||t==='ATTDEF')return{...base,text:dxfCompactText(groups),p:p(10,20),tag:dxfCompactVal(groups,2,'')||''};
   if(t==='DIMENSION')return{...base,text:dxfCompactVal(groups,1,''),m:dxfCompactNum(groups,42,null),def:p(10,20),p1:p(13,23),p2:p(14,24)};
   if(t==='HATCH'||t==='LEADER'||t==='MULTILEADER'||t==='SOLID'||t==='IMAGE'||t==='ACAD_TABLE')return base;
   return base;
@@ -1132,7 +1133,7 @@ function cadOpeningSchedules(blocks,modelM){
   }
   const occurrences={};
   for(const e of modelM||[]){
-    if(e.t!=='TEXT'&&e.t!=='MTEXT')continue;
+    if(!['TEXT','MTEXT','ATTRIB','ATTDEF'].includes(e.t))continue;
     const code=cadPlainText(e.text).toUpperCase();
     if(/^[PJ]\d{1,3}$/.test(code))occurrences[code]=(occurrences[code]||0)+1;
   }
@@ -1216,13 +1217,18 @@ async function buildCadManifestFile(dxfFile,originalName){
           const x=dxfCompactNum(vg,10,null),y=dxfCompactNum(vg,20,null);if(Number.isFinite(x)&&Number.isFinite(y))v.push([x,y]);
           if(layer==='0')layer=dxfCompactVal(vg,8,'0')||'0';j=k;
         }
-        const ent={t:'POLYLINE',l:layer,v,closed};
-        if(section==='ENTITIES')model.push(ent);else currentBlock.entities.push(ent);
+        const space=Math.round(dxfCompactNum(header,67,0)||0),layout=dxfCompactVal(header,410,'')||'',visible=(dxfCompactNum(header,60,0)||0)===0;
+        const ent={t:'POLYLINE',l:layer,v,closed,space,layout,visible};
+        if(section==='ENTITIES'){
+          if(space!==1&&(!layout||/^model$/i.test(layout))&&visible)model.push(ent);
+        }else currentBlock.entities.push(ent);
         i=(j<pairs.length&&pairs[j].code===0&&String(pairs[j].value).trim()==='SEQEND')?j+1:j;continue;
       }
       const [g,j]=readGroups(i),ent=dxfCompactEntity(type,g);
       if(ent?.l)layerNames.add(ent.l);
-      if(section==='ENTITIES')model.push(ent);else currentBlock.entities.push(ent);
+      if(section==='ENTITIES'){
+        if(ent&&ent.space!==1&&(!ent.layout||/^model$/i.test(ent.layout))&&ent.visible!==false)model.push(ent);
+      }else currentBlock.entities.push(ent);
       i=j;continue;
     }
     i++;
@@ -1234,12 +1240,17 @@ async function buildCadManifestFile(dxfFile,originalName){
   const modelM=model.map(e=>{
     const o={t:e.t,l:e.l};if(e.h)o.h=e.h;if(e.a)o.a=sp(e.a);if(e.b)o.b=sp(e.b);if(e.c)o.c=sp(e.c);if(e.p)o.p=sp(e.p);if(e.def)o.def=sp(e.def);if(e.p1)o.p1=sp(e.p1);if(e.p2)o.p2=sp(e.p2);
     if(e.v)o.v=e.v.map(sp);if(e.closed!=null)o.closed=e.closed;if(Number.isFinite(e.r))o.r=round(e.r*factor);if(e.a0!=null)o.a0=e.a0;if(e.a1!=null)o.a1=e.a1;
-    if(e.n)o.n=e.n;if(e.text)o.text=e.text;if(Number.isFinite(e.m))o.m=round(e.m*factor);return o;
+    if(e.n)o.n=e.n;if(e.text)o.text=e.text;if(e.tag)o.tag=e.tag;if(e.space!=null)o.space=e.space;if(e.layout)o.layout=e.layout;if(Number.isFinite(e.m))o.m=round(e.m*factor);return o;
   });
   const typeCounts={},layerStats={};for(const e of modelM){typeCounts[e.t]=(typeCounts[e.t]||0)+1;(layerStats[e.l]??={count:0,types:{}}).count++;layerStats[e.l].types[e.t]=(layerStats[e.l].types[e.t]||0)+1}
   let paredesPre={trechos_eixo_solido:[],soma_eixos_solidos_m:0,layers:[]};
   try{
-    const det=detectCadWalls({entities:model,unitFactor:factor});
+    const wallEntities=model.map(e=>{
+      if(e.t==='LINE'&&e.a&&e.b)return{type:'LINE',layer:e.l,a:{x:e.a[0],y:e.a[1]},b:{x:e.b[0],y:e.b[1]}};
+      if((e.t==='LWPOLYLINE'||e.t==='POLYLINE')&&Array.isArray(e.v))return{type:e.t,layer:e.l,vertices:e.v.map(p=>({x:p[0],y:p[1]})),closed:Boolean(e.closed)};
+      return null;
+    }).filter(Boolean);
+    const det=detectCadWalls({entities:wallEntities,unitFactor:factor});
     const paired=(det.walls||[]).filter(w=>w.paired&&Number(w.len)>0).map((w,i)=>({id:'W'+String(i+1).padStart(3,'0'),a_m:[round(w.a.x),round(w.a.y)],b_m:[round(w.b.x),round(w.b.y)],comprimento_m:round(w.len),espessura_m:round(w.thickness),layer:w.layer}));
     paredesPre={trechos_eixo_solido:paired,soma_eixos_solidos_m:round(paired.reduce((s,w)=>s+w.comprimento_m,0)),layers:[...new Set(paired.map(w=>w.layer))]};
   }catch(err){console.warn('Pré-análise de paredes CAD indisponível',err)}
@@ -1294,7 +1305,7 @@ async function buildCadManifestFile(dxfFile,originalName){
     nomes_blocos:blocks.map(b=>b.name).filter(Boolean),
     entidades_modelspace_m:modelM,
     regras_de_leitura:[
-      'Coordenadas e comprimentos de entidades_modelspace_m estão normalizados em metros.',
+      'Coordenadas e comprimentos de entidades_modelspace_m estão normalizados em metros e o conjunto foi filtrado para Model Space (DXF group 67/410), excluindo Paper Space.',
       'Definições de bloco são modelos/templates; não contam como ocorrência sem INSERT ou geometria correspondente no Model Space.',
       'Linhas de cotas, textos, mobiliário, hachuras e molduras não são paredes.',
       'Para paredes desenhadas por duas faces paralelas, medir uma única vez pelo eixo médio.',
