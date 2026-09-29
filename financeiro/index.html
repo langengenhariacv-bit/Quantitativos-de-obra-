@@ -49,7 +49,8 @@
 const API='/api/l2b-db';
 const CATEGORIES=['Materiais','Mão de obra','Serviços terceirizados','Equipamentos e locações','Frete e transporte','Taxas e documentação','Alimentação','Combustível','Outros'];
 const PAYERS=['L2B Construtora','Gerson','Geovane'];
-let dbId=new URLSearchParams(location.search).get('db')||localStorage.getItem('l2b_db')||'';
+const DEFAULT_DB='l2b-9bd313929d4847f6b41753dc122b70b8';
+let dbId=new URLSearchParams(location.search).get('db')||localStorage.getItem('l2b_db')||DEFAULT_DB;
 let currentPassword='';
 let state=null;
 let currentWorkId=null;
@@ -73,7 +74,7 @@ async function load(){status('Sincronizando…');const p=await fetchBlob();state
 function normalize(){state.version=1;state.revision=Number(state.revision||0);state.works=Array.isArray(state.works)?state.works:[];state.expenses=Array.isArray(state.expenses)?state.expenses:[]}
 async function mutate(fn){status('Salvando…');try{let remote=await decryptData(await fetchBlob(),currentPassword);remote.works=Array.isArray(remote.works)?remote.works:[];remote.expenses=Array.isArray(remote.expenses)?remote.expenses:[];await fn(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();showToast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message)}}
 function totals(workId=null){const ex=state.expenses.filter(x=>!workId||x.workId===workId);const total=ex.reduce((a,x)=>a+Number(x.value||0),0);const by=Object.fromEntries(PAYERS.map(p=>[p,ex.filter(x=>x.payer===p).reduce((a,x)=>a+Number(x.value||0),0)]));return {total,by,count:ex.length}}
-function setLogin(){const init=!dbId;$('#initBtn').classList.toggle('hidden',!init);$('#loginBtn').classList.toggle('hidden',init);$('#loginText').textContent=init?'Defina a senha que L2B, Gerson e Geovane usarão. Depois, copie o link compartilhado.':'Acesse o painel compartilhado da L2B Construtora.'}
+function setLogin(){const init=!dbId;$('#initBtn').classList.toggle('hidden',!init);$('#loginBtn').classList.toggle('hidden',init);$('#loginText').textContent=init?'Acesse o painel compartilhado da L2B Construtora.':'Acesse o painel compartilhado da L2B Construtora.'}
 async function doLogin(){const pwd=$('#passwordInput').value;if(!pwd)return loginErr('Digite a senha.');try{currentPassword=pwd;await load();localStorage.setItem('l2b_db',dbId);$('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');render()}catch(e){currentPassword='';loginErr('Senha incorreta ou dados indisponíveis.') }}
 function loginErr(t){const e=$('#loginError');e.textContent=t;e.classList.remove('hidden')}
 async function initDb(){const pwd=$('#passwordInput').value;if(pwd.length<6)return loginErr('Use uma senha com pelo menos 6 caracteres.');try{const initial={version:1,revision:0,updatedAt:new Date().toISOString(),works:[],expenses:[]};const payload=await encryptData(initial,pwd);const id=await createBlob(payload);if(!id)throw new Error('ID não retornado');dbId=id;currentPassword=pwd;state=initial;localStorage.setItem('l2b_db',id);const u=new URL(location.href);u.searchParams.set('db',id);history.replaceState(null,'',u);$('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');render();showToast('Banco compartilhado criado');setTimeout(settingsModal,250)}catch(e){loginErr(e.message)}}
