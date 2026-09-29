@@ -1576,18 +1576,20 @@ async function importChatGPTResult(file){
       if(inferredUnits>1&&$('tipoObra'))$('tipoObra').value='Residencial multifamiliar';
     }
     const cadDefs=new Map((state.cadManifest?.esquadrias?.itens||[]).map(d=>[String(d.codigo||'').toUpperCase(),d]));
-    const importedOpenings=(a.openings||[]).filter(o=>Number(o.quantity)>0).map(o=>{
-      const code=String(o.code||'').toUpperCase(),d=cadDefs.get(code)||null;
-      const w=Number(d?.largura_m)||Number(o.widthM)||0,h=Number(d?.altura_m)||Number(o.heightM)||0;
-      const qty=Math.max(1,Math.round(Number(d?.quantidade)||Number(o.quantity)||1));
-      const desc=String(d?.descricao||'').trim(),material=/vidro/i.test(desc)?'vidro':/madeira/i.test(desc)?'madeira':'';
-      const kind=d?.tipo||o.kind||'Vão';
-      return{type:kind+(code?' '+code:'')+(material?' '+material:''),code,qty,w,h,peitoril:Number(d?.peitoril_m)||0,description:desc,source:d?'Quadro de esquadrias CAD vigente':'ChatGPT'};
+    const cadScheduleOpenings=[...cadDefs.values()].filter(d=>Number(d.quantidade)>0).map(d=>{
+      const code=String(d.codigo||'').toUpperCase(),desc=String(d.descricao||'').trim(),material=/vidro/i.test(desc)?'vidro':/madeira/i.test(desc)?'madeira':'';
+      return{type:(d.tipo||'Vão')+' '+code+(material?' '+material:''),code,qty:Math.max(1,Math.round(Number(d.quantidade))),w:Number(d.largura_m)||0,h:Number(d.altura_m)||0,peitoril:Number(d.peitoril_m)||0,description:desc,source:'Quadro de esquadrias CAD vigente'};
     });
-    for(const d of cadDefs.values()){
-      const code=String(d.codigo||'').toUpperCase();if(importedOpenings.some(o=>o.code===code)||!(Number(d.quantidade)>0))continue;
-      const desc=String(d.descricao||''),material=/vidro/i.test(desc)?'vidro':/madeira/i.test(desc)?'madeira':'';
-      importedOpenings.push({type:(d.tipo||'Vão')+' '+code+(material?' '+material:''),code,qty:Math.max(1,Math.round(Number(d.quantidade))),w:Number(d.largura_m)||0,h:Number(d.altura_m)||0,peitoril:Number(d.peitoril_m)||0,description:desc,source:'CAD'});
+    let importedOpenings=[];
+    if(cadScheduleOpenings.length){
+      // O quadro selecionado pelo Model Space é a fonte autoritativa: evita revisões antigas,
+      // códigos agrupados e dimensões divergentes vindas de uma análise textual anterior.
+      importedOpenings=cadScheduleOpenings;
+    }else{
+      importedOpenings=(a.openings||[]).filter(o=>Number(o.quantity)>0).map(o=>{
+        const code=String(o.code||'').toUpperCase(),w=Number(o.widthM)||0,h=Number(o.heightM)||0;
+        return{type:(o.kind||'Vão')+(code?' '+code:''),code,qty:Math.max(1,Math.round(Number(o.quantity)||1)),w,h,peitoril:0,description:'',source:'ChatGPT'};
+      });
     }
     if(importedOpenings.length)state.openings=importedOpenings;
     const st=a.structure||{};if(Number(st.footingsQty)>0&&$('strSapQtd'))$('strSapQtd').value=Math.round(Number(st.footingsQty));if(Number(st.beamsLengthM)>0&&$('strVigaM'))$('strVigaM').value=Number(st.beamsLengthM).toFixed(2);if(Number(st.columnsQty)>0&&$('strPilarQtd'))$('strPilarQtd').value=Math.round(Number(st.columnsQty));if(Number(st.slabAreaM2)>0&&$('q_laje'))$('q_laje').value=Number(st.slabAreaM2).toFixed(2);
