@@ -938,7 +938,7 @@ AUDITORIA CAD OBRIGATÓRIA ANTES DO RESULTADO:
 8. COMPLETUDE: antes de gerar o JSON, confronte o que foi quantificado com os candidatos existentes. Se houver layer/bloco claramente relevante que não pôde ser quantificado, registre isso em "avisos" em vez de simplesmente omiti-lo.
 9. UNIDADES/AMBIENTES REPETIDOS: NÃO elimine ambientes só porque têm o mesmo nome e a mesma área. Se aparecem em posições distintas no Model Space, são instâncias distintas e devem permanecer separadas em "ambientes". Ambientes repetidos podem representar unidades residenciais repetidas.
 10. ESQUADRIAS: se existir "esquadrias.itens", use esse quadro como fonte primária de código, descrição, largura, altura e peitoril; use "quantidade" como contagem no Model Space quando maior que zero. Não devolva largura/altura null quando o quadro estruturado trouxer essas medidas.
-11. COMPRIMENTO BRUTO DE PAREDES: para o eixo da parede, reconstrua a continuidade através dos vãos de portas/janelas quando as duas partes forem colineares e pertencerem à mesma parede. O comprimento_total_m deve representar o eixo bruto contínuo das paredes; o LANG descontará a área dos vãos depois. Não desconte o mesmo vão duas vezes.
+11. COMPRIMENTO BRUTO DE PAREDES: use "paredes_preanalise.trechos_eixo_solido" como ponto de partida quando existir. Eles já são eixos entre pares de faces paralelas, mas ficam interrompidos nos vãos. Reconstrua a continuidade através de portas/janelas quando as duas partes forem colineares e pertencerem à mesma parede, conferindo a posição/tamanho dos vãos no CAD. O comprimento_total_m deve representar o eixo bruto contínuo das paredes; o LANG descontará a área dos vãos depois. "soma_eixos_solidos_m" NÃO é o total bruto final. Não desconte o mesmo vão duas vezes.
 12. REVISÕES/BLOCOS: Model Space e os campos estruturados do LANG_CAD têm prioridade. Definições de bloco antigas, não inseridas ou anônimas não substituem a geometria vigente.
 
 Ao terminar, gere para download um arquivo chamado ANALISE_LANG.json, em JSON válido, exatamente com esta estrutura:
@@ -1207,6 +1207,12 @@ async function buildCadManifestFile(dxfFile,originalName){
     if(e.n)o.n=e.n;if(e.text)o.text=e.text;if(Number.isFinite(e.m))o.m=round(e.m*factor);return o;
   });
   const typeCounts={},layerStats={};for(const e of modelM){typeCounts[e.t]=(typeCounts[e.t]||0)+1;(layerStats[e.l]??={count:0,types:{}}).count++;layerStats[e.l].types[e.t]=(layerStats[e.l].types[e.t]||0)+1}
+  let paredesPre={trechos_eixo_solido:[],soma_eixos_solidos_m:0,layers:[]};
+  try{
+    const det=detectCadWalls({entities:model,unitFactor:factor});
+    const paired=(det.walls||[]).filter(w=>w.paired&&Number(w.len)>0).map((w,i)=>({id:'W'+String(i+1).padStart(3,'0'),a_m:[round(w.a.x),round(w.a.y)],b_m:[round(w.b.x),round(w.b.y)],comprimento_m:round(w.len),espessura_m:round(w.thickness),layer:w.layer}));
+    paredesPre={trechos_eixo_solido:paired,soma_eixos_solidos_m:round(paired.reduce((s,w)=>s+w.comprimento_m,0)),layers:[...new Set(paired.map(w=>w.layer))]};
+  }catch(err){console.warn('Pré-análise de paredes CAD indisponível',err)}
   const inserts=modelM.filter(e=>e.t==='INSERT'&&e.n),referenced=new Set(inserts.map(e=>e.n));
   const relevantRe=/(PAREDE|ALVEN|WALL|MURO|PORTA|DOOR|JANEL|WINDOW|ESQUADR|VIDRO|PILAR|COLUMN|VIGA|BEAM|SAPATA|FOOT|LAJE|SLAB|ESCADA|STAIR|COBERT|ROOF)/i;
   const relevantBlocks=blocks.filter(b=>{
@@ -1247,6 +1253,7 @@ async function buildCadManifestFile(dxfFile,originalName){
     ambientes_estruturados:ambientesEstruturados,
     pavimentos_estruturados:pavimentosEstruturados,
     esquadrias,
+    paredes_preanalise:paredesPre,
     blocos_relevantes:relevantBlocks,
     nomes_blocos:blocks.map(b=>b.name).filter(Boolean),
     entidades_modelspace_m:modelM,
@@ -1256,7 +1263,8 @@ async function buildCadManifestFile(dxfFile,originalName){
       'Linhas de cotas, textos, mobiliário, hachuras e molduras não são paredes.',
       'Para paredes desenhadas por duas faces paralelas, medir uma única vez pelo eixo médio.',
       'Antes do resultado final, conferir pavimentos_estruturados, ambientes_estruturados, esquadrias, rotulos_area, rotulos_ambiente, candidatos de aberturas, candidatos de paredes e blocos_relevantes.',
-      'Em esquadrias.itens, quantidade é a contagem de códigos no Model Space; largura_m/altura_m/peitoril_m vêm do quadro de esquadrias quando disponível.'
+      'Em esquadrias.itens, quantidade é a contagem de códigos no Model Space; largura_m/altura_m/peitoril_m vêm do quadro de esquadrias quando disponível.',
+      'paredes_preanalise.trechos_eixo_solido contém somente eixos obtidos de pares de faces paralelas de alvenaria. Esses trechos podem estar interrompidos por vãos; não use soma_eixos_solidos_m como comprimento bruto final sem reconstruir as continuidades.'
     ]
   };
   state.cadManifest=manifest;
