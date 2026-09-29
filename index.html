@@ -2141,7 +2141,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     const lowArch=archEntries.filter(([,s])=>s.kind==='estimate'&&s.confidence==='baixa').length;
     const complementaryPending=compEntries.filter(([,s])=>!['direct','covered'].includes(s.kind)).length;
     let points=0,count=0;for(const [,s] of archEntries){count++;if(s.kind==='direct'||s.kind==='covered')points+=1;else if(s.kind==='estimate')points+=s.confidence==='alta'?.9:s.confidence==='média'?.72:.45;else points+=.25}
-    let score=count?points/count*100:0;const issues=[],complementaryIssues=[];
+    let score=count?points/count*100:0;const issues=[],complementaryIssues=[],methodNotes=[];
     if(!state.scaleDen&&!state.metersPerPixel&&!(state.chatGPTImported&&state.autoWallLength>0)){score-=12;issues.push('Escala não confirmada: calibre por dois pontos antes do quantitativo executivo.')}
     if(state.openings.reduce((n,o)=>n+o.qty*o.w*o.h,0)>(state.metrics?.gross||0)&&state.metrics?.gross)issues.push('Área de vãos maior que a área bruta de paredes: confira dimensões e duplicidades.');
     if(!state.autoWallLength&&!state.walls.length&&!num($('wallLengthOverride').value)){score-=18;issues.push('Paredes sem geometria confirmada.')}
@@ -2166,13 +2166,13 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     if(/não informado/i.test(structSel))complementaryIssues.push('Sistema estrutural não informado: aço, concreto e fôrmas não podem ser tratados como quantitativo executivo.');
     else if(/concreto armado|mista/i.test(structSel)&&!(effectiveVigaAudit||effectivePillarsAudit))complementaryIssues.push('Faltam vigas/pilares documentados em projeto estrutural; o LANG não usa paredes como vigas nem encontros de paredes como pilares.');
     if(effectiveVigaAudit>0||effectivePillarsAudit>0)complementaryIssues.push('Estribos só podem ser fechados com diâmetro, espaçamento e detalhamento estrutural informados; norma técnica não substitui projeto.');
-    if($('pintExterna')&&$('pintExterna').value==='sim'&&/perímetro equivalente/i.test(state.metrics?.facadeSource||''))issues.push('Fachada ainda está por perímetro equivalente porque o perímetro externo completo não foi fechado no CAD. Informe a área líquida ou gere uma análise CAD com eixos externos completos.');
-    if(/projeção paramétrica|aproximação/i.test(state.metrics?.floorSource||''))issues.push('Piso ainda depende de aproximação geométrica. Ambientes nomeados ou uma área de piso informada substituem essa estimativa.');
+    if($('pintExterna')&&$('pintExterna').value==='sim'&&/perímetro equivalente/i.test(state.metrics?.facadeSource||''))methodNotes.push('Fachada: perímetro equivalente da implantação × altura, com desconto dos vãos identificados. É critério geométrico de orçamento, não medição de elevação.');
+    if(/projeção paramétrica|aproximação/i.test(state.metrics?.floorSource||''))methodNotes.push('Piso: área construída menos a projeção das paredes. Quando a cobertura de ambientes for praticamente completa, a soma dos ambientes passa a prevalecer.');
     score=Math.max(0,Math.min(100,Math.round(score)));const grade=score>=85?'Alta':score>=70?'Boa':score>=55?'Moderada':'Baixa';
     $('qualityScore').textContent=score+'%';$('qualityGrade').textContent='Confiança arquitetônica '+grade;$('qualityDirect').textContent=direct;$('qualityEstimated').textContent=estimated;$('qualityLow').textContent=complementaryPending;$('qualityRoomCoverage').textContent=cov?Math.round(cov*100)+'%':'—';
-    const box=$('qualityIssues'),compDetails=complementaryIssues.length?'<ul style="margin:6px 0 0 18px;padding:0">'+complementaryIssues.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>':'',compHtml=(complementaryNote||complementaryIssues.length)?'<div class="mini-note" style="margin:10px 0 0"><b>Projetos complementares:</b> '+(complementaryNote?esc(complementaryNote):'')+compDetails+'</div>':'';
-    if(!issues.length){box.className='notice okbox';box.innerHTML='<b>Sem alertas críticos na leitura arquitetônica.</b> Os dados extraídos estão consistentes com as evidências disponíveis.'+compHtml}else{box.className='notice';box.innerHTML='<b>Pontos para elevar a precisão arquitetônica:</b><ul style="margin:7px 0 0 18px;padding:0">'+issues.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'+compHtml}
-    state.qualityAudit={score:score,grade:grade,direct:direct,estimated:estimated,lowArchitectural:lowArch,complementaryPending:complementaryPending,roomCoverage:cov,issues:issues,complementaryIssues:complementaryIssues};return state.qualityAudit;
+    const box=$('qualityIssues'),compDetails=complementaryIssues.length?'<ul style="margin:6px 0 0 18px;padding:0">'+complementaryIssues.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>':'',compHtml=(complementaryNote||complementaryIssues.length)?'<div class="mini-note" style="margin:10px 0 0"><b>Projetos complementares:</b> '+(complementaryNote?esc(complementaryNote):'')+compDetails+'</div>':'',methodHtml=methodNotes.length?'<div class="mini-note" style="margin:10px 0 0"><b>Critérios geométricos adotados:</b><ul style="margin:6px 0 0 18px;padding:0">'+methodNotes.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul></div>':'';
+    if(!issues.length){box.className='notice okbox';box.innerHTML='<b>Sem alertas críticos na leitura arquitetônica.</b> Os dados extraídos estão consistentes com as evidências disponíveis.'+methodHtml+compHtml}else{box.className='notice';box.innerHTML='<b>Pontos para elevar a precisão arquitetônica:</b><ul style="margin:7px 0 0 18px;padding:0">'+issues.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'+methodHtml+compHtml}
+    state.qualityAudit={score:score,grade:grade,direct:direct,estimated:estimated,lowArchitectural:lowArch,complementaryPending:complementaryPending,roomCoverage:cov,issues:issues,complementaryIssues:complementaryIssues,methodNotes};return state.qualityAudit;
   }
 
 
@@ -2249,7 +2249,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
         tableHtml([
           ['Indicador de cobertura (não é precisão)',(audit.score!=null?audit.direct+' componentes com dados':'—')],['Validação estatística','Não realizada para esta obra'],
           ['Itens diretos',audit.direct!=null?audit.direct:'—'],['Itens estimados',audit.estimated!=null?audit.estimated:'—'],
-          ['Estimativas de baixa confiança',audit.low!=null?audit.low:'—'],['Cobertura dos ambientes',audit.roomCoverage?Math.round(audit.roomCoverage*100)+'%':'—']
+          ['Arquitetônicos de baixa confiança',audit.lowArchitectural!=null?audit.lowArchitectural:'—'],['Complementares a confirmar',audit.complementaryPending!=null?audit.complementaryPending:'—'],['Cobertura dos ambientes',audit.roomCoverage?Math.round(audit.roomCoverage*100)+'%':'—']
         ],['Indicador','Resultado'])+
         tableHtml(issues,['Situação','Observação'])+
         '<h2>Memória geométrica</h2>'+
