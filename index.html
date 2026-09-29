@@ -977,6 +977,7 @@ Ao terminar, gere para download um arquivo chamado ANALISE_LANG.json, em JSON v�
   "pe_direito_m":null,
   "paredes":{
     "comprimento_total_m":null,
+    "comprimento_externo_total_m":null,
     "area_bruta_m2":null,
     "espessuras_m":[],
     "segmentos":[
@@ -1007,7 +1008,8 @@ Ao terminar, gere para download um arquivo chamado ANALISE_LANG.json, em JSON v�
 Regras:
 - identifique cada parede/trecho mensurável separadamente em "segmentos";
 - cada segmento deve usar o eixo/comprimento real da parede e nunca a linha de cota;
-- comprimento_total_m = soma dos segmentos confiáveis, sem contar as duas faces da mesma parede;
+- comprimento_total_m = soma dos eixos brutos contínuos das paredes, sem contar as duas faces da mesma parede e sem encerrar o eixo nos vãos;
+- comprimento_externo_total_m = soma dos eixos brutos contínuos somente das paredes externas, antes do desconto de portas/janelas;
 - se o total não puder ser fechado, mantenha comprimento_total_m como null, mas ainda retorne todos os segmentos que puder medir com segurança;
 - não transformar encontro de paredes automaticamente em pilar;
 - pilares, vigas e sapatas só devem ser informados se identificáveis ou se houver base explícita na planta;
@@ -1212,6 +1214,26 @@ function cadMergeWallAxes(walls,maxGap){
   }
   return{spans,solid,filled,gross:spans.reduce((s,r)=>s+r.comprimento_m,0),gap};
 }
+function applyCadManifestFacts(manifest){
+  if(!manifest)return;
+  const floors=(manifest.pavimentos_estruturados||[]).filter(x=>Number(x.area_m2)>0),floorMap=new Map();
+  for(const x of floors){const k=String(x.pavimento||'').toLowerCase().trim();if(k&&!floorMap.has(k))floorMap.set(k,x)}
+  if(floorMap.size){
+    state.floorAreas=[...floorMap.values()].map(x=>({label:x.pavimento,area:Number(x.area_m2)}));
+    const area=state.floorAreas.reduce((s,x)=>s+x.area,0);if(area>0&&$('areaConstruida'))$('areaConstruida').value=area.toFixed(2);
+    if($('pavimentos'))$('pavimentos').value=Math.max(1,floorMap.size);
+  }
+  const rooms=(manifest.ambientes_estruturados||[]).filter(r=>Number(r.area_m2)>0&&Number(r.area_m2)<1000).map((r,i)=>({name:r.nome||'Ambiente',area:Number(r.area_m2),perimeter:0,page:1,x:Number(r.p?.[0])||i+1,y:Number(r.p?.[1])||0,source:'CAD'}));
+  if(rooms.length){
+    state.rooms=rooms;const units=inferUnitsFromImportedRooms(rooms);
+    if(units>1&&$('unidades'))$('unidades').value=units;
+    if(units>1&&$('tipoObra'))$('tipoObra').value='Residencial multifamiliar';
+  }
+  const openings=(manifest.esquadrias?.itens||[]).filter(d=>Number(d.quantidade)>0).map(d=>{const code=String(d.codigo||'').toUpperCase(),desc=String(d.descricao||''),material=/vidro/i.test(desc)?'vidro':/madeira/i.test(desc)?'madeira':'';return{type:(d.tipo||'Vão')+' '+code+(material?' '+material:''),code,qty:Math.max(1,Math.round(Number(d.quantidade))),w:Number(d.largura_m)||0,h:Number(d.altura_m)||0,peitoril:Number(d.peitoril_m)||0,description:desc,source:'CAD'}});
+  if(openings.length)state.openings=openings;
+  state.pdfText=(manifest.textos?.todos||[]).map(e=>cadPlainText(e.text)).filter(Boolean).join('\n');
+  renderRooms();renderOpenings();updateReadout();renderAutoRead();
+}
 function cadPlanRegions(rooms,floors){
   const pts=(rooms||[]).filter(r=>Array.isArray(r.p)&&Number.isFinite(Number(r.p[0]))&&Number.isFinite(Number(r.p[1])));
   if(!pts.length)return[];
@@ -1404,7 +1426,7 @@ async function buildCadManifestFile(dxfFile,originalName){
       'regioes_planta_m contém, para cada pavimento, ambientes, cotas DIMENSION próximas, faces de alvenaria e códigos de vãos. Use essas regiões antes de pesquisar o Model Space inteiro, para não misturar cobertura/cortes/fachadas.'
     ]
   };
-  state.cadManifest=manifest;
+  state.cadManifest=manifest;applyCadManifestFacts(manifest);
   const safe=(originalName||'projeto').replace(/\.(dwg|dxf)$/i,'').replace(/[^\wÀ-ÿ ._-]+/g,'_');
   return new File([JSON.stringify(manifest)],'LANG_CAD_'+safe+'.json',{type:'application/json',lastModified:Date.now()});
 }
@@ -1500,7 +1522,7 @@ function langResultToAI(payload){
   return{
     meta:{page:1,drawingType:'Planta importada do ChatGPT',isFloorPlan:true,level:'',scaleDenominator:null,overallConfidence:geral,measurementBasis:'Análise visual no ChatGPT'},
     areas:{builtAreaM2:Number(payload.area_construida_m2)||null,floorAreaM2:Number(payload.area_construida_m2)||null,roofAreaM2:null,slabAreaM2:Number(payload?.estrutura?.laje_area_m2)||null},
-    walls:{totalLengthM:totalLength,totalProvided:explicitTotal>0,segmentMeasuredM:segmentTotal,averageHeightM:Number(payload.pe_direito_m)||null,grossAreaM2:Number(payload?.paredes?.area_bruta_m2)||null,thicknessesM:Array.isArray(payload?.paredes?.espessuras_m)?payload.paredes.espessuras_m.map(Number).filter(x=>x>0):[],confidence:paredesConf,basis:(payload?.paredes?.observacoes||[]).join('; '),segments},
+    walls:{totalLengthM:totalLength,totalProvided:explicitTotal>0,segmentMeasuredM:segmentTotal,externalLengthM:Number(payload?.paredes?.comprimento_externo_total_m??payload?.walls?.externalLengthM)||null,averageHeightM:Number(payload.pe_direito_m)||null,grossAreaM2:Number(payload?.paredes?.area_bruta_m2)||null,thicknessesM:Array.isArray(payload?.paredes?.espessuras_m)?payload.paredes.espessuras_m.map(Number).filter(x=>x>0):[],confidence:paredesConf,basis:(payload?.paredes?.observacoes||[]).join('; '),segments},
     rooms:(payload.ambientes||[]).map(r=>({name:String(r.nome||'Ambiente'),areaM2:Number(r.area_m2)||null,perimeterM:Number(r.perimetro_m)||null,confidence:geral,page:Number(r.pagina)||1})),
     openings:(payload.vaos||[]).filter(v=>Number(v.quantidade)>0).map(v=>({kind:String(v.tipo||'Vão'),code:String(v.codigo||''),quantity:Math.max(1,Math.round(Number(v.quantidade)||1)),widthM:Number(v.largura_m)||null,heightM:Number(v.altura_m)||null,confidence:geral,page:Number(v.pagina)||1})),
     structure:{columnsQty:Number.isFinite(Number(payload?.estrutura?.pilares_quantidade))?Number(payload.estrutura.pilares_quantidade):null,beamsLengthM:Number(payload?.estrutura?.vigas_comprimento_m)||null,footingsQty:Number.isFinite(Number(payload?.estrutura?.sapatas_quantidade))?Number(payload.estrutura.sapatas_quantidade):null,slabAreaM2:Number(payload?.estrutura?.laje_area_m2)||null,confidence:geral,notes:Array.isArray(payload?.estrutura?.observacoes)?payload.estrutura.observacoes:[]},
