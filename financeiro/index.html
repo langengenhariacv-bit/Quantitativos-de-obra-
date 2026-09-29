@@ -46,7 +46,7 @@
 <script>
 (() => {
 'use strict';
-const API='/api/l2b-db';
+const API='https://jsonblob.com/api/jsonBlob';
 const CATEGORIES=['Materiais','Mão de obra','Serviços terceirizados','Equipamentos e locações','Frete e transporte','Taxas e documentação','Alimentação','Combustível','Outros'];
 const PAYERS=['L2B Construtora','Gerson','Geovane'];
 let dbId=new URLSearchParams(location.search).get('db')||localStorage.getItem('l2b_db')||'';
@@ -66,9 +66,9 @@ function unbuf64(s){return Uint8Array.from(atob(s),c=>c.charCodeAt(0))}
 async function derive(password,salt){const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:180000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
 async function encryptData(data,password){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await derive(password,salt);const plain=new TextEncoder().encode(JSON.stringify(data));const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,plain);return {app:'l2b-financeiro-v1',salt:buf64(salt),iv:buf64(iv),data:buf64(cipher)}}
 async function decryptData(payload,password){if(!payload||payload.app!=='l2b-financeiro-v1')throw new Error('Banco inválido');const salt=unbuf64(payload.salt),iv=unbuf64(payload.iv),key=await derive(password,salt);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,unbuf64(payload.data));return JSON.parse(new TextDecoder().decode(plain))}
-async function fetchBlob(){const r=await fetch(API+'?id='+encodeURIComponent(dbId),{cache:'no-store'});if(!r.ok)throw new Error('Não foi possível carregar os dados');return r.json()}
-async function putBlob(payload){const r=await fetch(API+'?id='+encodeURIComponent(dbId),{method:'PUT',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});if(!r.ok)throw new Error('Não foi possível salvar os dados')}
-async function createBlob(payload){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});if(!r.ok)throw new Error('Não foi possível criar o banco compartilhado');const j=await r.json();return j.id||''}
+async function fetchBlob(){const r=await fetch(API+'/'+dbId,{cache:'no-store'});if(!r.ok)throw new Error('Não foi possível carregar os dados');return r.json()}
+async function putBlob(payload){const r=await fetch(API+'/'+dbId,{method:'PUT',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});if(!r.ok)throw new Error('Não foi possível salvar os dados')}
+async function createBlob(payload){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});if(!r.ok)throw new Error('Não foi possível criar o banco compartilhado');const loc=r.headers.get('Location')||'';return loc.split('/').filter(Boolean).pop()}
 async function load(){status('Sincronizando…');const p=await fetchBlob();state=await decryptData(p,currentPassword);normalize();status('Sincronizado','ok')}
 function normalize(){state.version=1;state.revision=Number(state.revision||0);state.works=Array.isArray(state.works)?state.works:[];state.expenses=Array.isArray(state.expenses)?state.expenses:[]}
 async function mutate(fn){status('Salvando…');try{let remote=await decryptData(await fetchBlob(),currentPassword);remote.works=Array.isArray(remote.works)?remote.works:[];remote.expenses=Array.isArray(remote.expenses)?remote.expenses:[];await fn(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();showToast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message)}}
