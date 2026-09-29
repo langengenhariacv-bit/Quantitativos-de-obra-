@@ -306,7 +306,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
     ['q_elevador','Elevadores','un.','25. Transporte vertical','elevador',false],['q_limpeza','Limpeza pós-obra','m²','26. Serviços finais','limpezaFinal',false]
   ];
   const defaultScope=new Set(componentCatalog.flatMap(g=>g.items.map(i=>i[0])));
-  const state={pdf:null,image:null,cadData:null,cadDisplay:null,sourceFile:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],pageScales:{},pageDenominators:{},confirmed:false,autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],autoWallDiagnostics:{},autoWallGeometry:{},aiRead:null,aiPages:[],aiStatus:'',aiError:'',chatGPTImported:false,preparedChatGPTFile:null,preparedChatGPTUrl:'',preparedChatGPTPrompt:'',materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
+  const state={pdf:null,image:null,cadData:null,cadDisplay:null,sourceFile:null,sourceType:'',pdfName:'',pdfText:'',pageTexts:[],floorAreas:[],page:1,pages:0,viewport:null,scaleDen:null,metersPerPixel:null,rooms:[],walls:[],openings:[],openingDefinitions:[],pageScales:{},pageDenominators:{},confirmed:false,autoWallFootprint:0,autoWallLength:0,autoWallConfidence:'',autoWallMasks:{},autoWallTone:null,autoWallMethod:'',autoWallLayers:[],autoWallDiagnostics:{},autoWallGeometry:{},aiRead:null,aiPages:[],aiStatus:'',aiError:'',chatGPTImported:false,cadManifest:null,preparedChatGPTFile:null,preparedChatGPTUrl:'',preparedChatGPTPrompt:'',materials:[],mode:null,tempPts:[],coef:{...defaultCoef},scope:new Set(defaultScope),customItems:[],scopeStatus:{}};
   let autosaveTimer;
 
   function fmt(n,d=2){return Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})}
@@ -652,7 +652,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
       state.pageScales={};state.pageDenominators={};state.confirmed=false;state.openingDefinitions=[];state.scopeStatus={};state.pdf=null;state.image=null;state.cadData=null;state.cadDisplay=null;state.viewport=null;state.pdfName=file.name;state.rooms=[];state.walls=[];state.openings=[];state.materials=[];state.metrics=null;
       if(!prior){for(const id of ['areaConstruida','areaPisoManual','areaFachadaManual','perimetroRodape','wallLengthOverride'])if($(id))$(id).value=''}
       state.autoWallFootprint=0;state.autoWallLength=0;state.autoWallMasks={};state.autoWallTone=null;state.autoWallMethod='';state.autoWallLayers=[];state.autoWallDiagnostics={};state.autoWallGeometry={};if(state.preparedChatGPTUrl){try{URL.revokeObjectURL(state.preparedChatGPTUrl)}catch{}}
-      state.preparedChatGPTFile=null;state.preparedChatGPTUrl='';state.preparedChatGPTPrompt='';
+      state.preparedChatGPTFile=null;state.preparedChatGPTUrl='';state.preparedChatGPTPrompt='';state.cadManifest=null;
       if($('preparedCadActions'))$('preparedCadActions').style.display='none';
       state.aiRead=null;state.aiPages=[];state.aiStatus='';state.aiError='';state.chatGPTImported=false;state.floorAreas=[];state.pdfText='';state.pageTexts=[];state.page=1;state.metersPerPixel=null;state.scaleDen=null;
       if(isPdf){
@@ -936,6 +936,10 @@ AUDITORIA CAD OBRIGATÓRIA ANTES DO RESULTADO:
 6. REPETIÇÕES: se houver unidades ou pavimentos repetidos, não descarte rótulos repetidos automaticamente; confirme se são instâncias distintas pela posição.
 7. ESTRUTURA: só informe pilar, viga, sapata e laje quando houver entidade/layer/bloco/texto que sustente isso. Não derive pilar apenas de encontro de paredes.
 8. COMPLETUDE: antes de gerar o JSON, confronte o que foi quantificado com os candidatos existentes. Se houver layer/bloco claramente relevante que não pôde ser quantificado, registre isso em "avisos" em vez de simplesmente omiti-lo.
+9. UNIDADES/AMBIENTES REPETIDOS: NÃO elimine ambientes só porque têm o mesmo nome e a mesma área. Se aparecem em posições distintas no Model Space, são instâncias distintas e devem permanecer separadas em "ambientes". Ambientes repetidos podem representar unidades residenciais repetidas.
+10. ESQUADRIAS: se existir "esquadrias.itens", use esse quadro como fonte primária de código, descrição, largura, altura e peitoril; use "quantidade" como contagem no Model Space quando maior que zero. Não devolva largura/altura null quando o quadro estruturado trouxer essas medidas.
+11. COMPRIMENTO BRUTO DE PAREDES: para o eixo da parede, reconstrua a continuidade através dos vãos de portas/janelas quando as duas partes forem colineares e pertencerem à mesma parede. O comprimento_total_m deve representar o eixo bruto contínuo das paredes; o LANG descontará a área dos vãos depois. Não desconte o mesmo vão duas vezes.
+12. REVISÕES/BLOCOS: Model Space e os campos estruturados do LANG_CAD têm prioridade. Definições de bloco antigas, não inseridas ou anônimas não substituem a geometria vigente.
 
 Ao terminar, gere para download um arquivo chamado ANALISE_LANG.json, em JSON válido, exatamente com esta estrutura:
 {
@@ -1064,6 +1068,89 @@ function dxfCompactBlockSummary(block,factor){
   };
   return{name:block.name,entity_count:block.entities.length,entity_types:counts,layers,geometry_m:block.entities.slice(0,300).map(mapE),bbox_raw:bbox};
 }
+
+function cadPlainText(s){
+  return String(s||'')
+    .replace(/\\P/gi,'\n')
+    .replace(/\\[A-Za-z]+[^;{}]*;/g,'')
+    .replace(/[{}]/g,'')
+    .replace(/\\px[a-z]*;/gi,'')
+    .replace(/\\~/g,' ')
+    .replace(/\s+\n/g,'\n')
+    .replace(/\n\s+/g,'\n')
+    .trim();
+}
+function cadScheduleDimM(v){
+  const s=cadPlainText(v).replace(',','.').replace(/[^0-9.+-]/g,''),n=Number(s);
+  if(!Number.isFinite(n)||n<=0)return null;
+  return n>10?n/100:n;
+}
+function cadOpeningSchedules(blocks,modelM){
+  const schedules=[];
+  for(const b of blocks||[]){
+    const tx=(b.entities||[]).filter(e=>(e.t==='TEXT'||e.t==='MTEXT')&&e.text&&e.p).map(e=>({text:cadPlainText(e.text),x:Number(e.p[0]),y:Number(e.p[1])})).filter(e=>e.text&&Number.isFinite(e.x)&&Number.isFinite(e.y));
+    if(!tx.some(e=>/QUADRO\s+DE\s+ESQUADRIAS/i.test(e.text)))continue;
+    const header={};
+    for(const e of tx){
+      const t=e.text.toUpperCase();
+      if(/^C[ÓO]DIGO$/.test(t))header.codigo=e.x;
+      else if(/^DESCRI[CÇ][AÃ]O$/.test(t))header.descricao=e.x;
+      else if(/^LARGURA$/.test(t))header.largura=e.x;
+      else if(/^PEITORIL$/.test(t))header.peitoril=e.x;
+      else if(/^ALTURA$/.test(t))header.altura=e.x;
+    }
+    if(header.codigo==null||header.largura==null||header.altura==null)continue;
+    const codes=tx.filter(e=>/^[PJ]\d{1,3}$/i.test(e.text)).sort((a,b)=>b.y-a.y);
+    const ys=codes.map(e=>e.y).sort((a,b)=>a-b),diffs=[];
+    for(let i=1;i<ys.length;i++){const d=Math.abs(ys[i]-ys[i-1]);if(d>1e-7)diffs.push(d)}
+    diffs.sort((a,b)=>a-b);
+    const medianGap=diffs.length?diffs[Math.floor(diffs.length/2)]:.6,rowTol=Math.max(.02,medianGap*.28);
+    const pick=(row,x,excludeCode=true)=>{
+      const cand=tx.filter(e=>Math.abs(e.y-row.y)<=rowTol&&(!excludeCode||e!==row));
+      if(!cand.length)return null;
+      cand.sort((a,b)=>Math.abs(a.x-x)-Math.abs(b.x-x));
+      return cand[0];
+    };
+    const items=[];
+    for(const row of codes){
+      const desc=header.descricao!=null?pick(row,header.descricao):null;
+      const w=pick(row,header.largura),sill=header.peitoril!=null?pick(row,header.peitoril):null,h=pick(row,header.altura);
+      const code=row.text.toUpperCase(),tipo=code.startsWith('J')?'Janela':'Porta';
+      const item={
+        codigo:code,tipo,
+        descricao:desc?.text||'',
+        largura_m:cadScheduleDimM(w?.text),
+        altura_m:cadScheduleDimM(h?.text),
+        peitoril_m:cadScheduleDimM(sill?.text),
+        bloco:String(b.name||'')
+      };
+      if(item.largura_m||item.altura_m)items.push(item);
+    }
+    if(items.length)schedules.push({bloco:String(b.name||''),itens:items});
+  }
+  const defs=new Map();
+  for(const s of schedules)for(const it of s.itens)if(!defs.has(it.codigo))defs.set(it.codigo,it);
+  const occurrences={};
+  for(const e of modelM||[]){
+    if(e.t!=='TEXT'&&e.t!=='MTEXT')continue;
+    const code=cadPlainText(e.text).toUpperCase();
+    if(/^[PJ]\d{1,3}$/.test(code))occurrences[code]=(occurrences[code]||0)+1;
+  }
+  const itens=[...defs.values()].map(it=>({...it,quantidade:Number(occurrences[it.codigo]||0)}));
+  return{quadros:schedules,itens,ocorrencias:occurrences};
+}
+function inferUnitsFromImportedRooms(rooms){
+  const counts=new Map();
+  for(const r of rooms||[]){
+    const a=Number(r.area);
+    if(!(a>0))continue;
+    const key=String(r.name||'').toLowerCase().replace(/\s+/g,' ').trim()+'|'+a.toFixed(2);
+    counts.set(key,(counts.get(key)||0)+1);
+  }
+  const freq={};for(const n of counts.values())if(n>=2)freq[n]=(freq[n]||0)+1;
+  const choices=Object.entries(freq).map(([n,k])=>({n:Number(n),keys:k})).filter(x=>x.keys>=3).sort((a,b)=>b.keys-a.keys||b.n-a.n);
+  return choices[0]?.n||1;
+}
 async function buildCadManifestFile(dxfFile,originalName){
   const text=await dxfFile.text(),pairs=dxfCompactPairs(text);
   if(!pairs.length||!text.toUpperCase().includes('ENTITIES'))throw new Error('O DXF convertido não pôde ser estruturado.');
@@ -1126,6 +1213,16 @@ async function buildCadManifestFile(dxfFile,originalName){
   const areaLabels=texts.filter(e=>/(ÁREA|AREA)\s*:?\s*\d|PLANTA\s+BAIXA|PAVTO|PAVIMENTO/i.test(e.text)).slice(0,500);
   const roomLabels=texts.filter(e=>/(SALA|COZINHA|QUARTO|DORM|BWC|BANHEIRO|LAVABO|GARAGEM|SERVI[CÇ]O|LAVAND|SU[IÍ]TE|CIRCULA[CÇ][AÃ]O|HALL|VARANDA|SACADA|DEP[ÓO]SITO|CLOSET|ESCRIT[ÓO]RIO)/i.test(e.text)).slice(0,500);
   const candidate=(re)=>Object.entries(layerStats).filter(([n])=>re.test(n)).map(([name,s])=>({name,...s}));
+  const esquadrias=cadOpeningSchedules(blocks,modelM);
+  const plainTexts=texts.map(e=>({...e,text_limpo:cadPlainText(e.text)}));
+  const ambientesEstruturados=plainTexts.map(e=>{
+    const t=e.text_limpo||'',m=t.match(/^(.+?)(?:\n|\s)+[ÁA]rea\s*:?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]?/i);
+    return m?{nome:m[1].trim(),area_m2:Number(m[2].replace(',','.')),p:e.p}:null;
+  }).filter(Boolean);
+  const pavimentosEstruturados=plainTexts.map(e=>{
+    const t=e.text_limpo||'',m=t.match(/Planta\s+Baixa\s+(?:Pavto\.?|Pavimento)\s*([^\n]+?)(?:\n|\s)+[ÁA]rea\s*:?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]?/i);
+    return m?{pavimento:m[1].trim(),area_m2:Number(m[2].replace(',','.')),p:e.p}:null;
+  }).filter(Boolean);
   const manifest={
     format:'LANG-CAD-EXTRACAO',version:2,
     arquivo_original:originalName,arquivo_dxf:dxfFile.name,
@@ -1141,6 +1238,9 @@ async function buildCadManifestFile(dxfFile,originalName){
       estrutura:candidate(/PILAR|COLUMN|VIGA|BEAM|SAPATA|FOOT|LAJE|SLAB/i)
     },
     textos:{todos:texts,rotulos_area:areaLabels,rotulos_ambiente:roomLabels},
+    ambientes_estruturados:ambientesEstruturados,
+    pavimentos_estruturados:pavimentosEstruturados,
+    esquadrias,
     blocos_relevantes:relevantBlocks,
     nomes_blocos:blocks.map(b=>b.name).filter(Boolean),
     entidades_modelspace_m:modelM,
@@ -1149,9 +1249,11 @@ async function buildCadManifestFile(dxfFile,originalName){
       'Definições de bloco são modelos/templates; não contam como ocorrência sem INSERT ou geometria correspondente no Model Space.',
       'Linhas de cotas, textos, mobiliário, hachuras e molduras não são paredes.',
       'Para paredes desenhadas por duas faces paralelas, medir uma única vez pelo eixo médio.',
-      'Antes do resultado final, conferir rotulos_area, rotulos_ambiente, candidatos de aberturas, candidatos de paredes e blocos_relevantes.'
+      'Antes do resultado final, conferir pavimentos_estruturados, ambientes_estruturados, esquadrias, rotulos_area, rotulos_ambiente, candidatos de aberturas, candidatos de paredes e blocos_relevantes.',
+      'Em esquadrias.itens, quantidade é a contagem de códigos no Model Space; largura_m/altura_m/peitoril_m vêm do quadro de esquadrias quando disponível.'
     ]
   };
+  state.cadManifest=manifest;
   const safe=(originalName||'projeto').replace(/\.(dwg|dxf)$/i,'').replace(/[^\wÀ-ÿ ._-]+/g,'_');
   return new File([JSON.stringify(manifest)],'LANG_CAD_'+safe+'.json',{type:'application/json',lastModified:Date.now()});
 }
@@ -1246,7 +1348,7 @@ function langResultToAI(payload){
   return{
     meta:{page:1,drawingType:'Planta importada do ChatGPT',isFloorPlan:true,level:'',scaleDenominator:null,overallConfidence:geral,measurementBasis:'Análise visual no ChatGPT'},
     areas:{builtAreaM2:Number(payload.area_construida_m2)||null,floorAreaM2:Number(payload.area_construida_m2)||null,roofAreaM2:null,slabAreaM2:Number(payload?.estrutura?.laje_area_m2)||null},
-    walls:{totalLengthM:totalLength,averageHeightM:Number(payload.pe_direito_m)||null,grossAreaM2:Number(payload?.paredes?.area_bruta_m2)||null,thicknessesM:Array.isArray(payload?.paredes?.espessuras_m)?payload.paredes.espessuras_m.map(Number).filter(x=>x>0):[],confidence:paredesConf,basis:(payload?.paredes?.observacoes||[]).join('; '),segments},
+    walls:{totalLengthM:totalLength,totalProvided:explicitTotal>0,segmentMeasuredM:segmentTotal,averageHeightM:Number(payload.pe_direito_m)||null,grossAreaM2:Number(payload?.paredes?.area_bruta_m2)||null,thicknessesM:Array.isArray(payload?.paredes?.espessuras_m)?payload.paredes.espessuras_m.map(Number).filter(x=>x>0):[],confidence:paredesConf,basis:(payload?.paredes?.observacoes||[]).join('; '),segments},
     rooms:(payload.ambientes||[]).map(r=>({name:String(r.nome||'Ambiente'),areaM2:Number(r.area_m2)||null,perimeterM:Number(r.perimetro_m)||null,confidence:geral,page:Number(r.pagina)||1})),
     openings:(payload.vaos||[]).filter(v=>Number(v.quantidade)>0).map(v=>({kind:String(v.tipo||'Vão'),code:String(v.codigo||''),quantity:Math.max(1,Math.round(Number(v.quantidade)||1)),widthM:Number(v.largura_m)||null,heightM:Number(v.altura_m)||null,confidence:geral,page:Number(v.pagina)||1})),
     structure:{columnsQty:Number.isFinite(Number(payload?.estrutura?.pilares_quantidade))?Number(payload.estrutura.pilares_quantidade):null,beamsLengthM:Number(payload?.estrutura?.vigas_comprimento_m)||null,footingsQty:Number.isFinite(Number(payload?.estrutura?.sapatas_quantidade))?Number(payload.estrutura.sapatas_quantidade):null,slabAreaM2:Number(payload?.estrutura?.laje_area_m2)||null,confidence:geral,notes:Array.isArray(payload?.estrutura?.observacoes)?payload.estrutura.observacoes:[]},
@@ -1264,8 +1366,24 @@ async function importChatGPTResult(file){
     state.autoWallLength=importedWall>0?importedWall:0;state.autoWallFootprint=importedWall>0?importedWall*brickFinishedThickness():0;state.autoWallConfidence=(Number(a?.walls?.confidence)||0)>=.8?'alta':(Number(a?.walls?.confidence)||0)>=.6?'média':'baixa';
     if(importedArea>0)$('areaConstruida').value=importedArea.toFixed(2);
     if(importedH>=2&&importedH<=6){$('peDireito').value='custom';if($('peCustom'))$('peCustom').value=importedH.toFixed(2)}
-    const importedRooms=(a.rooms||[]).filter(r=>Number(r.areaM2)>0).map(r=>({name:r.name||'Ambiente',area:Number(r.areaM2),perimeter:Number(r.perimeterM)||0,page:Number(r.page)||1,x:0,y:0}));if(importedRooms.length)state.rooms=dedupeRooms(importedRooms);
-    const importedOpenings=(a.openings||[]).filter(o=>Number(o.quantity)>0&&Number(o.widthM)>0&&Number(o.heightM)>0).map(o=>({type:(o.kind||'Vão')+(o.code?' '+o.code:''),qty:Math.max(1,Math.round(Number(o.quantity)||1)),w:Number(o.widthM),h:Number(o.heightM),source:'ChatGPT'}));if(importedOpenings.length)state.openings=importedOpenings;
+    const importedRooms=(a.rooms||[]).filter(r=>Number(r.areaM2)>0).map((r,i)=>({name:r.name||'Ambiente',area:Number(r.areaM2),perimeter:Number(r.perimeterM)||0,page:Number(r.page)||1,x:Number(r.x)||i+1,y:Number(r.y)||0,source:'ChatGPT'}));
+    if(importedRooms.length){
+      state.rooms=importedRooms;
+      const inferredUnits=inferUnitsFromImportedRooms(importedRooms);
+      if(inferredUnits>1&&$('unidades')&&num($('unidades').value)<=1)$('unidades').value=inferredUnits;
+    }
+    const cadDefs=new Map((state.cadManifest?.esquadrias?.itens||[]).map(d=>[String(d.codigo||'').toUpperCase(),d]));
+    const importedOpenings=(a.openings||[]).filter(o=>Number(o.quantity)>0).map(o=>{
+      const code=String(o.code||'').toUpperCase(),d=cadDefs.get(code)||{},w=Number(o.widthM)||Number(d.largura_m)||0,h=Number(o.heightM)||Number(d.altura_m)||0;
+      const desc=String(d.descricao||'').trim(),material=/vidro/i.test(desc)?'vidro':/madeira/i.test(desc)?'madeira':'';
+      return{type:(o.kind||d.tipo||'Vão')+(code?' '+code:'')+(material?' '+material:''),code,qty:Math.max(1,Math.round(Number(o.quantity)||Number(d.quantidade)||1)),w,h,peitoril:Number(d.peitoril_m)||0,description:desc,source:'ChatGPT/CAD'};
+    });
+    for(const d of cadDefs.values()){
+      const code=String(d.codigo||'').toUpperCase();if(importedOpenings.some(o=>o.code===code)||!(Number(d.quantidade)>0))continue;
+      const desc=String(d.descricao||''),material=/vidro/i.test(desc)?'vidro':/madeira/i.test(desc)?'madeira':'';
+      importedOpenings.push({type:(d.tipo||'Vão')+' '+code+(material?' '+material:''),code,qty:Math.max(1,Math.round(Number(d.quantidade))),w:Number(d.largura_m)||0,h:Number(d.altura_m)||0,peitoril:Number(d.peitoril_m)||0,description:desc,source:'CAD'});
+    }
+    if(importedOpenings.length)state.openings=importedOpenings;
     const st=a.structure||{};if(Number(st.footingsQty)>0&&$('strSapQtd'))$('strSapQtd').value=Math.round(Number(st.footingsQty));if(Number(st.beamsLengthM)>0&&$('strVigaM'))$('strVigaM').value=Number(st.beamsLengthM).toFixed(2);if(Number(st.columnsQty)>0&&$('strPilarQtd'))$('strPilarQtd').value=Math.round(Number(st.columnsQty));if(Number(st.slabAreaM2)>0&&$('q_laje'))$('q_laje').value=Number(st.slabAreaM2).toFixed(2);
     state.autoWallMethod='Análise importada do ChatGPT';
     if($('autoWallCanvas'))$('autoWallCanvas').style.display='none';
@@ -1756,7 +1874,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   window.editWall=(i,k,v)=>{state.walls[i][k]=k==='height'?num(v):v;saveProject(false);updateReadout()};window.delWall=i=>{state.walls.splice(i,1);renderWalls();drawOverlay();saveProject(false)};
 
   $('addVao').onclick=()=>{state.openings.push({type:$('vaoTipo').value,qty:Math.max(1,num($('vaoQtd').value)),w:num($('vaoLarg').value),h:num($('vaoAlt').value)});renderOpenings();saveProject(false)};
-  function renderOpenings(){$('vaoBody').innerHTML=state.openings.map((o,i)=>`<tr><td>${esc(o.type)}</td><td>${o.qty}</td><td>${fmt(o.w)}×${fmt(o.h)} m</td><td><button class="btn danger" onclick="window.delOpen(${i})">×</button></td></tr>`).join('')};window.delOpen=i=>{state.openings.splice(i,1);renderOpenings();saveProject(false)};
+  function renderOpenings(){$('vaoBody').innerHTML=state.openings.map((o,i)=>{const dim=Number(o.w)>0&&Number(o.h)>0?fmt(o.w)+'×'+fmt(o.h)+' m':'Dimensão pendente';return `<tr><td>${esc(o.type)}</td><td>${o.qty}</td><td>${dim}</td><td><button class="btn danger" onclick="window.delOpen(${i})">×</button></td></tr>`}).join('')};window.delOpen=i=>{state.openings.splice(i,1);renderOpenings();saveProject(false)};
 
   function updateReadout(){
   const areaRooms=num($('areaConstruida')&&$('areaConstruida').value)||state.floorAreas.reduce((s,r)=>s+r.area,0)||state.rooms.reduce((s,r)=>s+r.area,0);
@@ -1925,8 +2043,8 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
 
   function getForm(){const ids=['obra','cliente','endereco','tipoObra','pavimentos','unidades','peDireito','peCustom','tijolo','facesReboco','revInterno','revExterno','piso','rodape','forro','cobertura','pintInterna','pintExterna','perdas','perdasCustom','areaCobertura','areaConstruida','areaPisoManual','areaFachadaManual','perimetroRodape','wallLengthOverride','wallManualMode','fundacaoTipo','estruturaTipo','lajeTipo','aguaQuente','esgotoSistema','gasSistema','climatizacao','solarSistema','incendioSistema','spdaSistema','elevadorSistema','piscinaSistema',...complementaryDefs.map(x=>x[0])];const out={};ids.forEach(id=>{if($(id))out[id]=$(id).value});return out}
   function setForm(f={}){for(const [k,v] of Object.entries(f))if($(k))$(k).value=v}
-  function saveProject(show=true){const data={pageScales:state.pageScales,pageDenominators:state.pageDenominators,confirmed:state.confirmed,extras:extraValues(),form:getForm(),pdfName:state.pdfName,sourceType:state.sourceType,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,autoWallMethod:state.autoWallMethod,autoWallLayers:state.autoWallLayers,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus,chatGPTImported:state.chatGPTImported,aiRead:state.aiRead};const saved=storage.setItem('lang-quant-project',JSON.stringify(data));if(saved)$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
-  function loadProject(){const d=storedJSON('lang-quant-project');if(!d)return;state.pageScales=d.pageScales||{};state.pageDenominators=d.pageDenominators||{};state.confirmed=d.confirmed||false;setExtra(d.extras||{});setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.sourceType=d.sourceType||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.autoWallMethod=d.autoWallMethod||'';state.autoWallLayers=d.autoWallLayers||[];state.openingDefinitions=d.openingDefinitions||[];state.chatGPTImported=Boolean(d.chatGPTImported);state.aiRead=d.aiRead||null;state.aiStatus=state.chatGPTImported?'imported':'';renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderAIRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o arquivo original para visualizar a planta.`}
+  function saveProject(show=true){const data={pageScales:state.pageScales,pageDenominators:state.pageDenominators,confirmed:state.confirmed,extras:extraValues(),form:getForm(),pdfName:state.pdfName,sourceType:state.sourceType,scaleDen:state.scaleDen,metersPerPixel:state.metersPerPixel,rooms:state.rooms,walls:state.walls,openings:state.openings,materials:state.materials,metrics:state.metrics,floorAreas:state.floorAreas,autoWallFootprint:state.autoWallFootprint,autoWallLength:state.autoWallLength,autoWallConfidence:state.autoWallConfidence,autoWallMethod:state.autoWallMethod,autoWallLayers:state.autoWallLayers,openingDefinitions:state.openingDefinitions,scope:[...state.scope],customItems:state.customItems,scopeStatus:state.scopeStatus,chatGPTImported:state.chatGPTImported,aiRead:state.aiRead,cadManifest:state.cadManifest};const saved=storage.setItem('lang-quant-project',JSON.stringify(data));if(saved)$('saveStatus').textContent='Salvo • '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});if(show){} }
+  function loadProject(){const d=storedJSON('lang-quant-project');if(!d)return;state.pageScales=d.pageScales||{};state.pageDenominators=d.pageDenominators||{};state.confirmed=d.confirmed||false;setExtra(d.extras||{});setForm(d.form);state.scope=new Set(d.scope||defaultScope);state.customItems=d.customItems||[];state.scopeStatus=d.scopeStatus||{};renderScope();renderCustomItems();state.pdfName=d.pdfName||'';state.sourceType=d.sourceType||'';state.scaleDen=d.scaleDen||null;state.metersPerPixel=d.metersPerPixel||null;state.rooms=d.rooms||[];state.walls=d.walls||[];state.openings=d.openings||[];state.materials=d.materials||[];state.metrics=d.metrics||null;state.floorAreas=d.floorAreas||[];state.autoWallFootprint=d.autoWallFootprint||0;state.autoWallLength=d.autoWallLength||0;state.autoWallConfidence=d.autoWallConfidence||'';state.autoWallMethod=d.autoWallMethod||'';state.autoWallLayers=d.autoWallLayers||[];state.openingDefinitions=d.openingDefinitions||[];state.chatGPTImported=Boolean(d.chatGPTImported);state.aiRead=d.aiRead||null;state.cadManifest=d.cadManifest||null;state.aiStatus=state.chatGPTImported?'imported':'';renderRooms();renderWalls();renderOpenings();renderMaterials();renderAutoRead();renderAIRead();renderScopeStatus();updateReadout();if(state.pdfName)$('pdfInfo').textContent=`Projeto salvo: ${state.pdfName}. Recarregue o arquivo original para visualizar a planta.`}
 
   function exportBackup(){
     saveProject(false);
