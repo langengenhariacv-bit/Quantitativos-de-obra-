@@ -2028,7 +2028,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     const geometricFloor=Math.max(0,built-wallFootprint);
     let floor=0,floorSource='';
     if(manualFloor>0){floor=manualFloor;floorSource='Área de piso informada pelo usuário'}
-    else if(roomFloor>0&&roomFloor<=built&&roomFloor/built>.65){floor=roomFloor;floorSource='Soma das áreas dos ambientes identificados no projeto'}
+    else if(roomFloor>0&&roomFloor<=built&&roomFloor/built>.90){floor=roomFloor;floorSource='Soma das áreas dos ambientes identificados no projeto (cobertura ≥90%)'}
     else if(geometricFloor>0){floor=geometricFloor;floorSource='Área construída menos projeção paramétrica das paredes'}
     else{floor=built;floorSource='Área construída usada como aproximação de piso'}
     const foot=built/Math.max(1,num($('pavimentos').value)||1),extPerim=foot>0?4*Math.sqrt(foot):0,manualFacade=num($('areaFachadaManual')&&$('areaFachadaManual').value);
