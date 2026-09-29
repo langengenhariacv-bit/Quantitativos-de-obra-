@@ -1088,7 +1088,7 @@ function dxfCompactEntity(type,groups){
   }
   if(t==='ARC')return{...base,c:p(10,20),r:dxfCompactNum(groups,40,null),a0:dxfCompactNum(groups,50,null),a1:dxfCompactNum(groups,51,null)};
   if(t==='CIRCLE')return{...base,c:p(10,20),r:dxfCompactNum(groups,40,null)};
-  if(t==='INSERT')return{...base,n:dxfCompactVal(groups,2,''),p:p(10,20),sx:dxfCompactNum(groups,41,1),sy:dxfCompactNum(groups,42,1),rot:dxfCompactNum(groups,50,0)};
+  if(t==='INSERT')return{...base,n:dxfCompactVal(groups,2,''),p:p(10,20),sx:dxfCompactNum(groups,41,1),sy:dxfCompactNum(groups,42,1),rot:dxfCompactNum(groups,50,0),cols:Math.max(1,Math.round(dxfCompactNum(groups,70,1)||1)),rows:Math.max(1,Math.round(dxfCompactNum(groups,71,1)||1)),colSpacing:dxfCompactNum(groups,44,0)||0,rowSpacing:dxfCompactNum(groups,45,0)||0};
   if(t==='TEXT'||t==='MTEXT'||t==='ATTRIB'||t==='ATTDEF')return{...base,text:dxfCompactText(groups),p:p(10,20),tag:dxfCompactVal(groups,2,'')||''};
   if(t==='DIMENSION')return{...base,text:dxfCompactVal(groups,1,''),m:dxfCompactNum(groups,42,null),def:p(10,20),p1:p(13,23),p2:p(14,24)};
   if(t==='HATCH'||t==='LEADER'||t==='MULTILEADER'||t==='SOLID'||t==='IMAGE'||t==='ACAD_TABLE')return base;
@@ -1361,7 +1361,7 @@ async function buildCadManifestFile(dxfFile,originalName){
   const modelM=model.map(e=>{
     const o={t:e.t,l:e.l};if(e.h)o.h=e.h;if(e.a)o.a=sp(e.a);if(e.b)o.b=sp(e.b);if(e.c)o.c=sp(e.c);if(e.p)o.p=sp(e.p);if(e.def)o.def=sp(e.def);if(e.p1)o.p1=sp(e.p1);if(e.p2)o.p2=sp(e.p2);
     if(e.v)o.v=e.v.map(sp);if(e.closed!=null)o.closed=e.closed;if(Number.isFinite(e.r))o.r=round(e.r*factor);if(e.a0!=null)o.a0=e.a0;if(e.a1!=null)o.a1=e.a1;
-    if(e.n)o.n=e.n;if(e.text)o.text=e.text;if(e.tag)o.tag=e.tag;if(e.space!=null)o.space=e.space;if(e.layout)o.layout=e.layout;if(Number.isFinite(e.m))o.m=round(e.m*factor);return o;
+    if(e.n)o.n=e.n;if(e.t==='INSERT'){o.sx=e.sx;o.sy=e.sy;o.rot=e.rot;o.cols=e.cols||1;o.rows=e.rows||1;o.colSpacing=round((e.colSpacing||0)*factor);o.rowSpacing=round((e.rowSpacing||0)*factor)}if(e.text)o.text=e.text;if(e.tag)o.tag=e.tag;if(e.space!=null)o.space=e.space;if(e.layout)o.layout=e.layout;if(Number.isFinite(e.m))o.m=round(e.m*factor);return o;
   });
   const typeCounts={},layerStats={};for(const e of modelM){typeCounts[e.t]=(typeCounts[e.t]||0)+1;(layerStats[e.l]??={count:0,types:{}}).count++;layerStats[e.l].types[e.t]=(layerStats[e.l].types[e.t]||0)+1}
   let paredesPre={trechos_eixo_solido:[],soma_eixos_solidos_m:0,layers:[]};
@@ -1583,9 +1583,12 @@ async function importChatGPTResult(file){
     }
     const cadDefs=new Map((state.cadManifest?.esquadrias?.itens||[]).map(d=>[String(d.codigo||'').toUpperCase(),d]));
     const importedOpenings=(a.openings||[]).filter(o=>Number(o.quantity)>0).map(o=>{
-      const code=String(o.code||'').toUpperCase(),d=cadDefs.get(code)||{},w=Number(o.widthM)||Number(d.largura_m)||0,h=Number(o.heightM)||Number(d.altura_m)||0;
-      const desc=String(d.descricao||'').trim(),material=/vidro/i.test(desc)?'vidro':/madeira/i.test(desc)?'madeira':'';
-      return{type:(o.kind||d.tipo||'Vão')+(code?' '+code:'')+(material?' '+material:''),code,qty:Math.max(1,Math.round(Number(o.quantity)||Number(d.quantidade)||1)),w,h,peitoril:Number(d.peitoril_m)||0,description:desc,source:'ChatGPT/CAD'};
+      const code=String(o.code||'').toUpperCase(),d=cadDefs.get(code)||null;
+      const w=Number(d?.largura_m)||Number(o.widthM)||0,h=Number(d?.altura_m)||Number(o.heightM)||0;
+      const qty=Math.max(1,Math.round(Number(d?.quantidade)||Number(o.quantity)||1));
+      const desc=String(d?.descricao||'').trim(),material=/vidro/i.test(desc)?'vidro':/madeira/i.test(desc)?'madeira':'';
+      const kind=d?.tipo||o.kind||'Vão';
+      return{type:kind+(code?' '+code:'')+(material?' '+material:''),code,qty,w,h,peitoril:Number(d?.peitoril_m)||0,description:desc,source:d?'Quadro de esquadrias CAD vigente':'ChatGPT'};
     });
     for(const d of cadDefs.values()){
       const code=String(d.codigo||'').toUpperCase();if(importedOpenings.some(o=>o.code===code)||!(Number(d.quantidade)>0))continue;
