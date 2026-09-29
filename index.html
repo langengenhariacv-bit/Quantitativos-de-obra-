@@ -1071,10 +1071,10 @@ function dxfCompactBlockSummary(block,factor){
 
 function cadPlainText(s){
   return String(s||'')
-    .replace(/\\P/gi,'\n')
+    .replace(/\\p[^;{}]*;/g,'')
+    .replace(/\\P/g,'\n')
     .replace(/\\[A-Za-z]+[^;{}]*;/g,'')
     .replace(/[{}]/g,'')
-    .replace(/\\px[a-z]*;/gi,'')
     .replace(/\\~/g,' ')
     .replace(/\s+\n/g,'\n')
     .replace(/\n\s+/g,'\n')
@@ -1222,7 +1222,8 @@ async function buildCadManifestFile(dxfFile,originalName){
   const plainTexts=texts.map(e=>({...e,text_limpo:cadPlainText(e.text)}));
   const ambientesEstruturados=plainTexts.map(e=>{
     const t=e.text_limpo||'',m=t.match(/^(.+?)(?:\n|\s)+[ÁA]rea\s*:?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]?/i);
-    return m?{nome:m[1].trim(),area_m2:Number(m[2].replace(',','.')),p:e.p}:null;
+    if(!m||/PLANTA\s+BAIXA|PAVTO|PAVIMENTO|COBERTURA|IMPLANTA[CÇ][AÃ]O/i.test(m[1]))return null;
+    const area=Number(m[2].replace(',','.'));return area>0&&area<1000?{nome:m[1].trim(),area_m2:area,p:e.p}:null;
   }).filter(Boolean);
   const pavimentosEstruturados=plainTexts.map(e=>{
     const t=e.text_limpo||'',m=t.match(/Planta\s+Baixa\s+(?:Pavto\.?|Pavimento)\s*([^\n]+?)(?:\n|\s)+[ÁA]rea\s*:?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]?/i);
@@ -1312,6 +1313,7 @@ async function prepareForChatGPT(){
     link.textContent='2A. Baixar '+shareFile.name;
     $('preparedCadActions').style.display='flex';
     try{if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(prompt)}catch{}
+    saveProject(false);
     setChatGPTFlowStatus('Arquivo pronto. Primeiro toque em “2A. Baixar '+shareFile.name+'”. Depois toque em “2B. Abrir app ChatGPT” e anexe manualmente o arquivo baixado.');
     return;
   }
@@ -1369,16 +1371,20 @@ async function importChatGPTResult(file){
     applyAIRead(a);
     const importedWall=Number(a?.walls?.totalLengthM)||0,importedArea=Number(a?.areas?.builtAreaM2||a?.areas?.floorAreaM2)||0,importedH=Number(a?.walls?.averageHeightM)||0;
     state.autoWallLength=importedWall>0?importedWall:0;state.autoWallFootprint=importedWall>0?importedWall*brickFinishedThickness():0;state.autoWallConfidence=(Number(a?.walls?.confidence)||0)>=.8?'alta':(Number(a?.walls?.confidence)||0)>=.6?'média':'baixa';
-    if(importedArea>0)$('areaConstruida').value=importedArea.toFixed(2);
+    const cadFloors=(state.cadManifest?.pavimentos_estruturados||[]).filter(x=>Number(x.area_m2)>0);
+    const floorByName=new Map();for(const x of cadFloors){const k=String(x.pavimento||'').toLowerCase().trim();if(k&&!floorByName.has(k))floorByName.set(k,x)}
+    const directFloorArea=[...floorByName.values()].reduce((s,x)=>s+Number(x.area_m2||0),0),builtArea=directFloorArea>0?directFloorArea:importedArea;
+    if(builtArea>0)$('areaConstruida').value=builtArea.toFixed(2);
+    if(floorByName.size){state.floorAreas=[...floorByName.values()].map(x=>({label:x.pavimento,area:Number(x.area_m2)}));if($('pavimentos'))$('pavimentos').value=Math.max(1,floorByName.size)}
     if(importedH>=2&&importedH<=6){$('peDireito').value='custom';if($('peCustom'))$('peCustom').value=importedH.toFixed(2)}
     const importedRooms=(a.rooms||[]).filter(r=>Number(r.areaM2)>0).map((r,i)=>({name:r.name||'Ambiente',area:Number(r.areaM2),perimeter:Number(r.perimeterM)||0,page:Number(r.page)||1,x:Number(r.x)||i+1,y:Number(r.y)||0,source:'ChatGPT'}));
-    if(importedRooms.length){
-      state.rooms=importedRooms;
-      const inferredUnits=inferUnitsFromImportedRooms(importedRooms);
+    const cadRooms=(state.cadManifest?.ambientes_estruturados||[]).filter(r=>Number(r.area_m2)>0&&Number(r.area_m2)<1000).map((r,i)=>({name:r.nome||'Ambiente',area:Number(r.area_m2),perimeter:0,page:1,x:Number(r.p?.[0])||i+1,y:Number(r.p?.[1])||0,source:'CAD'}));
+    const effectiveRooms=cadRooms.length>=importedRooms.length&&cadRooms.length?cadRooms:importedRooms;
+    if(effectiveRooms.length){
+      state.rooms=effectiveRooms;
+      const inferredUnits=inferUnitsFromImportedRooms(effectiveRooms);
       if(inferredUnits>1&&$('unidades')&&num($('unidades').value)<=1)$('unidades').value=inferredUnits;
       if(inferredUnits>1&&$('tipoObra'))$('tipoObra').value='Residencial multifamiliar';
-      const floorNames=[...new Set((state.cadManifest?.pavimentos_estruturados||[]).map(x=>String(x.pavimento||'').toLowerCase().trim()).filter(Boolean))];
-      if(floorNames.length>1&&$('pavimentos'))$('pavimentos').value=floorNames.length;
     }
     const cadDefs=new Map((state.cadManifest?.esquadrias?.itens||[]).map(d=>[String(d.codigo||'').toUpperCase(),d]));
     const importedOpenings=(a.openings||[]).filter(o=>Number(o.quantity)>0).map(o=>{
