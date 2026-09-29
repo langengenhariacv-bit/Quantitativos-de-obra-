@@ -1556,16 +1556,10 @@ async function importChatGPTResult(file){
     const payload=JSON.parse(await file.text()),a=langResultToAI(payload);
     state.aiRead=a;state.aiPages=[];state.aiStatus='imported';state.aiError='';state.chatGPTImported=true;
     applyAIRead(a);
-    let importedWall=Number(a?.walls?.totalLengthM)||0;const importedArea=Number(a?.areas?.builtAreaM2||a?.areas?.floorAreaM2)||0,importedH=Number(a?.walls?.averageHeightM)||0;
-    const cadGross=Number(state.cadManifest?.paredes_preanalise?.comprimento_bruto_candidato_m)||0,cadGrossConf=Number(state.cadManifest?.paredes_preanalise?.confianca_bruto)||0;
-    const useCadGross=cadGross>0&&cadGrossConf>=.75&&(!a?.walls?.totalProvided||!(importedWall>0)||importedWall<cadGross*.90);
-    if(useCadGross){
-      importedWall=cadGross;
-      a.walls.totalLengthM=cadGross;a.walls.grossClosed=true;a.walls.grossClosedSource='Pré-análise geométrica CAD auditável';
-      a.walls.basis=[a.walls.basis,'Comprimento bruto candidato do CAD: '+cadGross.toFixed(2)+' m; eixos pareados restritos às regiões de planta e reconectados apenas por colinearidade/lacunas limitadas.'].filter(Boolean).join('; ');
-    }else a.walls.grossClosed=Boolean(a?.walls?.totalProvided);
+    const importedWall=Number(a?.walls?.totalLengthM)||0,importedArea=Number(a?.areas?.builtAreaM2||a?.areas?.floorAreaM2)||0,importedH=Number(a?.walls?.averageHeightM)||0;
+    a.walls.grossClosed=Boolean(a?.walls?.totalProvided);
     state.autoWallLength=importedWall>0?importedWall:0;state.autoWallFootprint=importedWall>0?importedWall*brickFinishedThickness():0;
-    const conf=Math.max(Number(a?.walls?.confidence)||0,useCadGross?cadGrossConf:0);state.autoWallConfidence=conf>=.8?'alta':conf>=.6?'média':'baixa';
+    const conf=Number(a?.walls?.confidence)||0;state.autoWallConfidence=conf>=.8?'alta':conf>=.6?'média':'baixa';
     const cadFloors=(state.cadManifest?.pavimentos_estruturados||[]).filter(x=>Number(x.area_m2)>0);
     const floorByName=new Map();for(const x of cadFloors){const k=String(x.pavimento||'').toLowerCase().trim();if(k&&!floorByName.has(k))floorByName.set(k,x)}
     const directFloorArea=[...floorByName.values()].reduce((s,x)=>s+Number(x.area_m2||0),0),builtArea=directFloorArea>0?directFloorArea:importedArea;
@@ -2120,17 +2114,33 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     const open=partialImportedWalls?0:openingAreaIdentified,net=Math.max(0,gross-open),L=loss(),factor=1+L,faces=num($('facesReboco').value)||2,c=state.coef,primaryBrick=$('tijolo').value;
     const built=num($('areaConstruida').value)||state.floorAreas.reduce((s,r)=>s+r.area,0)||state.rooms.filter(r=>r.area<100).reduce((s,r)=>s+r.area,0);
     const roomFloor=state.rooms.filter(r=>r.area>0&&r.area<100).reduce((s,r)=>s+r.area,0),manualFloor=num($('areaPisoManual')&&$('areaPisoManual').value);
-    let wallFootprint=wallLength*brickFinishedThickness(),wallFootprintSource='Comprimento de paredes × espessura acabada paramétrica';
-    if(override<=0&&manualMode!=='replace'&&autoLength>0&&state.autoWallFootprint>0&&/Camadas vetoriais/i.test(state.autoWallMethod||'')){wallFootprint=state.autoWallFootprint+manualLength*brickFinishedThickness();wallFootprintSource='Área da camada vetorial de alvenaria + correções manuais'}
-    const geometricFloor=Math.max(0,built-wallFootprint);
+    const aiSegs=(state.aiRead?.walls?.segments||[]).filter(s=>Number(s.lengthM)>0&&Number(s.thicknessM)>0),
+      measuredSegLen=aiSegs.reduce((s,x)=>s+Number(x.lengthM),0),
+      measuredSolidFootprint=aiSegs.reduce((s,x)=>s+Number(x.lengthM)*Number(x.thicknessM),0),
+      avgMeasuredThickness=measuredSegLen>0?measuredSolidFootprint/measuredSegLen:0,
+      doorWidthTotal=state.openings.filter(o=>/porta/i.test(o.type)).reduce((s,o)=>s+(Number(o.qty)||0)*(Number(o.w)||0),0);
+    let wallFootprint=wallLength*brickFinishedThickness(),wallFootprintSource='Comprimento de paredes × espessura acabada paramétrica',wallFootprintPrecise=false;
+    if(override<=0&&manualMode!=='replace'&&state.chatGPTImported&&avgMeasuredThickness>0){
+      if(state.aiRead?.walls?.grossClosed){
+        wallFootprint=Math.max(0,autoLength-doorWidthTotal)*avgMeasuredThickness+manualLength*brickFinishedThickness();
+        wallFootprintSource='Eixos brutos CAD × espessura média ponderada − larguras de portas';wallFootprintPrecise=true;
+      }else{
+        wallFootprint=measuredSolidFootprint+manualLength*brickFinishedThickness();
+        wallFootprintSource='Trechos sólidos CAD × espessuras medidas';wallFootprintPrecise=true;
+      }
+    }else if(override<=0&&manualMode!=='replace'&&autoLength>0&&state.autoWallFootprint>0&&/Camadas vetoriais/i.test(state.autoWallMethod||'')){
+      wallFootprint=state.autoWallFootprint+manualLength*brickFinishedThickness();wallFootprintSource='Área da camada vetorial de alvenaria + correções manuais';wallFootprintPrecise=true;
+    }
+    const geometricFloor=Math.max(0,built-wallFootprint),roomCoverage=built?roomFloor/built:0;
     let floor=0,floorSource='';
     if(manualFloor>0){floor=manualFloor;floorSource='Área de piso informada pelo usuário'}
-    else if(roomFloor>0&&roomFloor<=built&&roomFloor/built>.90){floor=roomFloor;floorSource='Soma das áreas dos ambientes identificados no projeto (cobertura ≥90%)'}
+    else if(wallFootprintPrecise&&geometricFloor>0){floor=geometricFloor;floorSource='Área construída − projeção geométrica das alvenarias medida no CAD'}
+    else if(roomFloor>0&&roomFloor<=built&&roomCoverage>=.95){floor=roomFloor;floorSource='Soma das áreas dos ambientes identificados no projeto'}
     else if(geometricFloor>0){floor=geometricFloor;floorSource='Área construída menos projeção paramétrica das paredes'}
     else{floor=built;floorSource='Área construída usada como aproximação de piso'}
     const foot=built/Math.max(1,num($('pavimentos').value)||1),extPerim=foot>0?4*Math.sqrt(foot):0,manualFacade=num($('areaFachadaManual')&&$('areaFachadaManual').value);
     const wins=state.openings.filter(o=>/janela/i.test(o.type)),doors=state.openings.filter(o=>/porta/i.test(o.type)),exteriorDoors=doors.filter(o=>/vidro|extern|porta\s+p1/i.test(o.type)),facadeOpen=wins.reduce((s,o)=>s+o.qty*(Number(o.w)||0)*(Number(o.h)||0),0)+exteriorDoors.reduce((s,o)=>s+o.qty*(Number(o.w)||0)*(Number(o.h)||0),0);
-    const importedExternalExplicit=Number(state.aiRead?.walls?.externalLengthM)||0,importedExternalSeg=(state.aiRead?.walls?.segments||[]).filter(s=>s.external).reduce((sum,s)=>sum+(Number(s.lengthM)||0),0),importedExternalLen=importedExternalExplicit||importedExternalSeg;
+    const importedExternalLen=Number(state.aiRead?.walls?.externalLengthM)||0;
     let facadeGross=0,facadeNet=0,facadeSource='';
     if(manualFacade>0){facadeGross=manualFacade;facadeNet=manualFacade;facadeSource='Área líquida de fachada informada'}
     else if(importedExternalLen>0){facadeGross=importedExternalLen*height();facadeNet=Math.max(0,facadeGross-facadeOpen);facadeSource='Eixos completos das paredes externas do CAD × pé-direito − vãos externos'}
@@ -2213,7 +2223,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     state.customItems.forEach(x=>mats.push({...x,scopeId:'outros',origin:'Entrada manual',originType:'direct',basis:'Quantidade informada pelo usuário'}));
     complementaryDefs.forEach(([id,label,unit,stage,scopeId,applyLoss])=>{const q=$(id)?num($(id).value):0;if(q>0){for(let i=mats.length-1;i>=0;i--)if(mats[i].scopeId===scopeId)mats.splice(i,1);add(stage,label,q*(applyLoss?factor:1),unit,scopeId,'Projeto complementar / entrada manual','direct','Quantidade informada pelo usuário')}});
 
-    state.metrics={gross:gross,open:open,openingAreaIdentified:openingAreaIdentified,partialImportedWalls:partialImportedWalls,net:net,floor:floor,floorBuilt:built,roomFloor:roomFloor,roomCoverage:built?roomFloor/built:0,floorSource:floorSource,wallFootprint:wallFootprint,wallFootprintSource:wallFootprintSource,coatArea:coatArea,internalCoat:internalCoat,externalCoat:externalCoat,facadeGross:facadeGross,facadeNet:facadeNet,facadeSource:facadeSource,ceramicWall:ceramicWall,paintInternal:paintInternal,paintExternal:paintExternal,paintArea:paintArea,wallLength:wallLength,wallSource:wallSource};
+    state.metrics={gross:gross,open:open,openingAreaIdentified:openingAreaIdentified,partialImportedWalls:partialImportedWalls,net:net,floor:floor,floorBuilt:built,roomFloor:roomFloor,roomCoverage:built?roomFloor/built:0,floorSource:floorSource,wallFootprint:wallFootprint,wallFootprintSource:wallFootprintSource,wallFootprintPrecise:wallFootprintPrecise,coatArea:coatArea,internalCoat:internalCoat,externalCoat:externalCoat,facadeGross:facadeGross,facadeNet:facadeNet,facadeSource:facadeSource,ceramicWall:ceramicWall,paintInternal:paintInternal,paintExternal:paintExternal,paintArea:paintArea,wallLength:wallLength,wallSource:wallSource};
     const directIds=new Set(mats.map(x=>x.scopeId).filter(Boolean)),pack=buildParametricEstimates(directIds);pack.items.forEach(x=>mats.push(x));state.scopeStatus=pack.status;state.materials=enhanceMaterials(mats);syncScopeStatuses();
     renderMaterials();renderScopeStatus();updateQualityAudit();saveProject(false);
   }
@@ -2264,7 +2274,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     else if(/concreto armado|mista/i.test(structSel)&&!(effectiveVigaAudit||effectivePillarsAudit))complementaryIssues.push('Faltam vigas/pilares documentados em projeto estrutural; o LANG não usa paredes como vigas nem encontros de paredes como pilares.');
     if(effectiveVigaAudit>0||effectivePillarsAudit>0)complementaryIssues.push('Estribos só podem ser fechados com diâmetro, espaçamento e detalhamento estrutural informados; norma técnica não substitui projeto.');
     if($('pintExterna')&&$('pintExterna').value==='sim'&&/perímetro equivalente/i.test(state.metrics?.facadeSource||''))methodNotes.push('Fachada: perímetro equivalente da implantação × altura, com desconto dos vãos identificados. É critério geométrico de orçamento, não medição de elevação.');
-    if(/projeção paramétrica|aproximação/i.test(state.metrics?.floorSource||''))methodNotes.push('Piso: área construída menos a projeção das paredes. Quando a cobertura de ambientes for praticamente completa, a soma dos ambientes passa a prevalecer.');
+    if(/projeção paramétrica|aproximação/i.test(state.metrics?.floorSource||''))methodNotes.push('Piso: ainda usa espessura paramétrica das paredes. Quando o CAD fornece espessuras mensuradas, o LANG usa a projeção geométrica das alvenarias e deixa de depender dessa aproximação.');
     score=Math.max(0,Math.min(100,Math.round(score)));const grade=score>=85?'Alta':score>=70?'Boa':score>=55?'Moderada':'Baixa';
     $('qualityScore').textContent=score+'%';$('qualityGrade').textContent='Confiança arquitetônica '+grade;$('qualityDirect').textContent=direct;$('qualityEstimated').textContent=estimated;$('qualityLow').textContent=complementaryPending;$('qualityRoomCoverage').textContent=cov?Math.round(cov*100)+'%':'—';
     const box=$('qualityIssues'),compDetails=complementaryIssues.length?'<ul style="margin:6px 0 0 18px;padding:0">'+complementaryIssues.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>':'',compHtml=(complementaryNote||complementaryIssues.length)?'<div class="mini-note" style="margin:10px 0 0"><b>Projetos complementares:</b> '+(complementaryNote?esc(complementaryNote):'')+compDetails+'</div>':'',methodHtml=methodNotes.length?'<div class="mini-note" style="margin:10px 0 0"><b>Critérios geométricos adotados:</b><ul style="margin:6px 0 0 18px;padding:0">'+methodNotes.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul></div>':'';
