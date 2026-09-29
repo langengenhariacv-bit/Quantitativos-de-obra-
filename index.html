@@ -118,8 +118,8 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
         <div class="card">
           <h2>Sistemas construtivos</h2>
           <div class="grid g4">
-            <div class="field"><label>Fundação</label><select id="fundacaoTipo"><option>Sapatas isoladas</option><option>Não informado</option><option>Sapata corrida</option><option>Radier</option><option>Estacas + blocos</option><option>Brocas</option><option>Outro</option></select></div>
-            <div class="field"><label>Estrutura</label><select id="estruturaTipo"><option>Concreto armado</option><option>Alvenaria estrutural</option><option>Metálica</option><option>Madeira</option><option>Mista</option><option>Outro</option></select></div>
+            <div class="field"><label>Fundação</label><select id="fundacaoTipo"><option>Não informado</option><option>Sapatas isoladas</option><option>Sapata corrida</option><option>Radier</option><option>Estacas + blocos</option><option>Brocas</option><option>Outro</option></select></div>
+            <div class="field"><label>Estrutura</label><select id="estruturaTipo"><option>Não informado</option><option>Concreto armado</option><option>Alvenaria estrutural</option><option>Metálica</option><option>Madeira</option><option>Mista</option><option>Outro</option></select></div>
             <div class="field"><label>Laje</label><select id="lajeTipo"><option>Não informado</option><option>Pré-moldada</option><option>Maciça</option><option>Nervurada</option><option>Protendida</option><option>Steel deck</option><option>Sem laje</option><option>Outro</option></select></div>
             <div class="field"><label>Água quente</label><select id="aguaQuente"><option>Não</option><option>Elétrico local</option><option>Gás</option><option>Boiler elétrico</option><option>Solar</option><option>Misto</option></select></div>
             <div class="field"><label>Destino do esgoto</label><select id="esgotoSistema"><option>Rede pública</option><option>Fossa + filtro + sumidouro</option><option>Estação compacta</option><option>Outro</option></select></div>
@@ -385,7 +385,7 @@ label,.hint,.notice,.scope-item{font-size:14px}input,select{min-height:44px}main
     const wetPerim=rooms.filter(function(r){return /bwc|banheiro|wc|lavabo|servi[cç]o|lavanderia/.test(nm(r))}).reduce(function(s,r){return s+4*Math.sqrt(Math.max(0,r.area))},0);
     const roofSel=$('cobertura')?$('cobertura').value:'nao',roofInput=num($('areaCobertura')&&$('areaCobertura').value),roofArea=roofInput||(roofSel==='nao'?0:(/laje/i.test(roofSel)?foot:foot*bench.roof));
     const isMulti=/multifamiliar/i.test($('tipoObra')?$('tipoObra').value:'');
-    const structureType=$('estruturaTipo')?$('estruturaTipo').value:'Concreto armado',concreteStructure=/concreto armado|mista/i.test(structureType),usePP4=concreteStructure&&isMulti&&pav>=3;
+    const structureType=$('estruturaTipo')?$('estruturaTipo').value:'Não informado',concreteStructure=/concreto armado|mista/i.test(structureType),usePP4=concreteStructure&&isMulti&&pav>=3;
     const structural=usePP4?{conc:.178,concMin:.146,concMax:.210,steel:18.472,steelMin:15.125,steelMax:22.601,form:1.494,formMin:1.149,formMax:1.798}:{conc:.187,concMin:.145,concMax:.242,steel:19.288,steelMin:14.652,steelMax:23.809,form:1.709,formMin:1.186,formMax:2.674};
     const structuralLabel=usePP4?'CBC PP-4 (edifício multifamiliar ≥3 pavimentos)':'CBC R1 (edificação residencial baixa)';
     const electrical=electricRoomEstimate(rooms);
@@ -1908,10 +1908,19 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     const roomFloor=state.rooms.filter(r=>r.area>0&&r.area<100).reduce((s,r)=>s+r.area,0),manualFloor=num($('areaPisoManual')&&$('areaPisoManual').value);
     let wallFootprint=wallLength*brickFinishedThickness(),wallFootprintSource='Comprimento de paredes × espessura acabada paramétrica';
     if(override<=0&&manualMode!=='replace'&&autoLength>0&&state.autoWallFootprint>0&&/Camadas vetoriais/i.test(state.autoWallMethod||'')){wallFootprint=state.autoWallFootprint+manualLength*brickFinishedThickness();wallFootprintSource='Área da camada vetorial de alvenaria + correções manuais'}
-    const geometricFloor=Math.max(0,built-wallFootprint),floor=manualFloor>0?manualFloor:(roomFloor>0&&roomFloor<=built&&roomFloor/built>.65?roomFloor:(geometricFloor||built)),floorSource=manualFloor>0?'Área de piso informada pelo usuário':(geometricFloor>0?'Área construída menos projeção paramétrica das paredes':'Soma das áreas de ambientes');
+    const geometricFloor=Math.max(0,built-wallFootprint);
+    let floor=0,floorSource='';
+    if(manualFloor>0){floor=manualFloor;floorSource='Área de piso informada pelo usuário'}
+    else if(roomFloor>0&&roomFloor<=built&&roomFloor/built>.65){floor=roomFloor;floorSource='Soma das áreas dos ambientes identificados no projeto'}
+    else if(geometricFloor>0){floor=geometricFloor;floorSource='Área construída menos projeção paramétrica das paredes'}
+    else{floor=built;floorSource='Área construída usada como aproximação de piso'}
     const foot=built/Math.max(1,num($('pavimentos').value)||1),extPerim=foot>0?4*Math.sqrt(foot):0,manualFacade=num($('areaFachadaManual')&&$('areaFachadaManual').value);
-    const wins=state.openings.filter(o=>/janela/i.test(o.type)),doors=state.openings.filter(o=>/porta/i.test(o.type)),exteriorDoors=doors.filter(o=>/p1|p2|vidro|extern/i.test(o.type)),facadeOpen=wins.reduce((s,o)=>s+o.qty*o.w*o.h,0)+exteriorDoors.reduce((s,o)=>s+o.qty*o.w*o.h,0);
-    const facadeGross=manualFacade>0?manualFacade:extPerim*height()*Math.max(1,num($('pavimentos').value)||1),facadeNet=manualFacade>0?manualFacade:Math.max(0,facadeGross-facadeOpen),facadeSource=manualFacade>0?'Área líquida de fachada informada':'Perímetro equivalente × altura − vãos externos';
+    const wins=state.openings.filter(o=>/janela/i.test(o.type)),doors=state.openings.filter(o=>/porta/i.test(o.type)),exteriorDoors=doors.filter(o=>/vidro|extern|porta\s+p1/i.test(o.type)),facadeOpen=wins.reduce((s,o)=>s+o.qty*(Number(o.w)||0)*(Number(o.h)||0),0)+exteriorDoors.reduce((s,o)=>s+o.qty*(Number(o.w)||0)*(Number(o.h)||0),0);
+    const importedExternalLen=state.aiRead?.walls?.totalProvided?(state.aiRead.walls.segments||[]).filter(s=>s.external).reduce((sum,s)=>sum+(Number(s.lengthM)||0),0):0;
+    let facadeGross=0,facadeNet=0,facadeSource='';
+    if(manualFacade>0){facadeGross=manualFacade;facadeNet=manualFacade;facadeSource='Área líquida de fachada informada'}
+    else if(importedExternalLen>0){facadeGross=importedExternalLen*height();facadeNet=Math.max(0,facadeGross-facadeOpen);facadeSource='Eixos completos das paredes externas do CAD × pé-direito − vãos externos'}
+    else{facadeGross=extPerim*height()*Math.max(1,num($('pavimentos').value)||1);facadeNet=Math.max(0,facadeGross-facadeOpen);facadeSource='Perímetro equivalente × altura − vãos externos'}
     const coatArea=net*faces,internalCoat=faces>=2?Math.max(0,coatArea-facadeNet):($('revInterno').value!=='Sem revestimento'?net:0),externalCoat=faces>=2?Math.min(coatArea,facadeNet):($('revInterno').value==='Sem revestimento'?Math.min(net,facadeNet):0);
     const ceramicManual=$('q_revestParede')?num($('q_revestParede').value):0,ceramicWall=ceramicManual||(state.scope.has('ceramicaParede')?Math.min(internalCoat,built*bench.cerParede):0);
     const paintInternal=$('pintInterna').value==='sim'?Math.max(0,internalCoat-ceramicWall):0,paintExternal=$('pintExterna').value==='sim'?externalCoat:0,paintArea=paintInternal+paintExternal;
@@ -1956,34 +1965,34 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     const glassArea=[...wins,...glassDoors].reduce((s,o)=>s+o.qty*o.w*o.h,0);if(glassArea)add('8. Esquadrias, vidros e serralheria','Vidros de esquadrias',glassArea*factor,'m²','vidros','Esquadrias identificadas como vidro','direct','Área dos vãos envidraçados × perdas');
 
     const steelKgM=d=>Math.PI/4*Math.pow(d/1000,2)*7850;
-    const structuralLayout=structuralLayoutEstimate(),autoSupportQty=Math.max(0,Math.floor(structuralLayout.supports||0)),identifiedColumnQty=Math.max(0,Math.floor(Number(state.aiRead?.structure?.columnsQty)||0));
-    const sapManualQtd=Math.floor(ext('strSapQtd')),sapFromColumns=!sapManualQtd&&/sapatas isoladas/i.test($('fundacaoTipo')?.value||'')?identifiedColumnQty:0,sapQtd=sapManualQtd||sapFromColumns||autoSupportQty,sapX=ext('strSapX')||1,sapY=ext('strSapY')||1,sapAlt=ext('strSapAlt'),sapD=ext('strSapDiam')||10,sapEsp=ext('strSapEsp')||.15,sapDobra=ext('strSapDobra')||.15;
+    const identifiedColumnQty=Math.max(0,Math.floor(Number(state.aiRead?.structure?.columnsQty)||0)),identifiedFootingQty=Math.max(0,Math.floor(Number(state.aiRead?.structure?.footingsQty)||0)),identifiedBeamM=Math.max(0,Number(state.aiRead?.structure?.beamsLengthM)||0);
+    const sapManualQtd=Math.floor(ext('strSapQtd')),sapFromAI=!sapManualQtd?identifiedFootingQty:0,sapQtd=sapManualQtd||sapFromAI,sapX=ext('strSapX')||1,sapY=ext('strSapY')||1,sapAlt=ext('strSapAlt'),sapD=ext('strSapDiam')||10,sapEsp=ext('strSapEsp')||.15,sapDobra=ext('strSapDobra')||.15;
     if(sapQtd>0){
       const nx=Math.ceil(sapY/sapEsp)+1,ny=Math.ceil(sapX/sapEsp)+1,lenX=sapX+2*sapDobra,lenY=sapY+2*sapDobra,steelM=sapQtd*(nx*lenX+ny*lenY),steelKg=steelM*steelKgM(sapD);
-      add('3. Fundações e infraestrutura','Sapatas isoladas '+fmt(sapX,2)+'×'+fmt(sapY,2)+' m',sapQtd,'un.','fundacoes',sapManualQtd?'Premissa estrutural informada':sapFromColumns?'Premissa paramétrica — 1 sapata por pilar identificado':'Malha automática de paredes',sapManualQtd?'direct':'estimate',(sapManualQtd?'Quantidade de sapatas informada':sapFromColumns?identifiedColumnQty+' pilares identificados × 1 sapata isolada por pilar':'1 sapata por apoio/pilar reconhecido na planta')+'; dimensões '+fmt(sapX,2)+'×'+fmt(sapY,2)+' m');
-      add('3. Fundações e infraestrutura','Barras Ø'+fmt(sapD,0)+' mm das sapatas',sapQtd*(nx+ny),'un.','fundAco','Premissa estrutural paramétrica / informada','direct',sapQtd+' sapatas × '+(nx+ny)+' barras por sapata');
-      add('3. Fundações e infraestrutura','Comprimento linear Ø'+fmt(sapD,0)+' mm das sapatas',steelM,'m','fundAco','Premissa estrutural paramétrica / informada','direct','Sem desconto de cobrimento: '+nx+' barras de '+fmt(lenX,2)+' m + '+ny+' barras de '+fmt(lenY,2)+' m por sapata');
-      add('3. Fundações e infraestrutura','Aço Ø'+fmt(sapD,0)+' mm — malha das sapatas',steelKg*factor,'kg','fundAco','Premissa estrutural paramétrica / informada','direct',nx+' barras em uma direção + '+ny+' na outra por sapata; comprimentos '+fmt(lenX,2)+' m e '+fmt(lenY,2)+' m; espaçamento '+fmt(sapEsp,2)+' m; dobra '+fmt(sapDobra,2)+' m em cada extremidade; '+fmt(steelM,2)+' m de aço antes das perdas');
-      if(sapAlt>0)add('3. Fundações e infraestrutura','Concreto das sapatas',sapQtd*sapX*sapY*sapAlt*factor,'m³','fundConcreto','Premissa estrutural paramétrica / informada','direct',sapQtd+' × '+fmt(sapX,2)+' × '+fmt(sapY,2)+' × '+fmt(sapAlt,2)+' m');
+      add('3. Fundações e infraestrutura','Sapatas isoladas '+fmt(sapX,2)+'×'+fmt(sapY,2)+' m',sapQtd,'un.','fundacoes',sapManualQtd?'Projeto/premissa estrutural informada':'Elemento de fundação identificado na análise do projeto','direct',(sapManualQtd?'Quantidade de sapatas informada pelo usuário':'Quantidade de sapatas explicitamente identificada no projeto/análise')+'; dimensões de quantitativo '+fmt(sapX,2)+'×'+fmt(sapY,2)+' m');
+      add('3. Fundações e infraestrutura','Barras Ø'+fmt(sapD,0)+' mm das sapatas',sapQtd*(nx+ny),'un.','fundAco','Premissa estrutural de quantitativo','estimate',sapQtd+' sapatas × '+(nx+ny)+' barras por sapata');
+      add('3. Fundações e infraestrutura','Comprimento linear Ø'+fmt(sapD,0)+' mm das sapatas',steelM,'m','fundAco','Premissa estrutural de quantitativo','estimate','Sem desconto de cobrimento: '+nx+' barras de '+fmt(lenX,2)+' m + '+ny+' barras de '+fmt(lenY,2)+' m por sapata');
+      add('3. Fundações e infraestrutura','Aço Ø'+fmt(sapD,0)+' mm — malha das sapatas',steelKg*factor,'kg','fundAco','Premissa estrutural de quantitativo','estimate',nx+' barras em uma direção + '+ny+' na outra por sapata; comprimentos '+fmt(lenX,2)+' m e '+fmt(lenY,2)+' m; espaçamento '+fmt(sapEsp,2)+' m; dobra '+fmt(sapDobra,2)+' m em cada extremidade; '+fmt(steelM,2)+' m de aço antes das perdas');
+      if(sapAlt>0)add('3. Fundações e infraestrutura','Concreto das sapatas',sapQtd*sapX*sapY*sapAlt*factor,'m³','fundConcreto','Premissa estrutural de quantitativo','estimate',sapQtd+' × '+fmt(sapX,2)+' × '+fmt(sapY,2)+' × '+fmt(sapAlt,2)+' m');
     }
 
-    const vManualM=ext('strVigaM'),vM=vManualM||wallLength,vB=ext('strVigaB')||.12,vH=ext('strVigaH')||.40,vIQ=Math.floor(ext('strVigaInfQtd')||2),vID=ext('strVigaInfDiam')||10,vSQ=Math.floor(ext('strVigaSupQtd')||2),vSD=ext('strVigaSupDiam')||8;
+    const vManualM=ext('strVigaM'),vFromAI=!vManualM?identifiedBeamM:0,vM=vManualM||vFromAI,vB=ext('strVigaB')||.12,vH=ext('strVigaH')||.40,vIQ=Math.floor(ext('strVigaInfQtd')||2),vID=ext('strVigaInfDiam')||10,vSQ=Math.floor(ext('strVigaSupQtd')||2),vSD=ext('strVigaSupDiam')||8;
     if(vM>0){
-      add('4. Estrutura','Vigas '+fmt(vB*100,0)+'×'+fmt(vH*100,0)+' cm — comprimento considerado',vM,'m','vigas',vManualM?'Premissa estrutural informada':state.chatGPTImported?'Análise do ChatGPT + premissa paramétrica':'Geometria automática da planta',vManualM?'direct':'estimate',vManualM?'Comprimento total informado pelo usuário':'Comprimento total das paredes reconhecidas usado como extensão paramétrica das vigas');
-      add('4. Estrutura','Concreto das vigas '+fmt(vB*100,0)+'×'+fmt(vH*100,0)+' cm',vM*vB*vH*factor,'m³','estruturaConcreto','Premissa estrutural paramétrica / informada','direct',fmt(vM,2)+' × '+fmt(vB,2)+' × '+fmt(vH,2)+' m');
-      add('4. Estrutura','Comprimento linear inferior — '+vIQ+'Ø'+fmt(vID,0),vM*vIQ,'m','estruturaAco','Premissa estrutural paramétrica / informada','direct',vIQ+' barras longitudinais × '+fmt(vM,2)+' m');
-      add('4. Estrutura','Aço inferior das vigas — '+vIQ+'Ø'+fmt(vID,0),vM*vIQ*steelKgM(vID)*factor,'kg','estruturaAco','Premissa estrutural paramétrica / informada','direct',vIQ+' barras contínuas × '+fmt(vM,2)+' m; sem ancoragens/emendas adicionais');
-      add('4. Estrutura','Comprimento linear superior — '+vSQ+'Ø'+fmt(vSD,0),vM*vSQ,'m','estruturaAco','Premissa estrutural paramétrica / informada','direct',vSQ+' barras longitudinais × '+fmt(vM,2)+' m');
-      add('4. Estrutura','Aço superior das vigas — '+vSQ+'Ø'+fmt(vSD,0),vM*vSQ*steelKgM(vSD)*factor,'kg','estruturaAco','Premissa estrutural paramétrica / informada','direct',vSQ+' barras contínuas × '+fmt(vM,2)+' m; sem ancoragens/emendas adicionais');
+      add('4. Estrutura','Vigas '+fmt(vB*100,0)+'×'+fmt(vH*100,0)+' cm — comprimento considerado',vM,'m','vigas',vManualM?'Projeto/premissa estrutural informada':'Comprimento de vigas identificado na análise do projeto','direct',vManualM?'Comprimento total informado pelo usuário':'Comprimento total de vigas explicitamente identificado no projeto/análise');
+      add('4. Estrutura','Concreto das vigas '+fmt(vB*100,0)+'×'+fmt(vH*100,0)+' cm',vM*vB*vH*factor,'m³','estruturaConcreto','Premissa estrutural de quantitativo','estimate',fmt(vM,2)+' × '+fmt(vB,2)+' × '+fmt(vH,2)+' m');
+      add('4. Estrutura','Comprimento linear inferior — '+vIQ+'Ø'+fmt(vID,0),vM*vIQ,'m','estruturaAco','Premissa estrutural de quantitativo','estimate',vIQ+' barras longitudinais × '+fmt(vM,2)+' m');
+      add('4. Estrutura','Aço inferior das vigas — '+vIQ+'Ø'+fmt(vID,0),vM*vIQ*steelKgM(vID)*factor,'kg','estruturaAco','Premissa estrutural de quantitativo','estimate',vIQ+' barras contínuas × '+fmt(vM,2)+' m; sem ancoragens/emendas adicionais');
+      add('4. Estrutura','Comprimento linear superior — '+vSQ+'Ø'+fmt(vSD,0),vM*vSQ,'m','estruturaAco','Premissa estrutural de quantitativo','estimate',vSQ+' barras longitudinais × '+fmt(vM,2)+' m');
+      add('4. Estrutura','Aço superior das vigas — '+vSQ+'Ø'+fmt(vSD,0),vM*vSQ*steelKgM(vSD)*factor,'kg','estruturaAco','Premissa estrutural de quantitativo','estimate',vSQ+' barras contínuas × '+fmt(vM,2)+' m; sem ancoragens/emendas adicionais');
       add('4. Estrutura','Fôrmas laterais e fundo das vigas',vM*(2*vH+vB)*factor,'m²','estruturaForma','Geometria da seção informada','direct','3 faces: comprimento × (2×altura + largura)');
     }
 
-    const pManualQtd=Math.floor(ext('strPilarQtd')),pQtd=pManualQtd||autoSupportQty,pB=ext('strPilarB')||.12,pH=ext('strPilarH')||.35,pAlt=ext('strPilarAlt')||height(),pBars=Math.floor(ext('strPilarBarras')||4),pD=ext('strPilarDiam')||10;
+    const pManualQtd=Math.floor(ext('strPilarQtd')),pFromAI=!pManualQtd?identifiedColumnQty:0,pQtd=pManualQtd||pFromAI,pB=ext('strPilarB')||.12,pH=ext('strPilarH')||.35,pAlt=ext('strPilarAlt')||height(),pBars=Math.floor(ext('strPilarBarras')||4),pD=ext('strPilarDiam')||10;
     if(pQtd>0&&pAlt>0){
-      add('4. Estrutura','Pilares '+fmt(pB*100,0)+'×'+fmt(pH*100,0)+' cm',pQtd,'un.','pilares',pManualQtd?'Premissa estrutural informada':'Malha automática de paredes','direct',(pManualQtd?'Quantidade informada':'Cantos e encontros reconhecidos na planta (página '+(structuralLayout.page||'—')+')')+'; altura considerada '+fmt(pAlt,2)+' m');
-      add('4. Estrutura','Concreto dos pilares '+fmt(pB*100,0)+'×'+fmt(pH*100,0)+' cm',pQtd*pB*pH*pAlt*factor,'m³','estruturaConcreto','Premissa estrutural paramétrica / informada','direct',pQtd+' × '+fmt(pB,2)+' × '+fmt(pH,2)+' × '+fmt(pAlt,2)+' m');
-      add('4. Estrutura','Comprimento linear dos pilares — '+pBars+'Ø'+fmt(pD,0),pQtd*pBars*pAlt,'m','estruturaAco','Premissa estrutural paramétrica / informada','direct',pQtd+' pilares × '+pBars+' barras × '+fmt(pAlt,2)+' m');
-      add('4. Estrutura','Aço longitudinal dos pilares — '+pBars+'Ø'+fmt(pD,0),pQtd*pBars*pAlt*steelKgM(pD)*factor,'kg','estruturaAco','Premissa estrutural paramétrica / informada','direct',pQtd+' pilares × '+pBars+' barras × '+fmt(pAlt,2)+' m; sem emendas/ancoragens adicionais');
+      add('4. Estrutura','Pilares '+fmt(pB*100,0)+'×'+fmt(pH*100,0)+' cm',pQtd,'un.','pilares',pManualQtd?'Projeto/premissa estrutural informada':'Pilares identificados na análise do projeto','direct',(pManualQtd?'Quantidade informada pelo usuário':'Quantidade de pilares explicitamente identificada no projeto/análise')+'; altura considerada '+fmt(pAlt,2)+' m');
+      add('4. Estrutura','Concreto dos pilares '+fmt(pB*100,0)+'×'+fmt(pH*100,0)+' cm',pQtd*pB*pH*pAlt*factor,'m³','estruturaConcreto','Premissa estrutural de quantitativo','estimate',pQtd+' × '+fmt(pB,2)+' × '+fmt(pH,2)+' × '+fmt(pAlt,2)+' m');
+      add('4. Estrutura','Comprimento linear dos pilares — '+pBars+'Ø'+fmt(pD,0),pQtd*pBars*pAlt,'m','estruturaAco','Premissa estrutural de quantitativo','estimate',pQtd+' pilares × '+pBars+' barras × '+fmt(pAlt,2)+' m');
+      add('4. Estrutura','Aço longitudinal dos pilares — '+pBars+'Ø'+fmt(pD,0),pQtd*pBars*pAlt*steelKgM(pD)*factor,'kg','estruturaAco','Premissa estrutural de quantitativo','estimate',pQtd+' pilares × '+pBars+' barras × '+fmt(pAlt,2)+' m; sem emendas/ancoragens adicionais');
       add('4. Estrutura','Fôrmas dos pilares',pQtd*2*(pB+pH)*pAlt*factor,'m²','estruturaForma','Geometria da seção informada','direct','Perímetro da seção × altura × quantidade');
     }
 
@@ -2000,7 +2009,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     $('materialsBody').innerHTML=state.materials.map(function(x){
       const integerUnits=['un.','pontos','conj.','kits','sistemas','sistema','lote'],d=integerUnits.includes(x.unit)?0:2;
       const range=x.range?'<br><small>faixa da referência: '+fmt(x.range.low,d)+'–'+fmt(x.range.high,d)+' '+esc(x.unit)+'</small>':'';
-      const tag=x.originType==='estimate'?'<span class="tag">ESTIMATIVA</span> ':'<span class="tag">DADO INFORMADO</span> ';
+      const tag=x.originType==='estimate'?'<span class="tag">ESTIMATIVA</span> ':'<span class="tag">DADO / GEOMETRIA</span> ';
       return '<tr><td>'+esc(x.stage)+'</td><td>'+esc(x.material)+'</td><td class="num">'+fmt(x.q,d)+range+'</td><td>'+esc(x.unit)+'</td><td>'+tag+esc(x.origin||'—')+'<br><small>'+esc(x.basis||'')+'</small></td></tr>';
     }).join('')||'<tr><td colspan="5">Nenhum quantitativo calculado ainda.</td></tr>';renderScopeStatus();updateQualityAudit();
   }
@@ -2156,7 +2165,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
     $('view-escopo').insertAdjacentHTML('beforeend',`<div class="card"><h2>Premissas estruturais para quantitativo</h2>
       <p class="notice"><b>Premissas de quantitativo estrutural.</b> Padrão adotado: sapatas 1,00×1,00 m com malha Ø10 mm a cada 15 cm e dobra de 15 cm; vigas 12×40 cm com 2Ø10 inferiores + 2Ø8 superiores; pilares 12×35 cm com 4Ø10. Servem para levantamento de materiais e não substituem projeto/cálculo estrutural. Estribos, cobrimento, ancoragens e emendas não são acrescentados sem parâmetro informado.</p>
       <h3>Sapatas isoladas</h3><div class="extension-grid">
-        <div class="field"><label>Quantidade de sapatas</label><input data-extra id="strSapQtd" type="number" min="0" step="1" placeholder="Automático pela malha de paredes"></div>
+        <div class="field"><label>Quantidade de sapatas</label><input data-extra id="strSapQtd" type="number" min="0" step="1" placeholder="Preencher pelo projeto estrutural"></div>
         <div class="field"><label>Dimensão X (m)</label><input data-extra id="strSapX" type="number" min="0" step="any" value="1"></div>
         <div class="field"><label>Dimensão Y (m)</label><input data-extra id="strSapY" type="number" min="0" step="any" value="1"></div>
         <div class="field"><label>Espessura/altura (m)</label><input data-extra id="strSapAlt" type="number" min="0" step="any" placeholder="Não informada"></div>
@@ -2165,7 +2174,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
         <div class="field"><label>Dobra em cada extremidade (m)</label><input data-extra id="strSapDobra" type="number" min="0" step="any" value="0.15"></div>
       </div>
       <h3 style="margin-top:18px">Vigas</h3><div class="extension-grid">
-        <div class="field"><label>Comprimento total de vigas (m)</label><input data-extra id="strVigaM" type="number" min="0" step="any" placeholder="Automático = comprimento das paredes"></div>
+        <div class="field"><label>Comprimento total de vigas (m)</label><input data-extra id="strVigaM" type="number" min="0" step="any" placeholder="Preencher pelo projeto estrutural"></div>
         <div class="field"><label>Largura (m)</label><input data-extra id="strVigaB" type="number" min="0" step="any" value="0.12"></div>
         <div class="field"><label>Altura (m)</label><input data-extra id="strVigaH" type="number" min="0" step="any" value="0.40"></div>
         <div class="field"><label>Barras inferiores</label><input data-extra id="strVigaInfQtd" type="number" min="0" step="1" value="2"></div>
@@ -2181,7 +2190,7 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
         <div class="field"><label>Barras longitudinais</label><input data-extra id="strPilarBarras" type="number" min="0" step="1" value="4"></div>
         <div class="field"><label>Ø longitudinal (mm)</label><input data-extra id="strPilarDiam" type="number" min="0" step="any" value="10"></div>
       </div>
-      <p class="hint">Quando esses campos ficarem vazios, o app estima automaticamente: sapatas e pilares pelos cantos/encontros da malha de paredes reconhecida e comprimento das vigas pelo comprimento total das paredes. Valores informados pelo usuário sempre substituem a estimativa. A altura dos pilares usa o pé-direito quando ficar vazia.</p>
+      <p class="hint">O LANG não transforma cantos de paredes em pilares/sapatas e não usa o comprimento das paredes como comprimento de vigas. Quantidades detalhadas só entram quando vêm do projeto/análise estrutural ou são informadas por você. Sem projeto estrutural, os índices gerais aparecem apenas como estimativa preliminar de orçamento, separados dos dados diretos.</p>
     </div>`);
 
     $('view-planta').insertAdjacentHTML('beforeend',`<div class="card"><h2>Conferência da planta</h2><p class="notice">A detecção automática é uma sugestão visual. <b>Azul = parede aceita pelo conjunto estrutural; amarelo = trecho duvidoso para conferência. Linhas finas compatíveis com cotas não entram automaticamente no comprimento das paredes.</b> Cotas, mobiliário e hachuras são filtrados por espessura, continuidade e conexão, mas ainda podem exigir correção. Em PDF digitalizado, calibre cada página utilizada. Fotografias em perspectiva devem ser retificadas antes de medir.</p><div class="actions"><button class="btn secondary" id="areaMode">Medir área por polígono</button><button class="btn secondary" id="finishArea">Concluir área e usar como piso</button></div><p class="hint" id="polygonStatus">Calibre a escala, clique nos vértices da área e conclua. Esta ferramenta substitui o campo de área líquida de piso.</p></div>`);
@@ -2213,8 +2222,13 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   function enhanceMaterials(input){
     let mats=input.filter(m=>Number.isFinite(m.q)&&m.q>0);const factor=1+loss(),c=state.coef;
     const add=(id,name,q,unit,basis)=>{if(q>0&&Number.isFinite(q)&&state.scope.has(id))mats.push({stage:catalogItem(id).stage,scopeId:id,material:name,q,unit,originType:'estimate',origin:'Composição paramétrica editável',basis,confidence:'baixa'})};
-    // Keep derived geometry and historic reference ratios explicitly preliminary.
-    for(const m of mats){if(m.originType!=='estimate'&&!/informad|Entrada manual|complementar/.test(m.origin)){m.originType='estimate';m.confidence='baixa'}if(m.originType==='estimate'&&/CBC|Lajeado|Catalão|AGEHAB/.test(m.origin)){m.confidence='baixa';m.origin+=' — cenário de referência; adequação não validada'}}
+    // Preserve direct project geometry as direct. Parametric/reference items keep the confidence assigned by their estimator.
+    for(const m of mats){
+      if(m.originType==='estimate'){
+        if(!m.confidence)m.confidence='média';
+        if(/CBC|Lajeado|Catalão|AGEHAB/.test(m.origin)&&!/cenário de referência/i.test(m.origin))m.origin+=' — cenário de referência, não projeto executivo';
+      }else if(!m.confidence)m.confidence='alta';
+    }
     // Respect finish choices even when the fallback estimator is active.
     const disabled=new Set();if($('revInterno').value==='Sem revestimento'&&$('revExterno').value==='Sem revestimento')for(const id of ['chapisco','reboco','emboço','gessoParede'])disabled.add(id);
     if($('rodape').value!=='sim')disabled.add('rodape');
