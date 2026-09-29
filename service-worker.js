@@ -1,4 +1,4 @@
-const CACHE='lang-quantitativos-v4-11-1';
+const CACHE='lang-quantitativos-v4-12';
 const BASE=new URL('./',self.location).href;
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['index.html','manifest.json','vendor/pdf.min.mjs','vendor/pdf.worker.min.mjs'].map(p=>new URL(p,BASE).href))))});
 self.addEventListener('activate',e=>e.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('lang-quantitativos-')&&k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()])));
