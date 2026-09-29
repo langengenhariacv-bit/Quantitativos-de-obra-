@@ -2344,13 +2344,17 @@ function imageDisplayScale(img){return Math.min(1,1800/Math.max(img.naturalWidth
   function syncScopeStatuses(){
     const off=[];if($('pintInterna').value!=='sim')off.push('tintaInterna');if($('pintExterna').value!=='sim')off.push('tintaExterna');if($('pintInterna').value!=='sim'&&$('pintExterna').value!=='sim')off.push('massa','selador');if($('rodape').value!=='sim')off.push('rodape');if($('revInterno').value==='Sem revestimento'&&$('revExterno').value==='Sem revestimento')off.push('chapisco','reboco','emboço','gessoParede');for(const id of off)if(state.scope.has(id))state.scopeStatus[id]={kind:'na',label:'Não aplicável',basis:'Desativado nos parâmetros da obra'};
     for(const [id,v] of Object.entries(overrides()))if(state.scope.has(id))state.scopeStatus[id]={kind:v.q>0?'direct':'na',label:v.q>0?'Quantidade informada':'Ausência confirmada',source:v.note||'Entrada manual',basis:v.q+' '+v.unit};
-    for(const id of new Set(state.materials.filter(m=>m.originType==='estimate').map(m=>m.scopeId)))if(state.scopeStatus[id]?.kind==='direct')state.scopeStatus[id]={...state.scopeStatus[id],kind:'estimate',label:'Estimativa preliminar',confidence:'baixa'};
+    for(const id of new Set(state.materials.filter(m=>m.originType==='estimate').map(m=>m.scopeId))){
+      if(state.scopeStatus[id]?.kind!=='direct')continue;
+      const est=state.materials.filter(m=>m.scopeId===id&&m.originType==='estimate'),conf=est.some(m=>m.confidence==='baixa')?'baixa':est.some(m=>m.confidence==='média')?'média':'alta';
+      state.scopeStatus[id]={...state.scopeStatus[id],kind:'estimate',label:'Derivado por composição/coeficiente',confidence:conf};
+    }
     const dependencies={pilares:['estruturaConcreto','estruturaAco','estruturaForma'],vigas:['estruturaConcreto','estruturaAco','estruturaForma'],loucas:['vasos','lavatorios'],metais:['torneiras','acessoriosBwc']};
     for(const [id,deps] of Object.entries(dependencies))if(state.scopeStatus[id]?.kind==='covered'&&!deps.every(d=>state.materials.some(m=>m.scopeId===d)))state.scopeStatus[id]={kind:'review',label:'Conferir componentes vinculados',basis:'Selecione e quantifique: '+deps.join(', ')};
   }
   function enhanceMaterials(input){
     let mats=input.filter(m=>Number.isFinite(m.q)&&m.q>0);const factor=1+loss(),c=state.coef;
-    const add=(id,name,q,unit,basis)=>{if(q>0&&Number.isFinite(q)&&state.scope.has(id))mats.push({stage:catalogItem(id).stage,scopeId:id,material:name,q,unit,originType:'estimate',origin:'Composição paramétrica editável',basis,confidence:'baixa'})};
+    const add=(id,name,q,unit,basis,confidence='média')=>{if(q>0&&Number.isFinite(q)&&state.scope.has(id))mats.push({stage:catalogItem(id).stage,scopeId:id,material:name,q,unit,originType:'estimate',origin:'Composição paramétrica editável sobre quantidade/área já calculada',basis,confidence})};
     // Preserve direct project geometry as direct. Parametric/reference items keep the confidence assigned by their estimator.
     for(const m of mats){
       if(m.originType==='estimate'){
