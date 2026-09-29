@@ -940,7 +940,7 @@ AUDITORIA CAD OBRIGATÓRIA ANTES DO RESULTADO:
 8. COMPLETUDE: antes de gerar o JSON, confronte o que foi quantificado com os candidatos existentes. Se houver layer/bloco claramente relevante que não pôde ser quantificado, registre isso em "avisos" em vez de simplesmente omiti-lo.
 9. UNIDADES/AMBIENTES REPETIDOS: NÃO elimine ambientes só porque têm o mesmo nome e a mesma área. Se aparecem em posições distintas no Model Space, são instâncias distintas e devem permanecer separadas em "ambientes". Ambientes repetidos podem representar unidades residenciais repetidas.
 10. ESQUADRIAS: se existir "esquadrias.itens", use esse quadro como fonte primária de código, descrição, largura, altura e peitoril; use "quantidade" como contagem no Model Space quando maior que zero. Não devolva largura/altura null quando o quadro estruturado trouxer essas medidas.
-11. COMPRIMENTO BRUTO DE PAREDES: use "paredes_preanalise.trechos_eixo_solido" como ponto de partida quando existir. Eles já são eixos entre pares de faces paralelas, mas ficam interrompidos nos vãos. Reconstrua a continuidade através de portas/janelas quando as duas partes forem colineares e pertencerem à mesma parede, conferindo a posição/tamanho dos vãos no CAD. O comprimento_total_m deve representar o eixo bruto contínuo das paredes; o LANG descontará a área dos vãos depois. "soma_eixos_solidos_m" NÃO é o total bruto final. Não desconte o mesmo vão duas vezes.
+11. COMPRIMENTO BRUTO DE PAREDES: use "paredes_preanalise" como ponto de partida. "trechos_eixo_solido" são eixos entre pares de faces paralelas, restritos às regiões de planta baixa. "trechos_eixo_bruto_candidato" e "comprimento_bruto_candidato_m" já fazem uma primeira reconexão de eixos colineares próximos. AUDITE cada reconexão contra esquadrias/códigos e a geometria; descarte pontes que atravessem espaços sem parede ou sem vão. Se a auditoria confirmar a cobertura das plantas, use o comprimento bruto auditado em comprimento_total_m. O LANG descontará a área dos vãos depois. Não use a soma de trechos sólidos como comprimento bruto final e não desconte o mesmo vão duas vezes.
 12. REVISÕES/BLOCOS: Model Space e os campos estruturados do LANG_CAD têm prioridade. Definições de bloco antigas, não inseridas ou anônimas não substituem a geometria vigente.
 
 Ao terminar, gere para download um arquivo chamado ANALISE_LANG.json, em JSON válido, exatamente com esta estrutura:
@@ -1159,6 +1159,34 @@ function inferUnitsFromImportedRooms(rooms){
   const choices=Object.entries(freq).map(([n,k])=>({n:Number(n),keys:k})).filter(x=>x.keys>=3).sort((a,b)=>b.keys-a.keys||b.n-a.n);
   return choices[0]?.n||1;
 }
+function cadMergeWallAxes(walls,maxGap){
+  const groups=new Map(),deg=Math.PI/180,gap=Math.max(.5,Number(maxGap)||2);
+  for(const w of walls||[]){
+    if(!w?.a_m||!w?.b_m||!(Number(w.comprimento_m)>0))continue;
+    const ax=Number(w.a_m[0]),ay=Number(w.a_m[1]),bx=Number(w.b_m[0]),by=Number(w.b_m[1]),dx=bx-ax,dy=by-ay,len=Math.hypot(dx,dy);
+    if(!(len>.05))continue;
+    let ang=(Math.atan2(dy,dx)+Math.PI)%Math.PI,ux=Math.cos(ang),uy=Math.sin(ang),nx=-uy,ny=ux;
+    const off=((ax+bx)/2)*nx+((ay+by)/2)*ny,key=Math.round(ang/deg)+'|'+Math.round(off/.04);
+    const p1=ax*ux+ay*uy,p2=bx*ux+by*uy,rec={lo:Math.min(p1,p2),hi:Math.max(p1,p2),ang,ux,uy,nx,ny,off,w};
+    if(!groups.has(key))groups.set(key,[]);groups.get(key).push(rec);
+  }
+  const spans=[];let filled=0,solid=0;
+  for(const arr of groups.values()){
+    arr.sort((a,b)=>a.lo-b.lo);if(!arr.length)continue;
+    solid+=arr.reduce((s,r)=>s+(r.hi-r.lo),0);
+    let lo=arr[0].lo,hi=arr[0].hi,meta=arr[0],offs=[arr[0].off],sources=[arr[0].w.id];
+    const push=()=>{const off=offs.reduce((s,v)=>s+v,0)/offs.length,A=[meta.ux*lo+meta.nx*off,meta.uy*lo+meta.ny*off],B=[meta.ux*hi+meta.nx*off,meta.uy*hi+meta.ny*off];spans.push({a_m:A,b_m:B,comprimento_m:hi-lo,layer:meta.w.layer,origens:[...sources]})};
+    for(let i=1;i<arr.length;i++){
+      const r=arr[i];
+      if(r.lo<=hi+gap){
+        if(r.lo>hi)filled+=r.lo-hi;
+        hi=Math.max(hi,r.hi);offs.push(r.off);sources.push(r.w.id);
+      }else{push();lo=r.lo;hi=r.hi;meta=r;offs=[r.off];sources=[r.w.id]}
+    }
+    push();
+  }
+  return{spans,solid,filled,gross:spans.reduce((s,r)=>s+r.comprimento_m,0),gap};
+}
 function cadPlanRegions(rooms,floors){
   const pts=(rooms||[]).filter(r=>Array.isArray(r.p)&&Number.isFinite(Number(r.p[0]))&&Number.isFinite(Number(r.p[1])));
   if(!pts.length)return[];
@@ -1279,7 +1307,17 @@ async function buildCadManifestFile(dxfFile,originalName){
   const regioesPlanta=cadPlanRegions(ambientesEstruturados,pavimentosEstruturados);
   if(regioesPlanta.length&&paredesPre.trechos_eixo_solido.length){
     const pw=paredesPre.trechos_eixo_solido.filter(w=>{const mx=(w.a_m[0]+w.b_m[0])/2,my=(w.a_m[1]+w.b_m[1])/2;return regioesPlanta.some(r=>mx>=r.minX&&mx<=r.maxX&&my>=r.minY&&my<=r.maxY)});
-    if(pw.length>=5)paredesPre={...paredesPre,trechos_eixo_solido:pw,soma_eixos_solidos_m:round(pw.reduce((s,w)=>s+w.comprimento_m,0))};
+    if(pw.length>=5){
+      const maxOpening=Math.max(0,...(esquadrias.itens||[]).map(x=>Number(x.largura_m)||0)),maxGap=Math.max(1.8,Math.min(3,maxOpening+.9));
+      const merged=cadMergeWallAxes(pw,maxGap),grossSpans=merged.spans.map((w,i)=>({id:'G'+String(i+1).padStart(3,'0'),a_m:w.a_m.map(round),b_m:w.b_m.map(round),comprimento_m:round(w.comprimento_m),layer:w.layer,origens:w.origens}));
+      paredesPre={...paredesPre,
+        trechos_eixo_solido:pw,soma_eixos_solidos_m:round(pw.reduce((s,w)=>s+w.comprimento_m,0)),
+        trechos_eixo_bruto_candidato:grossSpans,comprimento_bruto_candidato_m:round(merged.gross),
+        lacunas_reconectadas_m:round(merged.filled),gap_max_m:round(maxGap),
+        confianca_bruto:regioesPlanta.length&&esquadrias.itens?.length?.82:.68,
+        metodo_bruto:'união de eixos colineares de paredes pareadas dentro das plantas; lacunas até '+round(maxGap)+' m tratadas como candidatos a vãos e devem ser auditadas'
+      };
+    }
   }
   const manifest={
     format:'LANG-CAD-EXTRACAO',version:2,
@@ -1311,7 +1349,7 @@ async function buildCadManifestFile(dxfFile,originalName){
       'Para paredes desenhadas por duas faces paralelas, medir uma única vez pelo eixo médio.',
       'Antes do resultado final, conferir pavimentos_estruturados, ambientes_estruturados, esquadrias, rotulos_area, rotulos_ambiente, candidatos de aberturas, candidatos de paredes e blocos_relevantes.',
       'Em esquadrias.itens, quantidade é a contagem de códigos no Model Space; largura_m/altura_m/peitoril_m vêm do quadro de esquadrias quando disponível.',
-      'paredes_preanalise.trechos_eixo_solido contém somente eixos obtidos de pares de faces paralelas de alvenaria dentro das regiões de planta baixa localizadas pelos ambientes. Esses trechos podem estar interrompidos por vãos; não use soma_eixos_solidos_m como comprimento bruto final sem reconstruir as continuidades.'
+      'paredes_preanalise.trechos_eixo_solido contém eixos pareados dentro das regiões de planta baixa. paredes_preanalise.trechos_eixo_bruto_candidato reconecta apenas trechos colineares próximos. comprimento_bruto_candidato_m é candidato geométrico para auditoria, não deve ser aceito se alguma reconexão atravessar um espaço sem parede/vão correspondente.'
     ]
   };
   state.cadManifest=manifest;
