@@ -939,9 +939,10 @@ AUDITORIA CAD OBRIGATÓRIA ANTES DO RESULTADO:
 7. ESTRUTURA: só informe pilar, viga, sapata e laje quando houver entidade/layer/bloco/texto que sustente isso. Não derive pilar apenas de encontro de paredes.
 8. COMPLETUDE: antes de gerar o JSON, confronte o que foi quantificado com os candidatos existentes. Se houver layer/bloco claramente relevante que não pôde ser quantificado, registre isso em "avisos" em vez de simplesmente omiti-lo.
 9. UNIDADES/AMBIENTES REPETIDOS: NÃO elimine ambientes só porque têm o mesmo nome e a mesma área. Se aparecem em posições distintas no Model Space, são instâncias distintas e devem permanecer separadas em "ambientes". Ambientes repetidos podem representar unidades residenciais repetidas.
-10. ESQUADRIAS: se existir "esquadrias.itens", use esse quadro como fonte primária de código, descrição, largura, altura e peitoril; use "quantidade" como contagem no Model Space quando maior que zero. Não devolva largura/altura null quando o quadro estruturado trouxer essas medidas.
-11. COMPRIMENTO BRUTO DE PAREDES: use "paredes_preanalise" como ponto de partida. "trechos_eixo_solido" são eixos entre pares de faces paralelas, restritos às regiões de planta baixa. "trechos_eixo_bruto_candidato" e "comprimento_bruto_candidato_m" já fazem uma primeira reconexão de eixos colineares próximos. AUDITE cada reconexão contra esquadrias/códigos e a geometria; descarte pontes que atravessem espaços sem parede ou sem vão. Se a auditoria confirmar a cobertura das plantas, use o comprimento bruto auditado em comprimento_total_m. O LANG descontará a área dos vãos depois. Não use a soma de trechos sólidos como comprimento bruto final e não desconte o mesmo vão duas vezes.
-12. REVISÕES/BLOCOS: Model Space e os campos estruturados do LANG_CAD têm prioridade. Definições de bloco antigas, não inseridas ou anônimas não substituem a geometria vigente.
+10. ESQUADRIAS: se existir "esquadrias.itens", use SOMENTE o quadro já selecionado pelo LANG como fonte primária de código, descrição, largura, altura e peitoril; use "quantidade" como contagem no Model Space quando maior que zero. "esquadrias.quadros" pode conter revisões antigas; não misture dimensões de outro quadro. Não devolva largura/altura null quando "esquadrias.itens" trouxer essas medidas.
+11. REGIÕES E COTAS: analise "regioes_planta_m" pavimento por pavimento. Em cada região, use "dimensoes" para validar envelope, módulos e extensões (por exemplo cotas externas e espaçamentos entre paredes), "faces_alvenaria" para confirmar a existência física das faces e "codigos_vaos" para localizar interrupções. Não use cotas de outra região/corte/fachada.
+12. COMPRIMENTO BRUTO DE PAREDES: use "paredes_preanalise" como ponto de partida. "trechos_eixo_solido" são eixos entre pares de faces paralelas, restritos às regiões de planta baixa. "trechos_eixo_bruto_candidato" e "comprimento_bruto_candidato_m" fazem apenas uma primeira reconexão. Complete paredes quando cotas, faces e encontros comprovarem a continuidade; NÃO encerre uma parede na borda de um vão. O comprimento_total_m deve ser o eixo bruto contínuo auditado de TODOS os pavimentos, sem duplicar paredes geminadas. O LANG descontará a área dos vãos depois. Se ainda faltar trecho inequívoco, mantenha comprimento_total_m=null e explique exatamente quais trechos faltaram.
+13. REVISÕES/BLOCOS: Model Space e os campos estruturados do LANG_CAD têm prioridade. Definições de bloco antigas, não inseridas ou anônimas não substituem a geometria vigente.
 
 Ao terminar, gere para download um arquivo chamado ANALISE_LANG.json, em JSON válido, exatamente com esta estrutura:
 {
@@ -1215,6 +1216,32 @@ function cadPlanRegions(rooms,floors){
   }
   return out;
 }
+function cadRegionDetails(regions,rooms,floors,modelM){
+  const wallRe=/(PAREDE|ALVEN|WALL|MURO|VEDA[CÇ])/i;
+  const pointIn=(p,r,margin=0)=>p&&Number(p[0])>=r.minX-margin&&Number(p[0])<=r.maxX+margin&&Number(p[1])>=r.minY-margin&&Number(p[1])<=r.maxY+margin;
+  const entPoints=e=>[e.p,e.a,e.b,e.c,e.def,e.p1,e.p2,...(e.v||[])].filter(Boolean);
+  const floorMap=new Map((floors||[]).map(f=>[String(f.pavimento||'').toLowerCase().trim(),f]));
+  return (regions||[]).map((r,idx)=>{
+    const key=String(r.pavimento||'').toLowerCase().trim(),f=floorMap.get(key)||null;
+    const rs=(rooms||[]).filter(x=>pointIn(x.p,r,.35));
+    const dims=(modelM||[]).filter(e=>e.t==='DIMENSION'&&Number(e.m)>0&&Number(e.m)<100&&entPoints(e).some(p=>pointIn(p,r,1.5))).map(e=>({
+      medida_m:Number(e.m),texto:e.text||'',def:e.def||null,p1:e.p1||null,p2:e.p2||null,layer:e.l||''
+    }));
+    const wallFaces=(modelM||[]).filter(e=>wallRe.test(e.l||'')&&['LINE','LWPOLYLINE','POLYLINE','ARC'].includes(e.t)&&entPoints(e).some(p=>pointIn(p,r,.6))).map(e=>{
+      const o={t:e.t,l:e.l};if(e.a)o.a=e.a;if(e.b)o.b=e.b;if(e.c)o.c=e.c;if(e.v)o.v=e.v;if(e.closed!=null)o.closed=e.closed;if(Number.isFinite(e.r))o.r=e.r;return o;
+    });
+    const openingCodes=(modelM||[]).filter(e=>['TEXT','MTEXT','ATTRIB'].includes(e.t)&&/^[PJ]\d{1,3}$/i.test(cadPlainText(e.text))&&pointIn(e.p,r,.5)).map(e=>({codigo:cadPlainText(e.text).toUpperCase(),p:e.p}));
+    return{
+      ...r,id:'PAV'+String(idx+1).padStart(2,'0'),
+      area_pavimento_m2:Number(f?.area_m2)||null,
+      ambientes:rs,
+      area_ambientes_rotulados_m2:Number(rs.reduce((s,x)=>s+Number(x.area_m2||0),0).toFixed(4)),
+      dimensoes:dims,
+      faces_alvenaria:wallFaces,
+      codigos_vaos:openingCodes
+    };
+  });
+}
 async function buildCadManifestFile(dxfFile,originalName){
   const text=await dxfFile.text(),pairs=dxfCompactPairs(text);
   if(!pairs.length||!text.toUpperCase().includes('ENTITIES'))throw new Error('O DXF convertido não pôde ser estruturado.');
@@ -1304,7 +1331,7 @@ async function buildCadManifestFile(dxfFile,originalName){
     const t=e.text_limpo||'',m=t.match(/Planta\s+Baixa\s+(?:Pavto\.?|Pavimento)\s*([^\n]+?)(?:\n|\s)+[ÁA]rea\s*:?\s*(\d{1,4}[,.]\d{1,2})\s*m[²2]?/i);
     return m?{pavimento:m[1].trim(),area_m2:Number(m[2].replace(',','.')),p:e.p}:null;
   }).filter(Boolean);
-  const regioesPlanta=cadPlanRegions(ambientesEstruturados,pavimentosEstruturados);
+  const regioesPlantaBase=cadPlanRegions(ambientesEstruturados,pavimentosEstruturados),regioesPlanta=cadRegionDetails(regioesPlantaBase,ambientesEstruturados,pavimentosEstruturados,modelM);
   if(regioesPlanta.length&&paredesPre.trechos_eixo_solido.length){
     const pw=paredesPre.trechos_eixo_solido.filter(w=>{const mx=(w.a_m[0]+w.b_m[0])/2,my=(w.a_m[1]+w.b_m[1])/2;return regioesPlanta.some(r=>mx>=r.minX&&mx<=r.maxX&&my>=r.minY&&my<=r.maxY)});
     if(pw.length>=5){
@@ -1349,7 +1376,8 @@ async function buildCadManifestFile(dxfFile,originalName){
       'Para paredes desenhadas por duas faces paralelas, medir uma única vez pelo eixo médio.',
       'Antes do resultado final, conferir pavimentos_estruturados, ambientes_estruturados, esquadrias, rotulos_area, rotulos_ambiente, candidatos de aberturas, candidatos de paredes e blocos_relevantes.',
       'Em esquadrias.itens, quantidade é a contagem de códigos no Model Space; largura_m/altura_m/peitoril_m vêm do quadro de esquadrias quando disponível.',
-      'paredes_preanalise.trechos_eixo_solido contém eixos pareados dentro das regiões de planta baixa. paredes_preanalise.trechos_eixo_bruto_candidato reconecta apenas trechos colineares próximos. comprimento_bruto_candidato_m é candidato geométrico para auditoria, não deve ser aceito se alguma reconexão atravessar um espaço sem parede/vão correspondente.'
+      'paredes_preanalise.trechos_eixo_solido contém eixos pareados dentro das regiões de planta baixa. paredes_preanalise.trechos_eixo_bruto_candidato reconecta apenas trechos colineares próximos. comprimento_bruto_candidato_m é candidato geométrico para auditoria, não deve ser aceito se alguma reconexão atravessar um espaço sem parede/vão correspondente.',
+      'regioes_planta_m contém, para cada pavimento, ambientes, cotas DIMENSION próximas, faces de alvenaria e códigos de vãos. Use essas regiões antes de pesquisar o Model Space inteiro, para não misturar cobertura/cortes/fachadas.'
     ]
   };
   state.cadManifest=manifest;
