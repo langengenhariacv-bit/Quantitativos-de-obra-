@@ -1,4 +1,5 @@
 {
+  "id": "./",
   "name": "L2B Financeiro",
   "short_name": "L2B Financeiro",
   "description": "Controle financeiro de obras e retiradas da L2B Construtora.",
@@ -11,16 +12,16 @@
   "theme_color": "#171717",
   "icons": [
     {
-      "src": "./assets/l2b-app-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "./assets/l2b-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./assets/l2b-app-icon-maskable.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "src": "./assets/l2b-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
