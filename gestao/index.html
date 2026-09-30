@@ -88,29 +88,85 @@ function seedState(){
   {id:'cli-cascavel',name:'Cascavel película',phone:'',email:'',notes:''},
   {id:'cli-alexandre',name:'Cliente do Alexandre',phone:'',email:'',notes:'Projeto de terceiro'},
   {id:'cli-jurandir',name:'Jurandir',phone:'',email:'',notes:''},
-  {id:'cli-siberia',name:'Sibéria',phone:'',email:'',notes:''}
+  {id:'cli-siberia',name:'Sibéria',phone:'',email:'',notes:''},
+  {id:'cli-lucelio',name:'Lucélio',phone:'',email:'',notes:''},
+  {id:'cli-eduardo-trumpel',name:'Eduardo Trumpel',phone:'',email:'',notes:''},
+  {id:'cli-rodrigo',name:'Rodrigo',phone:'',email:'',notes:''}
  ];
  const mk=(id,name,clientId,service)=>({id,name,clientId,service,status:'Planejamento',archived:false,createdAt:'2026-09-26T12:00:00.000Z',notes:'',stages:makeStages(id,service),documents:[],approvals:[],history:[]});
  return {version:1,revision:1,updatedAt:new Date().toISOString(),clients,
  projects:[
-  mk('prj-atanasio','Projeto preventivo regularização Atanásio','cli-atanasio','Projeto preventivo / regularização'),
-  mk('prj-celi','Desdobro Celi','cli-celi','Desdobro'),
+  {...mk('prj-lucelio','Lucélio','cli-lucelio',''),status:'Dados a recuperar',recoveryPending:true,stages:[]},
+  {...mk('prj-aprovacao','Aprovação projeto','','Projeto residencial multifamiliar'),status:'Dados a recuperar',recoveryPending:true,stages:[]},
+  {...mk('prj-eduardo-trumpel','Retificação + Desdobro - Eduardo Trumpel','cli-eduardo-trumpel','Levantamento topográfico'),status:'Dados a recuperar',recoveryPending:true,stages:[]},
+  {...mk('prj-muro-rodrigo','Muro Contensão - Rodrigo','cli-rodrigo',''),status:'Dados a recuperar',recoveryPending:true,stages:[]},
+  mk('prj-atanasio','Projeto preventivo regularização','cli-atanasio','Projeto preventivo contra incêndio'),
+  mk('prj-celi','Desdobro','cli-celi','Desdobro'),
   mk('prj-felipe','Projeto residencial multifamiliar - Felipe Ambrosi','cli-felipe','Projeto residencial multifamiliar'),
-  mk('prj-cascavel','Instituição de condomínio Cascavel película','cli-cascavel','Instituição de condomínio'),
-  mk('prj-alexandre','Projeto Alexandre cliente terceiro','cli-alexandre','2 casas geminadas'),
-  mk('prj-jurandir','Regularização jurandir','cli-jurandir','Regularização de imóvel')
+  mk('prj-cascavel','Instituição de condomínio','cli-cascavel','Instituição de condomínio'),
+  mk('prj-alexandre','Projeto Alexandre cliente terceiro','cli-alexandre','Projeto residencial multifamiliar'),
+  mk('prj-jurandir','Regularização jurandir','cli-jurandir','Projeto residencial multifamiliar')
  ],
  budgets:[{id:'bud-siberia',title:'Medir terreno Sibéria',clientId:'cli-siberia',service:'Medição de terreno',value:0,status:'Rascunho',deadline:'2026-09-28',notes:'',createdAt:'2026-09-26T12:00:00.000Z'}],
  processes:[],
  tasks:[{id:'tsk-siberia',title:'Medir terreno Sibéria',type:'Orçamento',refId:'bud-siberia',clientId:'cli-siberia',due:'2026-09-28',status:'Pendente',notes:''}],
  finance:[]};
 }
+function ensureChromeProjects(s){
+ if(!s||typeof s!=='object')return false;
+ let changed=false;
+ s.clients=Array.isArray(s.clients)?s.clients:[];
+ s.projects=Array.isArray(s.projects)?s.projects:[];
+
+ const ensureClient=(id,name)=>{
+   if(!s.clients.some(c=>c.id===id||String(c.name||'').trim().toLowerCase()===name.toLowerCase())){
+     s.clients.push({id,name,phone:'',email:'',notes:''});changed=true;
+   }
+ };
+ ensureClient('cli-lucelio','Lucélio');
+ ensureClient('cli-eduardo-trumpel','Eduardo Trumpel');
+ ensureClient('cli-rodrigo','Rodrigo');
+
+ const byId=id=>s.projects.find(p=>p.id===id);
+ const safeChange=(id,field,from,to)=>{
+   const p=byId(id);if(p&&p[field]===from){p[field]=to;changed=true}
+ };
+ safeChange('prj-atanasio','name','Projeto preventivo regularização Atanásio','Projeto preventivo regularização');
+ safeChange('prj-atanasio','service','Projeto preventivo / regularização','Projeto preventivo contra incêndio');
+ safeChange('prj-celi','name','Desdobro Celi','Desdobro');
+ safeChange('prj-cascavel','name','Instituição de condomínio Cascavel película','Instituição de condomínio');
+ safeChange('prj-alexandre','service','2 casas geminadas','Projeto residencial multifamiliar');
+ safeChange('prj-jurandir','service','Regularização de imóvel','Projeto residencial multifamiliar');
+
+ const recovered=[
+  {id:'prj-lucelio',name:'Lucélio',clientId:'cli-lucelio',service:''},
+  {id:'prj-aprovacao',name:'Aprovação projeto',clientId:'',service:'Projeto residencial multifamiliar'},
+  {id:'prj-eduardo-trumpel',name:'Retificação + Desdobro - Eduardo Trumpel',clientId:'cli-eduardo-trumpel',service:'Levantamento topográfico'},
+  {id:'prj-muro-rodrigo',name:'Muro Contensão - Rodrigo',clientId:'cli-rodrigo',service:''}
+ ];
+ const missing=[];
+ for(const x of recovered){
+   const exists=s.projects.some(p=>p.id===x.id||String(p.name||'').trim().toLowerCase()===x.name.toLowerCase());
+   if(!exists){
+     missing.push({
+       ...x,status:'Dados a recuperar',archived:false,createdAt:'',notes:'Registro identificado na versão anterior do Chrome. Detalhes internos ainda não recuperados.',
+       stages:[],documents:[],approvals:[],history:[],address:'',responsible:'',startDate:'',deadline:'',nextAction:'',nextActionDate:'',recoveryPending:true
+     });
+     changed=true;
+   }
+ }
+ if(missing.length)s.projects=[...missing,...s.projects];
+ if(Number(s.chromeProjectListMigration||0)<1){s.chromeProjectListMigration=1;changed=true}
+ return changed;
+}
+
 function normalize(s){
  s=s||{};s.version=2;s.revision=Number(s.revision||0);s.updatedAt=s.updatedAt||new Date().toISOString();
  for(const k of ['clients','projects','budgets','processes','tasks','finance'])s[k]=Array.isArray(s[k])?s[k]:[];
  s.projects.forEach(p=>{
    p.archived=!!p.archived;p.status=p.status||'Planejamento';p.documents=Array.isArray(p.documents)?p.documents:[];p.approvals=Array.isArray(p.approvals)?p.approvals:[];p.history=Array.isArray(p.history)?p.history:[];
-   if(!Array.isArray(p.stages)||!p.stages.length)p.stages=makeStages(p.id,p.service);
+   if(p.recoveryPending){p.stages=Array.isArray(p.stages)?p.stages:[]}
+   else if(!Array.isArray(p.stages)||!p.stages.length)p.stages=makeStages(p.id,p.service);
    else {
      const isGeneric=p.stages.length===STAGES.length&&p.stages.every((x,i)=>x.title===STAGES[i])&&p.stages.every(x=>!x.done&&!x.due);
      if(isGeneric){const titles=stageTitlesFor(p.service);p.stages=titles.map((title,i)=>({id:p.id+'-s'+i,title,done:false,due:''}))}
@@ -129,15 +185,15 @@ async function encryptData(data,password){const salt=crypto.getRandomValues(new 
 async function decryptData(payload,password){if(!payload||payload.app!=='lang-engenharia-gestao-v1')throw new Error('Banco inválido');const salt=unbuf64(payload.salt),iv=unbuf64(payload.iv),key=await derive(password,salt);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,unbuf64(payload.data));return JSON.parse(new TextDecoder().decode(plain))}
 async function fetchBlob(){const r=await fetch(API+'?id='+encodeURIComponent(DB_ID),{cache:'no-store'});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||'Não foi possível carregar os dados');e.status=r.status;throw e}return j}
 async function putBlob(payload){const r=await fetch(API+'?id='+encodeURIComponent(DB_ID),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Não foi possível salvar os dados')}
-async function load(){status('Sincronizando…');try{const p=await fetchBlob();state=normalize(await decryptData(p,currentPassword))}catch(e){if(e.status===404&&currentPassword===INITIAL_PASSWORD){state=normalize(seedState());await putBlob(await encryptData(state,currentPassword))}else throw e}status('Sincronizado','ok')}
-async function mutate(fn){status('Salvando…');try{let remote;try{remote=normalize(await decryptData(await fetchBlob(),currentPassword))}catch(e){if(e.status===404)remote=normalize(seedState());else throw e}await fn(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();toast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message||'Não foi possível salvar')}}
+async function load(){status('Sincronizando…');try{const p=await fetchBlob();const raw=await decryptData(p,currentPassword);const migrated=ensureChromeProjects(raw);state=normalize(raw);if(migrated){state.revision=Number(state.revision||0)+1;state.updatedAt=new Date().toISOString();await putBlob(await encryptData(state,currentPassword))}}catch(e){if(e.status===404&&currentPassword===INITIAL_PASSWORD){state=normalize(seedState());await putBlob(await encryptData(state,currentPassword))}else throw e}status('Sincronizado','ok')}
+async function mutate(fn){status('Salvando…');try{let remote;try{const raw=await decryptData(await fetchBlob(),currentPassword);ensureChromeProjects(raw);remote=normalize(raw)}catch(e){if(e.status===404)remote=normalize(seedState());else throw e}await fn(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();toast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message||'Não foi possível salvar')}}
 async function doLogin(){const pwd=$('#passwordInput').value;if(!pwd)return loginErr('Digite a senha.');try{currentPassword=pwd;await load();sessionStorage.setItem('langPwd',pwd);$('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');buildNav();render()}catch(e){currentPassword='';loginErr('Senha incorreta ou dados indisponíveis.')}}
 function loginErr(t){const e=$('#loginError');e.textContent=t;e.classList.remove('hidden')}
 function logout(){sessionStorage.removeItem('langPwd');currentPassword='';state=null;$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden');$('#passwordInput').value='';$('#loginError').classList.add('hidden')}
 function buildNav(){const html=`<div class="side-title">Espaço de trabalho</div>`+NAV.map(([id,label,sub])=>`<button class="navbtn ${currentSection===id?'active':''}" data-nav="${id}">${label}<small>${sub}</small></button>`).join('');$('#sidebar').innerHTML=html;$('#mobileNav').innerHTML=NAV.map(([id,label])=>`<button class="navbtn ${currentSection===id?'active':''}" data-nav="${id}">${label}</button>`).join('');document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{currentSection=b.dataset.nav;currentProjectId=null;buildNav();render()})}
 function pageHead(title,sub,buttons=''){return `<div class="page-head"><div><div class="breadcrumb">Meu escritório / ${esc(title)}</div><h1>${esc(title)}</h1><p>${esc(sub)}</p></div><div class="actions">${buttons}</div></div>`}
 function progress(p){const done=p.stages.filter(s=>s.done).length,total=p.stages.length||1;return Math.round(done/total*100)}
-function projectCard(p){const pc=progress(p);return `<article class="project-card" data-project="${p.id}"><div class="row-between"><div><h4>${esc(p.name)}</h4><div class="meta">${esc(clientName(p.clientId))}<br>${esc(p.service||'Projeto')}</div></div><span class="pill ${p.archived?'gray':''}">${esc(p.archived?'Concluído':p.status)}</span></div><div class="progress"><i style="width:${pc}%"></i></div><div class="project-foot"><span>${pc}% das etapas</span><b>${p.stages.filter(s=>s.done).length}/${p.stages.length}</b></div></article>`}
+function projectCard(p){const pc=progress(p);const pending=!!p.recoveryPending;return `<article class="project-card" data-project="${p.id}"><div class="row-between"><div><h4>${esc(p.name)}</h4><div class="meta">${p.clientId?esc(clientName(p.clientId)):''}${p.clientId&&p.service?'<br>':''}${p.service?esc(p.service):''}</div></div><span class="pill ${p.archived?'gray':pending?'warn':''}">${esc(p.archived?'Concluído':p.status)}</span></div>${pending?'<div class="meta" style="margin-top:14px">Projeto recuperado da lista antiga. Etapas, valores e demais detalhes ainda não foram preenchidos.</div>':`<div class="progress"><i style="width:${pc}%"></i></div><div class="project-foot"><span>${pc}% das etapas</span><b>${p.stages.filter(s=>s.done).length}/${p.stages.length}</b></div>`}</article>`}
 function render(){if(!state)return;buildNav();if(currentProjectId)return renderProjectDetail(currentProjectId);({dashboard:renderDashboard,budgets:renderBudgets,projects:renderProjects,processes:renderProcesses,clients:renderClients,tasks:renderTasks,finance:renderFinance}[currentSection]||renderDashboard)()}
 function renderDashboard(){const active=state.projects.filter(p=>!p.archived),openProc=state.processes.filter(p=>!['Concluído','Arquivado'].includes(p.status)).length,openBud=state.budgets.filter(b=>!['Aceito','Recusado'].includes(b.status)).length,over=state.tasks.filter(t=>t.status!=='Concluída'&&t.due&&t.due<today()).length;const upcoming=state.tasks.filter(t=>t.status!=='Concluída').slice().sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')).slice(0,6);$('#main').innerHTML=`${pageHead('Visão geral','Cada projeto no rumo certo.','<button class="btn primary" id="quickBudget">Novo orçamento</button>')}<div class="metrics"><div class="metric metric-link" data-go="projects" role="button" tabindex="0"><span>Projetos ativos</span><strong>${active.length.toString().padStart(2,'0')}</strong><em>toque para ver os projetos</em></div><div class="metric metric-link" data-go="processes" role="button" tabindex="0"><span>Processos em aberto</span><strong>${openProc.toString().padStart(2,'0')}</strong><em>toque para ver os processos</em></div><div class="metric metric-link" data-go="budgets" role="button" tabindex="0"><span>Orçamentos em aberto</span><strong>${openBud.toString().padStart(2,'0')}</strong><em>toque para ver os orçamentos</em></div><div class="metric metric-link" data-go="tasks" role="button" tabindex="0"><span>Prazos vencidos</span><strong>${over.toString().padStart(2,'0')}</strong><em>toque para ver a agenda</em></div></div><div class="grid-2"><section><div class="section-head"><h3>Projetos em andamento</h3><button class="btn soft sm" id="allProjects">Ver todos</button></div><div class="grid-3">${active.slice(0,6).map(projectCard).join('')||'<div class="empty">Nenhum projeto ativo.</div>'}</div></section><section><div class="section-head"><h3>Próximos prazos</h3><button class="btn soft sm" id="allTasks">Ver agenda</button></div><div class="list">${upcoming.map(t=>`<div class="list-item clickable-row ${t.due&&t.due<today()?'overdue':''}" data-go="tasks"><div class="datebox">${fmtDate(t.due).slice(0,5)}</div><div style="flex:1"><b>${esc(t.title)}</b><div class="sub">${esc(clientName(t.clientId))} · ${esc(t.type||'Tarefa')} · ${esc(t.status)}</div></div></div>`).join('')||'<div class="empty">Nenhum prazo cadastrado.</div>'}</div></section></div><div class="section-head"><div><h3>Fluxo de trabalho</h3><p>Tudo conectado, do início ao fim.</p></div></div><div class="grid-3"><div class="card"><h3>01 · Prepare o orçamento</h3><div class="meta">Cadastre o serviço, valor e prazo. Ao aceitar, gere o projeto.</div></div><div class="card"><h3>02 · Execute o projeto</h3><div class="meta">Acompanhe etapas, documentos, tarefas e valores.</div></div><div class="card"><h3>03 · Acompanhe o processo</h3><div class="meta">Registre protocolo, órgão, situação e próximos passos.</div></div></div>`;bindProjectCards();const go=e=>{currentSection=e.dataset.go;currentProjectId=null;render()};document.querySelectorAll('[data-go]').forEach(e=>{e.onclick=()=>go(e);e.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();go(e)}}});$('#quickBudget').onclick=()=>budgetModal();$('#allProjects').onclick=()=>{currentSection='projects';render()};$('#allTasks').onclick=()=>{currentSection='tasks';render()}}
 function renderBudgets(){const rows=state.budgets.filter(b=>b.status!=='Aceito').slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));$('#main').innerHTML=`${pageHead('Orçamentos','Do primeiro contato à aprovação.','<button class="btn primary" id="newBudget">+ Novo orçamento</button>')}<div class="grid-3">${rows.map(b=>`<article class="budget-card"><div class="row-between"><div><h4>${esc(b.title)}</h4><div class="meta">${esc(clientName(b.clientId))}<br>${esc(b.service||'Serviço')}</div></div><span class="pill ${b.status==='Aceito'?'good':b.status==='Rascunho'?'gray':'warn'}">${esc(b.status)}</span></div><div class="project-foot"><span>${b.deadline?'Prazo '+fmtDate(b.deadline):'Sem prazo'}</span><b>${brl(b.value)}</b></div><div class="actions" style="margin-top:10px"><button class="btn soft sm edit-budget" data-id="${b.id}">Editar</button>${b.status!=='Aceito'?`<button class="btn good sm accept-budget" data-id="${b.id}">Aceitar e criar projeto</button>`:''}</div></article>`).join('')||'<div class="empty">Nenhum orçamento cadastrado.</div>'}</div>`;$('#newBudget').onclick=()=>budgetModal();document.querySelectorAll('.edit-budget').forEach(b=>b.onclick=()=>budgetModal(b.dataset.id));document.querySelectorAll('.accept-budget').forEach(b=>b.onclick=()=>acceptBudget(b.dataset.id))}
