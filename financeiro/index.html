@@ -4,11 +4,17 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <meta name="theme-color" content="#171717" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="assets/l2b-app-icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="assets/l2b-app-icon.svg" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="L2B Financeiro" />
 <title>L2B Obras | Controle Financeiro</title>
 <style>
 :root{--bg:#f3f0eb;--card:#fffdfa;--ink:#171717;--muted:#6f6b66;--line:#e5ddd4;--brand:#171717;--brand2:#262626;--accent:#f26522;--accent2:#ff7a2f;--good:#16865f;--danger:#c23b3b;--shadow:0 12px 30px rgba(20,20,20,.08);--r:18px}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}button,input,select,textarea{font:inherit}.hidden{display:none!important}
-.login{min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 82% 14%,rgba(242,101,34,.24),transparent 28%),linear-gradient(145deg,#101010,#202020)}.login-card{width:min(430px,100%);background:#fffdfa;border-radius:26px;padding:30px;border-top:5px solid var(--accent);box-shadow:0 24px 70px rgba(0,0,0,.32)}.brandmark{margin-bottom:18px}.brand-logo-img{display:block;height:auto;object-fit:contain}.login-logo{margin-bottom:20px}.login-logo .brand-logo-img{width:230px;max-width:76vw}.top-logo{background:#fff;border-radius:10px;padding:4px 6px;flex:0 0 auto;box-shadow:0 4px 14px rgba(0,0,0,.16);overflow:hidden}.top-logo .brand-logo-img{width:80px}.top-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto}.login h1{font-size:25px;margin:0 0 6px}.login p{color:var(--muted);margin:0 0 22px;line-height:1.5}.field{display:grid;gap:7px;margin-bottom:14px}.field label{font-size:13px;font-weight:700;color:#3a4657}.field input,.field select,.field textarea{width:100%;border:1px solid #d8dee8;border-radius:12px;padding:12px 13px;background:white;outline:none}.field input:focus,.field select:focus,.field textarea:focus{border-color:#7d8ca2;box-shadow:0 0 0 3px rgba(15,23,42,.08)}.btn{border:0;border-radius:12px;padding:11px 15px;font-weight:800;cursor:pointer}.btn.primary{background:var(--accent);color:#fff;box-shadow:0 8px 20px rgba(242,101,34,.20)}.btn.primary:hover{background:#db5317}.btn.soft{background:#f1ece6;color:var(--brand);border:1px solid #e3d9cf}.btn.danger{background:#fff0f0;color:var(--danger)}.btn.gold{background:var(--accent);color:#fff}.btn.full{width:100%}.stack{display:grid;gap:10px}.login-note{font-size:12px;color:#7a8494;margin-top:14px}.error{background:#fff2f2;border:1px solid #ffd2d2;color:#9f2f2f;padding:10px 12px;border-radius:11px;font-size:13px;margin-bottom:12px}
+.login{min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 82% 14%,rgba(242,101,34,.24),transparent 28%),linear-gradient(145deg,#101010,#202020)}.login-card{width:min(430px,100%);background:#fffdfa;border-radius:26px;padding:30px;border-top:5px solid var(--accent);box-shadow:0 24px 70px rgba(0,0,0,.32)}.brandmark{margin-bottom:18px}.brand-logo-img{display:block;height:auto;object-fit:contain}.login-logo{margin-bottom:20px}.login-logo .brand-logo-img{width:230px;max-width:76vw}.top-logo{background:#fff;border-radius:10px;padding:4px 6px;flex:0 0 auto;box-shadow:0 4px 14px rgba(0,0,0,.16);overflow:hidden}.top-logo .brand-logo-img{width:80px}.top-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto}.login h1{font-size:25px;margin:0 0 6px}.login p{color:var(--muted);margin:0 0 22px;line-height:1.5}.field{display:grid;gap:7px;margin-bottom:14px}.field label{font-size:13px;font-weight:700;color:#3a4657}.field input,.field select,.field textarea{width:100%;border:1px solid #d8dee8;border-radius:12px;padding:12px 13px;background:white;outline:none}.field input:focus,.field select:focus,.field textarea:focus{border-color:#7d8ca2;box-shadow:0 0 0 3px rgba(15,23,42,.08)}.btn{border:0;border-radius:12px;padding:11px 15px;font-weight:800;cursor:pointer}.btn.primary{background:var(--accent);color:#fff;box-shadow:0 8px 20px rgba(242,101,34,.20)}.btn.primary:hover{background:#db5317}.btn.soft{background:#f1ece6;color:var(--brand);border:1px solid #e3d9cf}.btn.danger{background:#fff0f0;color:var(--danger)}.btn.gold{background:var(--accent);color:#fff}.btn.full{width:100%}.stack{display:grid;gap:10px}.login-note{font-size:12px;color:#7a8494;margin-top:14px}.install-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:8px}.standalone-only{display:none}@media(display-mode:standalone){.standalone-only{display:block}}.error{background:#fff2f2;border:1px solid #ffd2d2;color:#9f2f2f;padding:10px 12px;border-radius:11px;font-size:13px;margin-bottom:12px}
 .app{min-height:100vh}.topbar{position:sticky;top:0;z-index:20;background:rgba(20,20,20,.97);backdrop-filter:blur(10px);color:#fff;padding:10px 18px;border-bottom:3px solid var(--accent);display:flex;align-items:center;justify-content:space-between;gap:12px}.top-left{display:flex;align-items:center;gap:11px}.mini-logo{display:flex;align-items:center}.topbar h2{font-size:16px;margin:0}.topbar small{display:block;color:#bec7d4;margin-top:1px}.iconbtn{border:0;background:rgba(255,255,255,.1);color:white;border-radius:11px;padding:9px 11px;cursor:pointer}.shell{width:min(1180px,100%);margin:auto;padding:24px 18px 50px}.hero{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:18px}.hero h1{font-size:27px;margin:0 0 4px}.hero p{margin:0;color:var(--muted)}.hero-actions{display:flex;gap:8px;flex-wrap:wrap}.app-tabs{display:flex;gap:7px;overflow:auto;padding:2px 0 10px;margin-bottom:12px;scrollbar-width:none}.app-tabs::-webkit-scrollbar{display:none}.app-tab{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:9px 13px;font-weight:800;font-size:12px;white-space:nowrap;cursor:pointer}.app-tab.active{background:var(--brand);border-color:var(--brand);color:#fff}.person-tabs{display:flex;gap:8px;margin:0 0 18px}.person-tab{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer}.person-tab.active{background:#fff0e7;border-color:#f3a37e;color:#b74613}.advance-note{font-size:12px;color:var(--muted);margin-top:6px}.money.negative,.withdraw-negative{color:var(--good)}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.metric{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:17px;box-shadow:var(--shadow);overflow:hidden}.metric:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent)}.metric span{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}.metric strong{display:block;margin-top:8px;font-size:22px;letter-spacing:-.02em}.metric em{display:block;font-style:normal;font-size:12px;color:var(--muted);margin-top:4px}
 .section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:24px 0 11px}.section-head h3{margin:0;font-size:17px}.search{min-width:240px;border:1px solid var(--line);border-radius:11px;padding:9px 11px;background:#fff}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.work-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:17px;box-shadow:var(--shadow);cursor:pointer;transition:.18s transform,.18s box-shadow}.work-card:hover{transform:translateY(-2px);border-color:#f4b08d;box-shadow:0 16px 36px rgba(20,20,20,.11)}.work-title{display:flex;justify-content:space-between;gap:10px}.work-title h4{margin:0;font-size:17px}.pill{font-size:11px;padding:5px 8px;border-radius:999px;background:#fff0e7;color:#b74613;border:1px solid #ffd6c1;white-space:nowrap}.work-meta{color:var(--muted);font-size:13px;margin:7px 0 14px}.work-money{font-size:23px;font-weight:900}.work-foot{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:var(--muted);font-size:12px}.empty{background:#fff;border:1px dashed #cfd6df;border-radius:18px;padding:34px;text-align:center;color:var(--muted)}
@@ -28,7 +34,9 @@
     <div class="field"><label>Senha de acesso</label><input id="passwordInput" type="password" autocomplete="current-password" placeholder="Digite a senha" /></div>
     <div class="stack">
       <button id="loginBtn" class="btn primary full">Entrar</button>
+      <button id="installBtn" class="btn soft full hidden" type="button">Instalar L2B Financeiro</button>
     </div>
+    <div id="installHint" class="install-hint hidden">O app será instalado na tela inicial e continuará usando os mesmos dados compartilhados.</div>
     <div class="login-note">Acesso interno L2B. Os dados são criptografados antes do armazenamento.</div>
   </div>
 </section>
@@ -92,6 +100,7 @@ let state=null;
 let currentWorkId=null;
 let currentSection='works';
 let currentPerson='Geovane';
+let deferredInstallPrompt=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const brl=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -213,7 +222,38 @@ async function deleteWithdrawal(id){if(confirm('Excluir esta retirada?'))await m
 async function deleteExpense(id){if(confirm('Excluir esta despesa?'))await mutate(d=>{d.expenses=d.expenses.filter(x=>x.id!==id)})}
 function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='L2B_FINANCEIRO_BACKUP_'+today()+'.json';a.click();URL.revokeObjectURL(a.href)}
 function settingsModal(){const share=location.origin+location.pathname;modal('Configurações',`<div class="field"><label>Link compartilhado</label><input id="shareLink" readonly value="${esc(share)}"></div><button class="btn soft" id="copyLink">Copiar link</button><div class="danger-zone"><h4 style="margin:0 0 10px">Alterar senha</h4><div class="field"><label>Nova senha</label><input id="newPassword" type="password" placeholder="Mínimo 6 caracteres"></div><button class="btn primary" id="changePassword">Alterar senha</button><p class="smallprint">Depois da troca, todos deverão usar a nova senha para abrir este mesmo link.</p></div>`);$('#copyLink').onclick=async()=>{await navigator.clipboard.writeText(share);showToast('Link copiado')};$('#changePassword').onclick=async()=>{const np=$('#newPassword').value;if(np.length<6)return alert('Use pelo menos 6 caracteres.');try{status('Alterando senha…');await putBlob(await encryptData(state,np));currentPassword=np;closeModal();status('Sincronizado','ok');showToast('Senha alterada')}catch(e){alert(e.message)}}}
-$('#loginBtn').onclick=doLogin;$('#passwordInput').onkeydown=e=>{if(e.key==='Enter')doLogin()};$('#logoutBtn').onclick=()=>{currentPassword='';state=null;currentWorkId=null;currentSection='works';currentPerson='Geovane';$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden');$('#passwordInput').value=''};$('#settingsBtn').onclick=settingsModal;
+
+// PWA
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js',{scope:'./'}).catch(()=>{}));
+}
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  const b=$('#installBtn'),h=$('#installHint');
+  if(b)b.classList.remove('hidden');
+  if(h)h.classList.remove('hidden');
+});
+window.addEventListener('appinstalled',()=>{
+  deferredInstallPrompt=null;
+  const b=$('#installBtn'),h=$('#installHint');
+  if(b)b.classList.add('hidden');
+  if(h)h.classList.add('hidden');
+  showToast('L2B Financeiro instalado');
+});
+async function installPWA(){
+  if(!deferredInstallPrompt){
+    alert('No Android, abra o menu do navegador e escolha “Instalar app” ou “Adicionar à tela inicial”.');
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt=null;
+  $('#installBtn')?.classList.add('hidden');
+  $('#installHint')?.classList.add('hidden');
+}
+
+$('#loginBtn').onclick=doLogin;$('#passwordInput').onkeydown=e=>{if(e.key==='Enter')doLogin()};$('#installBtn').onclick=installPWA;$('#logoutBtn').onclick=()=>{currentPassword='';state=null;currentWorkId=null;currentSection='works';currentPerson='Geovane';$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden');$('#passwordInput').value=''};$('#settingsBtn').onclick=settingsModal;
 })();
 </script>
 </body>
