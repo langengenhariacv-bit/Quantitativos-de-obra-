@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "LANG Engenharia",
+  "short_name": "LANG Engenharia",
+  "description": "Gestão de projetos, orçamentos, processos, clientes, tarefas e financeiro da LANG Engenharia.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#171717",
+  "icons": [
+    {
+      "src": "./assets/lang-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

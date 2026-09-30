@@ -1,0 +1,5 @@
+const CACHE='lang-engenharia-pwa-v1';
+const APP_SHELL=['./','./manifest.json','./assets/lang-logo.svg','./assets/lang-icon.svg'];
+self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(APP_SHELL)))});
+self.addEventListener('activate',event=>{event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('lang-engenharia-pwa-')&&k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()]))});
+self.addEventListener('fetch',event=>{const req=event.request,url=new URL(req.url);if(req.method!=='GET'||url.origin!==self.location.origin)return;if(req.mode==='navigate'){event.respondWith(fetch(req,{cache:'no-store'}).then(res=>{if(res.ok)caches.open(CACHE).then(c=>c.put('./',res.clone()));return res}).catch(()=>caches.match('./')));return}event.respondWith(fetch(req).then(res=>{if(res.ok)caches.open(CACHE).then(c=>c.put(req,res.clone()));return res}).catch(()=>caches.match(req)))});

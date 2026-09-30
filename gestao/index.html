@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#171717" />
+<meta name="color-scheme" content="light" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="assets/lang-icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="assets/lang-icon.svg" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="LANG Engenharia" />
+<title>LANG Engenharia | Gestão</title>
+<style>
+:root{--ink:#171717;--muted:#6f6b66;--accent:#ff5a00;--bg:#f7f7f5}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+#shell{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg)}
+#bar{height:52px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 10px;background:#171717;color:#fff;border-bottom:3px solid var(--accent);flex:0 0 auto}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}.brandbox{background:#fff;border-radius:8px;padding:3px 7px;display:flex;align-items:center}.brandbox img{height:32px;width:auto;display:block}
+.brandcopy{min-width:0}.brandcopy b{display:block;font-size:13px;line-height:1.1;white-space:nowrap}.brandcopy span{display:block;font-size:10px;color:#c8c8c8;white-space:nowrap}
+.actions{display:flex;align-items:center;gap:6px}.btn{border:0;border-radius:10px;padding:8px 10px;font-weight:800;font-size:12px;cursor:pointer}.btn.install{background:var(--accent);color:white}.btn.reload{background:#2b2b2b;color:white}
+#frameWrap{position:relative;flex:1;min-height:0;background:#fff}#appFrame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+#loading{position:absolute;inset:0;display:grid;place-items:center;background:#fff;z-index:2;transition:.2s opacity}.loaderCard{width:min(340px,calc(100% - 36px));text-align:center}.loaderCard img{width:250px;max-width:75vw;height:auto}.spinner{width:28px;height:28px;border:3px solid #eee;border-top-color:var(--accent);border-radius:50%;margin:18px auto 10px;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.loaderCard p{font-size:13px;color:var(--muted);margin:0}
+#fallback{position:absolute;inset:0;z-index:1;display:none;place-items:center;padding:24px;background:#fff;text-align:center}#fallback .card{max-width:420px}#fallback img{width:250px;max-width:75vw}#fallback p{color:var(--muted);line-height:1.5}#fallback a{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;padding:12px 16px;border-radius:12px;font-weight:800}
+@media(display-mode:standalone){#bar{height:48px}#installBtn{display:none!important}}
+@media(max-width:520px){#bar{padding:5px 7px}.brandbox img{height:28px}.brandcopy b{font-size:12px}.brandcopy span{display:none}.btn{padding:7px 8px;font-size:11px}}
+</style>
+</head>
+<body>
+<div id="shell">
+<header id="bar"><div class="brand"><div class="brandbox"><img src="assets/lang-logo.svg" alt="LANG Engenharia"></div><div class="brandcopy"><b>LANG Engenharia</b><span>Gestão de engenharia</span></div></div><div class="actions"><button class="btn install" id="installBtn" hidden>Instalar app</button><button class="btn reload" id="reloadBtn" type="button">Atualizar</button></div></header>
+<div id="frameWrap">
+<div id="loading"><div class="loaderCard"><img src="assets/lang-logo.svg" alt="LANG Engenharia"><div class="spinner"></div><p>Abrindo seu painel de gestão…</p></div></div>
+<div id="fallback"><div class="card"><img src="assets/lang-logo.svg" alt="LANG Engenharia"><h2>Abrir LANG Engenharia</h2><p>Se o painel não aparecer dentro do app, abra a versão online abaixo.</p><a href="https://gestao-engenharia-naiara.butschnaiara.chatgpt.site" target="_blank" rel="noopener">Abrir painel</a></div></div>
+<iframe id="appFrame" title="LANG Engenharia - Gestão" src="https://gestao-engenharia-naiara.butschnaiara.chatgpt.site" allow="clipboard-read; clipboard-write; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+</div></div>
+<script>
+(()=>{'use strict';const frame=document.getElementById('appFrame'),loading=document.getElementById('loading'),fallback=document.getElementById('fallback'),reloadBtn=document.getElementById('reloadBtn'),installBtn=document.getElementById('installBtn');let deferredPrompt=null,loaded=false;
+function hideLoading(){loaded=true;loading.style.opacity='0';setTimeout(()=>loading.style.display='none',220)}
+frame.addEventListener('load',hideLoading);setTimeout(()=>{if(!loaded){loading.style.display='none';fallback.style.display='grid'}},12000);
+reloadBtn.addEventListener('click',()=>{fallback.style.display='none';loading.style.display='grid';loading.style.opacity='1';loaded=false;frame.src='https://gestao-engenharia-naiara.butschnaiara.chatgpt.site?app_reload='+Date.now()});
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.hidden=false});
+installBtn.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();try{await deferredPrompt.userChoice}catch(_e){}deferredPrompt=null;installBtn.hidden=true});
+window.addEventListener('appinstalled',()=>{installBtn.hidden=true});
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+})();
+</script></body></html>
