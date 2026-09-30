@@ -163,6 +163,65 @@ function ensureChromeProjects(s){
  return changed;
 }
 
+
+function ensureFinanceSnapshot20260930(s){
+  if(!s||typeof s!=='object')return false;
+  s.clients=Array.isArray(s.clients)?s.clients:[];
+  s.finance=Array.isArray(s.finance)?s.finance:[];
+  if(Number(s.financeSnapshot20260930||0)>=1)return false;
+
+  let changed=false;
+  const ensureClient=(id,name)=>{
+    let found=s.clients.find(c=>c.id===id||String(c.name||'').trim().toLowerCase()===name.toLowerCase());
+    if(!found){found={id,name,phone:'',email:'',document:'',address:'',notes:''};s.clients.push(found);changed=true}
+    return found.id;
+  };
+
+  const ids={
+    atanasio:ensureClient('cli-atanasio','Atanásio'),
+    cascavel:ensureClient('cli-cascavel','Cascavel película'),
+    celi:ensureClient('cli-celi','Celi'),
+    eduardo:ensureClient('cli-eduardo-trumpel','Eduardo Trumpel'),
+    jonas:ensureClient('cli-jonas-groh','Jonas Groh'),
+    lucelio:ensureClient('cli-lucelio','Lucélio')
+  };
+
+  if(s.finance.length===0){
+    const projectIdFor=clientId=>{
+      const p=(Array.isArray(s.projects)?s.projects:[]).find(p=>p.clientId===clientId&&!p.archived);
+      return p?.id||'';
+    };
+    const rec=(id,clientId,value,opts={})=>({
+      id,clientId,projectId:opts.projectId===undefined?projectIdFor(clientId):opts.projectId,
+      type:'A receber',description:'Honorários pendentes',value,
+      date:'',dueDate:'',projectionMonth:opts.projectionMonth||'',
+      legacyOverdue:!!opts.legacyOverdue,notes:'Valor recuperado dos prints do financeiro do app anterior em 30/09/2026.',
+      paymentMethod:'',parentReceivableId:'',reimbursed:false,canceled:false,voided:false,
+      createdAt:'2026-09-30T00:00:00.000Z',migrationSource:'finance-screenshots-2026-09-30'
+    });
+    s.finance.push(
+      rec('fin-mig-atanasio',ids.atanasio,750),
+      rec('fin-mig-cascavel',ids.cascavel,1000),
+      rec('fin-mig-celi',ids.celi,1000),
+      rec('fin-mig-eduardo',ids.eduardo,2250),
+      rec('fin-mig-jonas',ids.jonas,500,{projectId:'',projectionMonth:'2026-09',legacyOverdue:true}),
+      rec('fin-mig-lucelio',ids.lucelio,1000),
+      {
+        id:'fin-mig-recebido-set-2026',clientId:'',projectId:'',type:'Recebimento',
+        description:'Recebimentos de setembro/2026 — detalhamento individual ainda não recuperado',
+        value:5750,date:'',dueDate:'',receivedMonth:'2026-09',projectionMonth:'',
+        legacyAggregate:true,notes:'Total mensal confirmado pelos prints do app anterior. Data e cliente de cada recebimento não foram inferidos.',
+        paymentMethod:'',parentReceivableId:'',reimbursed:false,canceled:false,voided:false,
+        createdAt:'2026-09-30T00:00:00.000Z',migrationSource:'finance-screenshots-2026-09-30'
+      }
+    );
+    changed=true;
+  }
+  s.financeSnapshot20260930=1;
+  s.financeSnapshot20260930Source='prints enviados em 30/09/2026';
+  return true||changed;
+}
+
 function normalize(s){
  s=s||{};s.version=2;s.revision=Number(s.revision||0);s.updatedAt=s.updatedAt||new Date().toISOString();
  for(const k of ['clients','projects','budgets','processes','tasks','finance'])s[k]=Array.isArray(s[k])?s[k]:[];
@@ -188,8 +247,8 @@ async function encryptData(data,password){const salt=crypto.getRandomValues(new 
 async function decryptData(payload,password){if(!payload||payload.app!=='lang-engenharia-gestao-v1')throw new Error('Banco inválido');const salt=unbuf64(payload.salt),iv=unbuf64(payload.iv),key=await derive(password,salt);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,unbuf64(payload.data));return JSON.parse(new TextDecoder().decode(plain))}
 async function fetchBlob(){const r=await fetch(API+'?id='+encodeURIComponent(DB_ID),{cache:'no-store'});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||'Não foi possível carregar os dados');e.status=r.status;throw e}return j}
 async function putBlob(payload){const r=await fetch(API+'?id='+encodeURIComponent(DB_ID),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Não foi possível salvar os dados')}
-async function load(){status('Sincronizando…');try{const p=await fetchBlob();const raw=await decryptData(p,currentPassword);const migrated=ensureChromeProjects(raw);state=normalize(raw);if(migrated){state.revision=Number(state.revision||0)+1;state.updatedAt=new Date().toISOString();await putBlob(await encryptData(state,currentPassword))}}catch(e){if(e.status===404&&currentPassword===INITIAL_PASSWORD){state=normalize(seedState());await putBlob(await encryptData(state,currentPassword))}else throw e}status('Sincronizado','ok')}
-async function mutate(fn){status('Salvando…');try{let remote;try{const raw=await decryptData(await fetchBlob(),currentPassword);ensureChromeProjects(raw);remote=normalize(raw)}catch(e){if(e.status===404)remote=normalize(seedState());else throw e}await fn(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();toast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message||'Não foi possível salvar')}}
+async function load(){status('Sincronizando…');try{const p=await fetchBlob();const raw=await decryptData(p,currentPassword);const migratedProjects=ensureChromeProjects(raw),migratedFinance=ensureFinanceSnapshot20260930(raw),migrated=migratedProjects||migratedFinance;state=normalize(raw);if(migrated){state.revision=Number(state.revision||0)+1;state.updatedAt=new Date().toISOString();await putBlob(await encryptData(state,currentPassword))}}catch(e){if(e.status===404&&currentPassword===INITIAL_PASSWORD){const raw=seedState();ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);state=normalize(raw);await putBlob(await encryptData(state,currentPassword))}else throw e}status('Sincronizado','ok')}
+async function mutate(fn){status('Salvando…');try{let remote;try{const raw=await decryptData(await fetchBlob(),currentPassword);ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);remote=normalize(raw)}catch(e){if(e.status===404){const raw=seedState();ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);remote=normalize(raw)}else throw e}await fn(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();toast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message||'Não foi possível salvar')}}
 async function doLogin(){const pwd=$('#passwordInput').value;if(!pwd)return loginErr('Digite a senha.');try{currentPassword=pwd;await load();sessionStorage.setItem('langPwd',pwd);$('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');buildNav();render()}catch(e){currentPassword='';loginErr('Senha incorreta ou dados indisponíveis.')}}
 function loginErr(t){const e=$('#loginError');e.textContent=t;e.classList.remove('hidden')}
 function logout(){sessionStorage.removeItem('langPwd');currentPassword='';state=null;$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden');$('#passwordInput').value='';$('#loginError').classList.add('hidden')}
@@ -544,6 +603,110 @@ function renderProcesses(){
 function renderTasks(){
   const arr=state.tasks.slice().sort((a,b)=>(a.status==='Concluída')-(b.status==='Concluída')||(a.due||'9999').localeCompare(b.due||'9999'));
   $('#main').innerHTML=pageHead('Tarefas e prazos','O que precisa acontecer e quando.','<button class="btn primary" id="newTask">+ Nova tarefa</button>')+(arr.length?'<div class="table-wrap"><table><thead><tr><th>Prazo</th><th>Tarefa</th><th>Projeto</th><th>Cliente</th><th>Tipo</th><th>Status</th><th></th></tr></thead><tbody>'+arr.map(t=>'<tr><td data-label="Prazo">'+fmtDate(t.due)+'</td><td data-label="Tarefa"><b>'+esc(t.title)+'</b>'+(t.notes?'<div class="meta">'+esc(t.notes)+'</div>':'')+'</td><td data-label="Projeto">'+esc(state.projects.find(p=>p.id===t.projectId)?.name||'—')+'</td><td data-label="Cliente">'+esc(t.clientId?clientName(t.clientId):'—')+'</td><td data-label="Tipo">'+esc(t.type||'Tarefa')+'</td><td data-label="Status"><span class="pill '+(t.status==='Concluída'?'good':t.due&&t.due<today()?'warn':'')+'">'+esc(t.status)+'</span></td><td data-label="Ações"><div class="table-actions"><button class="btn soft sm edit-task" data-id="'+t.id+'">Editar</button>'+(t.status!=='Concluída'?'<button class="btn good sm done-task" data-id="'+t.id+'">Concluir</button>':'')+'</div></td></tr>').join('')+'</tbody></table></div>':'<div class="empty">Nenhuma tarefa cadastrada.</div>');$('#newTask').onclick=()=>taskModal();document.querySelectorAll('.edit-task').forEach(b=>b.onclick=()=>taskModal(b.dataset.id));document.querySelectorAll('.done-task').forEach(b=>b.onclick=()=>mutate(d=>{const tt=d.tasks.find(x=>x.id===b.dataset.id);if(tt){tt.status='Concluída';logAudit(d,'Tarefa concluída: '+tt.title)}}));
+}
+
+
+let financeScreenTab='summary';
+let financeSelectedYear=2026;
+let financeSelectedMonth='09';
+
+function financeActiveRows(){
+  return (state.finance||[]).filter(x=>!x.canceled&&!x.voided);
+}
+function financeDueKey(x){
+  return x.dueDate||x.date||'';
+}
+function financeReceivedMonth(x){
+  if(x.receivedMonth)return x.receivedMonth;
+  const d=x.date||'';
+  return /^\d{4}-\d{2}/.test(d)?d.slice(0,7):'';
+}
+function financePendingRows(){
+  return financeActiveRows().filter(x=>x.type==='A receber').map(x=>({...x,remaining:Number(x.value||0)})).filter(x=>x.remaining>0.005);
+}
+function financeRecoveredMetrics(){
+  const rows=financeActiveRows(),pending=financePendingRows();
+  const received=rows.filter(x=>x.type==='Recebimento').reduce((a,x)=>a+Number(x.value||0),0);
+  const receivable=pending.reduce((a,x)=>a+x.remaining,0);
+  const overdue=pending.filter(x=>x.legacyOverdue||(financeDueKey(x)&&financeDueKey(x)<today())).reduce((a,x)=>a+x.remaining,0);
+  const undated=pending.filter(x=>!x.projectionMonth&&!financeDueKey(x)&&!x.legacyOverdue).reduce((a,x)=>a+x.remaining,0);
+  const reimb=rows.filter(x=>x.type==='Reembolso'&&!x.reimbursed).reduce((a,x)=>a+Number(x.value||0),0);
+  const expense=rows.filter(x=>x.type==='Despesa').reduce((a,x)=>a+Number(x.value||0),0);
+  return {rows,pending,received,receivable,overdue,undated,reimb,expense};
+}
+function financeMonthLabel(ym){
+  if(!ym)return 'Sem Data Prevista';
+  const [y,m]=ym.split('-');
+  return new Date(Number(y),Number(m)-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).replace(/^./,s=>s.toUpperCase());
+}
+function financeByClientRows(pending){
+  const map={};
+  pending.forEach(x=>{const k=x.clientId||'sem-cliente';map[k]=(map[k]||0)+x.remaining});
+  return Object.entries(map).map(([id,value])=>({id,name:id==='sem-cliente'?'Sem cliente':clientName(id),value})).filter(x=>x.value>0.005).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+}
+function financeProjectionRows(pending){
+  const map={};
+  pending.forEach(x=>{
+    const key=x.projectionMonth||((x.dueDate||x.date||'').slice(0,7))||'';
+    if(!map[key])map[key]={value:0,count:0};
+    map[key].value+=x.remaining;map[key].count++;
+  });
+  return Object.entries(map).sort((a,b)=>a[0]===''?1:b[0]===''?-1:a[0].localeCompare(b[0])).map(([month,v])=>({month,...v}));
+}
+function financeMonthlyReceived(year){
+  const months=Array.from({length:12},(_,i)=>String(i+1).padStart(2,'0'));
+  return months.map(m=>{
+    const key=year+'-'+m;
+    const value=financeActiveRows().filter(x=>x.type==='Recebimento'&&financeReceivedMonth(x)===key).reduce((a,x)=>a+Number(x.value||0),0);
+    return {key,month:m,value};
+  });
+}
+function financeSummaryTab(){
+  const s=financeRecoveredMetrics(),by=financeByClientRows(s.pending),monthly=financeMonthlyReceived(financeSelectedYear);
+  const monthKey=financeSelectedYear+'-'+financeSelectedMonth;
+  const monthlyReceived=monthly.find(x=>x.key===monthKey)?.value||0;
+  const annual=monthly.reduce((a,x)=>a+x.value,0);
+  const max=Math.max(1,...monthly.map(x=>x.value));
+  const monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const yearOpts=[2025,2026,2027,2028].map(y=>'<option value="'+y+'" '+(financeSelectedYear===y?'selected':'')+'>'+y+'</option>').join('');
+  const monthOpts=monthNames.map((n,i)=>'<option value="'+String(i+1).padStart(2,'0')+'" '+(financeSelectedMonth===String(i+1).padStart(2,'0')?'selected':'')+'>'+n.toLowerCase()+'</option>').join('');
+  return '<div class="two"><div class="field"><label>Ano</label><select id="finYear">'+yearOpts+'</select></div><div class="field"><label>Mês</label><select id="finMonth">'+monthOpts+'</select></div></div>'+
+    '<div class="meta" style="font-size:16px;margin:6px 0 16px">Faturamento recebido: valores que entraram, conforme a data de cada pagamento. Orçamentos aceitos ainda não pagos ficam em Valores a receber.</div>'+
+    '<div class="metrics"><div class="metric"><span>Faturamento mensal</span><strong>'+brl(monthlyReceived)+'</strong><em>'+monthNames[Number(financeSelectedMonth)-1].toLowerCase()+' de '+financeSelectedYear+'</em></div>'+
+    '<div class="metric"><span>Faturamento anual</span><strong>'+brl(annual)+'</strong><em>Total recebido em '+financeSelectedYear+'</em></div>'+
+    '<div class="metric"><span>Recebimentos em atraso</span><strong>'+brl(s.overdue)+'</strong><em>Saldo com previsão anterior a hoje</em></div></div>'+
+    '<div class="card" style="margin-top:16px"><h3>Valores a receber</h3><div style="font-size:34px;font-weight:800;margin:14px 0">'+brl(s.receivable)+'</div><div class="meta" style="margin-bottom:12px">Honorários pendentes de todos os projetos</div>'+
+    (by.map(x=>'<div class="finance-client"><span>'+esc(x.name)+'</span><b>'+brl(x.value)+'</b></div>').join('')||'<div class="meta">Nenhum valor pendente.</div>')+'</div>'+
+    '<div class="card" style="margin-top:16px"><h3>Reembolsos a receber</h3><div style="font-size:34px;font-weight:800;margin:14px 0">'+brl(s.reimb)+'</div><div class="meta">Despesas pagas pela LANG e ainda não reembolsadas</div>'+(s.reimb?'' : '<div style="margin-top:18px">Nenhum saldo pendente.</div>')+'</div>'+
+    '<div class="card" style="margin-top:16px"><h3>Recebimentos mês a mês · '+financeSelectedYear+'</h3>'+
+    monthly.map((x,i)=>'<div style="display:grid;grid-template-columns:125px 1fr 105px;gap:12px;align-items:center;padding:10px 0"><span>'+monthNames[i]+'</span><div style="height:10px;border-radius:999px;background:#eceff1;overflow:hidden"><i style="display:block;height:100%;width:'+Math.round(x.value/max*100)+'%;background:var(--accent);border-radius:999px"></i></div><b style="text-align:right">'+brl(x.value)+'</b></div>').join('')+'</div>'+
+    '<div class="card" style="margin-top:16px"><h3>Planejamento de entradas</h3><div class="meta" style="font-size:19px;line-height:1.55">'+brl(s.undated)+' a receber ainda sem data prevista.</div><button class="btn primary" style="margin-top:16px;width:100%" data-fin-tab="receivables">Ver valores a receber</button></div>';
+}
+function financeReceivablesTab(){
+  const s=financeRecoveredMetrics(),proj=financeProjectionRows(s.pending),by=financeByClientRows(s.pending);
+  return '<div class="metrics"><div class="metric"><span>Total a receber</span><strong>'+brl(s.receivable)+'</strong><em>Todos os valores pendentes</em></div>'+
+    '<div class="metric"><span>Previsão vencida</span><strong>'+brl(s.overdue)+'</strong><em>Datas anteriores a hoje</em></div>'+
+    '<div class="metric"><span>Ainda sem data</span><strong>'+brl(s.undated)+'</strong><em>Incluído no total a receber</em></div>'+
+    '<div class="metric"><span>Já recebido</span><strong>'+brl(s.received)+'</strong><em>Fora da projeção futura</em></div></div>'+
+    '<div class="card" style="margin-top:16px"><div class="row-between"><h3>Projeção de recebimentos</h3><span class="meta">Somente valores a receber</span></div>'+
+    (proj.map(x=>'<div style="padding:18px 6px;border-top:1px solid #eee"><div class="meta">'+esc(financeMonthLabel(x.month))+'</div><div style="font-size:28px;font-weight:800;margin:7px 0">'+brl(x.value)+'</div><div class="meta">'+x.count+' lançamento(s)</div></div>').join('')||'<div class="meta">Sem previsão cadastrada.</div>')+'</div>'+
+    '<div class="card" style="margin-top:16px"><h3>Valores a receber por cliente</h3>'+by.map(x=>'<div class="finance-client"><span>'+esc(x.name)+'</span><b>'+brl(x.value)+'</b></div>').join('')+'</div>';
+}
+function financeReceiptsTab(){
+  const rows=financeActiveRows().filter(x=>x.type==='Recebimento').slice().sort((a,b)=>(financeReceivedMonth(b)||'').localeCompare(financeReceivedMonth(a)||''));
+  return '<div class="card"><div class="row-between"><div><h3>Recibos</h3><div class="meta">Recebimentos registrados no LANG Engenharia.</div></div><button class="btn primary sm" id="newReceipt">+ Recebimento</button></div>'+
+    (rows.length?rows.map(x=>'<div class="finance-client"><div><b>'+esc(x.description||'Recebimento')+'</b><div class="meta">'+esc(financeReceivedMonth(x)?financeMonthLabel(financeReceivedMonth(x)):(x.date?fmtDate(x.date):'Data individual não recuperada'))+(x.clientId?' · '+esc(clientName(x.clientId)):'')+'</div></div><div style="text-align:right"><b>'+brl(x.value)+'</b>'+(x.legacyAggregate?'<div class="meta">total migrado</div>':'<button class="btn soft sm receipt-fin" data-id="'+x.id+'">Recibo</button>')+'</div></div>').join(''):'<div class="meta">Nenhum recebimento cadastrado.</div>')+'</div>';
+}
+function renderFinance(){
+  const tabButtons='<div class="tabs"><button class="tab '+(financeScreenTab==='summary'?'active':'')+'" data-fin-tab="summary">Resumo</button><button class="tab '+(financeScreenTab==='receivables'?'active':'')+'" data-fin-tab="receivables">Valores a receber</button><button class="tab '+(financeScreenTab==='receipts'?'active':'')+'" data-fin-tab="receipts">Recibos</button></div>';
+  const body=financeScreenTab==='summary'?financeSummaryTab():financeScreenTab==='receivables'?financeReceivablesTab():financeReceiptsTab();
+  $('#main').innerHTML=pageHead('Financeiro','Faturamento, recebimentos, valores a receber e reembolsos.','<button class="btn primary" id="newFinance">+ Lançamento</button>')+tabButtons+body;
+  $('#newFinance').onclick=()=>financeModal();
+  document.querySelectorAll('[data-fin-tab]').forEach(b=>b.onclick=()=>{financeScreenTab=b.dataset.finTab;renderFinance()});
+  if($('#finYear'))$('#finYear').onchange=e=>{financeSelectedYear=Number(e.target.value);renderFinance()};
+  if($('#finMonth'))$('#finMonth').onchange=e=>{financeSelectedMonth=e.target.value;renderFinance()};
+  if($('#newReceipt'))$('#newReceipt').onclick=()=>financeModal(null,'','Recebimento');
+  document.querySelectorAll('.receipt-fin').forEach(b=>b.onclick=()=>printReceipt(b.dataset.id));
 }
 
 function backupModal(){
