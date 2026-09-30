@@ -222,6 +222,58 @@ function ensureFinanceSnapshot20260930(s){
   return true||changed;
 }
 
+
+function ensureRecoveredProjectFinance20260930(s){
+  if(!s||typeof s!=='object')return false;
+  s.finance=Array.isArray(s.finance)?s.finance:[];
+  if(Number(s.recoveredProjectFinance20260930||0)>=1)return false;
+  let changed=false;
+
+  const at=s.finance.find(x=>x.id==='fin-mig-atanasio');
+  if(at){
+    at.value=1500;
+    at.projectId='prj-atanasio';
+    at.clientId='cli-atanasio';
+    at.description='Honorários do projeto';
+    at.notes='Valor fechado confirmado por print do projeto preventivo regularização.';
+    at.migrationSource='project-finance-screenshot-2026-09-28';
+    changed=true;
+  }
+
+  let aggregate=s.finance.find(x=>x.id==='fin-mig-recebido-set-2026');
+  if(aggregate){
+    aggregate.value=5000;
+    aggregate.description='Demais recebimentos de setembro/2026 — detalhamento individual ainda não recuperado';
+    aggregate.notes='Total mensal restante após separar o recebimento confirmado de R$ 750,00 do projeto preventivo regularização.';
+    changed=true;
+  }
+
+  if(!s.finance.some(x=>x.id==='fin-mig-atanasio-recebido')){
+    s.finance.push({
+      id:'fin-mig-atanasio-recebido',clientId:'cli-atanasio',projectId:'prj-atanasio',
+      type:'Recebimento',description:'Recebimento de honorários',value:750,
+      date:'',dueDate:'',receivedMonth:'2026-09',projectionMonth:'',
+      notes:'Recebimento confirmado por print do financeiro do projeto. Data individual não recuperada.',
+      paymentMethod:'',parentReceivableId:'fin-mig-atanasio',reimbursed:false,canceled:false,voided:false,
+      createdAt:'2026-09-30T00:00:00.000Z',migrationSource:'project-finance-screenshot-2026-09-28'
+    });
+    changed=true;
+  }
+
+  if(!s.finance.some(x=>x.id==='fin-mig-atanasio-despesa-55')){
+    s.finance.push({
+      id:'fin-mig-atanasio-despesa-55',clientId:'cli-atanasio',projectId:'prj-atanasio',
+      type:'Despesa',description:'Teste 2',value:55,date:'2026-09-28',dueDate:'',
+      notes:'Taxas · Custo da LANG',paymentMethod:'',parentReceivableId:'',reimbursed:false,canceled:false,voided:false,
+      createdAt:'2026-09-28T00:00:00.000Z',migrationSource:'project-expense-screenshot-2026-09-28'
+    });
+    changed=true;
+  }
+
+  s.recoveredProjectFinance20260930=1;
+  return true||changed;
+}
+
 function normalize(s){
  s=s||{};s.version=2;s.revision=Number(s.revision||0);s.updatedAt=s.updatedAt||new Date().toISOString();
  for(const k of ['clients','projects','budgets','processes','tasks','finance'])s[k]=Array.isArray(s[k])?s[k]:[];
@@ -247,8 +299,8 @@ async function encryptData(data,password){const salt=crypto.getRandomValues(new 
 async function decryptData(payload,password){if(!payload||payload.app!=='lang-engenharia-gestao-v1')throw new Error('Banco inválido');const salt=unbuf64(payload.salt),iv=unbuf64(payload.iv),key=await derive(password,salt);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,unbuf64(payload.data));return JSON.parse(new TextDecoder().decode(plain))}
 async function fetchBlob(){const r=await fetch(API+'?id='+encodeURIComponent(DB_ID),{cache:'no-store'});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||'Não foi possível carregar os dados');e.status=r.status;throw e}return j}
 async function putBlob(payload){const r=await fetch(API+'?id='+encodeURIComponent(DB_ID),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Não foi possível salvar os dados')}
-async function load(){status('Sincronizando…');try{const p=await fetchBlob();const raw=await decryptData(p,currentPassword);const migratedProjects=ensureChromeProjects(raw),migratedFinance=ensureFinanceSnapshot20260930(raw),migrated=migratedProjects||migratedFinance;state=normalize(raw);if(migrated){state.revision=Number(state.revision||0)+1;state.updatedAt=new Date().toISOString();await putBlob(await encryptData(state,currentPassword))}}catch(e){if(e.status===404&&currentPassword===INITIAL_PASSWORD){const raw=seedState();ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);state=normalize(raw);await putBlob(await encryptData(state,currentPassword))}else throw e}status('Sincronizado','ok')}
-async function mutate(fn){status('Salvando…');try{let remote;try{const raw=await decryptData(await fetchBlob(),currentPassword);ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);remote=normalize(raw)}catch(e){if(e.status===404){const raw=seedState();ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);remote=normalize(raw)}else throw e}await fn(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();toast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message||'Não foi possível salvar')}}
+async function load(){status('Sincronizando…');try{const p=await fetchBlob();const raw=await decryptData(p,currentPassword);const migratedProjects=ensureChromeProjects(raw),migratedFinance=ensureFinanceSnapshot20260930(raw),migratedProjectFinance=ensureRecoveredProjectFinance20260930(raw),migrated=migratedProjects||migratedFinance||migratedProjectFinance;state=normalize(raw);if(migrated){state.revision=Number(state.revision||0)+1;state.updatedAt=new Date().toISOString();await putBlob(await encryptData(state,currentPassword))}}catch(e){if(e.status===404&&currentPassword===INITIAL_PASSWORD){const raw=seedState();ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);ensureRecoveredProjectFinance20260930(raw);state=normalize(raw);await putBlob(await encryptData(state,currentPassword))}else throw e}status('Sincronizado','ok')}
+async function mutate(fn){status('Salvando…');try{let remote;try{const raw=await decryptData(await fetchBlob(),currentPassword);ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);ensureRecoveredProjectFinance20260930(raw);remote=normalize(raw)}catch(e){if(e.status===404){const raw=seedState();ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);ensureRecoveredProjectFinance20260930(raw);remote=normalize(raw)}else throw e}await fn(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();toast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message||'Não foi possível salvar')}}
 async function doLogin(){const pwd=$('#passwordInput').value;if(!pwd)return loginErr('Digite a senha.');try{currentPassword=pwd;await load();sessionStorage.setItem('langPwd',pwd);$('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');buildNav();render()}catch(e){currentPassword='';loginErr('Senha incorreta ou dados indisponíveis.')}}
 function loginErr(t){const e=$('#loginError');e.textContent=t;e.classList.remove('hidden')}
 function logout(){sessionStorage.removeItem('langPwd');currentPassword='';state=null;$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden');$('#passwordInput').value='';$('#loginError').classList.add('hidden')}
@@ -622,8 +674,20 @@ function financeReceivedMonth(x){
   return /^\d{4}-\d{2}/.test(d)?d.slice(0,7):'';
 }
 function financePendingRows(){
-  return financeActiveRows().filter(x=>x.type==='A receber').map(x=>({...x,remaining:Number(x.value||0)})).filter(x=>x.remaining>0.005);
+  const rows=financeActiveRows();
+  const receivables=rows.filter(x=>x.type==='A receber').slice().sort((a,b)=>(xSort(a)).localeCompare(xSort(b)));
+  const paidByKey={};
+  const key=x=>x.projectId?'p:'+x.projectId:(x.clientId?'c:'+x.clientId:'');
+  rows.filter(x=>x.type==='Recebimento'&&!x.legacyAggregate).forEach(x=>{
+    const k=key(x);if(k)paidByKey[k]=(paidByKey[k]||0)+Number(x.value||0);
+  });
+  return receivables.map(x=>{
+    const k=key(x),available=k?(paidByKey[k]||0):0,amount=Number(x.value||0),used=Math.min(amount,available);
+    if(k)paidByKey[k]=Math.max(0,available-used);
+    return {...x,remaining:Math.max(0,amount-used)};
+  }).filter(x=>x.remaining>0.005);
 }
+function xSort(x){return x.dueDate||x.date||x.createdAt||'9999-99-99'}
 function financeRecoveredMetrics(){
   const rows=financeActiveRows(),pending=financePendingRows();
   const received=rows.filter(x=>x.type==='Recebimento').reduce((a,x)=>a+Number(x.value||0),0);
@@ -707,6 +771,16 @@ function renderFinance(){
   if($('#finMonth'))$('#finMonth').onchange=e=>{financeSelectedMonth=e.target.value;renderFinance()};
   if($('#newReceipt'))$('#newReceipt').onclick=()=>financeModal(null,'','Recebimento');
   document.querySelectorAll('.receipt-fin').forEach(b=>b.onclick=()=>printReceipt(b.dataset.id));
+}
+
+
+function projectFinanceSummary(projectId){
+  const rows=financeActiveRows().filter(x=>x.projectId===projectId);
+  const contracted=rows.filter(x=>x.type==='A receber').reduce((a,x)=>a+Number(x.value||0),0);
+  const received=rows.filter(x=>x.type==='Recebimento').reduce((a,x)=>a+Number(x.value||0),0);
+  const reimb=rows.filter(x=>x.type==='Reembolso'&&!x.reimbursed).reduce((a,x)=>a+Number(x.value||0),0);
+  const expense=rows.filter(x=>x.type==='Despesa').reduce((a,x)=>a+Number(x.value||0),0);
+  return {contracted,received,receivable:Math.max(0,contracted-received),reimb,expense};
 }
 
 function backupModal(){
