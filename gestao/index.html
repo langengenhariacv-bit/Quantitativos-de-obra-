@@ -463,25 +463,76 @@ async function budgetLogoPng(){
 function pdfSafeName(v){return String(v||'ORCAMENTO').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)}
 async function downloadBudgetPdf(id){
  const b=state.budgets.find(x=>x.id===id);if(!b)return alert('Orçamento não encontrado.');
- if(!window.jspdf?.jsPDF)return alert('O gerador de PDF ainda está carregando. Aguarde alguns segundos e tente novamente.');
+ if(!window.jspdf?.jsPDF)return alert('O gerador de PDF não foi carregado. Toque em Atualizar e tente novamente.');
  try{
-   const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'}),client=state.clients.find(c=>c.id===b.clientId)||{},pageW=210,margin=18;
-   const logo=await budgetLogoPng();if(logo)doc.addImage(logo,'PNG',margin,12,54,22);
-   doc.setDrawColor(242,91,33);doc.setLineWidth(1.2);doc.line(margin,39,pageW-margin,39);
-   doc.setTextColor(24,24,24);doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('ORÇAMENTO',pageW-margin,20,{align:'right'});
-   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(105,105,105);doc.text('LANG Engenharia',pageW-margin,27,{align:'right'});doc.text('Emissão: '+new Date().toLocaleDateString('pt-BR'),pageW-margin,32,{align:'right'});
-   let y=50;
-   const heading=t=>{doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(242,91,33);doc.text(t.toUpperCase(),margin,y);y+=6};
-   const line=(label,value)=>{if(value===undefined||value===null||String(value).trim()==='')return;doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(70,70,70);doc.text(label,margin,y);doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);const vals=doc.splitTextToSize(String(value),pageW-margin*2-40);doc.text(vals,margin+40,y);y+=Math.max(6,vals.length*4.5)};
-   heading('Cliente');line('Nome',client.name||clientName(b.clientId));line('CPF / CNPJ',client.document);line('Telefone',client.phone);line('E-mail',client.email);line('Endereço',client.address);y+=3;
-   heading('Proposta');line('Orçamento',b.title);line('Serviço',b.service||'Serviços de engenharia');line('Valor total',brl(b.value));
-   const n=Math.max(1,Number(b.installments||1));line('Pagamento',n===1?'1 parcela':n+' parcelas');if(b.firstDueDate)line('1º vencimento',fmtDate(b.firstDueDate));if(b.deadline)line('Prazo / retorno',fmtDate(b.deadline));line('Situação',b.status||'Rascunho');
-   if(b.notes){y+=3;heading('Observações');doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(30,30,30);const txt=doc.splitTextToSize(b.notes,pageW-margin*2);doc.text(txt,margin,y);y+=txt.length*4.5+4;}
-   y=Math.max(y,220);doc.setDrawColor(210,210,210);doc.line(margin,y,pageW-margin,y);y+=8;
-   doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(95,95,95);doc.text('Proposta emitida pela LANG Engenharia.',margin,y);doc.text('Este documento foi gerado pelo sistema LANG Engenharia.',margin,y+5);
-   const filename='ORCAMENTO_LANG_'+pdfSafeName(client.name||b.title)+'_'+today()+'.pdf';
-   doc.save(filename);
-   toast('PDF baixado');
+   const jsPDF=window.jspdf.jsPDF,doc=new jsPDF({unit:'mm',format:'a4'}),client=state.clients.find(c=>c.id===b.clientId)||{};
+   const W=210,H=297,M=16,C={ink:[24,24,24],muted:[105,105,105],orange:[242,91,33],soft:[247,245,242],line:[225,220,214],white:[255,255,255]};
+   const logo=await budgetLogoPng(),desc=budgetServiceDescription(b),scope=budgetServiceScope(b),n=Math.max(1,Number(b.installments||1)),validity=Math.max(1,Number(b.validityDays||15));
+   const created=b.createdAt?new Date(b.createdAt):new Date(),year=Number.isFinite(created.getTime())?created.getFullYear():new Date().getFullYear();
+   const tail=String(b.id||'0000').replace(/[^a-zA-Z0-9]/g,'').slice(-5).toUpperCase()||'00000',proposalNo='LANG-'+year+'-'+tail;
+   let y=0,page=1;
+   const setColor=a=>doc.setTextColor(a[0],a[1],a[2]);
+   const footer=()=>{doc.setDrawColor(C.line[0],C.line[1],C.line[2]);doc.line(M,H-15,W-M,H-15);doc.setFont('helvetica','normal');doc.setFontSize(7.8);setColor(C.muted);doc.text('LANG Engenharia · Proposta comercial '+proposalNo,M,H-9);doc.text('Página '+page,W-M,H-9,{align:'right'})};
+   const newPage=()=>{footer();doc.addPage();page++;y=20};
+   const ensure=h=>{if(y+h>H-22)newPage()};
+   const sectionTitle=t=>{ensure(12);doc.setFont('helvetica','bold');doc.setFontSize(9.5);setColor(C.orange);doc.text(String(t).toUpperCase(),M,y);y+=7};
+   const textBlock=(txt,size,color,width,lh)=>{size=size||9.2;color=color||C.ink;width=width||W-2*M;lh=lh||4.7;const lines=doc.splitTextToSize(String(txt||''),width);ensure(lines.length*lh+2);doc.setFont('helvetica','normal');doc.setFontSize(size);setColor(color);doc.text(lines,M,y);y+=lines.length*lh+2;return lines};
+   const labelValue=(label,value)=>{if(value===undefined||value===null||String(value).trim()==='')return;ensure(8);doc.setFont('helvetica','bold');doc.setFontSize(8.5);setColor(C.muted);doc.text(label,M,y);doc.setFont('helvetica','normal');setColor(C.ink);const lines=doc.splitTextToSize(String(value),W-2*M-38);doc.text(lines,M+38,y);y+=Math.max(6,lines.length*4.3)};
+   const roundedBox=(x,yy,w,h,fill,border)=>{doc.setFillColor(fill[0],fill[1],fill[2]);if(border){doc.setDrawColor(border[0],border[1],border[2]);doc.roundedRect(x,yy,w,h,3,3,'FD')}else doc.roundedRect(x,yy,w,h,3,3,'F')};
+
+   doc.setFillColor(C.ink[0],C.ink[1],C.ink[2]);doc.rect(0,0,W,54,'F');
+   if(logo)doc.addImage(logo,'PNG',M,10,48,19);
+   doc.setFont('helvetica','bold');doc.setFontSize(19);setColor(C.white);doc.text('PROPOSTA',W-M,18,{align:'right'});
+   doc.setFontSize(13);doc.text('COMERCIAL',W-M,25,{align:'right'});
+   doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(205,205,205);doc.text(proposalNo,W-M,34,{align:'right'});
+   doc.text('Emissão: '+new Date().toLocaleDateString('pt-BR'),W-M,40,{align:'right'});
+   doc.setFillColor(C.orange[0],C.orange[1],C.orange[2]);doc.rect(0,54,W,3,'F');
+   y=68;
+
+   doc.setFont('helvetica','normal');doc.setFontSize(8.5);setColor(C.muted);doc.text('PREPARADO PARA',M,y);y+=6;
+   doc.setFont('helvetica','bold');doc.setFontSize(17);setColor(C.ink);const clientLines=doc.splitTextToSize(client.name||clientName(b.clientId)||'Cliente',W-2*M);doc.text(clientLines,M,y);y+=clientLines.length*6+4;
+   const clientMeta=[client.document&&('CPF/CNPJ: '+client.document),client.phone&&('Telefone: '+client.phone),client.email&&('E-mail: '+client.email),client.address&&('Endereço: '+client.address)].filter(Boolean);
+   doc.setFont('helvetica','normal');doc.setFontSize(8.5);setColor(C.muted);
+   clientMeta.forEach(v=>{const l=doc.splitTextToSize(v,W-2*M);doc.text(l,M,y);y+=l.length*4.2});y+=4;
+
+   roundedBox(M,y,W-2*M,30,C.soft,C.line);
+   doc.setFont('helvetica','normal');doc.setFontSize(8);setColor(C.muted);doc.text('INVESTIMENTO',M+7,y+8);
+   doc.setFont('helvetica','bold');doc.setFontSize(22);setColor(C.ink);doc.text(brl(b.value),M+7,y+20);
+   doc.setFont('helvetica','normal');doc.setFontSize(8);setColor(C.muted);doc.text(n===1?'Pagamento em 1 parcela':'Pagamento em '+n+' parcelas',W-M-7,y+11,{align:'right'});
+   doc.text('Validade: '+validity+' dias',W-M-7,y+18,{align:'right'});
+   if(b.firstDueDate)doc.text('1º vencimento: '+fmtDate(b.firstDueDate),W-M-7,y+24,{align:'right'});
+   y+=41;
+
+   sectionTitle('Serviço proposto');
+   doc.setFont('helvetica','bold');doc.setFontSize(14);setColor(C.ink);const svcTitle=doc.splitTextToSize(b.service||b.title||'Serviço de engenharia',W-2*M);doc.text(svcTitle,M,y);y+=svcTitle.length*6+3;
+   textBlock(desc,9.4,C.ink,W-2*M,4.8);y+=2;
+
+   sectionTitle('Escopo previsto');
+   scope.forEach(item=>{const lines=doc.splitTextToSize(String(item),W-2*M-8);ensure(lines.length*4.5+4);doc.setFillColor(C.orange[0],C.orange[1],C.orange[2]);doc.circle(M+1.8,y-1.1,1.1,'F');doc.setFont('helvetica','normal');doc.setFontSize(9);setColor(C.ink);doc.text(lines,M+7,y);y+=lines.length*4.5+3});
+   y+=3;
+
+   sectionTitle('Condições comerciais');
+   labelValue('Investimento',brl(b.value));
+   labelValue('Pagamento',n===1?'1 parcela':n+' parcelas');
+   if(b.firstDueDate)labelValue('1º vencimento',fmtDate(b.firstDueDate));
+   if(b.deadline)labelValue('Prazo / retorno',fmtDate(b.deadline));
+   labelValue('Validade da proposta',validity+' dias a partir da emissão');
+   if(b.notes){y+=3;sectionTitle('Observações');textBlock(b.notes,9,C.ink,W-2*M,4.7)}
+
+   ensure(34);y+=6;
+   roundedBox(M,y,W-2*M,25,[252,248,245],C.line);
+   doc.setFont('helvetica','bold');doc.setFontSize(9);setColor(C.ink);doc.text('Próximo passo',M+7,y+8);
+   doc.setFont('helvetica','normal');doc.setFontSize(8.7);setColor(C.muted);
+   const next=doc.splitTextToSize('Após a aprovação desta proposta, o serviço poderá ser formalizado e inserido no fluxo de execução da LANG Engenharia.',W-2*M-14);
+   doc.text(next,M+7,y+14);y+=32;
+
+   doc.setFont('helvetica','normal');doc.setFontSize(7.6);setColor(C.muted);
+   const ref='Descrição técnica resumida com base em referências oficiais aplicáveis ao tipo de serviço. O escopo específico desta proposta e as condições expressamente contratadas prevalecem sobre a descrição geral.';
+   const refl=doc.splitTextToSize(ref,W-2*M);ensure(refl.length*3.8+2);doc.text(refl,M,y);y+=refl.length*3.8;
+   footer();
+
+   const filename='PROPOSTA_LANG_'+pdfSafeName(client.name||b.title)+'_'+today()+'.pdf';
+   doc.save(filename);toast('PDF baixado');
  }catch(err){console.error(err);alert('Não foi possível gerar o PDF: '+(err.message||err))}
 }
 
