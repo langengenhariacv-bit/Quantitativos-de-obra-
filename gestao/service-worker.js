@@ -1,4 +1,4 @@
-const CACHE='lang-engenharia-pwa-v12';
+const CACHE='lang-engenharia-pwa-v13';
 const APP_SHELL=['./vendor/jspdf.umd.min.js','./','./manifest.json','./assets/lang-logo.svg','./assets/lang-icon-192.svg','./assets/lang-icon-512.svg'];
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(APP_SHELL)))});
 self.addEventListener('activate',event=>{event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('lang-engenharia-pwa-')&&k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()]))});
