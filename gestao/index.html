@@ -536,8 +536,10 @@ async function downloadBudgetPdf(id){
  }catch(err){console.error(err);alert('Não foi possível gerar o PDF: '+(err.message||err))}
 }
 
+
 function budgetModal(id=null){
- const b=id?state.budgets.find(x=>x.id===id):null;
+ const b=id?state.budgets.find(x=>x.id===id):null,initialInfo=serviceInfo(b?.service);
+ const serviceOptions=SERVICE_CATALOG.map(s=>'<option value="'+esc(s.name)+'"></option>').join('');
  modal(b?'Editar orçamento':'Novo orçamento',`<form id="budgetForm">
  <div class="field"><label>Título *</label><input id="bTitle" required value="${esc(b?.title||'')}"></div>
  <div class="field"><label>Cliente existente</label><select id="bClient"><option value="">Selecione</option>${clientOptions(b?.clientId)}</select></div>
@@ -547,33 +549,33 @@ function budgetModal(id=null){
    <div class="two"><div class="field"><label>CPF / CNPJ</label><input id="bNewClientDocument"></div><div class="field"><label>Telefone</label><input id="bNewClientPhone"></div></div>
    <div class="two"><div class="field"><label>E-mail</label><input id="bNewClientEmail" type="email"></div><div class="field"><label>Endereço</label><input id="bNewClientAddress"></div></div>
  </div>
- <div class="field"><label>Serviço</label><input id="bService" value="${esc(b?.service||'')}"></div>
+ <div class="field"><label>Serviço *</label><input id="bService" list="serviceList" required placeholder="Ex.: Projeto residencial unifamiliar" value="${esc(b?.service||'')}"><datalist id="serviceList">${serviceOptions}</datalist></div>
+ <div class="field"><div class="row-between"><label>Descrição do serviço</label><button type="button" class="btn soft sm" id="suggestService">Usar descrição sugerida</button></div><textarea id="bServiceDescription" rows="4" placeholder="A descrição aparecerá no PDF da proposta.">${esc(b?.serviceDescription||initialInfo.description||'')}</textarea></div>
+ <div class="field"><label>Escopo previsto — um item por linha</label><textarea id="bServiceScope" rows="5" placeholder="O que está incluído no serviço.">${esc(b?.serviceScope||initialInfo.scope.join('\n'))}</textarea></div>
  <div class="two"><div class="field"><label>Valor total (R$)</label><input id="bValue" type="number" min="0" step="0.01" value="${b?.value||''}"></div><div class="field"><label>Prazo / retorno</label><input id="bDeadline" type="date" value="${b?.deadline||''}"></div></div>
  <div class="two"><div class="field"><label>Número de parcelas</label><input id="bInstallments" type="number" min="1" max="36" step="1" value="${Number(b?.installments||1)}"></div><div class="field"><label>Primeiro vencimento</label><input id="bFirstDue" type="date" value="${b?.firstDueDate||''}"></div></div>
- <div class="two"><div class="field"><label>Status</label><select id="bStatus">${['Rascunho','Enviado','Em negociação','Aceito','Recusado'].map(x=>`<option ${b?.status===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label>Observações</label><input id="bNotes" value="${esc(b?.notes||'')}"></div></div>
- <div class="smallprint">Você pode selecionar um cliente já cadastrado ou criar um novo diretamente aqui.</div>
+ <div class="two"><div class="field"><label>Validade da proposta (dias)</label><input id="bValidity" type="number" min="1" max="180" value="${Number(b?.validityDays||15)}"></div><div class="field"><label>Status</label><select id="bStatus">${['Rascunho','Enviado','Em negociação','Aceito','Recusado'].map(x=>`<option ${b?.status===x?'selected':''}>${x}</option>`).join('')}</select></div></div>
+ <div class="field"><label>Observações</label><textarea id="bNotes" rows="3">${esc(b?.notes||'')}</textarea></div>
+ <div class="smallprint">A descrição e o escopo são editáveis. O texto sugerido serve como base técnica e deve ser ajustado ao que realmente foi contratado.</div>
  <div class="modal-foot"><button type="button" class="btn soft" id="cancel">Cancelar</button><button class="btn primary">Salvar orçamento</button></div>
  ${b?'<div class="danger-zone"><button type="button" class="btn danger" id="deleteBudget">Excluir orçamento</button></div>':''}
  </form>`);
  $('#cancel').onclick=closeModal;
  const toggleNewClient=()=>{const on=$('#bNewClient').checked;$('#bNewClientFields').classList.toggle('hidden',!on);$('#bClient').disabled=on;if(on)$('#bClient').value='';};
  $('#bNewClient').onchange=toggleNewClient;toggleNewClient();
+ const applySuggestion=()=>{const info=serviceInfo($('#bService').value);$('#bServiceDescription').value=info.description;$('#bServiceScope').value=info.scope.join('\n')};
+ $('#suggestService').onclick=applySuggestion;
+ let lastService=b?.service||'';
+ $('#bService').addEventListener('change',()=>{const now=$('#bService').value;if(now!==lastService){applySuggestion();lastService=now}});
  $('#budgetForm').onsubmit=async e=>{
    e.preventDefault();
    const createNew=$('#bNewClient').checked;
-   const newClient={
-     name:$('#bNewClientName').value.trim(),
-     document:$('#bNewClientDocument').value.trim(),
-     phone:$('#bNewClientPhone').value.trim(),
-     email:$('#bNewClientEmail').value.trim(),
-     address:$('#bNewClientAddress').value.trim(),
-     notes:'Cadastrado automaticamente a partir de um orçamento.'
-   };
+   const newClient={name:$('#bNewClientName').value.trim(),document:$('#bNewClientDocument').value.trim(),phone:$('#bNewClientPhone').value.trim(),email:$('#bNewClientEmail').value.trim(),address:$('#bNewClientAddress').value.trim(),notes:'Cadastrado automaticamente a partir de um orçamento.'};
    let selectedClientId=$('#bClient').value;
    if(createNew&&!newClient.name)return alert('Informe o nome do novo cliente.');
    if(!createNew&&!selectedClientId)return alert('Selecione um cliente ou marque "Cadastrar novo cliente".');
-   const baseObj={title:$('#bTitle').value.trim(),service:$('#bService').value.trim(),value:Number($('#bValue').value||0),deadline:$('#bDeadline').value,installments:Math.max(1,Number($('#bInstallments').value||1)),firstDueDate:$('#bFirstDue').value,status:$('#bStatus').value,notes:$('#bNotes').value.trim()};
-   if(!baseObj.title)return;
+   const baseObj={title:$('#bTitle').value.trim(),service:$('#bService').value.trim(),serviceDescription:$('#bServiceDescription').value.trim(),serviceScope:$('#bServiceScope').value.trim(),value:Number($('#bValue').value||0),deadline:$('#bDeadline').value,installments:Math.max(1,Number($('#bInstallments').value||1)),firstDueDate:$('#bFirstDue').value,validityDays:Math.max(1,Number($('#bValidity').value||15)),status:$('#bStatus').value,notes:$('#bNotes').value.trim()};
+   if(!baseObj.title||!baseObj.service)return alert('Informe o título e o serviço.');
    closeModal();
    await mutate(d=>{
      let clientId=selectedClientId;
