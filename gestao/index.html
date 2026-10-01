@@ -36,6 +36,7 @@ main{min-width:0;width:100%;max-width:1450px;margin:0 auto;padding:24px}.page-he
 .warnbox{border:1px solid #f2c7b2;background:#fff7f2;border-left:4px solid var(--accent);border-radius:14px;padding:13px 14px;margin:12px 0;color:#6b3a25}.warnbox b{display:block;color:#38251d;margin-bottom:3px}.subtabs{display:flex;gap:7px;overflow:auto;padding:2px 0 10px;scrollbar-width:none}.subtabs::-webkit-scrollbar{display:none}.finance-breakdown{padding:9px 0;border-bottom:1px solid var(--line)}.finance-breakdown:last-child{border-bottom:0}.finance-breakdown>div:first-child{display:flex;justify-content:space-between;gap:10px;font-weight:800}.finance-project-line{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px;padding:4px 0 0 12px}.receipt-actions{display:flex;gap:6px;flex-wrap:wrap}.field-hint{font-size:11px;color:var(--muted);margin-top:5px}.recovery-pill{display:inline-block;padding:5px 8px;border-radius:999px;background:#fff0e8;color:#9a4319;font-size:11px;font-weight:800}.search-results{display:grid;gap:8px;margin-top:12px}.search-result{border:1px solid var(--line);background:#fff;border-radius:13px;padding:12px;text-align:left;cursor:pointer}.search-result b{display:block}.search-result small{display:block;color:var(--muted);margin-top:3px}.finance-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.finance-toolbar input,.finance-toolbar select{border:1px solid var(--line);border-radius:11px;padding:9px 10px;background:#fff}.month-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}.month-row:last-child{border-bottom:0}.contract-editor{min-height:330px;font-family:inherit;line-height:1.55}.print-note{font-size:11px;color:var(--muted);margin-top:7px}
 @media(max-width:560px){.top-actions{gap:4px}.top-actions .iconbtn{padding:7px 7px}.top-actions #globalSearchBtn{font-size:0}.top-actions #globalSearchBtn:after{content:"⌕";font-size:18px}.finance-toolbar>*{width:100%}}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 <section id="loginView" class="login">
@@ -333,9 +334,9 @@ function renderBudgets(){
  const all=state.budgets.slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
  const groups={open:all.filter(b=>!['Aceito','Recusado'].includes(b.status)),accepted:all.filter(b=>b.status==='Aceito'),refused:all.filter(b=>b.status==='Recusado')};
  let showing='open';
- const card=b=>{const p=state.projects.find(p=>p.sourceBudgetId===b.id);return `<article class="budget-card"><div class="row-between"><div><h4>${esc(b.title)}</h4><div class="meta">${esc(clientName(b.clientId))}<br>${esc(b.service||'Serviço')}</div></div><span class="pill ${b.status==='Aceito'?'good':b.status==='Rascunho'?'gray':b.status==='Recusado'?'warn':''}">${esc(b.status)}</span></div><div class="project-foot"><span>${b.deadline?'Prazo '+fmtDate(b.deadline):'Sem prazo'}</span><b>${brl(b.value)}</b></div><div class="meta" style="margin-top:8px">${Number(b.installments||1)} parcela${Number(b.installments||1)===1?'':'s'}${b.firstDueDate?' · 1º venc. '+fmtDate(b.firstDueDate):''}</div><div class="actions" style="margin-top:10px"><button class="btn soft sm edit-budget" data-id="${b.id}">Editar</button>${!['Aceito','Recusado'].includes(b.status)?`<button class="btn good sm accept-budget" data-id="${b.id}">Aceitar e criar projeto</button>`:''}${b.status==='Aceito'?`<button class="btn primary sm contract-budget" data-id="${b.id}">Contrato</button>${p?`<button class="btn soft sm open-budget-project" data-id="${p.id}">Ver projeto</button>`:''}`:''}</div></article>`};
+ const card=b=>{const p=state.projects.find(p=>p.sourceBudgetId===b.id);return `<article class="budget-card"><div class="row-between"><div><h4>${esc(b.title)}</h4><div class="meta">${esc(clientName(b.clientId))}<br>${esc(b.service||'Serviço')}</div></div><span class="pill ${b.status==='Aceito'?'good':b.status==='Rascunho'?'gray':b.status==='Recusado'?'warn':''}">${esc(b.status)}</span></div><div class="project-foot"><span>${b.deadline?'Prazo '+fmtDate(b.deadline):'Sem prazo'}</span><b>${brl(b.value)}</b></div><div class="meta" style="margin-top:8px">${Number(b.installments||1)} parcela${Number(b.installments||1)===1?'':'s'}${b.firstDueDate?' · 1º venc. '+fmtDate(b.firstDueDate):''}</div><div class="actions" style="margin-top:10px"><button class="btn primary sm pdf-budget" data-id="${b.id}">Baixar PDF</button><button class="btn soft sm edit-budget" data-id="${b.id}">Editar</button>${!['Aceito','Recusado'].includes(b.status)?`<button class="btn good sm accept-budget" data-id="${b.id}">Aceitar e criar projeto</button>`:''}${b.status==='Aceito'?`<button class="btn soft sm contract-budget" data-id="${b.id}">Contrato</button>${p?`<button class="btn soft sm open-budget-project" data-id="${p.id}">Ver projeto</button>`:''}`:''}</div></article>`};
  $('#main').innerHTML=`${pageHead('Orçamentos','Do primeiro contato à aprovação.','<button class="btn primary" id="newBudget">+ Novo orçamento</button>')}<div class="tabs"><button class="tab active" data-btab="open">Em aberto (${groups.open.length})</button><button class="tab" data-btab="accepted">Aceitos (${groups.accepted.length})</button><button class="tab" data-btab="refused">Recusados (${groups.refused.length})</button></div><div id="budgetGrid" class="grid-3"></div>`;
- const draw=()=>{document.querySelectorAll('[data-btab]').forEach(x=>x.classList.toggle('active',x.dataset.btab===showing));const rows=groups[showing];$('#budgetGrid').innerHTML=rows.map(card).join('')||'<div class="empty">Nenhum orçamento nesta categoria.</div>';document.querySelectorAll('.edit-budget').forEach(b=>b.onclick=()=>budgetModal(b.dataset.id));document.querySelectorAll('.accept-budget').forEach(b=>b.onclick=()=>acceptBudget(b.dataset.id));document.querySelectorAll('.contract-budget').forEach(b=>b.onclick=()=>contractModal(b.dataset.id));document.querySelectorAll('.open-budget-project').forEach(b=>b.onclick=()=>{currentSection='projects';currentProjectId=b.dataset.id;projectTab='overview';render()})};
+ const draw=()=>{document.querySelectorAll('[data-btab]').forEach(x=>x.classList.toggle('active',x.dataset.btab===showing));const rows=groups[showing];$('#budgetGrid').innerHTML=rows.map(card).join('')||'<div class="empty">Nenhum orçamento nesta categoria.</div>';document.querySelectorAll('.pdf-budget').forEach(b=>b.onclick=()=>downloadBudgetPdf(b.dataset.id));document.querySelectorAll('.edit-budget').forEach(b=>b.onclick=()=>budgetModal(b.dataset.id));document.querySelectorAll('.accept-budget').forEach(b=>b.onclick=()=>acceptBudget(b.dataset.id));document.querySelectorAll('.contract-budget').forEach(b=>b.onclick=()=>contractModal(b.dataset.id));document.querySelectorAll('.open-budget-project').forEach(b=>b.onclick=()=>{currentSection='projects';currentProjectId=b.dataset.id;projectTab='overview';render()})};
  document.querySelectorAll('[data-btab]').forEach(b=>b.onclick=()=>{showing=b.dataset.btab;draw()});$('#newBudget').onclick=()=>budgetModal();draw();
 }
 function renderProjects(){const active=state.projects.filter(p=>!p.archived),arch=state.projects.filter(p=>p.archived);$('#main').innerHTML=`${pageHead('Projetos','Execução, etapas e acompanhamento.','<button class="btn primary" id="newProject">+ Novo projeto</button>')}<div class="tabs"><button class="tab active" id="tabActive">Ativos (${active.length})</button><button class="tab" id="tabArchived">Concluídos (${arch.length})</button></div><div id="projectsGrid" class="grid-3">${active.map(projectCard).join('')||'<div class="empty">Nenhum projeto ativo.</div>'}</div>`;let showing='active';const draw=()=>{$('#tabActive').classList.toggle('active',showing==='active');$('#tabArchived').classList.toggle('active',showing==='arch');const arr=showing==='active'?active:arch;$('#projectsGrid').innerHTML=arr.map(projectCard).join('')||'<div class="empty">Nenhum projeto nesta categoria.</div>';bindProjectCards()};$('#tabActive').onclick=()=>{showing='active';draw()};$('#tabArchived').onclick=()=>{showing='arch';draw()};$('#newProject').onclick=()=>projectModal();bindProjectCards()}
@@ -419,12 +420,95 @@ function closeModal(){$('#modalRoot').innerHTML=''}
 function clientOptions(selected=''){return state.clients.map(c=>`<option value="${c.id}" ${c.id===selected?'selected':''}>${esc(c.name)}</option>`).join('')}
 function ensureClient(name,remote){let c=remote.clients.find(x=>x.name.toLowerCase()===name.toLowerCase());if(!c){c={id:uid(),name,phone:'',email:'',notes:''};remote.clients.push(c)}return c.id}
 function clientModal(id=null){const c=id?state.clients.find(x=>x.id===id):null;modal(c?'Editar cliente':'Novo cliente',`<form id="clientForm"><div class="field"><label>Nome *</label><input id="cName" required value="${esc(c?.name||'')}"></div><div class="two"><div class="field"><label>Telefone</label><input id="cPhone" value="${esc(c?.phone||'')}"></div><div class="field"><label>E-mail</label><input id="cEmail" type="email" value="${esc(c?.email||'')}"></div></div><div class="field"><label>Observações</label><textarea id="cNotes" rows="3">${esc(c?.notes||'')}</textarea></div><div class="modal-foot"><button type="button" class="btn soft" id="cancel">Cancelar</button><button class="btn primary">Salvar</button></div>${c?'<div class="danger-zone"><button type="button" class="btn danger" id="deleteClient">Excluir cliente</button><div class="smallprint">A exclusão só será permitida se não houver registros vinculados.</div></div>':''}</form>`);$('#cancel').onclick=closeModal;$('#clientForm').onsubmit=e=>{e.preventDefault();const obj={name:$('#cName').value.trim(),phone:$('#cPhone').value.trim(),email:$('#cEmail').value.trim(),notes:$('#cNotes').value.trim()};if(!obj.name)return;closeModal();mutate(d=>{if(c)Object.assign(d.clients.find(x=>x.id===c.id),obj);else d.clients.push({id:uid(),...obj})})};if(c)$('#deleteClient').onclick=()=>{const linked=state.projects.some(x=>x.clientId===c.id)||state.budgets.some(x=>x.clientId===c.id)||state.processes.some(x=>x.clientId===c.id)||state.tasks.some(x=>x.clientId===c.id)||state.finance.some(x=>x.clientId===c.id);if(linked)return alert('Este cliente possui registros vinculados.');if(confirm('Excluir este cliente?')){closeModal();mutate(d=>{d.clients=d.clients.filter(x=>x.id!==c.id)})}}}
+async function budgetLogoPng(){
+ try{
+   const svg=await fetch('assets/lang-logo.svg',{cache:'force-cache'}).then(r=>r.text());
+   const blob=new Blob([svg],{type:'image/svg+xml'}),url=URL.createObjectURL(blob),img=new Image();
+   await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=url});
+   const canvas=document.createElement('canvas');canvas.width=900;canvas.height=360;
+   const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+   URL.revokeObjectURL(url);return canvas.toDataURL('image/png');
+ }catch(_){return null}
+}
+function pdfSafeName(v){return String(v||'ORCAMENTO').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,70)}
+async function downloadBudgetPdf(id){
+ const b=state.budgets.find(x=>x.id===id);if(!b)return alert('Orçamento não encontrado.');
+ if(!window.jspdf?.jsPDF)return alert('O gerador de PDF ainda está carregando. Aguarde alguns segundos e tente novamente.');
+ try{
+   const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'}),client=state.clients.find(c=>c.id===b.clientId)||{},pageW=210,margin=18;
+   const logo=await budgetLogoPng();if(logo)doc.addImage(logo,'PNG',margin,12,54,22);
+   doc.setDrawColor(242,91,33);doc.setLineWidth(1.2);doc.line(margin,39,pageW-margin,39);
+   doc.setTextColor(24,24,24);doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('ORÇAMENTO',pageW-margin,20,{align:'right'});
+   doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(105,105,105);doc.text('LANG Engenharia',pageW-margin,27,{align:'right'});doc.text('Emissão: '+new Date().toLocaleDateString('pt-BR'),pageW-margin,32,{align:'right'});
+   let y=50;
+   const heading=t=>{doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(242,91,33);doc.text(t.toUpperCase(),margin,y);y+=6};
+   const line=(label,value)=>{if(value===undefined||value===null||String(value).trim()==='')return;doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(70,70,70);doc.text(label,margin,y);doc.setFont('helvetica','normal');doc.setTextColor(30,30,30);const vals=doc.splitTextToSize(String(value),pageW-margin*2-40);doc.text(vals,margin+40,y);y+=Math.max(6,vals.length*4.5)};
+   heading('Cliente');line('Nome',client.name||clientName(b.clientId));line('CPF / CNPJ',client.document);line('Telefone',client.phone);line('E-mail',client.email);line('Endereço',client.address);y+=3;
+   heading('Proposta');line('Orçamento',b.title);line('Serviço',b.service||'Serviços de engenharia');line('Valor total',brl(b.value));
+   const n=Math.max(1,Number(b.installments||1));line('Pagamento',n===1?'1 parcela':n+' parcelas');if(b.firstDueDate)line('1º vencimento',fmtDate(b.firstDueDate));if(b.deadline)line('Prazo / retorno',fmtDate(b.deadline));line('Situação',b.status||'Rascunho');
+   if(b.notes){y+=3;heading('Observações');doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(30,30,30);const txt=doc.splitTextToSize(b.notes,pageW-margin*2);doc.text(txt,margin,y);y+=txt.length*4.5+4;}
+   y=Math.max(y,220);doc.setDrawColor(210,210,210);doc.line(margin,y,pageW-margin,y);y+=8;
+   doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.setTextColor(95,95,95);doc.text('Proposta emitida pela LANG Engenharia.',margin,y);doc.text('Este documento foi gerado pelo sistema LANG Engenharia.',margin,y+5);
+   const filename='ORCAMENTO_LANG_'+pdfSafeName(client.name||b.title)+'_'+today()+'.pdf';
+   doc.save(filename);
+   toast('PDF baixado');
+ }catch(err){console.error(err);alert('Não foi possível gerar o PDF: '+(err.message||err))}
+}
+
 function budgetModal(id=null){
  const b=id?state.budgets.find(x=>x.id===id):null;
- modal(b?'Editar orçamento':'Novo orçamento',`<form id="budgetForm"><div class="field"><label>Título *</label><input id="bTitle" required value="${esc(b?.title||'')}"></div><div class="two"><div class="field"><label>Cliente *</label><select id="bClient" required><option value="">Selecione</option>${clientOptions(b?.clientId)}</select></div><div class="field"><label>Serviço</label><input id="bService" value="${esc(b?.service||'')}"></div></div><div class="two"><div class="field"><label>Valor total (R$)</label><input id="bValue" type="number" min="0" step="0.01" value="${b?.value||''}"></div><div class="field"><label>Prazo / retorno</label><input id="bDeadline" type="date" value="${b?.deadline||''}"></div></div><div class="two"><div class="field"><label>Número de parcelas</label><input id="bInstallments" type="number" min="1" max="36" step="1" value="${Number(b?.installments||1)}"></div><div class="field"><label>Primeiro vencimento</label><input id="bFirstDue" type="date" value="${b?.firstDueDate||''}"></div></div><div class="two"><div class="field"><label>Status</label><select id="bStatus">${['Rascunho','Enviado','Em negociação','Aceito','Recusado'].map(x=>`<option ${b?.status===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label>Observações</label><input id="bNotes" value="${esc(b?.notes||'')}"></div></div><div class="smallprint">Ao aceitar o orçamento, as parcelas são criadas automaticamente no Financeiro e continuam editáveis individualmente.</div><div class="modal-foot"><button type="button" class="btn soft" id="cancel">Cancelar</button><button class="btn primary">Salvar</button></div>${b?'<div class="danger-zone"><button type="button" class="btn danger" id="deleteBudget">Excluir orçamento</button></div>':''}</form>`);
+ modal(b?'Editar orçamento':'Novo orçamento',`<form id="budgetForm">
+ <div class="field"><label>Título *</label><input id="bTitle" required value="${esc(b?.title||'')}"></div>
+ <div class="field"><label>Cliente existente</label><select id="bClient"><option value="">Selecione</option>${clientOptions(b?.clientId)}</select></div>
+ <label class="stage" style="margin-bottom:13px"><input type="checkbox" id="bNewClient"><div class="stage-main"><b>Cadastrar novo cliente neste orçamento</b><span>O cliente será criado automaticamente na aba Clientes.</span></div></label>
+ <div id="bNewClientFields" class="hidden">
+   <div class="field"><label>Nome / razão social *</label><input id="bNewClientName"></div>
+   <div class="two"><div class="field"><label>CPF / CNPJ</label><input id="bNewClientDocument"></div><div class="field"><label>Telefone</label><input id="bNewClientPhone"></div></div>
+   <div class="two"><div class="field"><label>E-mail</label><input id="bNewClientEmail" type="email"></div><div class="field"><label>Endereço</label><input id="bNewClientAddress"></div></div>
+ </div>
+ <div class="field"><label>Serviço</label><input id="bService" value="${esc(b?.service||'')}"></div>
+ <div class="two"><div class="field"><label>Valor total (R$)</label><input id="bValue" type="number" min="0" step="0.01" value="${b?.value||''}"></div><div class="field"><label>Prazo / retorno</label><input id="bDeadline" type="date" value="${b?.deadline||''}"></div></div>
+ <div class="two"><div class="field"><label>Número de parcelas</label><input id="bInstallments" type="number" min="1" max="36" step="1" value="${Number(b?.installments||1)}"></div><div class="field"><label>Primeiro vencimento</label><input id="bFirstDue" type="date" value="${b?.firstDueDate||''}"></div></div>
+ <div class="two"><div class="field"><label>Status</label><select id="bStatus">${['Rascunho','Enviado','Em negociação','Aceito','Recusado'].map(x=>`<option ${b?.status===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label>Observações</label><input id="bNotes" value="${esc(b?.notes||'')}"></div></div>
+ <div class="smallprint">Você pode selecionar um cliente já cadastrado ou criar um novo diretamente aqui.</div>
+ <div class="modal-foot"><button type="button" class="btn soft" id="cancel">Cancelar</button><button class="btn primary">Salvar orçamento</button></div>
+ ${b?'<div class="danger-zone"><button type="button" class="btn danger" id="deleteBudget">Excluir orçamento</button></div>':''}
+ </form>`);
  $('#cancel').onclick=closeModal;
- $('#budgetForm').onsubmit=e=>{e.preventDefault();const obj={title:$('#bTitle').value.trim(),clientId:$('#bClient').value,service:$('#bService').value.trim(),value:Number($('#bValue').value||0),deadline:$('#bDeadline').value,installments:Math.max(1,Number($('#bInstallments').value||1)),firstDueDate:$('#bFirstDue').value,status:$('#bStatus').value,notes:$('#bNotes').value.trim()};if(!obj.title||!obj.clientId)return;const shouldAccept=obj.status==='Aceito'&&!b?.sourceProjectId;closeModal();mutate(d=>{if(b)Object.assign(d.budgets.find(x=>x.id===b.id),obj);else d.budgets.push({id:uid(),createdAt:new Date().toISOString(),...obj})})};
- if(b)$('#deleteBudget').onclick=()=>{if(confirm('Excluir este orçamento?')){closeModal();mutate(d=>{d.budgets=d.budgets.filter(x=>x.id!==b.id);d.tasks=d.tasks.filter(x=>x.refId!==b.id)})}};
+ const toggleNewClient=()=>{const on=$('#bNewClient').checked;$('#bNewClientFields').classList.toggle('hidden',!on);$('#bClient').disabled=on;if(on)$('#bClient').value='';};
+ $('#bNewClient').onchange=toggleNewClient;toggleNewClient();
+ $('#budgetForm').onsubmit=async e=>{
+   e.preventDefault();
+   const createNew=$('#bNewClient').checked;
+   const newClient={
+     name:$('#bNewClientName').value.trim(),
+     document:$('#bNewClientDocument').value.trim(),
+     phone:$('#bNewClientPhone').value.trim(),
+     email:$('#bNewClientEmail').value.trim(),
+     address:$('#bNewClientAddress').value.trim(),
+     notes:'Cadastrado automaticamente a partir de um orçamento.'
+   };
+   let selectedClientId=$('#bClient').value;
+   if(createNew&&!newClient.name)return alert('Informe o nome do novo cliente.');
+   if(!createNew&&!selectedClientId)return alert('Selecione um cliente ou marque "Cadastrar novo cliente".');
+   const baseObj={title:$('#bTitle').value.trim(),service:$('#bService').value.trim(),value:Number($('#bValue').value||0),deadline:$('#bDeadline').value,installments:Math.max(1,Number($('#bInstallments').value||1)),firstDueDate:$('#bFirstDue').value,status:$('#bStatus').value,notes:$('#bNotes').value.trim()};
+   if(!baseObj.title)return;
+   closeModal();
+   await mutate(d=>{
+     let clientId=selectedClientId;
+     if(createNew){
+       const norm=v=>String(v||'').replace(/\D/g,'');
+       const doc=norm(newClient.document),email=newClient.email.toLowerCase();
+       let existing=d.clients.find(c=>(doc&&norm(c.document)===doc)||(email&&String(c.email||'').toLowerCase()===email)||String(c.name||'').trim().toLowerCase()===newClient.name.toLowerCase());
+       if(existing){clientId=existing.id;Object.assign(existing,{...newClient,name:existing.name||newClient.name})}
+       else{clientId=uid();d.clients.push({id:clientId,...newClient});logAudit(d,'Cliente criado pelo orçamento: '+newClient.name)}
+     }
+     const obj={...baseObj,clientId};
+     if(b){Object.assign(d.budgets.find(x=>x.id===b.id),obj);logAudit(d,'Orçamento atualizado: '+obj.title)}
+     else{d.budgets.push({id:uid(),createdAt:new Date().toISOString(),...obj});logAudit(d,'Orçamento criado: '+obj.title)}
+   });
+ };
+ if(b)$('#deleteBudget').onclick=()=>{if(confirm('Excluir este orçamento?')){closeModal();mutate(d=>{d.budgets=d.budgets.filter(x=>x.id!==b.id);d.tasks=d.tasks.filter(x=>x.refId!==b.id);logAudit(d,'Orçamento excluído: '+b.title)})}};
 }
 function addMonthsDate(dateStr,months){if(!dateStr)return '';const d=new Date(dateStr+'T12:00:00');d.setMonth(d.getMonth()+months);return d.toISOString().slice(0,10)}
 function acceptBudget(id){
