@@ -36,7 +36,7 @@
       <button id="loginBtn" class="btn primary full">Entrar</button>
       <button id="installBtn" class="btn soft full hidden" type="button">Instalar L2B Financeiro</button>
     </div>
-    <div id="installHint" class="install-hint hidden">O app será instalado na tela inicial e continuará usando os mesmos dados compartilhados.</div>
+    <div id="installHint" class="install-hint hidden">Instale no celular ou no Windows. O aplicativo continuará usando os mesmos dados compartilhados.</div>
     <div class="login-note">Acesso interno L2B. Os dados são criptografados antes do armazenamento.</div>
   </div>
 </section>
@@ -227,12 +227,26 @@ function settingsModal(){const share=location.origin+location.pathname;modal('Co
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js',{scope:'./'}).catch(()=>{}));
 }
+function setupInstallUI(){
+  const standalone=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+  const isWindows=/Windows/i.test(navigator.userAgent);
+  const isAndroid=/Android/i.test(navigator.userAgent);
+  const b=$('#installBtn'),h=$('#installHint');
+  if(standalone){
+    b?.classList.add('hidden');
+    h?.classList.add('hidden');
+    return;
+  }
+  if(isWindows || isAndroid){
+    b?.classList.remove('hidden');
+    h?.classList.remove('hidden');
+    if(b)b.textContent=isWindows?'Instalar no Windows':'Instalar no celular';
+  }
+}
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();
   deferredInstallPrompt=e;
-  const b=$('#installBtn'),h=$('#installHint');
-  if(b)b.classList.remove('hidden');
-  if(h)h.classList.remove('hidden');
+  setupInstallUI();
 });
 window.addEventListener('appinstalled',()=>{
   deferredInstallPrompt=null;
@@ -243,7 +257,10 @@ window.addEventListener('appinstalled',()=>{
 });
 async function installPWA(){
   if(!deferredInstallPrompt){
-    alert('No Android, abra o menu do navegador e escolha “Instalar app” ou “Adicionar à tela inicial”.');
+    const isWindows=/Windows/i.test(navigator.userAgent);
+    alert(isWindows
+      ? 'No Windows, abra este site no Microsoft Edge ou Google Chrome e escolha “Instalar L2B Financeiro” no ícone de instalação da barra de endereço ou em ⋯ > Aplicativos > Instalar este site como um aplicativo.'
+      : 'No Android, abra o menu do navegador e escolha “Instalar app” ou “Adicionar à tela inicial”.');
     return;
   }
   deferredInstallPrompt.prompt();
@@ -253,6 +270,7 @@ async function installPWA(){
   $('#installHint')?.classList.add('hidden');
 }
 
+setupInstallUI();
 $('#loginBtn').onclick=doLogin;$('#passwordInput').onkeydown=e=>{if(e.key==='Enter')doLogin()};$('#installBtn').onclick=installPWA;$('#logoutBtn').onclick=()=>{currentPassword='';state=null;currentWorkId=null;currentSection='works';currentPerson='Geovane';$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden');$('#passwordInput').value=''};$('#settingsBtn').onclick=settingsModal;
 })();
 </script>
