@@ -75,7 +75,7 @@ const STAGE_TEMPLATES={
 function stageTitlesFor(service=''){const t=String(service).toLowerCase();if(t.includes('preventivo')||t.includes('incênd'))return STAGE_TEMPLATES.preventivo;if(t.includes('desdobro'))return STAGE_TEMPLATES.desdobro;if(/residencial|regulariza|instituição|condomínio|casa|edifica|arquitet/.test(t))return STAGE_TEMPLATES.edificacao;return STAGE_TEMPLATES.generic}
 function makeStages(id,service=''){return stageTitlesFor(service).map((title,i)=>({id:id+'-s'+i,title,done:false,due:''}))}
 function addHistory(p,message){p.history=Array.isArray(p.history)?p.history:[];p.history.unshift({id:uid(),at:new Date().toISOString(),message})}
-const NAV=[['dashboard','Visão geral','Controle e acompanhamento'],['budgets','Orçamentos','Propostas e conversões'],['projects','Projetos','Execução e etapas'],['processes','Processos','Órgãos e protocolos'],['clients','Clientes','Cadastro e histórico'],['tasks','Tarefas e prazos','Agenda operacional'],['finance','Financeiro','Receber, reembolsar e despesas']];
+const NAV=[['dashboard','Visão geral','Controle e acompanhamento'],['budgets','Orçamentos','Propostas e conversões'],['projects','Projetos','Execução e etapas'],['processes','Processos','Órgãos e protocolos'],['agent','Agente LANG','Protocolos e acompanhamento'],['clients','Clientes','Cadastro e histórico'],['tasks','Tarefas e prazos','Agenda operacional'],['finance','Financeiro','Receber, reembolsar e despesas']];
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>\'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const uid=()=>crypto.randomUUID();
@@ -300,8 +300,8 @@ async function encryptData(data,password){const salt=crypto.getRandomValues(new 
 async function decryptData(payload,password){if(!payload||payload.app!=='lang-engenharia-gestao-v1')throw new Error('Banco inválido');const salt=unbuf64(payload.salt),iv=unbuf64(payload.iv),key=await derive(password,salt);const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,unbuf64(payload.data));return JSON.parse(new TextDecoder().decode(plain))}
 async function fetchBlob(){const r=await fetch(API+'?id='+encodeURIComponent(DB_ID),{cache:'no-store'});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||'Não foi possível carregar os dados');e.status=r.status;throw e}return j}
 async function putBlob(payload){const r=await fetch(API+'?id='+encodeURIComponent(DB_ID),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Não foi possível salvar os dados')}
-async function load(){status('Sincronizando…');try{const p=await fetchBlob();const raw=await decryptData(p,currentPassword);const migratedProjects=ensureChromeProjects(raw),migratedFinance=ensureFinanceSnapshot20260930(raw),migratedProjectFinance=ensureRecoveredProjectFinance20260930(raw),migrated=migratedProjects||migratedFinance||migratedProjectFinance;state=normalize(raw);if(migrated){state.revision=Number(state.revision||0)+1;state.updatedAt=new Date().toISOString();await putBlob(await encryptData(state,currentPassword))}}catch(e){if(e.status===404&&currentPassword===INITIAL_PASSWORD){const raw=seedState();ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);ensureRecoveredProjectFinance20260930(raw);state=normalize(raw);await putBlob(await encryptData(state,currentPassword))}else throw e}status('Sincronizado','ok')}
-async function mutate(fn){status('Salvando…');try{let remote;try{const raw=await decryptData(await fetchBlob(),currentPassword);ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);ensureRecoveredProjectFinance20260930(raw);remote=normalize(raw)}catch(e){if(e.status===404){const raw=seedState();ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);ensureRecoveredProjectFinance20260930(raw);remote=normalize(raw)}else throw e}await fn(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();toast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message||'Não foi possível salvar')}}
+async function load(){status('Sincronizando…');try{const p=await fetchBlob();const raw=await decryptData(p,currentPassword);const migratedProjects=ensureChromeProjects(raw),migratedFinance=ensureFinanceSnapshot20260930(raw),migratedProjectFinance=ensureRecoveredProjectFinance20260930(raw),migratedAgent=ensureAgentLinks(raw),migrated=migratedProjects||migratedFinance||migratedProjectFinance||migratedAgent;state=normalize(raw);if(migrated){state.revision=Number(state.revision||0)+1;state.updatedAt=new Date().toISOString();await putBlob(await encryptData(state,currentPassword))}}catch(e){if(e.status===404&&currentPassword===INITIAL_PASSWORD){const raw=seedState();ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);ensureRecoveredProjectFinance20260930(raw);state=normalize(raw);await putBlob(await encryptData(state,currentPassword))}else throw e}status('Sincronizado','ok')}
+async function mutate(fn){status('Salvando…');try{let remote;try{const raw=await decryptData(await fetchBlob(),currentPassword);ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);ensureRecoveredProjectFinance20260930(raw);remote=normalize(raw)}catch(e){if(e.status===404){const raw=seedState();ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);ensureRecoveredProjectFinance20260930(raw);remote=normalize(raw)}else throw e}await fn(remote);ensureAgentLinks(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();toast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message||'Não foi possível salvar')}}
 async function doLogin(){const pwd=$('#passwordInput').value;if(!pwd)return loginErr('Digite a senha.');try{currentPassword=pwd;await load();sessionStorage.setItem('langPwd',pwd);$('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');buildNav();render()}catch(e){currentPassword='';loginErr('Senha incorreta ou dados indisponíveis.')}}
 function loginErr(t){const e=$('#loginError');e.textContent=t;e.classList.remove('hidden')}
 function logout(){sessionStorage.removeItem('langPwd');currentPassword='';state=null;$('#appView').classList.add('hidden');$('#loginView').classList.remove('hidden');$('#passwordInput').value='';$('#loginError').classList.add('hidden')}
@@ -309,7 +309,7 @@ function buildNav(){const html=`<div class="side-title">Espaço de trabalho</div
 function pageHead(title,sub,buttons=''){return `<div class="page-head"><div><div class="breadcrumb">Meu escritório / ${esc(title)}</div><h1>${esc(title)}</h1><p>${esc(sub)}</p></div><div class="actions">${buttons}</div></div>`}
 function progress(p){const done=p.stages.filter(s=>s.done).length,total=p.stages.length||1;return Math.round(done/total*100)}
 function projectCard(p){const pc=progress(p);const pending=!!p.recoveryPending;return `<article class="project-card" data-project="${p.id}"><div class="row-between"><div><h4>${esc(p.name)}</h4><div class="meta">${p.clientId?esc(clientName(p.clientId)):''}${p.clientId&&p.service?'<br>':''}${p.service?esc(p.service):''}</div></div><span class="pill ${p.archived?'gray':pending?'warn':''}">${esc(p.archived?'Concluído':p.status)}</span></div>${pending?'<div class="meta" style="margin-top:14px">Projeto recuperado da lista antiga. Etapas, valores e demais detalhes ainda não foram preenchidos.</div>':`<div class="progress"><i style="width:${pc}%"></i></div><div class="project-foot"><span>${pc}% das etapas</span><b>${p.stages.filter(s=>s.done).length}/${p.stages.length}</b></div>`}</article>`}
-function render(){if(!state)return;buildNav();if(currentProjectId)return renderProjectDetail(currentProjectId);({dashboard:renderDashboard,budgets:renderBudgets,projects:renderProjects,processes:renderProcesses,clients:renderClients,tasks:renderTasks,finance:renderFinance}[currentSection]||renderDashboard)()}
+function render(){if(!state)return;buildNav();if(currentProjectId)return renderProjectDetail(currentProjectId);({dashboard:renderDashboard,budgets:renderBudgets,projects:renderProjects,processes:renderProcesses,agent:renderAgent,clients:renderClients,tasks:renderTasks,finance:renderFinance}[currentSection]||renderDashboard)()}
 function globalSearchMatches(q){
  q=String(q||'').trim().toLowerCase();if(!q)return [];
  const out=[];
@@ -650,7 +650,7 @@ function contractModal(id){
  modal('Contrato do orçamento',`<div class="field"><label>Revise e edite antes de gerar</label><textarea id="contractText" rows="20">${esc(b.contractText||defaultText)}</textarea></div><div class="modal-foot"><button type="button" class="btn soft" id="cancel">Fechar</button><button type="button" class="btn soft" id="saveContract">Salvar texto</button><button type="button" class="btn primary" id="printContract">Imprimir / salvar PDF</button></div>`);
  $('#cancel').onclick=closeModal;$('#saveContract').onclick=()=>{const t=$('#contractText').value;mutate(d=>{const bb=d.budgets.find(x=>x.id===id);if(bb)bb.contractText=t});closeModal()};$('#printContract').onclick=()=>{const t=$('#contractText').value,logo=new URL('assets/lang-logo.svg',location.href).href,w=window.open('','_blank');if(!w)return alert('Permita pop-ups para gerar o contrato.');const html=`<!doctype html><html><head><meta charset="utf-8"><title>Contrato - LANG Engenharia</title><style>body{font-family:Arial,sans-serif;padding:45px;color:#222;line-height:1.55}header{border-bottom:3px solid #ff5a00;margin-bottom:30px;padding-bottom:18px}img{max-width:220px}pre{white-space:pre-wrap;font-family:Arial,sans-serif;font-size:14px}</style></head><body><header><img src="${logo}"></header><pre>${esc(t)}</pre><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`;w.document.open();w.document.write(html);w.document.close()};
 }
-function projectModal(id=null){const p=id?state.projects.find(x=>x.id===id):null;modal(p?'Editar projeto':'Novo projeto',`<form id="projectForm"><div class="field"><label>Nome do projeto *</label><input id="pName" required value="${esc(p?.name||'')}"></div><div class="two"><div class="field"><label>Cliente *</label><select id="pClient" required><option value="">Selecione</option>${clientOptions(p?.clientId)}</select></div><div class="field"><label>Serviço</label><input id="pService" value="${esc(p?.service||'')}"></div></div><div class="two"><div class="field"><label>Endereço da obra</label><input id="pAddress" value="${esc(p?.address||'')}"></div><div class="field"><label>Responsável técnico</label><input id="pResponsible" value="${esc(p?.responsible||'')}"></div></div><div class="two"><div class="field"><label>Data de início</label><input id="pStart" type="date" value="${p?.startDate||''}"></div><div class="field"><label>Prazo</label><input id="pDeadline" type="date" value="${p?.deadline||''}"></div></div><div class="two"><div class="field"><label>Status</label><select id="pStatus">${['Planejamento','Em andamento','Aguardando cliente','Aguardando órgão','Pronto para concluir','Concluído'].map(x=>`<option ${p?.status===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label>Observações</label><input id="pNotes" value="${esc(p?.notes||'')}"></div></div><div class="modal-foot"><button type="button" class="btn soft" id="cancel">Cancelar</button><button class="btn primary">Salvar</button></div>${p?'<div class="danger-zone"><button type="button" class="btn danger" id="deleteProject">Excluir projeto</button><div class="smallprint">Também serão removidos lançamentos e tarefas vinculados ao projeto. O cliente e os demais projetos permanecem.</div></div>':''}</form>`);$('#cancel').onclick=closeModal;$('#projectForm').onsubmit=e=>{e.preventDefault();const obj={name:$('#pName').value.trim(),clientId:$('#pClient').value,service:$('#pService').value.trim(),address:$('#pAddress').value.trim(),responsible:$('#pResponsible').value.trim(),startDate:$('#pStart').value,deadline:$('#pDeadline').value,status:$('#pStatus').value,notes:$('#pNotes').value.trim()};if(!obj.name||!obj.clientId)return;closeModal();mutate(d=>{if(p){const pp=d.projects.find(x=>x.id===p.id);Object.assign(pp,obj);addHistory(pp,'Dados do projeto atualizados')}else{const pid=uid();d.projects.push({id:pid,archived:false,createdAt:new Date().toISOString(),stages:makeStages(pid,obj.service),documents:[],approvals:[],history:[{id:uid(),at:new Date().toISOString(),message:'Projeto criado'}],...obj})}})};if(p)$('#deleteProject').onclick=()=>{if(confirm('Excluir este projeto e seus vínculos?')){closeModal();currentProjectId=null;mutate(d=>{const src=d.projects.find(x=>x.id===p.id)?.sourceBudgetId;d.projects=d.projects.filter(x=>x.id!==p.id);d.finance=d.finance.filter(x=>x.projectId!==p.id);d.tasks=d.tasks.filter(x=>x.refId!==p.id&&x.projectId!==p.id);if(src)d.budgets=d.budgets.filter(x=>x.id!==src)})}}}
+function projectModal(id=null){const p=id?state.projects.find(x=>x.id===id):null;modal(p?'Editar projeto':'Novo projeto',`<form id="projectForm"><div class="field"><label>Nome do projeto *</label><input id="pName" required value="${esc(p?.name||'')}"></div><div class="two"><div class="field"><label>Cliente *</label><select id="pClient" required><option value="">Selecione</option>${clientOptions(p?.clientId)}</select></div><div class="field"><label>Serviço</label><input id="pService" value="${esc(p?.service||'')}"></div></div><div class="two"><div class="field"><label>Endereço da obra</label><input id="pAddress" value="${esc(p?.address||'')}"></div><div class="field"><label>Responsável técnico</label><input id="pResponsible" value="${esc(p?.responsible||'')}"></div></div><div class="two"><div class="field"><label>Município / UF</label><input id="pMunicipality" list="municipalityOptions" placeholder="Ex.: Guabiruba/SC" value="${esc(p?.municipality||'')}"><datalist id="municipalityOptions"><option value="Guabiruba/SC"><option value="Brusque/SC"></datalist></div><div class="field"><label>Órgão responsável</label><input id="pAgency" placeholder="Ex.: Prefeitura Municipal" value="${esc(p?.agency||'')}"></div></div><div class="field"><label>Portal de consulta do processo</label><input id="pPortal" type="url" placeholder="Preenchido automaticamente para Guabiruba" value="${esc(p?.portalUrl||'')}"></div><div class="two"><div class="field"><label>Data de início</label><input id="pStart" type="date" value="${p?.startDate||''}"></div><div class="field"><label>Prazo</label><input id="pDeadline" type="date" value="${p?.deadline||''}"></div></div><div class="two"><div class="field"><label>Status</label><select id="pStatus">${['Planejamento','Em andamento','Aguardando cliente','Aguardando órgão','Pronto para concluir','Concluído'].map(x=>`<option ${p?.status===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label>Observações</label><input id="pNotes" value="${esc(p?.notes||'')}"></div></div><div class="modal-foot"><button type="button" class="btn soft" id="cancel">Cancelar</button><button class="btn primary">Salvar</button></div>${p?'<div class="danger-zone"><button type="button" class="btn danger" id="deleteProject">Excluir projeto</button><div class="smallprint">Também serão removidos lançamentos e tarefas vinculados ao projeto. O cliente e os demais projetos permanecem.</div></div>':''}</form>`);$('#cancel').onclick=closeModal;const syncMunicipalityPreset=()=>{const m=$('#pMunicipality').value.trim();if(/guabiruba/i.test(m)){if(!$('#pAgency').value.trim())$('#pAgency').value=agencyForMunicipality(m);if(!$('#pPortal').value.trim())$('#pPortal').value=portalForMunicipality(m)}};$('#pMunicipality').addEventListener('change',syncMunicipalityPreset);$('#pMunicipality').addEventListener('blur',syncMunicipalityPreset);$('#projectForm').onsubmit=e=>{e.preventDefault();const obj={name:$('#pName').value.trim(),clientId:$('#pClient').value,service:$('#pService').value.trim(),address:$('#pAddress').value.trim(),responsible:$('#pResponsible').value.trim(),municipality:$('#pMunicipality').value.trim(),agency:$('#pAgency').value.trim(),portalUrl:$('#pPortal').value.trim()||portalForMunicipality($('#pMunicipality').value.trim()),startDate:$('#pStart').value,deadline:$('#pDeadline').value,status:$('#pStatus').value,notes:$('#pNotes').value.trim()};if(!obj.name||!obj.clientId)return;closeModal();mutate(d=>{if(p){const pp=d.projects.find(x=>x.id===p.id);Object.assign(pp,obj);addHistory(pp,'Dados do projeto atualizados')}else{const pid=uid();d.projects.push({id:pid,archived:false,createdAt:new Date().toISOString(),stages:makeStages(pid,obj.service),documents:[],approvals:[],history:[{id:uid(),at:new Date().toISOString(),message:'Projeto criado'}],...obj})}})};if(p)$('#deleteProject').onclick=()=>{if(confirm('Excluir este projeto e seus vínculos?')){closeModal();currentProjectId=null;mutate(d=>{const src=d.projects.find(x=>x.id===p.id)?.sourceBudgetId;d.projects=d.projects.filter(x=>x.id!==p.id);d.finance=d.finance.filter(x=>x.projectId!==p.id);d.tasks=d.tasks.filter(x=>x.refId!==p.id&&x.projectId!==p.id);if(src)d.budgets=d.budgets.filter(x=>x.id!==src)})}}}
 
 function nextActionModal(projectId){const p=state.projects.find(x=>x.id===projectId);modal('Próxima ação',`<form id="nextActionForm"><div class="field"><label>Próximo passo</label><input id="naText" value="${esc(p?.nextAction||'')}"></div><div class="field"><label>Data</label><input id="naDate" type="date" value="${p?.nextActionDate||''}"></div><div class="modal-foot"><button type="button" class="btn soft" id="cancel">Cancelar</button><button class="btn primary">Salvar</button></div></form>`);$('#cancel').onclick=closeModal;$('#nextActionForm').onsubmit=e=>{e.preventDefault();const text=$('#naText').value.trim(),date=$('#naDate').value;closeModal();mutate(d=>{const pp=d.projects.find(x=>x.id===projectId);pp.nextAction=text;pp.nextActionDate=date;addHistory(pp,'Próxima ação atualizada'+(text?': '+text:''))})}}
 function stagesModal(projectId){const p=state.projects.find(x=>x.id===projectId);modal('Gerenciar etapas',`<form id="stagesForm"><div id="stageEditList">${p.stages.map((s,i)=>`<div class="two" style="align-items:end"><div class="field"><label>Etapa ${i+1}</label><input class="stage-title-edit" data-id="${s.id}" value="${esc(s.title)}"></div><div class="field"><label>Prazo</label><input class="stage-due-edit" data-id="${s.id}" type="date" value="${s.due||''}"></div></div>`).join('')}</div><button type="button" class="btn soft" id="addStageRow">+ Adicionar etapa</button><div class="modal-foot"><button type="button" class="btn soft" id="cancel">Cancelar</button><button class="btn primary">Salvar etapas</button></div></form>`);$('#cancel').onclick=closeModal;$('#addStageRow').onclick=()=>{const wrap=$('#stageEditList'),id='new-'+uid();wrap.insertAdjacentHTML('beforeend',`<div class="two" style="align-items:end"><div class="field"><label>Nova etapa</label><input class="stage-title-edit" data-id="${id}"></div><div class="field"><label>Prazo</label><input class="stage-due-edit" data-id="${id}" type="date"></div></div>`)};$('#stagesForm').onsubmit=e=>{e.preventDefault();const titles=[...document.querySelectorAll('.stage-title-edit')],dues=Object.fromEntries([...document.querySelectorAll('.stage-due-edit')].map(x=>[x.dataset.id,x.value]));const rows=titles.map((x,i)=>({oldId:x.dataset.id,title:x.value.trim(),due:dues[x.dataset.id]||''})).filter(x=>x.title);closeModal();mutate(d=>{const pp=d.projects.find(x=>x.id===projectId);const old=Object.fromEntries(pp.stages.map(x=>[x.id,x]));pp.stages=rows.map((r,i)=>({id:r.oldId.startsWith('new-')?projectId+'-s-'+uid():r.oldId,title:r.title,due:r.due,done:old[r.oldId]?.done||false}));addHistory(pp,'Etapas do projeto atualizadas')})}}
@@ -721,12 +721,12 @@ function normalize(s){
     p.history=Array.isArray(p.history)?p.history:[];
     if(p.recoveryPending){p.stages=Array.isArray(p.stages)?p.stages:[]}
     else if(!Array.isArray(p.stages)||!p.stages.length)p.stages=makeStages(p.id,p.service);
-    p.address=p.address||'';p.responsible=p.responsible||'';p.startDate=p.startDate||'';p.deadline=p.deadline||'';p.nextAction=p.nextAction||'';p.nextActionDate=p.nextActionDate||'';p.enterprise=p.enterprise||'';p.scope=p.scope||'';p.conditions=p.conditions||'';
+    p.address=p.address||'';p.responsible=p.responsible||'';p.startDate=p.startDate||'';p.deadline=p.deadline||'';p.nextAction=p.nextAction||'';p.nextActionDate=p.nextActionDate||'';p.enterprise=p.enterprise||'';p.scope=p.scope||'';p.conditions=p.conditions||'';p.municipality=p.municipality||'';p.agency=p.agency||'';p.portalUrl=p.portalUrl||portalForMunicipality(p.municipality);
   });
   s.budgets.forEach(b=>{
     b.items=Array.isArray(b.items)?b.items:[];b.installments=Array.isArray(b.installments)?b.installments:[];b.scope=b.scope||'';b.conditions=b.conditions||'';b.enterprise=b.enterprise||'';b.discount=Number(b.discount||0);b.grossValue=Number(b.grossValue||b.value||0);b.value=Number(b.value||Math.max(0,b.grossValue-b.discount));b.validUntil=b.validUntil||'';b.paymentPlan=b.paymentPlan||'';b.notes=b.notes||'';b.status=b.status||'Rascunho';
   });
-  s.processes.forEach(p=>{p.projectId=p.projectId||'';p.responsible=p.responsible||'';p.notes=p.notes||'';p.status=p.status||'Em aberto';p.due=p.due||''});
+  s.processes.forEach(p=>{p.projectId=p.projectId||'';p.responsible=p.responsible||'';p.notes=p.notes||'';p.status=p.status||'Em aberto';p.due=p.due||'';p.municipality=p.municipality||'';p.portalUrl=p.portalUrl||portalForMunicipality(p.municipality);p.lastCheckedAt=p.lastCheckedAt||'';p.lastStatusRaw=p.lastStatusRaw||''});
   s.tasks.forEach(t=>{t.projectId=t.projectId||'';t.notes=t.notes||'';t.status=t.status||'Pendente';t.due=t.due||''});
   s.finance.forEach(f=>{f.value=Number(f.value||0);f.date=f.date||'';f.notes=f.notes||'';f.paymentMethod=f.paymentMethod||'';f.parentReceivableId=f.parentReceivableId||'';f.reimbursed=!!f.reimbursed;f.canceled=!!f.canceled;f.createdAt=f.createdAt||''});
   return s;
@@ -825,7 +825,7 @@ function renderProjectDetail(id){
   const p=state.projects.find(x=>x.id===id);if(!p){currentProjectId=null;return render()}
   const pc=progress(p),sum=projectFinanceSummary(p.id),fin=state.finance.filter(x=>x.projectId===p.id),tabs=[['overview','Visão geral'],['stages','Etapas'],['documents','Documentos'],['approvals','Aprovações'],['finance','Financeiro'],['tasks','Tarefas'],['history','Histórico']];let body='';
   const recovery=p.recoveryPending?'<div class="card" style="margin-bottom:14px;border-left:4px solid var(--warn)"><b>Projeto recuperado da lista antiga</b><div class="meta">Alguns dados internos ainda não foram recuperados. O app não preencherá etapas, valores ou documentos por estimativa.</div></div>':'';
-  if(projectTab==='overview')body=recovery+'<div class="grid-2"><div class="card"><h3>Dados do projeto</h3><div class="detail-grid"><div class="detail-item"><span>Cliente</span><b>'+esc(p.clientId?clientName(p.clientId):'Não informado')+'</b></div><div class="detail-item"><span>Serviço</span><b>'+esc(p.service||'Não informado')+'</b></div><div class="detail-item"><span>Responsável técnico</span><b>'+esc(p.responsible||'Não informado')+'</b></div><div class="detail-item"><span>Endereço da obra</span><b>'+esc(p.address||'Não informado')+'</b></div><div class="detail-item"><span>Início</span><b>'+(p.startDate?fmtDate(p.startDate):'Não informado')+'</b></div><div class="detail-item"><span>Prazo</span><b>'+(p.deadline?fmtDate(p.deadline):'Não informado')+'</b></div></div>'+(p.notes?'<div class="meta" style="margin-top:12px">'+esc(p.notes)+'</div>':'')+'</div><div><div class="card"><h3>Próxima ação</h3><div class="meta"><b>'+esc(p.nextAction||'Defina o próximo passo deste projeto')+'</b><br>'+(p.nextActionDate?fmtDate(p.nextActionDate):'Sem data definida')+'</div><button class="btn soft sm" style="margin-top:12px" id="editNextAction">Atualizar</button></div><div style="height:12px"></div><div class="card"><h3>Resumo financeiro</h3><div class="finance-client"><span>Valor fechado</span><b>'+brl(sum.contracted)+'</b></div><div class="finance-client"><span>Valor recebido</span><b class="money good">'+brl(sum.received)+'</b></div><div class="finance-client"><span>Falta receber</span><b>'+brl(sum.receivable)+'</b></div><div class="finance-client"><span>Reembolsos a receber</span><b>'+brl(sum.reimb)+'</b></div></div></div></div>';
+  if(projectTab==='overview')body=recovery+'<div class="grid-2"><div class="card"><h3>Dados do projeto</h3><div class="detail-grid"><div class="detail-item"><span>Cliente</span><b>'+esc(p.clientId?clientName(p.clientId):'Não informado')+'</b></div><div class="detail-item"><span>Serviço</span><b>'+esc(p.service||'Não informado')+'</b></div><div class="detail-item"><span>Responsável técnico</span><b>'+esc(p.responsible||'Não informado')+'</b></div><div class="detail-item"><span>Endereço da obra</span><b>'+esc(p.address||'Não informado')+'</b></div><div class="detail-item"><span>Município / UF</span><b>'+esc(p.municipality||'Não informado')+'</b></div><div class="detail-item"><span>Órgão responsável</span><b>'+esc(p.agency||'Não informado')+'</b></div><div class="detail-item"><span>Portal de consulta</span><b>'+(p.portalUrl?'<a href="'+esc(p.portalUrl)+'" target="_blank" rel="noopener">Abrir portal</a>':'Não informado')+'</b></div><div class="detail-item"><span>Início</span><b>'+(p.startDate?fmtDate(p.startDate):'Não informado')+'</b></div><div class="detail-item"><span>Prazo</span><b>'+(p.deadline?fmtDate(p.deadline):'Não informado')+'</b></div></div>'+(p.notes?'<div class="meta" style="margin-top:12px">'+esc(p.notes)+'</div>':'')+'</div><div><div class="card"><h3>Próxima ação</h3><div class="meta"><b>'+esc(p.nextAction||'Defina o próximo passo deste projeto')+'</b><br>'+(p.nextActionDate?fmtDate(p.nextActionDate):'Sem data definida')+'</div><button class="btn soft sm" style="margin-top:12px" id="editNextAction">Atualizar</button></div><div style="height:12px"></div><div class="card"><h3>Resumo financeiro</h3><div class="finance-client"><span>Valor fechado</span><b>'+brl(sum.contracted)+'</b></div><div class="finance-client"><span>Valor recebido</span><b class="money good">'+brl(sum.received)+'</b></div><div class="finance-client"><span>Falta receber</span><b>'+brl(sum.receivable)+'</b></div><div class="finance-client"><span>Reembolsos a receber</span><b>'+brl(sum.reimb)+'</b></div></div></div></div>';
   if(projectTab==='stages')body=recovery+'<div class="card"><div class="row-between"><h3>Etapas do projeto</h3><button class="btn soft sm" id="editStages">Gerenciar etapas</button></div>'+(p.stages.length?p.stages.map(s=>'<label class="stage"><input type="checkbox" class="stage-check" data-stage="'+s.id+'" '+(s.done?'checked':'')+'><div class="stage-main"><b>'+esc(s.title)+'</b><span>'+(s.due?'Prazo '+fmtDate(s.due):'Sem prazo definido')+'</span></div></label>').join(''):'<div class="meta">As etapas deste projeto ainda não foram recuperadas.</div>')+'</div>';
   if(projectTab==='documents')body='<div class="card"><div class="row-between"><h3>Documentos</h3><button class="btn primary sm" id="newDocument">+ Documento</button></div>'+(p.documents.length?p.documents.map(d=>'<div class="doc-row"><div><b>'+esc(d.title)+'</b><div class="meta">'+esc(d.notes||'')+(d.date?' · '+fmtDate(d.date):'')+'</div></div><button class="btn danger sm del-doc" data-id="'+d.id+'">Excluir</button></div>').join(''):'<div class="meta">Nenhum documento cadastrado ou recuperado.</div>')+'</div>';
   if(projectTab==='approvals')body='<div class="card"><div class="row-between"><h3>Aprovações e protocolos</h3><button class="btn primary sm" id="newApproval">+ Aprovação</button></div>'+(p.approvals.length?p.approvals.map(a=>'<div class="approval-row"><div><b>'+esc(a.agency||'Órgão')+'</b><div class="meta">'+(a.protocol?'Protocolo '+esc(a.protocol)+' · ':'')+esc(a.status||'Em aberto')+(a.due?' · prazo '+fmtDate(a.due):'')+(a.notes?'<br>'+esc(a.notes):'')+'</div></div><button class="btn danger sm del-appr" data-id="'+a.id+'">Excluir</button></div>').join(''):'<div class="meta">Nenhuma aprovação ou protocolo cadastrado ou recuperado.</div>')+'</div>';
@@ -1001,6 +1001,182 @@ function backupModal(){
   $('#exportBackup').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='LANG_GESTAO_BACKUP_'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
   $('#importBackup').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=normalize(JSON.parse(await file.text()));if(!confirm('Importar este backup e substituir os dados atuais do LANG Engenharia?'))return;data.revision=Number(data.revision||0)+1;data.updatedAt=new Date().toISOString();await putBlob(await encryptData(data,currentPassword));state=data;closeModal();render();toast('Backup importado')}catch(err){alert('Backup inválido: '+(err.message||err))}};
   $('#restorePrev').onclick=async()=>{if(!confirm('Restaurar a versão imediatamente anterior do banco?'))return;try{const r=await fetch(API+'?id='+encodeURIComponent(DB_ID)+'&version=prev',{cache:'no-store'}),j=await r.json();if(!r.ok)throw new Error(j.error||'Backup anterior não encontrado');const data=normalize(await decryptData(j,currentPassword));data.revision=Number(data.revision||0)+1;data.updatedAt=new Date().toISOString();await putBlob(await encryptData(data,currentPassword));state=data;closeModal();render();toast('Versão anterior restaurada')}catch(err){alert(err.message||'Não foi possível restaurar')}};
+}
+
+
+/* AGENTE_LANG_GUABIRUBA_V1
+   Primeira camada operacional: município/órgão/portal, fila de protocolos e preparação para monitoramento. */
+function portalForMunicipality(m=''){
+  return /guabiruba/i.test(String(m||''))?'https://guabiruba.atende.net/autoatendimento/servicos/consulta-de-processo-digital':'';
+}
+function agencyForMunicipality(m=''){
+  return /guabiruba/i.test(String(m||''))?'Prefeitura Municipal de Guabiruba':'';
+}
+function ensureAgentLinks(s){
+  if(!s)return false;
+  let changed=false;
+  s.projects=Array.isArray(s.projects)?s.projects:[];
+  s.processes=Array.isArray(s.processes)?s.processes:[];
+  s.projects.forEach(p=>{
+    if(p.municipality==null){p.municipality='';changed=true}
+    if(p.agency==null){p.agency='';changed=true}
+    if(p.portalUrl==null){p.portalUrl='';changed=true}
+    const preset=portalForMunicipality(p.municipality);
+    if(preset&&!p.portalUrl){p.portalUrl=preset;changed=true}
+    if(/guabiruba/i.test(p.municipality)&&!p.agency){p.agency=agencyForMunicipality(p.municipality);changed=true}
+    p.approvals=Array.isArray(p.approvals)?p.approvals:[];
+    p.approvals.forEach(a=>{
+      if(!a||(!a.agency&&!a.protocol))return;
+      let proc=s.processes.find(x=>x.sourceApprovalId===a.id);
+      if(!proc&&a.protocol)proc=s.processes.find(x=>x.projectId===p.id&&x.protocol===a.protocol);
+      if(!proc){
+        s.processes.push({
+          id:'proc-appr-'+(a.id||uid()),sourceApprovalId:a.id||'',title:'Aprovação / protocolo',
+          projectId:p.id,clientId:p.clientId||'',municipality:p.municipality||'',
+          agency:a.agency||p.agency||'',protocol:a.protocol||'',responsible:p.responsible||'',
+          status:a.status||'Em aberto',due:a.due||'',notes:a.notes||'',
+          portalUrl:p.portalUrl||portalForMunicipality(p.municipality),lastCheckedAt:'',lastStatusRaw:''
+        });
+        changed=true;
+      }else{
+        const fill=(k,v)=>{if(!proc[k]&&v){proc[k]=v;changed=true}};
+        fill('projectId',p.id);fill('clientId',p.clientId);fill('municipality',p.municipality);
+        fill('agency',a.agency||p.agency);fill('protocol',a.protocol);fill('due',a.due);
+        fill('portalUrl',p.portalUrl||portalForMunicipality(p.municipality));
+      }
+    });
+  });
+  s.processes.forEach(x=>{
+    const p=s.projects.find(p=>p.id===x.projectId);
+    if(x.municipality==null){x.municipality='';changed=true}
+    if(x.portalUrl==null){x.portalUrl='';changed=true}
+    if(x.lastCheckedAt==null){x.lastCheckedAt='';changed=true}
+    if(x.lastStatusRaw==null){x.lastStatusRaw='';changed=true}
+    if(p){
+      if(!x.clientId&&p.clientId){x.clientId=p.clientId;changed=true}
+      if(!x.municipality&&p.municipality){x.municipality=p.municipality;changed=true}
+      if(!x.agency&&p.agency){x.agency=p.agency;changed=true}
+      if(!x.portalUrl&&(p.portalUrl||portalForMunicipality(p.municipality))){x.portalUrl=p.portalUrl||portalForMunicipality(p.municipality);changed=true}
+    }
+  });
+  return changed;
+}
+
+function processModal(id=null,prefillProjectId=''){
+  const p=id?state.processes.find(x=>x.id===id):null;
+  const selectedProjectId=p?.projectId||prefillProjectId||'';
+  const selectedProject=state.projects.find(x=>x.id===selectedProjectId);
+  const initMunicipality=p?.municipality||selectedProject?.municipality||'';
+  const initAgency=p?.agency||selectedProject?.agency||agencyForMunicipality(initMunicipality);
+  const initPortal=p?.portalUrl||selectedProject?.portalUrl||portalForMunicipality(initMunicipality);
+  const initClient=p?.clientId||selectedProject?.clientId||'';
+  modal(p?'Editar processo':'Novo processo',
+    '<form id="processForm">'+
+    '<div class="field"><label>Nome / assunto *</label><input id="prTitle" required value="'+esc(p?.title||(selectedProject?'Acompanhamento - '+selectedProject.name:''))+'"></div>'+
+    '<div class="two"><div class="field"><label>Projeto</label><select id="prProject"><option value="">Sem projeto</option>'+state.projects.map(x=>'<option value="'+x.id+'" '+(selectedProjectId===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></div><div class="field"><label>Cliente *</label><select id="prClient" required><option value="">Selecione</option>'+clientOptions(initClient)+'</select></div></div>'+
+    '<div class="two"><div class="field"><label>Município / UF</label><input id="prMunicipality" list="processMunicipalityOptions" placeholder="Ex.: Guabiruba/SC" value="'+esc(initMunicipality)+'"><datalist id="processMunicipalityOptions"><option value="Guabiruba/SC"><option value="Brusque/SC"></datalist></div><div class="field"><label>Órgão</label><input id="prAgency" value="'+esc(initAgency)+'"></div></div>'+
+    '<div class="field"><label>Portal de consulta</label><input id="prPortal" type="url" value="'+esc(initPortal)+'"></div>'+
+    '<div class="two"><div class="field"><label>Responsável</label><input id="prResponsible" value="'+esc(p?.responsible||selectedProject?.responsible||'')+'"></div><div class="field"><label>Protocolo</label><input id="prProtocol" placeholder="Informe se o portal exigir" value="'+esc(p?.protocol||'')+'"></div></div>'+
+    '<div class="two"><div class="field"><label>Status</label><select id="prStatus">'+['Em aberto','Protocolado','Em análise','Exigência','Aguardando cliente','Aprovado','Concluído','Arquivado'].map(x=>'<option '+(p?.status===x?'selected':'')+'>'+x+'</option>').join('')+'</select></div><div class="field"><label>Próximo prazo</label><input id="prDue" type="date" value="'+(p?.due||'')+'"></div></div>'+
+    '<div class="field"><label>Observações</label><textarea id="prNotes" rows="3">'+esc(p?.notes||'')+'</textarea></div>'+
+    '<div class="modal-foot"><button type="button" class="btn soft" id="cancel">Cancelar</button><button class="btn primary">Salvar</button></div>'+
+    (p?'<div class="danger-zone"><button type="button" class="btn danger" id="deleteProcess">Excluir processo</button></div>':'')+'</form>');
+  $('#cancel').onclick=closeModal;
+  const syncFromProject=()=>{
+    const pr=state.projects.find(x=>x.id===$('#prProject').value);
+    if(!pr)return;
+    if(pr.clientId)$('#prClient').value=pr.clientId;
+    $('#prMunicipality').value=pr.municipality||'';
+    $('#prAgency').value=pr.agency||agencyForMunicipality(pr.municipality);
+    $('#prPortal').value=pr.portalUrl||portalForMunicipality(pr.municipality);
+    if(!$('#prResponsible').value.trim())$('#prResponsible').value=pr.responsible||'';
+  };
+  const syncMunicipality=()=>{
+    const m=$('#prMunicipality').value.trim();
+    if(/guabiruba/i.test(m)){
+      if(!$('#prAgency').value.trim())$('#prAgency').value=agencyForMunicipality(m);
+      if(!$('#prPortal').value.trim())$('#prPortal').value=portalForMunicipality(m);
+    }
+  };
+  $('#prProject').onchange=syncFromProject;
+  $('#prMunicipality').addEventListener('change',syncMunicipality);
+  $('#prMunicipality').addEventListener('blur',syncMunicipality);
+  $('#processForm').onsubmit=e=>{
+    e.preventDefault();
+    const obj={
+      title:$('#prTitle').value.trim(),projectId:$('#prProject').value,clientId:$('#prClient').value,
+      municipality:$('#prMunicipality').value.trim(),agency:$('#prAgency').value.trim(),
+      portalUrl:$('#prPortal').value.trim()||portalForMunicipality($('#prMunicipality').value.trim()),
+      responsible:$('#prResponsible').value.trim(),protocol:$('#prProtocol').value.trim(),
+      status:$('#prStatus').value,due:$('#prDue').value,notes:$('#prNotes').value.trim()
+    };
+    if(!obj.title||!obj.clientId)return;
+    closeModal();
+    mutate(d=>{
+      if(p)Object.assign(d.processes.find(x=>x.id===p.id),obj);
+      else d.processes.push({id:uid(),lastCheckedAt:'',lastStatusRaw:'',...obj});
+      if(obj.projectId){
+        const pp=d.projects.find(x=>x.id===obj.projectId);
+        if(pp){
+          if(!pp.municipality&&obj.municipality)pp.municipality=obj.municipality;
+          if(!pp.agency&&obj.agency)pp.agency=obj.agency;
+          if(!pp.portalUrl&&obj.portalUrl)pp.portalUrl=obj.portalUrl;
+          addHistory(pp,(p?'Processo atualizado: ':'Processo criado: ')+obj.title);
+        }
+      }
+      logAudit(d,(p?'Processo atualizado: ':'Processo criado: ')+obj.title);
+    });
+  };
+  if(p)$('#deleteProcess').onclick=()=>{if(confirm('Excluir este processo?')){closeModal();mutate(d=>{d.processes=d.processes.filter(x=>x.id!==p.id);logAudit(d,'Processo excluído: '+p.title)})}};
+}
+
+function renderProcesses(){
+  const arr=state.processes.slice().sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
+  $('#main').innerHTML=pageHead('Processos','Protocolos, órgãos, município e andamento.','<button class="btn primary" id="newProcess">+ Novo processo</button>')+
+    (arr.length?'<div class="table-wrap"><table><thead><tr><th>Processo</th><th>Projeto</th><th>Município</th><th>Órgão</th><th>Protocolo</th><th>Status</th><th>Prazo</th><th></th></tr></thead><tbody>'+
+    arr.map(x=>{
+      const pr=state.projects.find(p=>p.id===x.projectId),municipality=x.municipality||pr?.municipality||'',portal=x.portalUrl||pr?.portalUrl||portalForMunicipality(municipality);
+      return '<tr><td data-label="Processo"><b>'+esc(x.title)+'</b><div class="meta">'+esc(clientName(x.clientId))+'</div></td><td data-label="Projeto">'+esc(pr?.name||'—')+'</td><td data-label="Município">'+esc(municipality||'—')+'</td><td data-label="Órgão">'+esc(x.agency||pr?.agency||'—')+'</td><td data-label="Protocolo">'+esc(x.protocol||'Não informado')+'</td><td data-label="Status"><span class="pill '+(x.status==='Concluído'||x.status==='Aprovado'?'good':x.status==='Exigência'?'warn':'')+'">'+esc(x.status)+'</span></td><td data-label="Prazo">'+fmtDate(x.due)+'</td><td data-label="Ações"><div class="table-actions">'+(portal?'<a class="btn soft sm" href="'+esc(portal)+'" target="_blank" rel="noopener">Abrir portal</a>':'')+'<button class="btn soft sm edit-process" data-id="'+x.id+'">Editar</button></div></td></tr>';
+    }).join('')+'</tbody></table></div>':'<div class="empty">Nenhum processo cadastrado.</div>');
+  $('#newProcess').onclick=()=>processModal();
+  document.querySelectorAll('.edit-process').forEach(b=>b.onclick=()=>processModal(b.dataset.id));
+}
+
+function renderAgent(){
+  ensureAgentLinks(state);
+  const active=state.projects.filter(p=>!p.archived);
+  const gua=active.filter(p=>/guabiruba/i.test(p.municipality||''));
+  const unclassified=active.filter(p=>!p.municipality);
+  const gp=state.processes.filter(x=>{
+    const p=state.projects.find(p=>p.id===x.projectId);
+    return /guabiruba/i.test(x.municipality||p?.municipality||'')&&!['Concluído','Arquivado'].includes(x.status);
+  });
+  const ready=gp.filter(x=>x.protocol);
+  const missingProtocol=gp.filter(x=>!x.protocol);
+  const projectsNoProcess=gua.filter(p=>!state.processes.some(x=>x.projectId===p.id&&!['Concluído','Arquivado'].includes(x.status)));
+  const needsProtocolCount=missingProtocol.length+projectsNoProcess.length;
+  const exig=gp.filter(x=>x.status==='Exigência');
+  const projectLine=p=>{
+    const hint=/guabiruba/i.test(p.address||'')?'<span class="pill warn">endereço sugere Guabiruba</span>':'';
+    return '<div class="list-item"><div style="flex:1"><b>'+esc(p.name)+'</b><div class="sub">'+esc(p.clientId?clientName(p.clientId):'Sem cliente')+(p.address?' · '+esc(p.address):'')+'</div>'+hint+'</div><div class="table-actions"><button class="btn primary sm set-guabiruba" data-id="'+p.id+'">Definir Guabiruba</button><button class="btn soft sm open-agent-project" data-id="'+p.id+'">Abrir</button></div></div>';
+  };
+  const processLine=x=>{
+    const p=state.projects.find(p=>p.id===x.projectId),portal=x.portalUrl||p?.portalUrl||portalForMunicipality(x.municipality||p?.municipality);
+    return '<div class="list-item"><div style="flex:1"><b>'+esc(p?.name||x.title)+'</b><div class="sub">'+esc(x.agency||p?.agency||'Prefeitura Municipal de Guabiruba')+' · '+(x.protocol?'Protocolo '+esc(x.protocol):'PROTOCOLO NECESSÁRIO')+' · '+esc(x.status||'Em aberto')+'</div></div><div class="table-actions">'+(portal?'<a class="btn soft sm" href="'+esc(portal)+'" target="_blank" rel="noopener">Portal</a>':'')+'<button class="btn '+(x.protocol?'soft':'primary')+' sm edit-agent-process" data-id="'+x.id+'">'+(x.protocol?'Editar':'Informar protocolo')+'</button></div></div>';
+  };
+  const noProcessLine=p=>{
+    return '<div class="list-item"><div style="flex:1"><b>'+esc(p.name)+'</b><div class="sub">Guabiruba/SC · ainda sem processo/protocolo vinculado</div></div><button class="btn primary sm create-agent-process" data-id="'+p.id+'">Cadastrar protocolo</button></div>';
+  };
+  $('#main').innerHTML=pageHead('Agente LANG','Fila operacional de protocolos e órgãos. Guabiruba é o primeiro município conectado.','<a class="btn soft" href="'+portalForMunicipality('Guabiruba/SC')+'" target="_blank" rel="noopener">Portal de Guabiruba</a>')+
+    '<div class="metrics"><div class="metric"><span>Projetos Guabiruba</span><strong>'+gua.length+'</strong><em>classificados no app</em></div><div class="metric"><span>Prontos para consulta</span><strong>'+ready.length+'</strong><em>processos com protocolo</em></div><div class="metric"><span>Pedem protocolo</span><strong>'+needsProtocolCount+'</strong><em>informação necessária</em></div><div class="metric"><span>Sem município</span><strong>'+unclassified.length+'</strong><em>precisam ser classificados</em></div></div>'+
+    (exig.length?'<div class="warnbox"><b>'+exig.length+' processo(s) com exigência</b>Há registros marcados como exigência e que merecem prioridade na conferência.</div>':'')+
+    '<div class="grid-2"><section><div class="card"><h3>1 · Classificar projetos existentes</h3><div class="meta" style="margin-bottom:12px">Nada será presumido automaticamente. Marque como Guabiruba somente os projetos corretos.</div><div class="list">'+(unclassified.length?unclassified.map(projectLine).join(''):'<div class="empty">Todos os projetos ativos já possuem município informado.</div>')+'</div></div></section>'+
+    '<section><div class="card"><h3>2 · Protocolos de Guabiruba</h3><div class="meta" style="margin-bottom:12px">Quando houver número de protocolo, o processo fica pronto para a etapa de consulta. Sem número, o agente sinaliza exatamente o que precisa ser informado.</div><div class="list">'+(projectsNoProcess.map(noProcessLine).join('')+gp.map(processLine).join('')||'<div class="empty">Nenhum projeto de Guabiruba classificado ainda.</div>')+'</div></div></section></div>'+
+    '<div class="card" style="margin-top:14px"><h3>Conexão com a Prefeitura de Guabiruba</h3><div class="meta">Portal oficial identificado: Consulta de Processo Digital do Atende.Net. A consulta automatizada será ativada na próxima etapa. O portal apresenta uma barreira de segurança/CAPTCHA em determinadas tentativas; quando isso ocorrer, o Agente LANG deverá pedir uma confirmação manual em vez de inventar um andamento.</div></div>';
+  document.querySelectorAll('.set-guabiruba').forEach(b=>b.onclick=()=>mutate(d=>{const p=d.projects.find(x=>x.id===b.dataset.id);if(!p)return;p.municipality='Guabiruba/SC';p.agency=p.agency||agencyForMunicipality(p.municipality);p.portalUrl=p.portalUrl||portalForMunicipality(p.municipality);addHistory(p,'Município definido: Guabiruba/SC');logAudit(d,'Agente LANG: projeto '+p.name+' definido como Guabiruba/SC')}));
+  document.querySelectorAll('.open-agent-project').forEach(b=>b.onclick=()=>{currentProjectId=b.dataset.id;currentSection='projects';projectTab='overview';render()});
+  document.querySelectorAll('.edit-agent-process').forEach(b=>b.onclick=()=>processModal(b.dataset.id));
+  document.querySelectorAll('.create-agent-process').forEach(b=>b.onclick=()=>processModal(null,b.dataset.id));
 }
 
 (function installAuditControls(){
