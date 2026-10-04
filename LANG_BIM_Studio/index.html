@@ -1,0 +1,510 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LANG BIM Studio</title><style>:root{--bg:#f4f2ed;--paper:#fff;--ink:#1b1e1c;--muted:#737973;--line:#dddcd5;--dark:#17221c;--accent:#315a43;--soft:#e6ede7;--danger:#a43e36;--warning:#9a6812}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}button,input,select{font:inherit}button{cursor:pointer}header{height:82px;background:var(--paper);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px}h1,h2,h3,p{margin-top:0}h1{font-size:22px;margin-bottom:0}h2{font-size:30px;letter-spacing:-.03em;margin-bottom:8px}.eyebrow{font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--muted)}.header-actions{display:flex;gap:10px;align-items:center}.pill{border:1px solid var(--line);border-radius:99px;padding:7px 12px;background:var(--soft);font-size:12px}.app-shell{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 82px)}nav{background:#202924;padding:18px 12px;display:flex;flex-direction:column;gap:6px}nav button{border:0;background:transparent;color:#b9c1bb;text-align:left;padding:12px;border-radius:8px}nav button b{display:inline-block;width:30px;color:#657268}nav button.active{background:#334239;color:white}nav button.active b{color:#aebdb2}.nav-bottom{margin-top:auto;display:grid;gap:7px}.primary{background:var(--accent)!important;color:white!important;border:1px solid var(--accent)!important;border-radius:8px;padding:10px 14px;text-align:center!important}.ghost{background:transparent;border:1px solid var(--line);border-radius:8px;padding:9px 12px}.danger{color:var(--danger)!important;border-color:#dfb9b5!important}main{min-width:0}.panel{padding:34px;max-width:1500px;margin:auto}.panel-title{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}.panel-title p{color:var(--muted);max-width:700px}.form-grid{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}.span2{grid-column:span 2}.span4{grid-column:1/-1}label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:700;color:#4e554f}input,select{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink)}.section-label{border-top:1px solid var(--line);padding-top:20px;margin-top:8px;font-size:11px;font-weight:800;letter-spacing:.09em}.form-actions{display:flex;gap:16px;align-items:center}.big{padding:13px 18px!important}.muted{color:var(--muted);font-weight:400;font-size:12px}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px}.canvas-wrap,.properties,.review-card,pre{background:var(--paper);border:1px solid var(--line);border-radius:12px}.canvas-wrap{min-height:720px;overflow:auto}.toolbar{height:58px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;padding:10px 14px}.toolbar select{width:190px}.properties{padding:18px;min-height:720px}.properties h3{margin:5px 0 18px}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.properties label{margin-bottom:10px}.properties button{width:100%;margin-top:6px}.mini-metrics{border-top:1px solid var(--line);margin-top:22px;padding-top:14px;display:grid;gap:10px}.mini-metrics div{display:flex;justify-content:space-between;font-size:12px}.mini-metrics span{color:var(--muted)}#editor{display:block;min-width:650px;width:100%;height:650px;background:#fafaf8}.site-rect{fill:white;stroke:#25352c;stroke-width:2}.envelope-rect{fill:#e9efe9;stroke:#7b9481;stroke-width:1.5;stroke-dasharray:5 4}.grid-lines line{stroke:#ecebe6;stroke-width:.6}.room rect{fill:#dbe6dc;stroke:#315a43;stroke-width:1.8}.room text{font-size:11px;fill:#17221c;text-anchor:middle;dominant-baseline:middle;pointer-events:none}.room:hover rect{fill:#ceddce}.room.selected rect{stroke:#15271c;stroke-width:3;fill:#bfd2c1}.review-card{padding:22px}.review-head{display:flex;justify-content:space-between;padding-bottom:15px;border-bottom:1px solid var(--line)}.review-card li{margin:10px 0;line-height:1.45}.review-card li.error b{color:var(--danger)}.review-card li.warning b{color:var(--warning)}.success{color:var(--accent);font-weight:700}.empty{color:var(--muted)}pre{padding:20px;overflow:auto;max-height:72vh;font-size:12px;line-height:1.5}@media(max-width:900px){.app-shell{grid-template-columns:1fr}nav{flex-direction:row;overflow:auto;position:sticky;top:0;z-index:2}.nav-bottom{margin:0 0 0 auto;display:flex}.form-grid{grid-template-columns:1fr 1fr}.span4{grid-column:1/-1}.workspace{grid-template-columns:1fr}.properties{min-height:auto}.panel{padding:18px}}
+</style></head><body>
+<header><div><span class="eyebrow">LANG BIM STUDIO · G1</span><h1 id="project-title">Novo projeto</h1></div><div class="header-actions"><span id="status-pill" class="pill">rascunho</span><button id="export-json" class="ghost">Exportar .LANGBIM</button></div></header>
+<div class="app-shell">
+<nav><button data-tab="briefing" class="active"><b>01</b> Briefing</button><button data-tab="sketch"><b>02</b> Croqui</button><button data-tab="review"><b>03</b> Revisão</button><button data-tab="bim"><b>04</b> BIM Data</button><div class="nav-bottom"><button id="run-review" class="primary">Executar + revisar</button><button id="reset" class="ghost">Novo projeto</button></div></nav>
+<main>
+<section id="panel-briefing" class="panel"><div class="panel-title"><div><span class="eyebrow">ENTRADA SIMPLES</span><h2>Conte o que vamos construir</h2><p>O sistema converte decisões simples em parâmetros BIM. Valores podem ser ajustados depois.</p></div></div>
+<form id="briefing-form" class="form-grid">
+<label class="span2">Nome do projeto<input name="projectName" placeholder="Residência Silva"></label><label class="span2">Município<input name="municipality" placeholder="Ex.: Brusque/SC"></label>
+<label>Pavimentos<select name="floors"><option value="1">1 pavimento</option><option value="2">2 pavimentos</option></select></label><label>Pé-direito padrão (m)<input name="ceiling" type="number" step="0.1" min="2" value="2.8"></label>
+<label class="span2">Sistema construtivo<select name="constructionSystem"><option value="concreto_alvenaria_ceramica">Concreto armado + alvenaria cerâmica</option><option value="alvenaria_estrutural">Alvenaria estrutural</option><option value="wood_frame">Wood frame</option><option value="steel_frame">Steel frame</option><option value="madeira">Madeira</option></select></label>
+<label class="span2">Cobertura<select name="roofType"><option value="telhado_aparente">Telhado aparente</option><option value="platibanda">Platibanda</option><option value="laje">Laje impermeabilizada</option></select></label>
+<div class="section-label span4">Terreno e envelope inicial</div><label>Largura (m)<input name="lotWidth" type="number" step="0.1"></label><label>Profundidade (m)<input name="lotDepth" type="number" step="0.1"></label><label>Recuo frontal<input name="front" type="number" step="0.1"></label><label>Recuo fundos<input name="back" type="number" step="0.1"></label><label>Recuo esquerdo<input name="left" type="number" step="0.1"></label><label>Recuo direito<input name="right" type="number" step="0.1"></label>
+<div class="span4 form-actions"><button class="primary big" type="submit">Criar base paramétrica →</button><p class="muted">Nesta G1 os recuos são informados pelo usuário. A validação automática por legislação entra nas próximas gerações.</p></div>
+</form></section>
+<section id="panel-sketch" class="panel" hidden><div class="workspace"><div class="canvas-wrap"><div class="toolbar"><select id="room-preset"></select><button id="add-room" class="primary">+ Ambiente</button><span class="muted">Grade: 1 m · precisão interna: 0,10 m</span></div><svg id="editor" aria-label="Editor de croqui 2D"></svg></div><aside class="properties"><span class="eyebrow">PROPRIEDADES</span><h3>Ambiente</h3><div id="selection"></div><div class="mini-metrics"><div><span>Área</span><b id="metric-area">0 m²</b></div><div><span>Ambientes</span><b id="metric-rooms">0</b></div><div><span>Paredes</span><b id="metric-walls">0 m</b></div></div></aside></div></section>
+<section id="panel-review" class="panel" hidden><div class="panel-title"><div><span class="eyebrow">AGENTE SECUNDÁRIO</span><h2>Revisão independente</h2><p>O revisor não desenha: ele procura inconsistências e bloqueia o avanço quando encontra erro.</p></div><button id="run-review-duplicate" onclick="document.getElementById('run-review').click()" class="primary">Revisar novamente</button></div><div id="review-log" class="review-card"></div></section>
+<section id="panel-bim" class="panel" hidden><div class="panel-title"><div><span class="eyebrow">MODELO MESTRE</span><h2>LANG BIM Model</h2><p>Esta é a fonte da verdade. Plantas, cortes, 3D e quantitativos serão derivados deste modelo.</p></div></div><pre id="bim-json"></pre></section>
+</main></div><script type="module">
+// ===== src/model/bim-model.js =====
+const BIM_SCHEMA_VERSION = '0.1.0';
+
+function makeId(prefix = 'obj') {
+  return `${prefix}_${globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)}`;
+}
+
+function createProject(overrides = {}) {
+  return {
+    schema: 'LANG_BIM_MODEL',
+    schemaVersion: BIM_SCHEMA_VERSION,
+    projectId: makeId('project'),
+    name: 'Novo projeto',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    intent: {
+      buildingType: 'residencial_unifamiliar',
+      floors: 1,
+      constructionSystem: 'concreto_alvenaria_ceramica',
+      roofType: 'telhado_aparente',
+      typicalCeilingHeight: 2.8,
+      municipality: '',
+      notes: ''
+    },
+    site: {
+      width: 12,
+      depth: 25,
+      northDeg: 0,
+      setbacks: { front: 4, back: 2, left: 1.5, right: 1.5 },
+      elevation: 0
+    },
+    levels: [{ id: 'level_ground', name: 'Térreo', elevation: 0, height: 2.8 }],
+    spaces: [],
+    elements: { walls: [], openings: [], slabs: [], roofs: [], structural: [], mep: [] },
+    derived: { grossArea: 0, netArea: 0, wallLength: 0, roomCount: 0 },
+    revisions: [],
+    commandLog: [],
+    ...overrides
+  };
+}
+
+function cloneProject(project) {
+  return JSON.parse(JSON.stringify(project));
+}
+
+function touchProject(project) {
+  project.updatedAt = new Date().toISOString();
+  return project;
+}
+
+
+// ===== src/core/geometry.js =====
+const EPS = 1e-8;
+const round = (n, p = 3) => Number(Number(n).toFixed(p));
+const snap = (n, grid = 0.1) => round(Math.round(n / grid) * grid, 3);
+
+function rectArea(r) { return Math.max(0, r.width) * Math.max(0, r.depth); }
+function rectRight(r) { return r.x + r.width; }
+function rectBottom(r) { return r.y + r.depth; }
+
+function rectsOverlap(a, b, tolerance = EPS) {
+  return a.x < rectRight(b) - tolerance && rectRight(a) > b.x + tolerance &&
+    a.y < rectBottom(b) - tolerance && rectBottom(a) > b.y + tolerance;
+}
+
+function buildableEnvelope(site) {
+  const x = site.setbacks.left;
+  const y = site.setbacks.front;
+  return {
+    x, y,
+    width: Math.max(0, site.width - site.setbacks.left - site.setbacks.right),
+    depth: Math.max(0, site.depth - site.setbacks.front - site.setbacks.back)
+  };
+}
+
+function containsRect(container, r, tolerance = EPS) {
+  return r.x >= container.x - tolerance && r.y >= container.y - tolerance &&
+    rectRight(r) <= rectRight(container) + tolerance &&
+    rectBottom(r) <= rectBottom(container) + tolerance;
+}
+
+function clampRectToContainer(r, container) {
+  const width = Math.min(r.width, container.width);
+  const depth = Math.min(r.depth, container.depth);
+  return {
+    ...r,
+    width,
+    depth,
+    x: Math.min(Math.max(r.x, container.x), rectRight(container) - width),
+    y: Math.min(Math.max(r.y, container.y), rectBottom(container) - depth)
+  };
+}
+
+function roomToSegments(room) {
+  const x1 = room.x, y1 = room.y, x2 = room.x + room.width, y2 = room.y + room.depth;
+  return [
+    { ax: x1, ay: y1, bx: x2, by: y1 },
+    { ax: x2, ay: y1, bx: x2, by: y2 },
+    { ax: x2, ay: y2, bx: x1, by: y2 },
+    { ax: x1, ay: y2, bx: x1, by: y1 }
+  ];
+}
+
+function segmentLength(s) {
+  return Math.hypot(s.bx - s.ax, s.by - s.ay);
+}
+
+function normalizedSegmentKey(s) {
+  const a = `${round(s.ax)},${round(s.ay)}`;
+  const b = `${round(s.bx)},${round(s.by)}`;
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+function deriveWallsFromRooms(spaces, wallThickness = 0.15, height = 2.8) {
+  // Build a planar wall topology instead of creating four independent walls per room.
+  // Collinear edges are split at every endpoint and each physical atomic segment is emitted once.
+  const horizontal = new Map();
+  const vertical = new Map();
+
+  const addInterval = (map, axis, a, b, room) => {
+    const key = round(axis).toString();
+    const arr = map.get(key) || [];
+    arr.push({ from: Math.min(a, b), to: Math.max(a, b), roomId: room.id, levelId: room.levelId });
+    map.set(key, arr);
+  };
+
+  for (const room of spaces) {
+    for (const s of roomToSegments(room)) {
+      if (Math.abs(s.ay - s.by) < EPS) addInterval(horizontal, s.ay, s.ax, s.bx, room);
+      else if (Math.abs(s.ax - s.bx) < EPS) addInterval(vertical, s.ax, s.ay, s.by, room);
+    }
+  }
+
+  const walls = [];
+  const emitAtomic = (orientation, axisKey, intervals) => {
+    const axis = Number(axisKey);
+    const cuts = [...new Set(intervals.flatMap(i => [round(i.from), round(i.to)]))].sort((a,b)=>a-b);
+    for (let i = 0; i < cuts.length - 1; i++) {
+      const from = cuts[i], to = cuts[i+1];
+      if (to - from < EPS) continue;
+      const mid = (from + to) / 2;
+      const covering = intervals.filter(iv => mid > iv.from - EPS && mid < iv.to + EPS);
+      if (!covering.length) continue;
+      const adjacentSpaceIds = [...new Set(covering.map(iv => iv.roomId))].sort();
+      const levelId = covering[0].levelId;
+      const coords = orientation === 'H'
+        ? { ax: from, ay: axis, bx: to, by: axis }
+        : { ax: axis, ay: from, bx: axis, by: to };
+      const id = `wall_${orientation}_${round(axis)}_${round(from)}_${round(to)}`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      walls.push({ id, ...coords, thickness: wallThickness, height, levelId, adjacentSpaceIds, material: 'alvenaria_ceramica_revestida' });
+    }
+  };
+
+  for (const [axis, intervals] of horizontal) emitAtomic('H', axis, intervals);
+  for (const [axis, intervals] of vertical) emitAtomic('V', axis, intervals);
+  return walls;
+}
+
+function findFreeRectPosition(spaces, container, width, depth, step = 0.2) {
+  if (width > container.width + EPS || depth > container.depth + EPS) return null;
+  const maxX = rectRight(container) - width;
+  const maxY = rectBottom(container) - depth;
+  for (let y = container.y; y <= maxY + EPS; y = round(y + step)) {
+    for (let x = container.x; x <= maxX + EPS; x = round(x + step)) {
+      const candidate = { x: round(x), y: round(y), width, depth };
+      if (!spaces.some(r => rectsOverlap(candidate, r))) return candidate;
+    }
+  }
+  return null;
+}
+
+
+// ===== src/core/constraints.js =====
+
+function validateProjectGeometry(project) {
+  const issues = [];
+  const site = project.site;
+  if (site.width <= 0 || site.depth <= 0) issues.push(issue('SITE_DIMENSION', 'error', 'Terreno precisa ter largura e profundidade positivas.'));
+  for (const [name, value] of Object.entries(site.setbacks)) if (!Number.isFinite(value) || value < 0) issues.push(issue('SETBACK_INVALID', 'error', `Recuo ${name} precisa ser um número não negativo.`));
+  const envelope = buildableEnvelope(site);
+  if (envelope.width <= 0 || envelope.depth <= 0) issues.push(issue('SETBACKS_INVALID', 'error', 'Recuos consomem toda a área edificável.'));
+
+  const ids = new Set();
+  for (const room of project.spaces) {
+    if (![room.x,room.y,room.width,room.depth].every(Number.isFinite)) issues.push(issue('ROOM_NUMERIC', 'error', `${room.name} possui coordenadas ou dimensões inválidas.`, room.id));
+    if (ids.has(room.id)) issues.push(issue('DUPLICATE_ID', 'error', `ID duplicado: ${room.id}`, room.id));
+    ids.add(room.id);
+    if (room.width < 1.2 || room.depth < 1.2) issues.push(issue('ROOM_TOO_SMALL', 'warning', `${room.name} possui dimensão inferior a 1,20 m.`, room.id));
+    if (!containsRect(envelope, room)) issues.push(issue('ROOM_OUTSIDE_ENVELOPE', 'error', `${room.name} invade recuo ou limite edificável.`, room.id));
+  }
+
+  for (let i = 0; i < project.spaces.length; i++) {
+    for (let j = i + 1; j < project.spaces.length; j++) {
+      const a = project.spaces[i], b = project.spaces[j];
+      if (rectsOverlap(a, b)) issues.push(issue('ROOM_OVERLAP', 'error', `${a.name} e ${b.name} estão sobrepostos.`, `${a.id}|${b.id}`));
+    }
+  }
+  const spaceIds = new Set(project.spaces.map(r => r.id));
+  const wallIds = new Set();
+  for (const wall of project.elements?.walls || []) {
+    if (wallIds.has(wall.id)) issues.push(issue('DUPLICATE_WALL', 'error', `Parede duplicada: ${wall.id}`, wall.id));
+    wallIds.add(wall.id);
+    if (!wall.adjacentSpaceIds?.length || wall.adjacentSpaceIds.some(id => !spaceIds.has(id))) issues.push(issue('WALL_REFERENCE', 'error', `Parede ${wall.id} referencia ambiente inexistente.`, wall.id));
+  }
+  return issues;
+}
+
+function issue(code, severity, message, targetId = null) {
+  return { code, severity, message, targetId };
+}
+
+
+// ===== src/core/command-engine.js =====
+
+const SPACE_FIELDS = new Set(['name','type','x','y','width','depth','height','levelId']);
+
+function pickAllowed(source, allowed) {
+  return Object.fromEntries(Object.entries(source || {}).filter(([k]) => allowed.has(k)));
+}
+
+function applyCommand(inputProject, command, actor = 'user') {
+  if (!command?.type) throw new Error('Command type is required');
+  const project = cloneProject(inputProject);
+  const payload = command.payload || {};
+
+  switch (command.type) {
+    case 'UPDATE_BRIEFING': {
+      if (payload.name !== undefined) project.name = String(payload.name || 'Novo projeto');
+      if (payload.intent) project.intent = { ...project.intent, ...payload.intent };
+      if (payload.site) {
+        const { setbacks, ...sitePatch } = payload.site;
+        project.site = { ...project.site, ...sitePatch };
+        if (setbacks) project.site.setbacks = { ...project.site.setbacks, ...setbacks };
+      }
+      break;
+    }
+    case 'CREATE_SPACE': {
+      const space = { ...pickAllowed(payload, SPACE_FIELDS), id: payload.id || makeId('space') };
+      if (!space.name) space.name = 'Ambiente';
+      if (!space.levelId) space.levelId = 'level_ground';
+      project.spaces.push(space);
+      command.resultId = space.id;
+      break;
+    }
+    case 'UPDATE_SPACE': {
+      const idx = project.spaces.findIndex(s => s.id === payload.id);
+      if (idx < 0) throw new Error(`Space not found: ${payload.id}`);
+      project.spaces[idx] = { ...project.spaces[idx], ...pickAllowed(payload.patch, SPACE_FIELDS) };
+      break;
+    }
+    case 'DELETE_SPACE': {
+      const before = project.spaces.length;
+      project.spaces = project.spaces.filter(s => s.id !== payload.id);
+      if (project.spaces.length === before) throw new Error(`Space not found: ${payload.id}`);
+      break;
+    }
+    default:
+      throw new Error(`Unsupported command: ${command.type}`);
+  }
+
+  const entry = {
+    id: makeId('cmd'),
+    at: new Date().toISOString(),
+    actor,
+    type: command.type,
+    payload: JSON.parse(JSON.stringify(payload))
+  };
+  project.commandLog = project.commandLog || [];
+  project.commandLog.push(entry);
+  touchProject(project);
+  return { project, entry, resultId: command.resultId || null };
+}
+
+
+// ===== src/data/default-questionnaire.js =====
+const roomPresets = [
+  ['sala_cozinha','Sala + cozinha',4.8,5.0],
+  ['suite','Suíte',3.4,3.8],
+  ['quarto','Quarto',3.0,3.2],
+  ['bwc','BWC',1.5,2.6],
+  ['lavanderia','Lavanderia',1.8,2.4],
+  ['garagem','Garagem',3.0,5.5],
+  ['circulacao','Circulação',1.2,3.0]
+].map(([type,name,width,depth]) => ({type,name,width,depth}));
+
+
+// ===== src/agents/primary.js =====
+
+
+function executePrimaryPass(inputProject) {
+  const project = cloneProject(inputProject);
+  project.site.width = snap(Number(project.site.width || 0));
+  project.site.depth = snap(Number(project.site.depth || 0));
+  for (const k of ['front','back','left','right']) project.site.setbacks[k] = snap(Number(project.site.setbacks[k] || 0));
+
+  project.spaces = project.spaces.map(room => ({
+    ...room,
+    x: snap(Number(room.x)), y: snap(Number(room.y)),
+    width: snap(Number(room.width)), depth: snap(Number(room.depth)),
+    height: Number(room.height || project.intent.typicalCeilingHeight || 2.8),
+    levelId: room.levelId || 'level_ground'
+  }));
+
+  project.elements.walls = deriveWallsFromRooms(project.spaces, 0.15, project.intent.typicalCeilingHeight || 2.8);
+  project.derived.netArea = Number(project.spaces.reduce((s, r) => s + rectArea(r), 0).toFixed(2));
+  project.derived.grossArea = project.derived.netArea;
+  project.derived.roomCount = project.spaces.length;
+  project.derived.wallLength = Number(project.elements.walls.reduce((s, w) => s + segmentLength(w), 0).toFixed(2));
+  touchProject(project);
+
+  return {
+    project,
+    report: {
+      role: 'primary',
+      status: 'executed',
+      summary: `Modelo normalizado: ${project.derived.roomCount} ambientes, ${project.elements.walls.length} paredes derivadas.`,
+      metrics: { ...project.derived }
+    }
+  };
+}
+
+
+// ===== src/agents/reviewer.js =====
+
+function reviewProject(project) {
+  const issues = validateProjectGeometry(project);
+  const errors = issues.filter(i => i.severity === 'error').length;
+  const warnings = issues.filter(i => i.severity === 'warning').length;
+  return {
+    role: 'reviewer',
+    status: errors ? 'blocked' : warnings ? 'approved_with_warnings' : 'approved',
+    score: Math.max(0, 100 - errors * 25 - warnings * 5),
+    errors,
+    warnings,
+    issues,
+    summary: errors ? `Revisão bloqueou avanço: ${errors} erro(s) e ${warnings} aviso(s).` : `Revisão aprovada com ${warnings} aviso(s).`
+  };
+}
+
+
+// ===== src/agents/orchestrator.js =====
+
+
+
+function makeRevision(primary, reviewer, stage) {
+  return {
+    id: `rev_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+    at: new Date().toISOString(), stage,
+    primary: primary.report,
+    reviewer
+  };
+}
+
+function runReviewedPass(inputProject, { stage = 'G1_GEOMETRY', autoFix = true } = {}) {
+  let primary = executePrimaryPass(inputProject);
+  let reviewer = reviewProject(primary.project);
+  const passes = [{ primary: primary.report, reviewer }];
+
+  if (autoFix && reviewer.issues.some(i => i.code === 'ROOM_OUTSIDE_ENVELOPE') && !reviewer.issues.some(i => i.code === 'ROOM_OVERLAP')) {
+    const envelope = buildableEnvelope(primary.project.site);
+    const canRepositionWithoutResize = primary.project.spaces.every(r => r.width <= envelope.width && r.depth <= envelope.depth);
+    if (canRepositionWithoutResize) {
+      primary.project.spaces = primary.project.spaces.map(r => clampRectToContainer(r, envelope));
+      primary = executePrimaryPass(primary.project);
+      reviewer = reviewProject(primary.project);
+      passes.push({ primary: primary.report, reviewer, correction: 'Ambientes apenas reposicionados; dimensões originais preservadas.' });
+    }
+  }
+
+  primary.project.revisions.push(makeRevision(primary, reviewer, stage));
+  return { project: primary.project, reviewer, passes };
+}
+
+
+// ===== src/ui/editor.js =====
+
+function renderEditor(svg, project, selectedId, onSelect) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const scale = 24;
+  const pad = 30;
+  const site = project.site;
+  const env = buildableEnvelope(site);
+  svg.innerHTML = '';
+  svg.setAttribute('viewBox', `0 0 ${site.width*scale+pad*2} ${site.depth*scale+pad*2}`);
+
+  function rect(x,y,w,h,attrs={}) {
+    const e = document.createElementNS(NS,'rect');
+    e.setAttribute('x',pad+x*scale); e.setAttribute('y',pad+y*scale);
+    e.setAttribute('width',w*scale); e.setAttribute('height',h*scale);
+    Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));
+    svg.appendChild(e); return e;
+  }
+  rect(0,0,site.width,site.depth,{class:'site-rect'});
+  rect(env.x,env.y,env.width,env.depth,{class:'envelope-rect'});
+
+  const grid = document.createElementNS(NS,'g'); grid.setAttribute('class','grid-lines'); svg.appendChild(grid);
+  for(let x=0;x<=site.width;x+=1){const l=document.createElementNS(NS,'line');l.setAttribute('x1',pad+x*scale);l.setAttribute('x2',pad+x*scale);l.setAttribute('y1',pad);l.setAttribute('y2',pad+site.depth*scale);grid.appendChild(l)}
+  for(let y=0;y<=site.depth;y+=1){const l=document.createElementNS(NS,'line');l.setAttribute('y1',pad+y*scale);l.setAttribute('y2',pad+y*scale);l.setAttribute('x1',pad);l.setAttribute('x2',pad+site.width*scale);grid.appendChild(l)}
+
+  for(const room of project.spaces){
+    const g=document.createElementNS(NS,'g');g.setAttribute('class',`room ${room.id===selectedId?'selected':''}`);g.dataset.id=room.id;
+    const r=document.createElementNS(NS,'rect');r.setAttribute('x',pad+room.x*scale);r.setAttribute('y',pad+room.y*scale);r.setAttribute('width',room.width*scale);r.setAttribute('height',room.depth*scale);g.appendChild(r);
+    const t=document.createElementNS(NS,'text');t.setAttribute('x',pad+(room.x+room.width/2)*scale);t.setAttribute('y',pad+(room.y+room.depth/2)*scale);t.textContent=`${room.name} · ${(room.width*room.depth).toFixed(1)} m²`;g.appendChild(t);
+    g.addEventListener('click',e=>{e.stopPropagation();onSelect(room.id)});svg.appendChild(g);
+  }
+}
+
+
+// ===== src/app.js =====
+
+
+
+
+
+
+let project = loadProject() || createProject();
+let selectedId = null;
+let activeTab = 'briefing';
+
+const $ = s => document.querySelector(s);
+const form = $('#briefing-form');
+const svg = $('#editor');
+
+function loadProject(){try{return JSON.parse(localStorage.getItem('lang_bim_project'))}catch{return null}}
+function save(){localStorage.setItem('lang_bim_project',JSON.stringify(project));}
+function input(name){return form.elements.namedItem(name)}
+
+function syncFormFromProject(){
+  const i=project.intent,s=project.site;
+  input('projectName').value=project.name; input('municipality').value=i.municipality; input('floors').value=i.floors;
+  input('constructionSystem').value=i.constructionSystem; input('roofType').value=i.roofType; input('ceiling').value=i.typicalCeilingHeight;
+  input('lotWidth').value=s.width; input('lotDepth').value=s.depth;
+  for(const k of ['front','back','left','right']) input(k).value=s.setbacks[k];
+}
+function syncProjectFromForm(){
+  const result=applyCommand(project,{type:'UPDATE_BRIEFING',payload:{
+    name:input('projectName').value.trim()||'Novo projeto',
+    intent:{municipality:input('municipality').value.trim(),floors:Number(input('floors').value),constructionSystem:input('constructionSystem').value,roofType:input('roofType').value,typicalCeilingHeight:Number(input('ceiling').value)},
+    site:{width:Number(input('lotWidth').value),depth:Number(input('lotDepth').value),setbacks:{front:Number(input('front').value),back:Number(input('back').value),left:Number(input('left').value),right:Number(input('right').value)}}
+  }},'user');
+  project=result.project;
+}
+
+function setTab(tab){activeTab=tab;document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('.panel').forEach(p=>p.hidden=p.id!==`panel-${tab}`);render();}
+function render(){
+  $('#project-title').textContent=project.name;
+  $('#status-pill').textContent=project.revisions.at(-1)?.reviewer?.status || 'rascunho';
+  $('#metric-area').textContent=`${project.derived.netArea.toFixed(1)} m²`;
+  $('#metric-rooms').textContent=String(project.derived.roomCount);
+  $('#metric-walls').textContent=`${project.derived.wallLength.toFixed(1)} m`;
+  if(activeTab==='sketch') renderEditor(svg,project,selectedId,id=>{selectedId=id;render();renderSelection();});
+  renderSelection(); renderReview(); renderBim();
+}
+function renderSelection(){
+  const box=$('#selection'); const room=project.spaces.find(r=>r.id===selectedId);
+  if(!room){box.innerHTML='<p class="muted">Selecione um ambiente no croqui.</p>';return;}
+  box.innerHTML=`<label>Nome<input id="sel-name" value="${escapeHtml(room.name)}"></label><div class="two"><label>X (m)<input id="sel-x" type="number" step="0.1" value="${room.x}"></label><label>Y (m)<input id="sel-y" type="number" step="0.1" value="${room.y}"></label></div><div class="two"><label>Largura<input id="sel-w" type="number" step="0.1" value="${room.width}"></label><label>Profundidade<input id="sel-d" type="number" step="0.1" value="${room.depth}"></label></div><button id="update-room">Atualizar ambiente</button><button id="delete-room" class="danger ghost">Excluir</button>`;
+  $('#update-room').onclick=()=>{project=applyCommand(project,{type:'UPDATE_SPACE',payload:{id:room.id,patch:{name:$('#sel-name').value,x:Number($('#sel-x').value),y:Number($('#sel-y').value),width:Number($('#sel-w').value),depth:Number($('#sel-d').value)}}},'user').project;runPipeline();};
+  $('#delete-room').onclick=()=>{project=applyCommand(project,{type:'DELETE_SPACE',payload:{id:room.id}},'user').project;selectedId=null;runPipeline();};
+}
+function renderReview(){
+  const target=$('#review-log'); const last=project.revisions.at(-1);
+  if(!last){target.innerHTML='<div class="empty">Ainda não há revisão. Execute o processamento.</div>';return;}
+  const r=last.reviewer;
+  target.innerHTML=`<div class="review-head"><strong>${labelStatus(r.status)}</strong><span>Score ${r.score}/100</span></div><p>${escapeHtml(r.summary)}</p>${r.issues.length?`<ul>${r.issues.map(i=>`<li class="${i.severity}"><b>${i.code}</b> — ${escapeHtml(i.message)}</li>`).join('')}</ul>`:'<p class="success">Nenhum problema geométrico encontrado nesta etapa.</p>'}`;
+}
+function renderBim(){ $('#bim-json').textContent=JSON.stringify(project,null,2); }
+function labelStatus(s){return ({approved:'Aprovado',approved_with_warnings:'Aprovado com avisos',blocked:'Bloqueado'})[s]||s}
+function escapeHtml(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function runPipeline(){
+  const result=runReviewedPass(project,{stage:'G1_GEOMETRY',autoFix:true});project=result.project;save();render();
+}
+
+form.addEventListener('submit',e=>{e.preventDefault();syncProjectFromForm();runPipeline();setTab('sketch')});
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+$('#run-review').onclick=runPipeline;
+$('#export-json').onclick=()=>{const blob=new Blob([JSON.stringify(project,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${project.name.replace(/\W+/g,'_')||'LANG_BIM'}.langbim.json`;a.click();URL.revokeObjectURL(a.href)};
+$('#reset').onclick=()=>{if(confirm('Criar um projeto vazio?')){project=createProject();selectedId=null;save();syncFormFromProject();render();}};
+
+const presetSelect=$('#room-preset');
+roomPresets.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=p.name;presetSelect.appendChild(o)});
+$('#add-room').onclick=()=>{
+  const p=roomPresets[Number(presetSelect.value)||0]; const env=buildableEnvelope(project.site);
+  const pos=findFreeRectPosition(project.spaces,env,p.width,p.depth,0.2);
+  if(!pos){alert('Não encontrei espaço livre suficiente dentro da faixa edificável para este ambiente.');return;}
+  const created=applyCommand(project,{type:'CREATE_SPACE',payload:{type:p.type,name:p.name,...pos,height:project.intent.typicalCeilingHeight,levelId:'level_ground'}},'user');
+  project=created.project;selectedId=created.resultId;runPipeline();
+};
+
+syncFormFromProject();runPipeline();setTab('briefing');
+</script></body></html>
