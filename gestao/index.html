@@ -939,25 +939,59 @@ function financeMonthlyReceived(year){
   });
 }
 function financeSummaryTab(){
-  const s=financeRecoveredMetrics(),by=financeByClientRows(s.pending),monthly=financeMonthlyReceived(financeSelectedYear);
+  const s=financeRecoveredMetrics(),monthly=financeMonthlyReceived(financeSelectedYear);
   const monthKey=financeSelectedYear+'-'+financeSelectedMonth;
   const monthlyReceived=monthly.find(x=>x.key===monthKey)?.value||0;
   const annual=monthly.reduce((a,x)=>a+x.value,0);
   const max=Math.max(1,...monthly.map(x=>x.value));
   const monthNames=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const selectedMonthName=monthNames[Number(financeSelectedMonth)-1];
   const yearOpts=[2025,2026,2027,2028].map(y=>'<option value="'+y+'" '+(financeSelectedYear===y?'selected':'')+'>'+y+'</option>').join('');
   const monthOpts=monthNames.map((n,i)=>'<option value="'+String(i+1).padStart(2,'0')+'" '+(financeSelectedMonth===String(i+1).padStart(2,'0')?'selected':'')+'>'+n.toLowerCase()+'</option>').join('');
+
+  const monthReceipts=financeActiveRows()
+    .filter(x=>x.type==='Recebimento'&&financeReceivedMonth(x)===monthKey)
+    .slice()
+    .sort((a,b)=>{
+      const da=a.date||'',db=b.date||'';
+      if(da&&db)return db.localeCompare(da);
+      if(da)return -1;
+      if(db)return 1;
+      return String(b.createdAt||'').localeCompare(String(a.createdAt||''));
+    });
+
+  const receiptRows=monthReceipts.length
+    ? monthReceipts.map(x=>{
+        const dateText=x.date?fmtDate(x.date):(x.legacyAggregate?'Data individual não recuperada':'Sem data informada');
+        const client=x.clientId?clientName(x.clientId):'Recebimento consolidado';
+        const project=x.projectId?projectName(x.projectId):'';
+        const subtitle=[client,project,x.description].filter(Boolean).join(' · ');
+        return '<div class="finance-client" style="align-items:flex-start;gap:14px">'+
+          '<div style="min-width:88px"><b>'+esc(dateText)+'</b><div class="meta">lançamento</div></div>'+
+          '<div style="flex:1;min-width:0"><b>'+esc(client)+'</b><div class="meta">'+esc([project,x.description].filter(Boolean).join(' · ')||'Recebimento')+'</div></div>'+
+          '<div style="text-align:right;white-space:nowrap"><b>'+brl(x.value)+'</b>'+(x.legacyAggregate?'<div class="meta">total migrado</div>':'<button class="btn soft sm receipt-fin" data-id="'+x.id+'" style="margin-top:6px">Recibo</button>')+'</div>'+
+        '</div>';
+      }).join('')
+    : '<div class="empty">Nenhum recebimento lançado em '+esc(selectedMonthName.toLowerCase())+' de '+financeSelectedYear+'.</div>';
+
   return '<div class="two"><div class="field"><label>Ano</label><select id="finYear">'+yearOpts+'</select></div><div class="field"><label>Mês</label><select id="finMonth">'+monthOpts+'</select></div></div>'+
-    '<div class="meta" style="font-size:16px;margin:6px 0 16px">Faturamento recebido: valores que entraram, conforme a data de cada pagamento. Orçamentos aceitos ainda não pagos ficam em Valores a receber.</div>'+
-    '<div class="metrics"><div class="metric"><span>Faturamento mensal</span><strong>'+brl(monthlyReceived)+'</strong><em>'+monthNames[Number(financeSelectedMonth)-1].toLowerCase()+' de '+financeSelectedYear+'</em></div>'+
+    '<div class="meta" style="font-size:16px;margin:6px 0 16px">Faturamento recebido: valores efetivamente recebidos e lançados no mês selecionado. Valores ainda não pagos ficam separados em Valores a receber.</div>'+
+    '<div class="metrics"><div class="metric"><span>Faturamento mensal</span><strong>'+brl(monthlyReceived)+'</strong><em>'+selectedMonthName.toLowerCase()+' de '+financeSelectedYear+'</em></div>'+
     '<div class="metric"><span>Faturamento anual</span><strong>'+brl(annual)+'</strong><em>Total recebido em '+financeSelectedYear+'</em></div>'+
     '<div class="metric"><span>Recebimentos em atraso</span><strong>'+brl(s.overdue)+'</strong><em>Saldo com previsão anterior a hoje</em></div></div>'+
-    '<div class="card" style="margin-top:16px"><h3>Valores a receber</h3><div style="font-size:34px;font-weight:800;margin:14px 0">'+brl(s.receivable)+'</div><div class="meta" style="margin-bottom:12px">Honorários pendentes de todos os projetos</div>'+
-    (by.map(x=>'<div class="finance-client"><span>'+esc(x.name)+'</span><b>'+brl(x.value)+'</b></div>').join('')||'<div class="meta">Nenhum valor pendente.</div>')+'</div>'+
-    '<div class="card" style="margin-top:16px"><h3>Reembolsos a receber</h3><div style="font-size:34px;font-weight:800;margin:14px 0">'+brl(s.reimb)+'</div><div class="meta">Despesas pagas pela LANG e ainda não reembolsadas</div>'+(s.reimb?'' : '<div style="margin-top:18px">Nenhum saldo pendente.</div>')+'</div>'+
+
+    '<div class="card" style="margin-top:16px">'+
+      '<div class="row-between"><div><h3>Recebimentos de '+selectedMonthName+' de '+financeSelectedYear+'</h3><div class="meta">Entradas efetivamente recebidas até o momento, pela data de lançamento.</div></div><button class="btn primary sm" id="newMonthReceipt">+ Recebimento</button></div>'+
+      '<div style="margin-top:12px">'+receiptRows+'</div>'+
+      '<div class="row-between" style="border-top:1px solid var(--line);padding-top:14px;margin-top:10px"><span><b>Total recebido no mês</b></span><strong style="font-size:22px">'+brl(monthlyReceived)+'</strong></div>'+
+    '</div>'+
+
     '<div class="card" style="margin-top:16px"><h3>Recebimentos mês a mês · '+financeSelectedYear+'</h3>'+
     monthly.map((x,i)=>'<div style="display:grid;grid-template-columns:125px 1fr 105px;gap:12px;align-items:center;padding:10px 0"><span>'+monthNames[i]+'</span><div style="height:10px;border-radius:999px;background:#eceff1;overflow:hidden"><i style="display:block;height:100%;width:'+Math.round(x.value/max*100)+'%;background:var(--accent);border-radius:999px"></i></div><b style="text-align:right">'+brl(x.value)+'</b></div>').join('')+'</div>'+
-    '<div class="card" style="margin-top:16px"><h3>Planejamento de entradas</h3><div class="meta" style="font-size:19px;line-height:1.55">'+brl(s.undated)+' a receber ainda sem data prevista.</div><button class="btn primary" style="margin-top:16px;width:100%" data-fin-tab="receivables">Ver valores a receber</button></div>';
+
+    '<div class="grid-2" style="margin-top:16px"><div class="card"><h3>Valores a receber</h3><div style="font-size:30px;font-weight:800;margin:12px 0">'+brl(s.receivable)+'</div><div class="meta">Honorários pendentes. Não entram no faturamento do mês até serem efetivamente recebidos.</div><button class="btn soft" style="margin-top:14px;width:100%" data-fin-tab="receivables">Ver valores a receber</button></div>'+
+    '<div class="card"><h3>Reembolsos a receber</h3><div style="font-size:30px;font-weight:800;margin:12px 0">'+brl(s.reimb)+'</div><div class="meta">Despesas pagas pela LANG e ainda não reembolsadas.</div></div></div>'+
+    '<div class="card" style="margin-top:16px"><h3>Planejamento de entradas</h3><div class="meta" style="font-size:19px;line-height:1.55">'+brl(s.undated)+' a receber ainda sem data prevista.</div></div>';
 }
 function financeReceivablesTab(){
   const s=financeRecoveredMetrics(),proj=financeProjectionRows(s.pending),by=financeByClientRows(s.pending);
@@ -983,6 +1017,7 @@ function renderFinance(){
   if($('#finYear'))$('#finYear').onchange=e=>{financeSelectedYear=Number(e.target.value);renderFinance()};
   if($('#finMonth'))$('#finMonth').onchange=e=>{financeSelectedMonth=e.target.value;renderFinance()};
   if($('#newReceipt'))$('#newReceipt').onclick=()=>financeModal(null,'','Recebimento');
+  if($('#newMonthReceipt'))$('#newMonthReceipt').onclick=()=>financeModal(null,'','Recebimento');
   document.querySelectorAll('.receipt-fin').forEach(b=>b.onclick=()=>printReceipt(b.dataset.id));
 }
 
