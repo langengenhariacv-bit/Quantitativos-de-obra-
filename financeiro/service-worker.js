@@ -1,4 +1,4 @@
-const CACHE='l2b-financeiro-pwa-v4';
+const CACHE='l2b-financeiro-pwa-v5';
 const APP_SHELL=['./','./manifest.json','./assets/l2b-logo-aprovada.webp','./assets/l2b-icon-192.png','./assets/l2b-icon-512.png'];
 
 self.addEventListener('install',event=>{
