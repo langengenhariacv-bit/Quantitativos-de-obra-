@@ -142,14 +142,16 @@ state.revision=Number(state.revision||0);
 state.works=Array.isArray(state.works)?state.works:[];
 state.expenses=Array.isArray(state.expenses)?state.expenses:[];
 state.withdrawals=Array.isArray(state.withdrawals)?state.withdrawals:(Array.isArray(state.advances)?state.advances:[]);
+state.l2bPayments=Array.isArray(state.l2bPayments)?state.l2bPayments:[];
 }
-async function mutate(fn){status('Salvando…');try{let remote=await decryptData(await fetchBlob(),currentPassword);remote.works=Array.isArray(remote.works)?remote.works:[];remote.expenses=Array.isArray(remote.expenses)?remote.expenses:[];remote.withdrawals=Array.isArray(remote.withdrawals)?remote.withdrawals:(Array.isArray(remote.advances)?remote.advances:[]);await fn(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();showToast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message)}}
+async function mutate(fn){status('Salvando…');try{let remote=await decryptData(await fetchBlob(),currentPassword);remote.works=Array.isArray(remote.works)?remote.works:[];remote.expenses=Array.isArray(remote.expenses)?remote.expenses:[];remote.withdrawals=Array.isArray(remote.withdrawals)?remote.withdrawals:(Array.isArray(remote.advances)?remote.advances:[]);remote.l2bPayments=Array.isArray(remote.l2bPayments)?remote.l2bPayments:[];await fn(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();showToast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message)}}
 function totals(workId=null){const ex=state.expenses.filter(x=>!workId||x.workId===workId);const total=ex.reduce((a,x)=>a+Number(x.value||0),0);const by=Object.fromEntries(PAYERS.map(p=>[p,ex.filter(x=>x.payer===p).reduce((a,x)=>a+Number(x.value||0),0)]));return {total,by,count:ex.length}}
 async function doLogin(){const pwd=$('#passwordInput').value;if(!pwd)return loginErr('Digite a senha.');try{currentPassword=pwd;await load();$('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');render()}catch(e){currentPassword='';loginErr('Senha incorreta ou dados indisponíveis.') }}
 function loginErr(t){const e=$('#loginError');e.textContent=t;e.classList.remove('hidden')}
 function navTabs(active='works'){return `<div class="app-tabs">
 <button class="app-tab ${active==='works'?'active':''}" data-section="works">Obras</button>
 <button class="app-tab ${active==='withdrawals'?'active':''}" data-section="withdrawals">Retiradas</button>
+<button class="app-tab ${active==='l2b-payments'?'active':''}" data-section="l2b-payments">Pagamentos L2B</button>
 </div>`}
 function personTabs(person){return `<div class="person-tabs">
 <button class="person-tab ${person==='Geovane'?'active':''}" data-person="Geovane">Geovane</button>
@@ -159,7 +161,7 @@ function bindTabs(){
 document.querySelectorAll('.app-tab').forEach(b=>b.onclick=()=>{currentWorkId=null;currentSection=b.dataset.section;render()});
 document.querySelectorAll('.person-tab').forEach(b=>b.onclick=()=>{currentPerson=b.dataset.person;currentSection='withdrawals';render()})
 }
-function render(){if(!state)return;if(currentWorkId&&!state.works.some(w=>w.id===currentWorkId))currentWorkId=null;if(currentWorkId)return renderWork();if(currentSection==='works')return renderDashboard();return renderWithdrawals(currentPerson)}
+function render(){if(!state)return;if(currentWorkId&&!state.works.some(w=>w.id===currentWorkId))currentWorkId=null;if(currentWorkId)return renderWork();if(currentSection==='works')return renderDashboard();if(currentSection==='l2b-payments')return renderL2BPayments();return renderWithdrawals(currentPerson)}
 function renderDashboard(){const t=totals();const totalArea=state.works.reduce((a,w)=>a+Number(w.area||0),0);$('#main').innerHTML=`${navTabs('works')}
 <div class="hero"><div><h1>Visão geral</h1><p>Acompanhe o custo acumulado de todas as obras.</p></div><div class="hero-actions"><button class="btn soft" id="exportBtn">Exportar dados</button><button class="btn primary" id="newWorkBtn">+ Nova obra</button></div></div>
 <div class="metrics"><div class="metric"><span>Obras cadastradas</span><strong>${state.works.length}</strong><em>${t.count} lançamentos</em></div><div class="metric"><span>Total investido</span><strong>${brl(t.total)}</strong><em>todas as obras</em></div><div class="metric"><span>Área cadastrada</span><strong>${num(totalArea)} m²</strong><em>soma das obras</em></div><div class="metric"><span>Custo médio geral</span><strong>${totalArea?brl(t.total/totalArea):brl(0)}/m²</strong><em>total ÷ área</em></div></div>
@@ -196,6 +198,40 @@ $('#withdrawalTable').innerHTML=list.length?`<div class="table-wrap"><table><the
 document.querySelectorAll('.edit-with').forEach(b=>b.onclick=()=>withdrawalModal(person,b.dataset.id));
 document.querySelectorAll('.del-with').forEach(b=>b.onclick=()=>deleteWithdrawal(b.dataset.id));
 }
+function renderL2BPayments(){
+const list=state.l2bPayments.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+const total=list.reduce((a,x)=>a+Number(x.value||0),0);
+const ym=today().slice(0,7);
+const monthTotal=list.filter(x=>String(x.date||'').slice(0,7)===ym).reduce((a,x)=>a+Number(x.value||0),0);
+const worksCount=new Set(list.map(x=>x.workId||x.workName).filter(Boolean)).size;
+$('#main').innerHTML=`${navTabs('l2b-payments')}
+<div class="hero">
+  <div><h1>Pagamentos L2B</h1><p>Pagamentos avulsos realizados pela L2B vinculados às obras.</p></div>
+  <div class="hero-actions"><button class="btn primary" id="newL2BPaymentBtn">+ Pagamento</button></div>
+</div>
+<div class="metrics">
+  <div class="metric"><span>Total pago</span><strong>${brl(total)}</strong><em>pagamentos avulsos</em></div>
+  <div class="metric"><span>Pago no mês</span><strong>${brl(monthTotal)}</strong><em>mês atual</em></div>
+  <div class="metric"><span>Lançamentos</span><strong>${list.length}</strong><em>registros</em></div>
+  <div class="metric"><span>Obras</span><strong>${worksCount}</strong><em>com pagamentos</em></div>
+</div>
+<div class="section-head"><div><h3>Histórico de pagamentos</h3><div class="advance-note">Estes pagamentos ficam em uma área separada das despesas e das retiradas.</div></div></div>
+<div id="l2bPaymentTable"></div>`;
+bindTabs();
+$('#newL2BPaymentBtn').onclick=()=>l2bPaymentModal();
+$('#l2bPaymentTable').innerHTML=list.length?`<div class="table-wrap"><table>
+<thead><tr><th>Data</th><th>Obra</th><th>Descrição</th><th>Valor</th><th>Observação</th><th></th></tr></thead>
+<tbody>${list.map(x=>`<tr>
+<td data-label="Data">${x.date?new Date(x.date+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</td>
+<td data-label="Obra"><b>${esc(x.workName||state.works.find(w=>w.id===x.workId)?.name||'—')}</b></td>
+<td data-label="Descrição">${esc(x.description||'Pagamento avulso')}</td>
+<td data-label="Valor" class="money">${brl(x.value)}</td>
+<td data-label="Observação">${esc(x.notes||'—')}</td>
+<td data-label="Ações"><div class="actions"><button class="btn soft sm edit-l2bp" data-id="${x.id}">Editar</button><button class="btn danger sm del-l2bp" data-id="${x.id}">Excluir</button></div></td>
+</tr>`).join('')}</tbody></table></div>`:`<div class="empty">Nenhum pagamento avulso lançado.</div>`;
+document.querySelectorAll('.edit-l2bp').forEach(b=>b.onclick=()=>l2bPaymentModal(b.dataset.id));
+document.querySelectorAll('.del-l2bp').forEach(b=>b.onclick=()=>deleteL2BPayment(b.dataset.id));
+}
 function renderWork(){const w=state.works.find(x=>x.id===currentWorkId),t=totals(w.id);$('#main').innerHTML=`
 <button class="back" id="backBtn">← Voltar para obras</button><div class="detail-head"><div><h1>${esc(w.name)}</h1><p>${esc([w.client,w.address].filter(Boolean).join(' • ')||'Controle financeiro da obra')}</p></div><div class="hero-actions"><button class="btn soft" id="editWorkBtn">Editar obra</button><button class="btn primary" id="newExpenseBtn">+ Despesa</button></div></div>
 <div class="metrics"><div class="metric"><span>Área da obra</span><strong>${num(w.area)} m²</strong><em>informada no cadastro</em></div><div class="metric"><span>Total gasto</span><strong>${brl(t.total)}</strong><em>${t.count} lançamentos</em></div><div class="metric"><span>Custo atual por m²</span><strong>${w.area?brl(t.total/w.area):brl(0)}/m²</strong><em>total ÷ área</em></div><div class="metric"><span>Última atualização</span><strong style="font-size:16px">${state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR'):'—'}</strong><em>dados compartilhados</em></div></div>
@@ -206,6 +242,31 @@ function modal(title,body,footer=''){const root=$('#modalRoot');root.innerHTML=`
 function closeModal(){$('#modalRoot').innerHTML=''}
 function workModal(id=null){const w=id?state.works.find(x=>x.id===id):null;modal(w?'Editar obra':'Nova obra',`<form id="workForm"><div class="field"><label>Nome da obra *</label><input id="wName" required value="${esc(w?.name||'')}"></div><div class="two"><div class="field"><label>Metragem da obra (m²) *</label><input id="wArea" type="number" min="0.01" step="0.01" required value="${w?.area||''}"></div><div class="field"><label>Cliente</label><input id="wClient" value="${esc(w?.client||'')}"></div></div><div class="field"><label>Endereço / referência</label><input id="wAddress" value="${esc(w?.address||'')}"></div><div class="modal-foot"><button type="button" class="btn soft" id="cancelWork">Cancelar</button><button class="btn primary">Salvar obra</button></div>${w?`<div class="danger-zone"><button type="button" class="btn danger" id="deleteWork">Excluir obra</button><div class="smallprint">Ao excluir a obra, todos os lançamentos dela também serão removidos.</div></div>`:''}</form>`);$('#cancelWork').onclick=closeModal;$('#workForm').onsubmit=async e=>{e.preventDefault();const obj={name:$('#wName').value.trim(),area:Number($('#wArea').value),client:$('#wClient').value.trim(),address:$('#wAddress').value.trim()};if(!obj.name||!obj.area)return;closeModal();await mutate(d=>{if(w)Object.assign(d.works.find(x=>x.id===w.id),obj);else d.works.push({id:uid(),createdAt:new Date().toISOString(),...obj})})};if(w)$('#deleteWork').onclick=async()=>{if(confirm('Excluir esta obra e todas as despesas vinculadas?')){closeModal();currentWorkId=null;await mutate(d=>{d.works=d.works.filter(x=>x.id!==w.id);d.expenses=d.expenses.filter(x=>x.workId!==w.id)})}}}
 function expenseModal(id=null){const x=id?state.expenses.find(y=>y.id===id):null;modal(x?'Editar despesa':'Nova despesa',`<form id="expenseForm"><div class="field"><label>Descrição *</label><input id="eDesc" required value="${esc(x?.description||'')}"></div><div class="two"><div class="field"><label>Valor (R$) *</label><input id="eValue" type="number" min="0.01" step="0.01" required value="${x?.value||''}"></div><div class="field"><label>Data *</label><input id="eDate" type="date" required value="${x?.date||today()}"></div></div><div class="two"><div class="field"><label>Pago por *</label><select id="ePayer">${PAYERS.map(p=>`<option ${x?.payer===p?'selected':''}>${p}</option>`).join('')}</select></div><div class="field"><label>Categoria *</label><select id="eCategory">${CATEGORIES.map(c=>`<option ${x?.category===c?'selected':''}>${c}</option>`).join('')}</select></div></div><div class="field"><label>Observação</label><textarea id="eNotes" rows="3" placeholder="NF, fornecedor, detalhes…">${esc(x?.notes||'')}</textarea></div><div class="modal-foot"><button type="button" class="btn soft" id="cancelExpense">Cancelar</button><button class="btn primary">Salvar despesa</button></div></form>`);$('#cancelExpense').onclick=closeModal;$('#expenseForm').onsubmit=async e=>{e.preventDefault();const obj={description:$('#eDesc').value.trim(),value:Number($('#eValue').value),date:$('#eDate').value,payer:$('#ePayer').value,category:$('#eCategory').value,notes:$('#eNotes').value.trim()};if(!obj.description||!obj.value)return;closeModal();await mutate(d=>{if(x)Object.assign(d.expenses.find(y=>y.id===x.id),obj);else d.expenses.push({id:uid(),workId:currentWorkId,createdAt:new Date().toISOString(),...obj})})}}
+function l2bPaymentModal(id=null){
+const x=id?state.l2bPayments.find(y=>y.id===id):null;
+const workOptions=state.works.map(w=>`<option value="${w.id}" ${x?.workId===w.id?'selected':''}>${esc(w.name)}</option>`).join('');
+modal(x?'Editar pagamento L2B':'Novo pagamento L2B',`<form id="l2bPaymentForm">
+<div class="field"><label>Obra *</label><select id="l2bpWork" required><option value="">Selecione a obra</option>${workOptions}</select></div>
+<div class="field"><label>Descrição *</label><input id="l2bpDesc" required value="${esc(x?.description||'Pagamento avulso')}" placeholder="Ex.: pagamento de material, serviço..."></div>
+<div class="two">
+<div class="field"><label>Valor (R$) *</label><input id="l2bpValue" type="number" min="0.01" step="0.01" required value="${x?.value||''}"></div>
+<div class="field"><label>Data *</label><input id="l2bpDate" type="date" required value="${x?.date||today()}"></div>
+</div>
+<div class="field"><label>Observação</label><textarea id="l2bpNotes" rows="3" placeholder="Forma de pagamento, referência, fornecedor...">${esc(x?.notes||'')}</textarea></div>
+<div class="modal-foot"><button type="button" class="btn soft" id="cancelL2BPayment">Cancelar</button><button class="btn primary">Salvar pagamento</button></div>
+</form>`);
+$('#cancelL2BPayment').onclick=closeModal;
+$('#l2bPaymentForm').onsubmit=async e=>{
+e.preventDefault();
+const workId=$('#l2bpWork').value;
+const work=state.works.find(w=>w.id===workId);
+const obj={workId,workName:work?.name||x?.workName||'',description:$('#l2bpDesc').value.trim(),value:Number($('#l2bpValue').value),date:$('#l2bpDate').value,notes:$('#l2bpNotes').value.trim()};
+if(!obj.workId||!obj.description||!obj.value)return;
+closeModal();
+await mutate(d=>{if(x)Object.assign(d.l2bPayments.find(y=>y.id===x.id),obj);else d.l2bPayments.push({id:uid(),createdAt:new Date().toISOString(),...obj})});
+}
+}
+async function deleteL2BPayment(id){if(confirm('Excluir este pagamento L2B?'))await mutate(d=>{d.l2bPayments=d.l2bPayments.filter(x=>x.id!==id)})}
 function withdrawalModal(person,id=null){
 const x=id?state.withdrawals.find(y=>y.id===id):null;
 modal(x?'Editar retirada':'Nova retirada',`<form id="withdrawalForm">
