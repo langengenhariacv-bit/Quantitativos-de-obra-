@@ -147,7 +147,27 @@ state.l2bPayments=Array.isArray(state.l2bPayments)?state.l2bPayments:[];
 state.cashFlow=Array.isArray(state.cashFlow)?state.cashFlow:state.l2bPayments.map(x=>({...x,type:'out',category:x.category||'Pagamento avulso',method:x.method||''}));
 }
 async function mutate(fn){status('Salvando…');try{let remote=await decryptData(await fetchBlob(),currentPassword);remote.works=Array.isArray(remote.works)?remote.works:[];remote.expenses=Array.isArray(remote.expenses)?remote.expenses:[];remote.withdrawals=Array.isArray(remote.withdrawals)?remote.withdrawals:(Array.isArray(remote.advances)?remote.advances:[]);remote.l2bPayments=Array.isArray(remote.l2bPayments)?remote.l2bPayments:[];remote.cashFlow=Array.isArray(remote.cashFlow)?remote.cashFlow:remote.l2bPayments.map(x=>({...x,type:'out',category:x.category||'Pagamento avulso',method:x.method||''}));await fn(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');render();showToast('Alteração salva')}catch(e){status('Erro ao salvar','bad');alert(e.message)}}
-function totals(workId=null){const ex=state.expenses.filter(x=>!workId||x.workId===workId);const total=ex.reduce((a,x)=>a+Number(x.value||0),0);const by=Object.fromEntries(PAYERS.map(p=>[p,ex.filter(x=>x.payer===p).reduce((a,x)=>a+Number(x.value||0),0)]));return {total,by,count:ex.length}}
+function workCostItems(workId=null){
+const manual=state.expenses
+  .filter(x=>!workId||x.workId===workId)
+  .map(x=>({...x,source:'expense'}));
+const cash=(state.cashFlow||[])
+  .filter(x=>x.type==='out'&&x.workId&&(!workId||x.workId===workId))
+  .map(x=>({
+    ...x,
+    source:'cash-flow',
+    payer:'L2B Construtora',
+    category:x.category||'Pagamento avulso',
+    value:Math.abs(Number(x.value||0))
+  }));
+return [...manual,...cash];
+}
+function totals(workId=null){
+const ex=workCostItems(workId);
+const total=ex.reduce((a,x)=>a+Number(x.value||0),0);
+const by=Object.fromEntries(PAYERS.map(p=>[p,ex.filter(x=>x.payer===p).reduce((a,x)=>a+Number(x.value||0),0)]));
+return {total,by,count:ex.length}
+}
 async function doLogin(){const pwd=$('#passwordInput').value;if(!pwd)return loginErr('Digite a senha.');try{currentPassword=pwd;await load();$('#loginView').classList.add('hidden');$('#appView').classList.remove('hidden');render()}catch(e){currentPassword='';loginErr('Senha incorreta ou dados indisponíveis.') }}
 function loginErr(t){const e=$('#loginError');e.textContent=t;e.classList.remove('hidden')}
 function navTabs(active='works'){return `<div class="app-tabs">
@@ -253,12 +273,63 @@ $('#cfSearch').oninput=draw;
 $('#cfAll').onclick=()=>{cashFlowMonth='';renderCashFlow()};
 draw();
 }
-function renderWork(){const w=state.works.find(x=>x.id===currentWorkId),t=totals(w.id);$('#main').innerHTML=`
-<button class="back" id="backBtn">← Voltar para obras</button><div class="detail-head"><div><h1>${esc(w.name)}</h1><p>${esc([w.client,w.address].filter(Boolean).join(' • ')||'Controle financeiro da obra')}</p></div><div class="hero-actions"><button class="btn soft" id="editWorkBtn">Editar obra</button><button class="btn primary" id="newExpenseBtn">+ Despesa</button></div></div>
-<div class="metrics"><div class="metric"><span>Área da obra</span><strong>${num(w.area)} m²</strong><em>informada no cadastro</em></div><div class="metric"><span>Total gasto</span><strong>${brl(t.total)}</strong><em>${t.count} lançamentos</em></div><div class="metric"><span>Custo atual por m²</span><strong>${w.area?brl(t.total/w.area):brl(0)}/m²</strong><em>total ÷ área</em></div><div class="metric"><span>Última atualização</span><strong style="font-size:16px">${state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR'):'—'}</strong><em>dados compartilhados</em></div></div>
+function renderWork(){
+const w=state.works.find(x=>x.id===currentWorkId),t=totals(w.id);
+const allItems=workCostItems(w.id);
+const cats=[...new Set([...CATEGORIES,...allItems.map(x=>x.category).filter(Boolean)])];
+$('#main').innerHTML=`
+<button class="back" id="backBtn">← Voltar para obras</button>
+<div class="detail-head">
+  <div><h1>${esc(w.name)}</h1><p>${esc([w.client,w.address].filter(Boolean).join(' • ')||'Controle financeiro da obra')}</p></div>
+  <div class="hero-actions"><button class="btn soft" id="editWorkBtn">Editar obra</button><button class="btn primary" id="newExpenseBtn">+ Despesa</button></div>
+</div>
+<div class="metrics">
+  <div class="metric"><span>Área da obra</span><strong>${num(w.area)} m²</strong><em>informada no cadastro</em></div>
+  <div class="metric"><span>Total gasto</span><strong>${brl(t.total)}</strong><em>${t.count} lançamentos</em></div>
+  <div class="metric"><span>Custo atual por m²</span><strong>${w.area?brl(t.total/w.area):brl(0)}/m²</strong><em>total ÷ área</em></div>
+  <div class="metric"><span>Última atualização</span><strong style="font-size:16px">${state.updatedAt?new Date(state.updatedAt).toLocaleString('pt-BR'):'—'}</strong><em>dados compartilhados</em></div>
+</div>
 <div class="payer-grid">${PAYERS.map(p=>`<div class="payer"><b>${p}</b><strong>${brl(t.by[p])}</strong></div>`).join('')}</div>
-<div class="section-head"><h3>Despesas</h3></div><div class="filters"><input id="expenseSearch" placeholder="Buscar descrição…"><select id="payerFilter"><option value="">Todos os pagadores</option>${PAYERS.map(p=>`<option>${p}</option>`).join('')}</select><select id="catFilter"><option value="">Todas as categorias</option>${CATEGORIES.map(c=>`<option>${c}</option>`).join('')}</select><button class="btn soft" id="clearFilter">Limpar</button></div><div id="expenseTable"></div>`;
-function draw(){const q=$('#expenseSearch').value.toLowerCase(),p=$('#payerFilter').value,c=$('#catFilter').value;const arr=state.expenses.filter(x=>x.workId===w.id&&(!q||(x.description+' '+(x.notes||'')).toLowerCase().includes(q))&&(!p||x.payer===p)&&(!c||x.category===c)).sort((a,b)=>String(b.date).localeCompare(String(a.date)));$('#expenseTable').innerHTML=arr.length?`<div class="table-wrap"><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Pago por</th><th>Valor</th><th></th></tr></thead><tbody>${arr.map(x=>`<tr><td data-label="Data">${new Date(x.date+'T12:00:00').toLocaleDateString('pt-BR')}</td><td data-label="Descrição"><b>${esc(x.description)}</b>${x.notes?`<div style="font-size:11px;color:var(--muted);margin-top:3px">${esc(x.notes)}</div>`:''}</td><td data-label="Categoria">${esc(x.category)}</td><td data-label="Pago por">${esc(x.payer)}</td><td data-label="Valor" class="money">${brl(x.value)}</td><td data-label="Ações"><div class="actions"><button class="btn soft sm edit-exp" data-id="${x.id}">Editar</button><button class="btn danger sm del-exp" data-id="${x.id}">Excluir</button></div></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">Nenhuma despesa encontrada.</div>`;document.querySelectorAll('.edit-exp').forEach(b=>b.onclick=()=>expenseModal(b.dataset.id));document.querySelectorAll('.del-exp').forEach(b=>b.onclick=()=>deleteExpense(b.dataset.id))}draw();['#expenseSearch','#payerFilter','#catFilter'].forEach(s=>$(s).oninput=draw);$('#clearFilter').onclick=()=>{$('#expenseSearch').value='';$('#payerFilter').value='';$('#catFilter').value='';draw()};$('#backBtn').onclick=()=>{currentWorkId=null;currentSection='works';render()};$('#newExpenseBtn').onclick=()=>expenseModal();$('#editWorkBtn').onclick=()=>workModal(w.id)}
+<div class="section-head"><div><h3>Despesas</h3><div class="advance-note">Saídas do Fluxo de Caixa vinculadas a esta obra entram automaticamente no custo.</div></div></div>
+<div class="filters">
+  <input id="expenseSearch" placeholder="Buscar descrição…">
+  <select id="payerFilter"><option value="">Todos os pagadores</option>${PAYERS.map(p=>`<option>${p}</option>`).join('')}</select>
+  <select id="catFilter"><option value="">Todas as categorias</option>${cats.map(c=>`<option>${esc(c)}</option>`).join('')}</select>
+  <button class="btn soft" id="clearFilter">Limpar</button>
+</div>
+<div id="expenseTable"></div>`;
+function draw(){
+  const q=$('#expenseSearch').value.toLowerCase(),p=$('#payerFilter').value,c=$('#catFilter').value;
+  const arr=workCostItems(w.id)
+    .filter(x=>(!q||(String(x.description||'')+' '+String(x.notes||'')).toLowerCase().includes(q))&&(!p||x.payer===p)&&(!c||x.category===c))
+    .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  $('#expenseTable').innerHTML=arr.length?`<div class="table-wrap"><table>
+    <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Pago por</th><th>Origem</th><th>Valor</th><th></th></tr></thead>
+    <tbody>${arr.map(x=>`<tr>
+      <td data-label="Data">${x.date?new Date(x.date+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</td>
+      <td data-label="Descrição"><b>${esc(x.description||'—')}</b>${x.notes?`<div style="font-size:11px;color:var(--muted);margin-top:3px">${esc(x.notes)}</div>`:''}</td>
+      <td data-label="Categoria">${esc(x.category||'—')}</td>
+      <td data-label="Pago por">${esc(x.payer||'L2B Construtora')}</td>
+      <td data-label="Origem"><span class="pill">${x.source==='cash-flow'?'Fluxo de Caixa':'Obra'}</span></td>
+      <td data-label="Valor" class="money">${brl(x.value)}</td>
+      <td data-label="Ações"><div class="actions">
+        <button class="btn soft sm ${x.source==='cash-flow'?'edit-cf-work':'edit-exp'}" data-id="${x.id}">Editar</button>
+        <button class="btn danger sm ${x.source==='cash-flow'?'del-cf-work':'del-exp'}" data-id="${x.id}">Excluir</button>
+      </div></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`:`<div class="empty">Nenhuma despesa encontrada.</div>`;
+  document.querySelectorAll('.edit-exp').forEach(b=>b.onclick=()=>expenseModal(b.dataset.id));
+  document.querySelectorAll('.del-exp').forEach(b=>b.onclick=()=>deleteExpense(b.dataset.id));
+  document.querySelectorAll('.edit-cf-work').forEach(b=>b.onclick=()=>cashFlowModal(b.dataset.id));
+  document.querySelectorAll('.del-cf-work').forEach(b=>b.onclick=()=>deleteCashFlow(b.dataset.id));
+}
+draw();
+['#expenseSearch','#payerFilter','#catFilter'].forEach(sel=>$(sel).oninput=draw);
+$('#clearFilter').onclick=()=>{$('#expenseSearch').value='';$('#payerFilter').value='';$('#catFilter').value='';draw()};
+$('#backBtn').onclick=()=>{currentWorkId=null;currentSection='works';render()};
+$('#newExpenseBtn').onclick=()=>expenseModal();
+$('#editWorkBtn').onclick=()=>workModal(w.id)
+}
 function modal(title,body,footer=''){const root=$('#modalRoot');root.innerHTML=`<div class="modal-bg"><div class="modal"><div class="modal-head"><h3>${title}</h3><button class="x" id="modalClose">×</button></div>${body}${footer}</div></div>`;$('#modalClose').onclick=closeModal;root.querySelector('.modal-bg').onclick=e=>{if(e.target.classList.contains('modal-bg'))closeModal()}}
 function closeModal(){$('#modalRoot').innerHTML=''}
 function workModal(id=null){const w=id?state.works.find(x=>x.id===id):null;modal(w?'Editar obra':'Nova obra',`<form id="workForm"><div class="field"><label>Nome da obra *</label><input id="wName" required value="${esc(w?.name||'')}"></div><div class="two"><div class="field"><label>Metragem da obra (m²) *</label><input id="wArea" type="number" min="0.01" step="0.01" required value="${w?.area||''}"></div><div class="field"><label>Cliente</label><input id="wClient" value="${esc(w?.client||'')}"></div></div><div class="field"><label>Endereço / referência</label><input id="wAddress" value="${esc(w?.address||'')}"></div><div class="modal-foot"><button type="button" class="btn soft" id="cancelWork">Cancelar</button><button class="btn primary">Salvar obra</button></div>${w?`<div class="danger-zone"><button type="button" class="btn danger" id="deleteWork">Excluir obra</button><div class="smallprint">Ao excluir a obra, todos os lançamentos dela também serão removidos.</div></div>`:''}</form>`);$('#cancelWork').onclick=closeModal;$('#workForm').onsubmit=async e=>{e.preventDefault();const obj={name:$('#wName').value.trim(),area:Number($('#wArea').value),client:$('#wClient').value.trim(),address:$('#wAddress').value.trim()};if(!obj.name||!obj.area)return;closeModal();await mutate(d=>{if(w)Object.assign(d.works.find(x=>x.id===w.id),obj);else d.works.push({id:uid(),createdAt:new Date().toISOString(),...obj})})};if(w)$('#deleteWork').onclick=async()=>{if(confirm('Excluir esta obra e todas as despesas vinculadas?')){closeModal();currentWorkId=null;await mutate(d=>{d.works=d.works.filter(x=>x.id!==w.id);d.expenses=d.expenses.filter(x=>x.workId!==w.id)})}}}
