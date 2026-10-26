@@ -1,0 +1,36 @@
+name: Controle TV (APK)
+
+on:
+  push:
+    paths:
+      - 'controle-tv/android/**'
+      - '.github/workflows/controle-tv-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: controle-tv/android
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Compilar APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: controle-tv-apk
+          path: controle-tv/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

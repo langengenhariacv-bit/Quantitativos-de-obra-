@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Controle TV</title>
+<style>
+:root{--bg:#111;--card:#1d1d1f;--btn:#2a2a2d;--btn2:#38383c;--txt:#f2f2f2;--mut:#9a9aa0;--acc:#e0245e;--ok:#2ecc71;--ir:#f5a623}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px system-ui,-apple-system,Roboto,sans-serif;user-select:none}
+main{max-width:420px;margin:0 auto;padding:16px 16px 28px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+h1{font-size:18px;margin:0}
+h2{font-size:14px;margin:0 0 10px;color:var(--mut);font-weight:600}
+#st{font-size:13px;color:var(--mut);display:flex;align-items:center;gap:6px}
+#st i{width:9px;height:9px;border-radius:50%;background:#666;display:inline-block}
+#st.wifi i{background:var(--ok)}
+#st.ir i{background:var(--ir)}
+.card{background:var(--card);border-radius:18px;padding:14px;margin-bottom:12px}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+input{width:100%;background:var(--btn);border:0;border-radius:12px;color:var(--txt);padding:12px;font-size:16px;user-select:text}
+button{background:var(--btn);color:var(--txt);border:0;border-radius:14px;padding:14px 6px;font-size:15px;font-weight:600;touch-action:manipulation}
+button:active,button.hold{background:var(--btn2);transform:scale(.97)}
+.pw{background:var(--acc)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,64px);gap:8px;margin:4px auto;max-width:260px}
+.dpad button{font-size:22px;border-radius:50%}
+.dpad .ok{background:var(--btn2);font-size:16px}
+.col{display:flex;flex-direction:column;gap:8px}
+.lbl{font-size:12px;color:var(--mut);text-align:center;margin:2px 0}
+.hint{font-size:13px;color:var(--mut);line-height:1.45;margin:0 0 10px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+.seg button{padding:10px 4px;font-size:13px;font-weight:500}
+.seg button.on{background:var(--txt);color:#111}
+.wifi-only{position:relative}
+.ghost{background:transparent;color:var(--mut);font-weight:400}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#333;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<main>
+<header><h1>Controle TV</h1><div id="st"><i></i><span>…</span></div></header>
+
+<section class="card grid3">
+  <button class="pw" id="power">⏻</button>
+  <button data-u="ssap://audio/setMute" data-mute data-ir="MUTE">🔇</button>
+  <button data-k="HOME">⌂ Início</button>
+</section>
+
+<section class="card">
+  <div class="dpad">
+    <span></span><button data-k="UP" data-repeat>▲</button><span></span>
+    <button data-k="LEFT" data-repeat>◀</button><button class="ok" data-k="ENTER">OK</button><button data-k="RIGHT" data-repeat>▶</button>
+    <span></span><button data-k="DOWN" data-repeat>▼</button><span></span>
+  </div>
+  <div class="grid3" style="margin-top:10px">
+    <button data-k="BACK">↩ Voltar</button><button data-k="MENU">⚙ Menu</button><button data-k="EXIT">✕ Sair</button>
+  </div>
+</section>
+
+<section class="card row">
+  <div class="col"><div class="lbl">Volume</div><button data-u="ssap://audio/volumeUp" data-ir="VOLUMEUP" data-repeat>＋</button><button data-u="ssap://audio/volumeDown" data-ir="VOLUMEDOWN" data-repeat>－</button></div>
+  <div class="col"><div class="lbl">Canal</div><button data-u="ssap://tv/channelUp" data-ir="CHANNELUP">＋</button><button data-u="ssap://tv/channelDown" data-ir="CHANNELDOWN">－</button></div>
+  <div class="col"><div class="lbl">Mídia</div><button data-u="ssap://media.controls/play" data-ir="PLAY">▶</button><button data-u="ssap://media.controls/pause" data-ir="PAUSE">❚❚</button></div>
+</section>
+
+<section class="card">
+  <h2>Apps e entradas <span style="font-weight:400">(Wi-Fi)</span></h2>
+  <div class="grid3">
+    <button data-app="netflix">Netflix</button>
+    <button data-app="youtube.leanback.v4">YouTube</button>
+    <button data-app="amazon">Prime</button>
+    <button data-app="com.disney.disneyplus-prod">Disney+</button>
+    <button data-app="globoplay">Globoplay</button>
+    <button data-app="com.webos.app.inputpicker" data-ir="INPUT">Entradas</button>
+  </div>
+</section>
+
+<section class="card">
+  <div class="grid3">
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+    <button data-k="INFO">Info</button><button data-k="0">0</button><button data-k="ENTER">OK</button>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <input id="text" placeholder="Digitar na TV (Wi-Fi)" autocomplete="off">
+    <button id="sendText" style="flex:0 0 80px">Enviar</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Conexão</h2>
+  <p class="hint">Wi-Fi: digite o IP da TV (na TV: Configurações → Geral → Rede → Wi-Fi → Configurações avançadas) e aceite o pedido na tela. Sem Wi-Fi, o app usa o infravermelho — aponte o celular para a TV.</p>
+  <div class="row"><input id="ip" inputmode="decimal" placeholder="ex.: 192.168.0.50"><button id="go" style="flex:0 0 100px">Conectar</button></div>
+  <div class="seg" id="mode">
+    <button data-mode="auto">Automático</button><button data-mode="wifi">Só Wi-Fi</button><button data-mode="ir">Só infraverm.</button>
+  </div>
+  <div class="row" style="margin-top:6px"><button id="forget" class="ghost">Esquecer TV</button></div>
+</section>
+</main>
+<div id="toast"></div>
+
+<script>
+// Fora do app (navegador), usa um simulador para dar para ver a tela.
+const B = window.TV || {
+  hasIr: () => true, ir: () => true, connected: () => false, connect() {}, forget() {},
+  request: () => false, key: () => false, getPref: () => '', setPref() {}, savedIp: () => '', vibrate() {}
+};
+const $ = s => document.querySelector(s);
+const hasIr = B.hasIr();
+let mode = B.getPref('mode') || 'auto';
+let muted = false;
+let tvStatus = 'offline';
+let toastTimer;
+
+function toast(t) {
+  const el = $('#toast'); el.textContent = t; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+const useWifi = () => mode !== 'ir' && B.connected();
+const canIr = () => mode !== 'wifi' && hasIr;
+
+function paintStatus() {
+  const st = $('#st'), label = $('#st span');
+  st.className = '';
+  const texts = { connecting: 'conectando…', prompt: 'aceite na TV', refused: 'TV recusou' };
+  if (mode !== 'ir' && tvStatus === 'connected') { st.className = 'wifi'; label.textContent = 'Wi-Fi'; }
+  else if (texts[tvStatus] && mode !== 'ir') label.textContent = texts[tvStatus];
+  else if (canIr()) { st.className = 'ir'; label.textContent = 'infravermelho'; }
+  else label.textContent = hasIr ? 'desconectado' : 'sem infravermelho';
+}
+
+window.tvState = (state, detail) => {
+  if (state === 'error') { toast('TV: ' + detail); return; }
+  tvStatus = state;
+  if (state === 'prompt') toast('Confirme o pedido de conexão na TV');
+  if (state === 'refused') toast('A TV recusou a conexão');
+  paintStatus();
+};
+
+function act(b) {
+  B.vibrate();
+  const k = b.dataset.k, u = b.dataset.u, app = b.dataset.app, irName = b.dataset.ir || k;
+  if (b.id === 'power') {
+    if (useWifi()) { B.request('ssap://system/turnOff', ''); return; }
+    if (canIr() && B.ir('POWER')) {
+      // Depois de ligar pelo infravermelho, tenta voltar para o Wi-Fi.
+      if (mode === 'auto' && B.savedIp()) setTimeout(() => { if (!B.connected()) B.connect(B.savedIp()); }, 9000);
+      return;
+    }
+    toast('Sem conexão com a TV'); return;
+  }
+  if (useWifi()) {
+    if (k) { B.key(k); return; }
+    if (b.hasAttribute('data-mute')) { muted = !muted; B.request(u, JSON.stringify({ mute: muted })); return; }
+    if (app) { B.request('ssap://system.launcher/launch', JSON.stringify({ id: app })); return; }
+    if (u) { B.request(u, ''); return; }
+  }
+  if (irName && canIr()) { if (!B.ir(irName)) toast('Falha ao enviar o infravermelho'); return; }
+  toast(app ? 'Apps só abrem pelo Wi-Fi' : 'Sem conexão com a TV');
+}
+
+// Botões com data-repeat repetem enquanto o dedo fica pressionado (volume, setas).
+let holdTimer, holdBtn;
+function stopHold() { clearTimeout(holdTimer); clearInterval(holdTimer); if (holdBtn) holdBtn.classList.remove('hold'); holdBtn = null; }
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('button[data-repeat]'); if (!b) return;
+  stopHold(); holdBtn = b; b.classList.add('hold'); act(b);
+  holdTimer = setTimeout(() => { holdTimer = setInterval(() => act(b), 140); }, 450);
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(t => document.addEventListener(t, stopHold));
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.hasAttribute('data-repeat')) return;
+  if (b.dataset.k || b.dataset.u || b.dataset.app || b.id === 'power') act(b);
+});
+
+$('#go').onclick = () => {
+  const ip = $('#ip').value.trim();
+  if (!ip) { toast('Digite o IP da TV'); return; }
+  if (mode === 'ir') setMode('auto');
+  B.connect(ip);
+};
+$('#forget').onclick = () => { B.forget(); $('#ip').value = ''; toast('TV esquecida'); };
+$('#sendText').onclick = () => {
+  const t = $('#text').value;
+  if (!t) return;
+  if (!useWifi()) { toast('Digitar só funciona pelo Wi-Fi'); return; }
+  B.request('ssap://com.webos.service.ime/insertText', JSON.stringify({ text: t, replace: 0 }));
+  $('#text').value = '';
+};
+
+function setMode(m) {
+  mode = m; B.setPref('mode', m);
+  document.querySelectorAll('#mode button').forEach(x => x.classList.toggle('on', x.dataset.mode === m));
+  paintStatus();
+}
+document.querySelectorAll('#mode button').forEach(x => x.onclick = () => setMode(x.dataset.mode));
+
+$('#ip').value = B.savedIp();
+setMode(mode);
+if (B.connected()) tvStatus = 'connected';
+paintStatus();
+</script>
+</body>
+</html>
