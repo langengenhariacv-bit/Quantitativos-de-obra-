@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ApplicationPackage SchemaVersion="1.0" AutodeskProduct="AutoCAD" ProductType="Application"
+  Name="LANG ConfereAuto" Description="Confere e corrige pranchas do LANG ProjetoAuto"
+  AppVersion="0.1.0" Author="LANG Engenharia" ProductCode="{6B1D7F3A-2C4E-4F8B-9A51-0C7E3D2B9F41}"
+  UpgradeCode="{D3A8E5C1-7B2F-4E69-8C40-5F1A9B6E2D73}">
+  <CompanyDetails Name="LANG Engenharia" />
+  <Components>
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD*" SeriesMin="R24.0" />
+    <ComponentEntry AppName="LANG_ConfereAuto" ModuleName="./Contents/LANG_ConfereAuto.lsp"
+      AppDescription="CONFEREPROJETO, CONFERESOMENTE, PROJETOSEGURO" LoadOnAutoCADStartup="True">
+      <Commands GroupName="LANG_CONFERE">
+        <Command Global="CONFEREPROJETO" Local="CONFEREPROJETO" />
+        <Command Global="CONFERESOMENTE" Local="CONFERESOMENTE" />
+        <Command Global="PROJETOSEGURO" Local="PROJETOSEGURO" />
+      </Commands>
+    </ComponentEntry>
+  </Components>
+</ApplicationPackage>
