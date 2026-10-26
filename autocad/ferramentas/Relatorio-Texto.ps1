@@ -20,13 +20,13 @@ if ($r.erro) {
 } else {
   $l.Add('CORRIGIDO AUTOMATICAMENTE')
   $l.Add("  Camadas das plantas ajustadas ao padrao: $(Qtd $r.camadas.camadas_fora_do_padrao)")
-  $l.Add("  Objetos com espessura propria (voltaram para a da camada): $(Qtd $r.camadas.objetos_com_espessura_propria)")
   $l.Add("  Cotas afastadas de textos/blocos: $(Qtd $r.cotas.cotas_movidas)")
   $l.Add("  Material de esquadria preenchido: $(Qtd $r.esquadrias.material_preenchido)")
   $l.Add('')
   $l.Add('PARA VOCE CONFERIR OU DECIDIR')
   $l.Add("  Cotas ainda encostando (nao achei lugar livre): $(Qtd $r.cotas.cotas_com_colisao_sem_solucao)")
   Itens $r.cotas.cotas_com_colisao_sem_solucao | ForEach-Object { $l.Add($_) }
+  $l.Add("  Objetos com espessura diferente do padrao da camada (o ProjetoAuto pode ter escolhido): $(Qtd $r.camadas.objetos_com_espessura_propria)")
   $l.Add("  Esquadrias com material 'A definir': $(Qtd $r.esquadrias.material_a_definir)")
   $l.Add("  Itens de fossa/sumidouro (confirmar se continua fossa ou rede publica): $(Qtd $r.pendencias.usa_fossa)")
   Itens $r.pendencias.usa_fossa | ForEach-Object { $l.Add($_) }

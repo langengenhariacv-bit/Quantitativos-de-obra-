@@ -20,7 +20,8 @@ test('repassa material e modo para o executor e resume o resultado', async () =>
   assert.equal(r.ok, true);
   assert.equal(r.relatorio.material, 'Aluminio preto');
   const texto = tool.resumir(r);
-  assert.match(texto, /1 camadas, 3 objetos com espessura propria, 2 cotas afastadas, 0 materiais/);
+  assert.match(texto, /1 camadas, 2 cotas afastadas, 0 materiais/);
+  assert.match(texto, /3 objetos com espessura diferente do padrao/);
   assert.match(texto, /1 esquadrias "A definir", 0 itens de fossa, 3 campos/);
   assert.match(texto, /Arquivo corrigido: C:\/saida\/x-CORRIGIDO.dwg/);
 });
