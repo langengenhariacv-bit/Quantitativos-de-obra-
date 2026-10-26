@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -34,3 +34,16 @@ jobs:
           name: controle-tv-apk
           path: controle-tv/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publicar link de download
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/claude/install-5-plugins-t0vu00'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk ControleTV.apk
+          if ! gh release view controle-tv >/dev/null 2>&1; then
+            gh release create controle-tv --target "$GITHUB_SHA" --prerelease \
+              --title "Controle TV" \
+              --notes "App Android de controle remoto para TV LG (Wi-Fi + infravermelho). Baixe ControleTV.apk e instale no celular."
+          fi
+          gh release upload controle-tv ControleTV.apk --clobber
