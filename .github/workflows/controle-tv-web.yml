@@ -1,0 +1,43 @@
+name: Controle TV (web)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'controle-tv/**'
+      - '.github/workflows/controle-tv-web.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # A tela é a mesma do app Android; no navegador a ponte tv-web.js substitui a nativa.
+      - name: Montar site
+        run: |
+          mkdir -p _site
+          cp controle-tv/android/app/src/main/assets/index.html controle-tv/android/app/src/main/assets/pairing.json _site/
+          cp controle-tv/web/* _site/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
