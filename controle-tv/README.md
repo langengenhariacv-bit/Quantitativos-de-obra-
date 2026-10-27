@@ -47,10 +47,11 @@ segura na porta 3001.
 ## Primeiro uso
 
 1. Para o infravermelho, aponte o celular para a TV e toque em ⏻.
-2. Para o Wi-Fi, encontre o IP da TV em Configurações → Geral → Rede → Wi-Fi
-   → Configurações avançadas. Digite o IP no cartão **Conexão**, toque em
-   **Conectar** e aceite o pedido que aparece na tela da TV. O app guarda o
-   pareamento.
+2. Para o Wi-Fi, o app procura a TV sozinho na primeira vez. Depois, é só
+   tocar em **🔍 Procurar TV na rede**, no cartão **Conexão**. Se ele não
+   achar, digite o IP da TV (Configurações → Geral → Rede → Wi-Fi →
+   Configurações avançadas) e toque em **Conectar**. Aceite o pedido que
+   aparece na tela da TV. O app guarda o pareamento.
 
 ## Compilar no computador
 
@@ -69,5 +70,7 @@ O APK fica em `app/build/outputs/apk/debug/app-debug.apk`.
 - `LgTv.java`: o protocolo SSAP da LG. Usa `wss://IP:3001` e, se não der,
   `ws://IP:3000`. Aceita o certificado oficial das TVs LG; para outros
   modelos, guarda o certificado da primeira conexão e exige o mesmo depois.
+- `TvFinder.java`: procura TVs LG na rede pela busca SSDP
+  (`urn:lge-com:service:webos-second-screen:1`).
 - `IrBlaster.java`: os códigos NEC das TVs LG (endereço 0x04), enviados pelo
   `ConsumerIrManager` do Android.

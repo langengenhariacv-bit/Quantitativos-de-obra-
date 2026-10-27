@@ -102,6 +102,8 @@ button:active,button.hold{background:var(--btn2);transform:scale(.97)}
   <h2>Conexão</h2>
   <p class="hint">Wi-Fi: digite o IP da TV (na TV: Configurações → Geral → Rede → Wi-Fi → Configurações avançadas) e aceite o pedido na tela.<span id="irHint"> Sem Wi-Fi, o app usa o infravermelho — aponte o celular para a TV.</span></p>
   <p class="hint" id="cert" style="display:none;color:#ffcf8a">Não consegui falar com a TV. Abra <a id="certLink" target="_blank" style="color:#7fb3ff">este link</a>, toque em <b>Mostrar detalhes → Visitar este site</b> (iPhone) ou <b>Avançado → Continuar</b> (Android), volte aqui e toque em Conectar. Confira também se o celular está no mesmo Wi-Fi da TV.</p>
+  <div class="row" id="findRow" style="display:none;margin-bottom:10px"><button id="find">🔍 Procurar TV na rede</button></div>
+  <div id="found" class="col" style="margin-bottom:10px"></div>
   <div class="row"><input id="ip" inputmode="decimal" placeholder="ex.: 192.168.0.50"><button id="go" style="flex:0 0 100px">Conectar</button></div>
   <div class="seg" id="mode">
     <button data-mode="auto">Automático</button><button data-mode="wifi">Só Wi-Fi</button><button data-mode="ir">Só infraverm.</button>
@@ -199,6 +201,33 @@ $('#go').onclick = () => {
   if (mode === 'ir') setMode('auto');
   B.connect(ip);
 };
+// Busca automática (só no app Android: o navegador não consegue procurar na rede).
+const canFind = typeof B.findTv === 'function';
+function findTv(auto) {
+  const btn = $('#find');
+  btn.disabled = true; btn.textContent = 'Procurando…';
+  $('#found').innerHTML = '';
+  window.tvFound = tvs => {
+    btn.disabled = false; btn.textContent = '🔍 Procurar TV na rede';
+    if (!tvs.length) { if (!auto) toast('Nenhuma TV LG encontrada. Confira se ela está ligada e no mesmo Wi-Fi.'); return; }
+    if (tvs.length === 1) {
+      $('#ip').value = tvs[0].ip;
+      toast('Encontrei ' + tvs[0].name + ' (' + tvs[0].ip + ')');
+      if (mode === 'ir') setMode('auto');
+      B.connect(tvs[0].ip);
+      return;
+    }
+    tvs.forEach(tv => {
+      const b = document.createElement('button');
+      b.textContent = tv.name + ' — ' + tv.ip;
+      b.onclick = () => { $('#ip').value = tv.ip; $('#found').innerHTML = ''; if (mode === 'ir') setMode('auto'); B.connect(tv.ip); };
+      $('#found').appendChild(b);
+    });
+  };
+  B.findTv();
+}
+if (canFind) { $('#findRow').style.display = ''; $('#find').onclick = () => findTv(false); }
+
 $('#forget').onclick = () => { B.forget(); $('#ip').value = ''; toast('TV esquecida'); };
 $('#sendText').onclick = () => {
   const t = $('#text').value;
@@ -218,6 +247,7 @@ document.querySelectorAll('#mode button').forEach(x => x.onclick = () => setMode
 if (!hasIr) { $('#mode').style.display = 'none'; $('#irHint').style.display = 'none'; mode = 'wifi'; }
 $('#ip').value = B.savedIp();
 setMode(mode);
+if (canFind && !B.savedIp()) findTv(true);
 if (B.connected()) tvStatus = 'connected';
 paintStatus();
 </script>

@@ -16,12 +16,15 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 /** Tela do controle (HTML em assets) ligada ao Wi-Fi da LG e ao infravermelho do celular. */
 public class MainActivity extends Activity {
@@ -29,6 +32,7 @@ public class MainActivity extends Activity {
     private WebView web;
     private LgTv tv;
     private IrBlaster ir;
+    private TvFinder finder;
     private SharedPreferences prefs;
     private Vibrator vibrator;
 
@@ -40,6 +44,7 @@ public class MainActivity extends Activity {
 
         prefs = getSharedPreferences("controle_tv", Context.MODE_PRIVATE);
         ir = new IrBlaster(this);
+        finder = new TvFinder(this);
         tv = new LgTv(prefs, readAsset("pairing.json"), this::onTvState);
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
@@ -84,6 +89,21 @@ public class MainActivity extends Activity {
                 + JSONObject.quote(state) + "," + JSONObject.quote(detail) + ")", null);
     }
 
+    private void onTvsFound(Map<String, String> tvs) {
+        JSONArray list = new JSONArray();
+        for (Map.Entry<String, String> tv : tvs.entrySet()) {
+            JSONObject item = new JSONObject();
+            try {
+                item.put("ip", tv.getKey());
+                item.put("name", tv.getValue());
+            } catch (JSONException ignored) {
+                continue;
+            }
+            list.put(item);
+        }
+        runOnUiThread(() -> web.evaluateJavascript("window.tvFound && window.tvFound(" + list + ")", null));
+    }
+
     private String readAsset(String name) {
         try (InputStream in = getAssets().open(name)) {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -118,6 +138,11 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void connect(String ip) {
             tv.connect(ip.trim());
+        }
+
+        @JavascriptInterface
+        public void findTv() {
+            finder.search(MainActivity.this::onTvsFound);
         }
 
         @JavascriptInterface
