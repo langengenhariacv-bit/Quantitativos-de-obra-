@@ -24,6 +24,26 @@ O GitHub compila o app sozinho a cada alteração nesta pasta.
 4. No celular, abra o APK e permita a instalação de **fontes desconhecidas**
    quando o Android pedir.
 
+## Versão web (iPhone e outros celulares)
+
+A mesma tela também funciona no navegador, só pelo Wi-Fi (o iPhone não tem
+infravermelho). O workflow **Controle TV (web)** publica a versão web no
+GitHub Pages sempre que a pasta `controle-tv/` muda na `main`:
+
+https://langengenhariacv-bit.github.io/Quantitativos-de-obra-/
+
+No iPhone:
+
+1. Abra o link no **Safari** e toque em Compartilhar → **Adicionar à Tela de
+   Início**.
+2. Digite o IP da TV e toque em **Conectar**. Se aparecer o aviso do
+   certificado, toque no link indicado, depois em **Mostrar detalhes →
+   Visitar este site**, volte e conecte de novo.
+3. Se o iPhone pedir acesso à **rede local**, permita.
+
+A versão web só funciona com TVs LG de 2018 em diante, que aceitam conexão
+segura na porta 3001.
+
 ## Primeiro uso
 
 1. Para o infravermelho, aponte o celular para a TV e toque em ⏻.

@@ -4,11 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Controle TV</title>
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Controle TV">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
 <style>
 :root{--bg:#111;--card:#1d1d1f;--btn:#2a2a2d;--btn2:#38383c;--txt:#f2f2f2;--mut:#9a9aa0;--acc:#e0245e;--ok:#2ecc71;--ir:#f5a623}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--bg);color:var(--txt);font:15px system-ui,-apple-system,Roboto,sans-serif;user-select:none}
-main{max-width:420px;margin:0 auto;padding:16px 16px 28px}
+main{max-width:420px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom))}
 header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 h1{font-size:18px;margin:0}
 h2{font-size:14px;margin:0 0 10px;color:var(--mut);font-weight:600}
@@ -93,7 +100,8 @@ button:active,button.hold{background:var(--btn2);transform:scale(.97)}
 
 <section class="card">
   <h2>Conexão</h2>
-  <p class="hint">Wi-Fi: digite o IP da TV (na TV: Configurações → Geral → Rede → Wi-Fi → Configurações avançadas) e aceite o pedido na tela. Sem Wi-Fi, o app usa o infravermelho — aponte o celular para a TV.</p>
+  <p class="hint">Wi-Fi: digite o IP da TV (na TV: Configurações → Geral → Rede → Wi-Fi → Configurações avançadas) e aceite o pedido na tela.<span id="irHint"> Sem Wi-Fi, o app usa o infravermelho — aponte o celular para a TV.</span></p>
+  <p class="hint" id="cert" style="display:none;color:#ffcf8a">Não consegui falar com a TV. Abra <a id="certLink" target="_blank" style="color:#7fb3ff">este link</a>, toque em <b>Mostrar detalhes → Visitar este site</b> (iPhone) ou <b>Avançado → Continuar</b> (Android), volte aqui e toque em Conectar. Confira também se o celular está no mesmo Wi-Fi da TV.</p>
   <div class="row"><input id="ip" inputmode="decimal" placeholder="ex.: 192.168.0.50"><button id="go" style="flex:0 0 100px">Conectar</button></div>
   <div class="seg" id="mode">
     <button data-mode="auto">Automático</button><button data-mode="wifi">Só Wi-Fi</button><button data-mode="ir">Só infraverm.</button>
@@ -103,6 +111,7 @@ button:active,button.hold{background:var(--btn2);transform:scale(.97)}
 </main>
 <div id="toast"></div>
 
+<script src="tv-web.js"></script>
 <script>
 // Fora do app (navegador), usa um simulador para dar para ver a tela.
 const B = window.TV || {
@@ -130,12 +139,17 @@ function paintStatus() {
   if (mode !== 'ir' && tvStatus === 'connected') { st.className = 'wifi'; label.textContent = 'Wi-Fi'; }
   else if (texts[tvStatus] && mode !== 'ir') label.textContent = texts[tvStatus];
   else if (canIr()) { st.className = 'ir'; label.textContent = 'infravermelho'; }
-  else label.textContent = hasIr ? 'desconectado' : 'sem infravermelho';
+  else label.textContent = 'desconectado';
 }
 
 window.tvState = (state, detail) => {
   if (state === 'error') { toast('TV: ' + detail); return; }
   tvStatus = state;
+  const cert = $('#cert');
+  if (state === 'offline' && detail === 'cert') {
+    $('#certLink').href = 'https://' + B.savedIp() + ':3001';
+    cert.style.display = 'block';
+  } else if (state !== 'offline') cert.style.display = 'none';
   if (state === 'prompt') toast('Confirme o pedido de conexão na TV');
   if (state === 'refused') toast('A TV recusou a conexão');
   paintStatus();
@@ -201,6 +215,7 @@ function setMode(m) {
 }
 document.querySelectorAll('#mode button').forEach(x => x.onclick = () => setMode(x.dataset.mode));
 
+if (!hasIr) { $('#mode').style.display = 'none'; $('#irHint').style.display = 'none'; mode = 'wifi'; }
 $('#ip').value = B.savedIp();
 setMode(mode);
 if (B.connected()) tvStatus = 'connected';
