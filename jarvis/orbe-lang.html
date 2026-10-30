@@ -75,13 +75,13 @@ button:focus-visible{outline:2px solid var(--laranja);outline-offset:2px}
     <div class="opcoes tres" id="paletas"></div>
   </section>
 
-  <p class="nota">Prévia para aprovação. As três cores continuam se movendo dentro da orbe, agora atrás de um disco de vidro com a logo da LANG. Ouvindo, a orbe pulsa e acelera; pensando, as cores giram; falando, ondas saem da borda.</p>
+  <p class="nota">Prévia para aprovação. As três cores continuam se movendo dentro da orbe, atrás de um disco de vidro com a logo da LANG. Parada e pensando, a orbe fica redonda. Ouvindo e falando, a borda ondula e vibra com a voz, e a logo treme junto.</p>
 </div>
 
 <script>
 const PALETAS={
-  lang:{nome:"LANG",cores:["#ff5a00","#ffb02e","#2f6bff"],aro:"#ffd2b0"},
   azul:{nome:"Azul atual",cores:["#2f7bff","#14d1ff","#8a4bff"],aro:"#bfe3ff"},
+  lang:{nome:"LANG",cores:["#ff5a00","#ffb02e","#2f6bff"],aro:"#ffd2b0"},
   noite:{nome:"Noite",cores:["#ff5a00","#7a3cff","#00c2ff"],aro:"#e6d6ff"}
 };
 const ROTULOS={repouso:"<b>Em repouso</b> · toque para falar",ouvindo:"<b>Ouvindo…</b>",pensando:"<b>Pensando…</b>",falando:"<b>Falando</b>"};
@@ -90,7 +90,7 @@ const AJUSTE={repouso:{vel:.35,amp:.22,brilho:.85},ouvindo:{vel:.9,amp:.3,brilho
 const tela=document.getElementById("tela"),ctx=tela.getContext("2d");
 const disco=document.getElementById("disco"),estadoTxt=document.getElementById("estado");
 const reduzir=matchMedia("(prefers-reduced-motion: reduce)").matches;
-let paleta="lang",estado="repouso",t=0,ultimo=performance.now(),giro=0,ondas=[],proxOnda=0;
+let paleta="azul",estado="repouso",deforma=0,t=0,ultimo=performance.now(),giro=0,ondas=[],proxOnda=0;
 let atual={...AJUSTE.repouso};
 
 function medir(){const r=tela.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);
@@ -109,7 +109,13 @@ function quadro(agora){
   t+=dt*(reduzir?.15:1);giro+=dt*atual.vel*(estado==="pensando"?1.8:.6);
   const W=tela.clientWidth,H=tela.clientHeight,cx=W/2,cy=H/2,R=W*.36;
   const p=PALETAS[paleta],v=(estado==="ouvindo"||estado==="falando")?voz():0;
-  const raio=R*(1+(estado==="ouvindo"?.05*v:0)+(estado==="repouso"?.012*Math.sin(t*1.4):0));
+  const raio=R*(1+(estado==="ouvindo"?.03*v:0)+(estado==="repouso"?.012*Math.sin(t*1.4):0));
+  // forma: redonda parada/pensando; ondula e vibra com a voz ao ouvir e falar
+  const alvoDef=estado==="ouvindo"?.035+.075*v:estado==="falando"?.03+.06*v:0;
+  deforma+=(alvoDef-deforma)*Math.min(1,dt*(alvoDef>deforma?14:4));
+  const forma=()=>{ctx.beginPath();for(let i=0;i<=96;i++){const a=i/96*Math.PI*2;
+    const d=Math.sin(a*3+t*2.3)*.45+Math.sin(a*5-t*3.7+1)*.3+Math.sin(a*8+t*6.1+2)*.25*(.4+v);
+    const r=raio*(1+deforma*d);const x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.closePath()};
   ctx.clearRect(0,0,W,H);
 
   // brilho externo
@@ -124,7 +130,7 @@ function quadro(agora){
     ctx.strokeStyle=rgba(p.cores[1],o.a);ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,o.r,0,7);ctx.stroke()}
 
   // corpo da orbe: base escura + três manchas de cor se movendo
-  ctx.save();ctx.beginPath();ctx.arc(cx,cy,raio,0,7);ctx.clip();
+  ctx.save();forma();ctx.clip();
   g=ctx.createRadialGradient(cx,cy-raio*.3,raio*.1,cx,cy,raio);
   g.addColorStop(0,"#1b2030");g.addColorStop(1,"#07080c");ctx.fillStyle=g;ctx.fillRect(cx-raio,cy-raio,raio*2,raio*2);
   ctx.globalCompositeOperation="lighter";
@@ -146,12 +152,13 @@ function quadro(agora){
   ctx.restore();
 
   // aro de vidro
-  ctx.lineWidth=1.5;ctx.strokeStyle=rgba(p.aro,.55);ctx.beginPath();ctx.arc(cx,cy,raio-.75,0,7);ctx.stroke();
+  ctx.lineWidth=1.5;ctx.strokeStyle=rgba(p.aro,.55+deforma*3);forma();ctx.stroke();
   // arco girando ao pensar
   if(estado==="pensando"){ctx.lineWidth=3;ctx.lineCap="round";ctx.strokeStyle=rgba(p.cores[1],.9);
     ctx.beginPath();ctx.arc(cx,cy,raio+10,giro*2,giro*2+1.1);ctx.stroke()}
 
-  disco.style.transform=`scale(${1+(estado==="ouvindo"?.04*v:0)+(estado==="falando"?.025*v:0)})`;
+  const tremor=deforma*raio*.06;
+  disco.style.transform=`translate(${(Math.sin(t*31)*tremor).toFixed(2)}px,${(Math.cos(t*27)*tremor).toFixed(2)}px) scale(${1+(estado==="ouvindo"?.04*v:0)+(estado==="falando"?.025*v:0)})`;
   requestAnimationFrame(quadro);
 }
 requestAnimationFrame(quadro);
