@@ -16,13 +16,13 @@ Ele trabalha **sempre numa cópia**: o arquivo original nunca é alterado.
 ## O que ele corrige sozinho
 
 - **Camadas das plantas** fora do padrão do ProjetoAuto 0.5.9 (cor e espessura): parede 0,50, esquadria 0,35, projeção 0,18, hachura e quadro 0,13.
-- **Objetos com espessura própria** nessas camadas voltam a usar a espessura da camada.
 - **Cotas encostando** em textos, balões, círculos ou blocos: o número é afastado da linha, ou deslizado ao longo dela, até achar um lugar livre.
 - **Material das esquadrias "A definir"**: preenchido quando você informa um material padrão (ex.: "Alumínio preto").
 
 ## O que ele só aponta no relatório (você decide)
 
 - Cotas que não acharam lugar livre.
+- **Objetos com espessura diferente do padrão da camada.** Não são alterados, porque o ProjetoAuto escolhe a espessura de cada objeto conforme o estilo gráfico (ex.: linhas do quadro com 0,25). Objetos que já estão com a espessura padrão não contam.
 - Desenho com **fossa/sumidouro**: confirmar se continua fossa ou passa para rede pública.
 - Campos **"A DEFINIR"**, como zona, recuos e taxas da prefeitura. Os parâmetros de Guabiruba ainda não foram cadastrados.
 - Objetos soltos na camada 0.
@@ -47,7 +47,13 @@ Ele trabalha **sempre numa cópia**: o arquivo original nunca é alterado.
 
 ## Ligar na Central Dots
 
-No servidor da Central (Node):
+Na Central Dots instalada no PC (OpenDots), o ConfereAuto entra no fluxo de AutoCAD supervisionado
+(`src/server/central-autocad-projects.ts`), e não como ferramenta solta:
+
+- `autocad_conferir`: confere uma cópia da versão atual do projeto importado e devolve o relatório. Não altera nada.
+- `autocad_propor_correcao`: cria um pedido em **Central Dots → Aprovações**. Só depois de aprovado o executor corrige a cópia, e o resultado vira a próxima versão do DWG. A versão anterior continua guardada.
+
+O trecho abaixo serve para outros servidores Node, fora da Central:
 
 ```js
 const autocad = require(process.env.LOCALAPPDATA + '\\LANG\\ConfereAuto\\central\\autocad-tool.js');
@@ -76,7 +82,8 @@ Exemplo de pedido ao bot: *"confere o projeto D:\Projetos\Casa Silva\croqui.dwg,
 
 ## Limites conhecidos
 
-- Ainda **não foi testado num AutoCAD de verdade**: o pacote foi feito na nuvem, onde não há AutoCAD nem PowerShell. Aqui só foram testados os parênteses do LISP e a ferramenta da Central (6 testes com um AutoCAD simulado). O primeiro uso no PC precisa ser acompanhado.
+- Testado em 26/10/2026 no AutoCAD 2027 (educacional), numa cópia do croqui de duas casas gerado pelo PROJETO: `CONFERESOMENTE`, executor só conferir e executor corrigir (5 cotas afastadas, 8 sem lugar livre, 18 esquadrias preenchidas). Também com dois trabalhos seguidos e com um AutoCAD fechando no início.
+- `-GerarProjeto` usa as respostas do questionário salvas no croqui. Num croqui sem respostas salvas o PROJETO usa os padrões (unidade **Milímetros**) e não reconhece ambientes de um desenho em metros. Rode o PROJETO uma vez à mão nesse croqui antes.
 - O executor abre o AutoCAD na tela e manda comandos para a aba dele. **Não use o AutoCAD enquanto ele roda**: se você trocar de aba, os comandos podem ir para o desenho errado. Ele fecha só a aba que abriu.
 - Cotas omitidas pelo ProjetoAuto (quando não havia espaço) não existem no desenho, então ele não tem como recolocá-las.
 - O AutoCAD instalado é a versão educacional. Para entregar trabalhos, é preciso a licença comercial.

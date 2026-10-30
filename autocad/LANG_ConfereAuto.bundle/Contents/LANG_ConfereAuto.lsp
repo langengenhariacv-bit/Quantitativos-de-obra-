@@ -9,11 +9,10 @@
 ;;; Uso em lote (Conferir-Projeto.ps1):
 ;;;   (lang-confere:executar "C:/pasta/parametros.txt" "C:/pasta/relatorio.json")
 ;;;
-;;; O que corrige: camadas das plantas fora do padrao de cor/espessura, objetos com espessura
-;;; propria nessas camadas, cotas que encostam em textos/blocos e material "A definir" do
-;;; quadro de esquadrias (quando um material padrao foi informado).
-;;; O que so aponta: fossa/sumidouro, campos "A DEFINIR" de prefeitura, objetos na camada 0,
-;;; cotas que nao acharam lugar livre.
+;;; O que corrige: camadas das plantas fora do padrao de cor/espessura, cotas que encostam em
+;;; textos/blocos e material "A definir" do quadro de esquadrias (quando um material padrao foi informado).
+;;; O que so aponta: objetos com espessura diferente do padrao, fossa/sumidouro, campos "A DEFINIR"
+;;; de prefeitura, objetos na camada 0, cotas que nao acharam lugar livre.
 
 (vl-load-com)
 
@@ -110,7 +109,7 @@
 ;;; ------------------------------------------------------------------
 ;;; 1. Camadas e espessuras
 
-(defun lang-confere:camadas-checar (corrigir / camadas lay achados qtd obj)
+(defun lang-confere:camadas-checar (corrigir / camadas lay achados qtd obj spec)
  (setq camadas (vla-get-Layers (lang-confere:doc)))
  (foreach spec lang-confere:camadas
   (if (not (vl-catch-all-error-p (setq lay (vl-catch-all-apply 'vla-Item (list camadas (car spec))))))
@@ -122,13 +121,15 @@
                                (cons "corrigido" (if corrigir t 'falso)))
                          achados))
      (if corrigir (progn (vla-put-Color lay (cadr spec)) (vla-put-Lineweight lay (caddr spec))))))))
- ;; Objetos com espessura propria escondem o padrao da camada.
+ ;; Objetos com espessura propria diferente do padrao da camada. So aponta: o ProjetoAuto da
+ ;; espessura por objeto de proposito (pa05:style-part, conforme o estilo grafico escolhido).
+ ;; Quem ja esta com a espessura padrao nao conta.
  (setq qtd 0)
  (vlax-for obj (vla-get-ModelSpace (lang-confere:doc))
-  (if (and (assoc (vla-get-Layer obj) lang-confere:camadas)
+  (if (and (setq spec (assoc (vla-get-Layer obj) lang-confere:camadas))
            (vlax-property-available-p obj 'Lineweight)
-           (/= (vla-get-Lineweight obj) acLnWtByLayer))
-   (progn (setq qtd (1+ qtd)) (if corrigir (vla-put-Lineweight obj acLnWtByLayer)))))
+           (not (member (vla-get-Lineweight obj) (list acLnWtByLayer (caddr spec)))))
+   (setq qtd (1+ qtd))))
  (list (cons "camadas_fora_do_padrao" (reverse achados))
        (cons "objetos_com_espessura_propria" qtd)))
 
@@ -175,10 +176,10 @@
            (if (lang-confere:livre nova handle obst folga)
             (progn
              (vla-Move obj (vlax-3d-point 0 0 0) (vlax-3d-point (car d) (cadr d) 0))
-             (setq ok t obst (subst (list handle nova) (assoc handle obst) obst))))))))
+             (setq ok t obst (subst (list handle nova) (assoc handle obst) obst)))))))))
       (if ok
        (setq movidas (cons (lang-confere:item handle (vla-get-Layer obj) (lang-confere:texto-de obj)) movidas))
-       (setq presas (cons (lang-confere:item handle (vla-get-Layer obj) (lang-confere:texto-de obj)) presas)))))))))
+       (setq presas (cons (lang-confere:item handle (vla-get-Layer obj) (lang-confere:texto-de obj)) presas))))))))
  (list (cons "cotas_movidas" (reverse movidas))
        (cons "cotas_com_colisao_sem_solucao" (reverse presas))))
 
@@ -227,7 +228,8 @@
 ;;; ------------------------------------------------------------------
 ;;; 4. Pontos que dependem do responsavel (so aponta)
 
-(defun lang-confere:pendencias (/ fossa prefeitura camada0 s nome)
+(defun lang-confere:pendencias (ignorar / fossa prefeitura camada0 s nome)
+ ;; ignorar: handles ja relatados no quadro de esquadrias (nao repete como campo de prefeitura)
  (vlax-for obj (vla-get-ModelSpace (lang-confere:doc))
   (setq s (strcase (lang-confere:texto-de obj))
         nome (if (= (vla-get-ObjectName obj) "AcDbBlockReference") (strcase (vla-get-EffectiveName obj)) ""))
@@ -235,6 +237,7 @@
    (setq fossa (cons (lang-confere:item (vla-get-Handle obj) (vla-get-Layer obj) (if (= s "") nome s)) fossa)))
   (if (and (wcmatch s "*A DEFINIR*")
            (not (wcmatch s "*MATERIAL*"))
+           (not (member (vla-get-Handle obj) ignorar))
            (not (wcmatch (strcase (vla-get-Layer obj)) "LANG-PA-PL-QUADRO")))
    (setq prefeitura (cons (lang-confere:item (vla-get-Handle obj) (vla-get-Layer obj) s) prefeitura)))
   (if (= (vla-get-Layer obj) "0")
@@ -251,17 +254,20 @@
  (vla-SaveAs (lang-confere:doc) arquivo acNative)
  arquivo)
 
-(defun lang-confere:rodar (corrigir material / doc nome r)
+(defun lang-confere:rodar (corrigir material / doc nome r esq vistos)
  (setq doc (lang-confere:doc) nome (vla-get-FullName doc))
  (if corrigir (vla-StartUndoMark doc))
+ (setq esq (lang-confere:material-checar (if corrigir material)))
+ (foreach lista (mapcar 'cdr esq)
+  (foreach i lista (setq vistos (cons (cdr (assoc "handle" i)) vistos))))
  (setq r (list (cons "versao" lang-confere:versao)
                (cons "desenho" (if (= nome "") (getvar "DWGNAME") nome))
                (cons "modo" (if corrigir "corrigir" "conferir"))
                (cons "formato_dxf" (if (wcmatch (strcase (getvar "DWGNAME")) "*.DXF") t 'falso))
                (cons "camadas" (lang-confere:camadas-checar corrigir))
                (cons "cotas" (lang-confere:cotas-checar corrigir))
-               (cons "esquadrias" (lang-confere:material-checar (if corrigir material)))
-               (cons "pendencias" (lang-confere:pendencias))))
+               (cons "esquadrias" esq)
+               (cons "pendencias" (lang-confere:pendencias vistos))))
  (if corrigir (vla-EndUndoMark doc))
  r)
 
@@ -286,7 +292,7 @@
   (if (listp v) (length v) v))
  (princ (strcat "\nLANG ConfereAuto " lang-confere:versao
                 "\n  Camadas fora do padrao: " (itoa (n '("camadas" "camadas_fora_do_padrao")))
-                "\n  Objetos com espessura propria: " (itoa (n '("camadas" "objetos_com_espessura_propria")))
+                "\n  Objetos com espessura diferente do padrao (so aponta): " (itoa (n '("camadas" "objetos_com_espessura_propria")))
                 "\n  Cotas movidas: " (itoa (n '("cotas" "cotas_movidas")))
                 "\n  Cotas com colisao sem solucao: " (itoa (n '("cotas" "cotas_com_colisao_sem_solucao")))
                 "\n  Material preenchido: " (itoa (n '("esquadrias" "material_preenchido")))

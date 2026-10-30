@@ -96,9 +96,10 @@ function resumir(r) {
   const n = (v) => (Array.isArray(v) ? v.length : typeof v === 'number' ? v : v ? 1 : 0);
   const c = rel.camadas || {}, k = rel.cotas || {}, e = rel.esquadrias || {}, p = rel.pendencias || {};
   return [
-    `Projeto conferido. Corrigido: ${n(c.camadas_fora_do_padrao)} camadas, ${n(c.objetos_com_espessura_propria)} objetos com espessura propria, ` +
+    `Projeto conferido. Corrigido: ${n(c.camadas_fora_do_padrao)} camadas, ` +
       `${n(k.cotas_movidas)} cotas afastadas, ${n(e.material_preenchido)} materiais de esquadria.`,
-    `Para voce decidir: ${n(k.cotas_com_colisao_sem_solucao)} cotas ainda encostando, ${n(e.material_a_definir)} esquadrias "A definir", ` +
+    `Para voce decidir: ${n(k.cotas_com_colisao_sem_solucao)} cotas ainda encostando, ` +
+      `${n(c.objetos_com_espessura_propria)} objetos com espessura diferente do padrao, ${n(e.material_a_definir)} esquadrias "A definir", ` +
       `${n(p.usa_fossa)} itens de fossa, ${n(p.campos_a_definir)} campos "A DEFINIR".`,
     r.corrigido ? `Arquivo corrigido: ${r.corrigido}` : 'Nada foi alterado (modo so conferir).',
     `Relatorio: ${r.relatorio_txt}`
