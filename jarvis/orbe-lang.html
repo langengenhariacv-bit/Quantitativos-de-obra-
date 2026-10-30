@@ -1,0 +1,173 @@
+<title>Orbe Jarvis LANG</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Manrope:wght@400;600;700&display=swap">
+<style>
+/* Layout: uma tela de app, orbe no centro, estados e paletas embaixo, como no celular. */
+:root{
+  --noite:#0b0d12;        /* fundo do app */
+  --vidro:#151922;        /* paineis */
+  --linha:#262c38;
+  --texto:#eef1f6;
+  --apagado:#8e97a8;
+  --laranja:#ff5a00;      /* cor da marca LANG */
+  --display:"Archivo Black","Arial Black",Arial,sans-serif;
+  --corpo:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--noite);color:var(--texto);font-family:var(--corpo);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:440px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;gap:20px;padding-block:20px 28px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+header h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.02em}
+header span{font-size:12px;color:var(--apagado)}
+.palco{position:relative;width:100%;max-width:360px;aspect-ratio:1;margin:8px auto 0}
+.palco canvas{position:absolute;inset:0;width:100%;height:100%}
+.marca{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.disco{width:41%;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;align-content:center;gap:2px;
+  background:radial-gradient(circle at 50% 38%,rgba(255,255,255,.16),rgba(255,255,255,.05) 62%,rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -12px 24px rgba(0,0,0,.28),0 10px 30px rgba(0,0,0,.35);
+  backdrop-filter:blur(10px) saturate(1.3);-webkit-backdrop-filter:blur(10px) saturate(1.3);
+  transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.wordmark{font-family:var(--display);font-size:clamp(26px,8.6vw,38px);letter-spacing:-.06em;line-height:1}
+.wordmark .l{color:#fff}.wordmark .ang{color:var(--laranja);text-shadow:0 0 18px rgba(255,90,0,.45)}
+.sub{font-weight:700;font-size:clamp(6px,1.9vw,8.5px);letter-spacing:.42em;margin-right:-.42em;color:rgba(255,255,255,.82)}
+.estado{text-align:center;font-size:14px;color:var(--apagado);min-height:1.4em}
+.estado b{color:var(--texto);font-weight:600}
+.grupo{display:flex;flex-direction:column;gap:8px}
+.grupo h2{margin:0;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--apagado)}
+.opcoes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.opcoes.tres{grid-template-columns:repeat(3,1fr)}
+button{font:inherit;font-size:13px;font-weight:600;color:var(--texto);background:var(--vidro);border:1px solid var(--linha);
+  border-radius:12px;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px}
+button[aria-pressed="true"]{border-color:var(--laranja);background:#1d1610}
+button:focus-visible{outline:2px solid var(--laranja);outline-offset:2px}
+.amostra{display:flex;gap:3px}.amostra i{width:12px;height:12px;border-radius:50%;display:block}
+.nota{font-size:12px;line-height:1.5;color:var(--apagado);margin:0}
+</style>
+
+<div class="app">
+  <header><h1>Jarvis · prévia da orbe</h1><span>toque na orbe</span></header>
+
+  <div class="palco" id="palco" role="button" tabindex="0" aria-label="Orbe do Jarvis. Toque para falar.">
+    <canvas id="tela"></canvas>
+    <div class="marca"><div class="disco" id="disco">
+      <div class="wordmark"><span class="l">L</span><span class="ang">ANG</span></div>
+      <div class="sub">ENGENHARIA</div>
+    </div></div>
+  </div>
+  <p class="estado" id="estado"><b>Em repouso</b> · toque para falar</p>
+
+  <section class="grupo" aria-labelledby="g-estado">
+    <h2 id="g-estado">Estado</h2>
+    <div class="opcoes" id="estados">
+      <button data-estado="repouso" aria-pressed="true">Repouso</button>
+      <button data-estado="ouvindo" aria-pressed="false">Ouvindo</button>
+      <button data-estado="pensando" aria-pressed="false">Pensando</button>
+      <button data-estado="falando" aria-pressed="false">Falando</button>
+    </div>
+  </section>
+
+  <section class="grupo" aria-labelledby="g-cor">
+    <h2 id="g-cor">Três cores</h2>
+    <div class="opcoes tres" id="paletas"></div>
+  </section>
+
+  <p class="nota">Prévia para aprovação. As três cores continuam se movendo dentro da orbe, agora atrás de um disco de vidro com a logo da LANG. Ouvindo, a orbe pulsa e acelera; pensando, as cores giram; falando, ondas saem da borda.</p>
+</div>
+
+<script>
+const PALETAS={
+  lang:{nome:"LANG",cores:["#ff5a00","#ffb02e","#2f6bff"],aro:"#ffd2b0"},
+  azul:{nome:"Azul atual",cores:["#2f7bff","#14d1ff","#8a4bff"],aro:"#bfe3ff"},
+  noite:{nome:"Noite",cores:["#ff5a00","#7a3cff","#00c2ff"],aro:"#e6d6ff"}
+};
+const ROTULOS={repouso:"<b>Em repouso</b> · toque para falar",ouvindo:"<b>Ouvindo…</b>",pensando:"<b>Pensando…</b>",falando:"<b>Falando</b>"};
+const AJUSTE={repouso:{vel:.35,amp:.22,brilho:.85},ouvindo:{vel:.9,amp:.3,brilho:1},pensando:{vel:1.6,amp:.26,brilho:.95},falando:{vel:.8,amp:.28,brilho:1}};
+
+const tela=document.getElementById("tela"),ctx=tela.getContext("2d");
+const disco=document.getElementById("disco"),estadoTxt=document.getElementById("estado");
+const reduzir=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let paleta="lang",estado="repouso",t=0,ultimo=performance.now(),giro=0,ondas=[],proxOnda=0;
+let atual={...AJUSTE.repouso};
+
+function medir(){const r=tela.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);
+  tela.width=Math.round(r.width*d);tela.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0)}
+addEventListener("resize",medir);medir();
+
+function rgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`}
+
+function voz(){ // simula volume da voz para ouvir/falar
+  return .5+.5*Math.sin(t*7.3)*Math.sin(t*3.1+1)*(.6+.4*Math.sin(t*1.7));
+}
+
+function quadro(agora){
+  const dt=Math.min(.05,(agora-ultimo)/1000);ultimo=agora;
+  const alvo=AJUSTE[estado];for(const k in alvo)atual[k]+=(alvo[k]-atual[k])*Math.min(1,dt*3);
+  t+=dt*(reduzir?.15:1);giro+=dt*atual.vel*(estado==="pensando"?1.8:.6);
+  const W=tela.clientWidth,H=tela.clientHeight,cx=W/2,cy=H/2,R=W*.36;
+  const p=PALETAS[paleta],v=(estado==="ouvindo"||estado==="falando")?voz():0;
+  const raio=R*(1+(estado==="ouvindo"?.05*v:0)+(estado==="repouso"?.012*Math.sin(t*1.4):0));
+  ctx.clearRect(0,0,W,H);
+
+  // brilho externo
+  let g=ctx.createRadialGradient(cx,cy,raio*.6,cx,cy,raio*1.55);
+  g.addColorStop(0,rgba(p.cores[0],.32*atual.brilho));g.addColorStop(.55,rgba(p.cores[2],.12*atual.brilho));g.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,raio*1.55,0,7);ctx.fill();
+
+  // ondas ao falar
+  if(estado==="falando"&&agora>proxOnda){ondas.push({r:raio,a:.55*(.5+v)});proxOnda=agora+260+200*(1-v)}
+  ondas=ondas.filter(o=>o.a>.01);
+  for(const o of ondas){o.r+=dt*R*.55;o.a*=Math.pow(.18,dt);
+    ctx.strokeStyle=rgba(p.cores[1],o.a);ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,o.r,0,7);ctx.stroke()}
+
+  // corpo da orbe: base escura + três manchas de cor se movendo
+  ctx.save();ctx.beginPath();ctx.arc(cx,cy,raio,0,7);ctx.clip();
+  g=ctx.createRadialGradient(cx,cy-raio*.3,raio*.1,cx,cy,raio);
+  g.addColorStop(0,"#1b2030");g.addColorStop(1,"#07080c");ctx.fillStyle=g;ctx.fillRect(cx-raio,cy-raio,raio*2,raio*2);
+  ctx.globalCompositeOperation="lighter";
+  p.cores.forEach((cor,i)=>{
+    const fase=i*2.094+giro, a=atual.amp+.06*v;
+    const x=cx+Math.cos(fase+Math.sin(t*.7+i)*.6)*raio*a*1.6;
+    const y=cy+Math.sin(fase*1.3+i)*raio*a*1.4;
+    const rr=raio*(.95+.12*Math.sin(t*.9+i*1.7)+.15*v);
+    const m=ctx.createRadialGradient(x,y,0,x,y,rr);
+    m.addColorStop(0,rgba(cor,.95*atual.brilho));m.addColorStop(.45,rgba(cor,.45*atual.brilho));m.addColorStop(1,rgba(cor,0));
+    ctx.fillStyle=m;ctx.fillRect(cx-raio,cy-raio,raio*2,raio*2);
+  });
+  ctx.globalCompositeOperation="source-over";
+  // sombra de volume (embaixo) e reflexo (em cima)
+  g=ctx.createRadialGradient(cx,cy+raio*.25,raio*.4,cx,cy,raio*1.05);
+  g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(1,"rgba(0,0,0,.55)");ctx.fillStyle=g;ctx.fillRect(cx-raio,cy-raio,raio*2,raio*2);
+  g=ctx.createRadialGradient(cx-raio*.3,cy-raio*.55,0,cx-raio*.3,cy-raio*.55,raio*.7);
+  g.addColorStop(0,"rgba(255,255,255,.38)");g.addColorStop(1,"rgba(255,255,255,0)");ctx.fillStyle=g;ctx.fillRect(cx-raio,cy-raio,raio*2,raio*2);
+  ctx.restore();
+
+  // aro de vidro
+  ctx.lineWidth=1.5;ctx.strokeStyle=rgba(p.aro,.55);ctx.beginPath();ctx.arc(cx,cy,raio-.75,0,7);ctx.stroke();
+  // arco girando ao pensar
+  if(estado==="pensando"){ctx.lineWidth=3;ctx.lineCap="round";ctx.strokeStyle=rgba(p.cores[1],.9);
+    ctx.beginPath();ctx.arc(cx,cy,raio+10,giro*2,giro*2+1.1);ctx.stroke()}
+
+  disco.style.transform=`scale(${1+(estado==="ouvindo"?.04*v:0)+(estado==="falando"?.025*v:0)})`;
+  requestAnimationFrame(quadro);
+}
+requestAnimationFrame(quadro);
+
+function marcar(cont,attr,val){cont.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset[attr]===val)))}
+function mudarEstado(e){estado=e;estadoTxt.innerHTML=ROTULOS[e];marcar(document.getElementById("estados"),"estado",e)}
+document.getElementById("estados").addEventListener("click",e=>{const b=e.target.closest("button");if(b)mudarEstado(b.dataset.estado)});
+
+const cp=document.getElementById("paletas");
+for(const [id,p] of Object.entries(PALETAS)){
+  const b=document.createElement("button");b.dataset.paleta=id;b.setAttribute("aria-pressed",String(id===paleta));
+  b.innerHTML=`<span class="amostra">${p.cores.map(c=>`<i style="background:${c}"></i>`).join("")}</span>${p.nome}`;cp.append(b)}
+cp.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;paleta=b.dataset.paleta;marcar(cp,"paleta",paleta)});
+
+// toque na orbe: repouso -> ouvindo -> pensando -> falando -> repouso
+const ciclo=["repouso","ouvindo","pensando","falando"],palco=document.getElementById("palco");
+function tocar(){mudarEstado(ciclo[(ciclo.indexOf(estado)+1)%ciclo.length])}
+palco.addEventListener("click",tocar);palco.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();tocar()}});
+</script>
