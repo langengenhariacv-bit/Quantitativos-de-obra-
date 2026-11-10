@@ -1330,13 +1330,13 @@ const mountDash3D=(()=>{
     const avg=tracked.length?Math.round(tracked.reduce((a,p)=>a+progress(p),0)/tracked.length):0;
     let fin={received:0,receivable:0,overdue:0},year=Number(today().slice(0,4)),monthly=[];
     try{fin=financeRecoveredMetrics();monthly=financeMonthlyReceived(year);if(!monthly.some(m=>m.value>0)){const prev=financeMonthlyReceived(year-1);if(prev.some(m=>m.value>0)){year--;monthly=prev}}}catch(e){monthly=[]}
-    return {active,openProc,openBud,openTasks,over,avg,tracked,fin,year,monthly};
+    return {active,openProc,openBud,openTasks,over,avg,tracked,fin,year,monthly,narrow:!!stage&&stage.clientWidth<520};
   }
   const SCENE={
     overview(d){
       const kpis=[['projects','Projetos ativos',d.active.length,'','Projetos<i> ativos</i>'],['processes','Processos em aberto',d.openProc,'','Processos<i> em aberto</i>'],['budgets','Orçamentos em aberto',d.openBud,'','Orçamentos<i> em aberto</i>'],['tasks','Prazos vencidos',d.over,d.over?'red':'good','<i>Prazos </i>vencidos']];
       const max=Math.max(1,...kpis.map(k=>k[2]));
-      let h=kpis.map((k,i)=>box(40+i*140,i%2?112:24,74,74,26+118*k[2]/max,k[3],i*110,'',
+      let h=kpis.map((k,i)=>box(d.narrow?44+i*148:40+i*140,i%2?(d.narrow?140:112):24,74,74,26+118*k[2]/max,k[3],i*110,'',
         `<button class="h3d-bb h3d-kpi ${k[3]==='red'?'red':''}" data-go="${k[0]}" data-info="<b>${esc(k[1])}:</b> ${k[2]} · toque para abrir" style="animation-delay:${300+i*110}ms"><strong>${pad2(k[2])}</strong><span>${k[4]}</span></button>`)).join('');
       const R=78,C=2*Math.PI*R;
       h+=`<svg class="h3d-ring" style="left:40px;top:196px" width="190" height="190" viewBox="0 0 190 190"><circle class="bg" cx="95" cy="95" r="${R}"/><circle class="fg" cx="95" cy="95" r="${R}" transform="rotate(-90 95 95)" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-off="${(C*(1-d.avg/100)).toFixed(1)}"/></svg>`;
@@ -1349,21 +1349,21 @@ const mountDash3D=(()=>{
       const cur=d.year===Number(today().slice(0,4))?Number(today().slice(5,7))-1:-1;
       const best=m.reduce((bi,x,i)=>x.value>m[bi].value?i:bi,0);
       let h=m.map((x,i)=>{
-        const hot=i===cur,tag=(hot||(i===best&&x.value>0))?`<span class="h3d-bb h3d-tag" style="animation-delay:${500+i*60}ms"><b>${MONTHS[i]}</b>${compact(x.value)}</span>`:'';
+        const hot=i===cur,tag=(hot||(i===best&&x.value>0&&(!d.narrow||cur<0)))?`<span class="h3d-bb h3d-tag" style="animation-delay:${500+i*60}ms"><b>${MONTHS[i]}</b>${compact(x.value)}</span>`:'';
         return box(30+i*46,150,30,60,x.value?10+175*x.value/max:3,hot?'hot':(x.value?'':'dim'),i*60,`data-go="finance" data-info="<b>${MONTHS[i]}/${d.year}:</b> ${brl(x.value)} recebido"`,tag)+
-          `<span class="h3d-bb h3d-lab ${hot?'hot':''}" style="left:${45+i*46}px;top:246px;--z:0px">${MONTHS[i]}</span>`;
+          `<span class="h3d-bb h3d-lab ${hot?'hot':''}" style="left:${45+i*46}px;top:246px;--z:0px">${d.narrow?MONTHS[i][0]:MONTHS[i]}</span>`;
       }).join('');
       h+=`<button class="h3d-bb h3d-kpi sm" data-go="finance" data-info="<b>Recebido em ${d.year}:</b> ${brl(total)}" style="left:120px;top:34px;--z:26px"><strong>${compact(total)}</strong><span>Recebido em ${d.year}</span></button>`;
-      h+=`<button class="h3d-bb h3d-kpi sm ${d.fin.overdue>0?'red':''}" data-go="finance" data-info="<b>A receber:</b> ${brl(d.fin.receivable)}${d.fin.overdue>0?' · '+brl(d.fin.overdue)+' com previsão vencida':''}" style="left:110px;top:345px;--z:22px"><strong>${compact(d.fin.receivable)}</strong><span>A receber</span></button>`;
+      if(!d.narrow)h+=`<button class="h3d-bb h3d-kpi sm ${d.fin.overdue>0?'red':''}" data-go="finance" data-info="<b>A receber:</b> ${brl(d.fin.receivable)}${d.fin.overdue>0?' · '+brl(d.fin.overdue)+' com previsão vencida':''}" style="left:70px;top:398px;--z:8px"><strong>${compact(d.fin.receivable)}</strong><span>A receber</span></button>`;
       if(!total)h+=`<span class="h3d-bb h3d-lab" style="left:300px;top:110px;--z:40px">Nenhum recebimento lançado em ${d.year}</span>`;
       return {html:h,title:'Faturamento '+d.year,eyebrow:'Recebimentos mês a mês',info:`Recebido em ${d.year}: <b>${brl(total)}</b> · a receber: <b>${brl(d.fin.receivable)}</b>`};
     },
     projects(d){
-      const list=d.active.slice().sort((a,b)=>progress(b)-progress(a)).slice(0,10),cols=Math.min(5,Math.max(1,list.length)),gap=540/cols;
+      const list=d.active.slice().sort((a,b)=>progress(b)-progress(a)).slice(0,d.narrow?6:10),cols=Math.min(d.narrow?3:5,Math.max(1,list.length)),gap=540/cols;
       let h=list.map((p,i)=>{
         const pc=p.recoveryPending?0:progress(p),col=i%cols,row=Math.floor(i/cols),x=30+col*gap+gap/2-30,y=(list.length>cols?70:160)+row*190;
         return box(x,y,60,60,8+150*pc/100,p.recoveryPending?'dim':pc===100?'good':pc>=60?'hot':'',i*80,'',
-          `<button class="h3d-bb h3d-tag" data-project="${esc(p.id)}" data-info="<b>${esc(p.name)}</b> · ${esc(clientName(p.clientId))} · ${p.recoveryPending?'dados a recuperar':pc+'% das etapas'} · toque para abrir" style="animation-delay:${400+i*80}ms"><b>${p.recoveryPending?'—':pc+'%'}</b>${esc(cut(p.name,15))}</button>`);
+          `<button class="h3d-bb h3d-tag" data-project="${esc(p.id)}" data-info="<b>${esc(p.name)}</b> · ${esc(clientName(p.clientId))} · ${p.recoveryPending?'dados a recuperar':pc+'% das etapas'} · toque para abrir" style="animation-delay:${400+i*80}ms"><b>${p.recoveryPending?'—':pc+'%'}</b>${esc(cut(p.name,d.narrow?11:12))}</button>`);
       }).join('');
       if(!list.length)h=`<span class="h3d-bb h3d-lab" style="left:300px;top:200px;--z:40px">Nenhum projeto ativo</span>`;
       const extra=d.active.length-list.length;
@@ -1372,8 +1372,8 @@ const mountDash3D=(()=>{
     tasks(d){
       const t0=today(),lim=new Date(Date.now()+7*864e5).toISOString().slice(0,10),zones=[[],[],[]];
       d.openTasks.forEach(t=>zones[t.due&&t.due<t0?0:(t.due&&t.due<=lim?1:2)].push(t));
-      const names=['Vencidos','Próximos 7 dias','Mais adiante'],cls=['r','','n'];
-      let h=zones.map((z,zi)=>`<div class="h3d-zone z${zi}" style="left:${zi*200}px;width:200px"></div><span class="h3d-bb h3d-tag" style="left:${zi*200+100}px;top:14px;--z:22px"><b>${pad2(z.length)}</b>${names[zi]}</span>`).join('');
+      const names=d.narrow?['Vencidos','7 dias','Depois']:['Vencidos','Próximos 7 dias','Mais adiante'],cls=['r','','n'];
+      let h=zones.map((z,zi)=>`<div class="h3d-zone z${zi}" style="left:${zi*200}px;width:200px"></div><span class="h3d-bb h3d-tag" style="left:${zi*200+100}px;top:14px;--z:64px"><b>${pad2(z.length)}</b>${names[zi]}</span>`).join('');
       zones.forEach((z,zi)=>z.slice(0,16).forEach((t,i)=>{
         const k=hash((t.id||t.title)+"#"+i),x=zi*200+34+(i%3)*56+(k%22),y=66+Math.floor(i/3)*58+((k>>>5)%22),z0=14+((k>>>10)%26);
         h+=`<i class="h3d-shadow" style="left:${x}px;top:${y}px"></i><button class="h3d-bb h3d-dot ${cls[zi]}" data-go="tasks" aria-label="${esc(t.title)}" data-info="<b>${esc(t.title)}</b> · ${t.due?fmtDate(t.due):'sem data'} · ${esc(clientName(t.clientId))} · ${esc(t.status||'')}" style="left:${x}px;top:${y}px;--z:${z0}px;--z0:${z0}px;animation-delay:${i*50}ms,${(k%20)*-170}ms"></button>`;
@@ -1430,8 +1430,12 @@ const mountDash3D=(()=>{
     const hover=e=>{const el=e.target.closest&&e.target.closest('[data-info]');setInfo(el?el.dataset.info:'');if(el)lastTouch=performance.now()};
     stage.addEventListener('pointerover',hover);stage.addEventListener('focusin',hover);
     stage.addEventListener('pointerleave',()=>setInfo(''));
-    ro=new ResizeObserver(()=>{const w=stage.clientWidth,narrow=w<520,sc=Math.max(.36,Math.min(1.05,w/(narrow?690:900),stage.clientHeight/540));stage.classList.toggle('h3d-narrow',narrow);world.style.setProperty('--sc',sc.toFixed(3));world.style.setProperty('--bs',Math.min(1.5,Math.max(1,.8/sc)).toFixed(3))});
+    ro=new ResizeObserver(()=>fit(true));
     ro.observe(stage);
+  }
+  // ajusta a escala da cena ao tamanho do painel (celular, tablet, computador)
+  function fit(reshow){
+    if(!stage||!world)return;const w=stage.clientWidth,narrow=w<520,sc=Math.max(.36,Math.min(1.05,w/(narrow?735:900),stage.clientHeight/540));const flip=stage.classList.contains('h3d-narrow')!==narrow;stage.classList.toggle('h3d-narrow',narrow);world.style.setProperty('--sc',sc.toFixed(3));world.style.setProperty('--bs',Math.min(narrow?1.8:1.4,Math.max(1,.95/sc)).toFixed(3));if(flip&&reshow)show(sceneId);
   }
   return function mount(){
     const main=document.getElementById('main'),metrics=main&&main.querySelector('.metrics');
@@ -1447,7 +1451,7 @@ const mountDash3D=(()=>{
     const head=main.querySelector('.page-head');(head||metrics).after(sec);metrics.remove();
     if(ro){ro.disconnect();ro=null}
     stage=sec.querySelector('#h3dStage');world=sec.querySelector('.h3d-world');
-    bind(sec);show(sceneId);
+    bind(sec);fit(false);show(sceneId);
     if(!raf)raf=requestAnimationFrame(tick);
   };
 })();
