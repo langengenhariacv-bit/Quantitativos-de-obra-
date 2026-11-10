@@ -7,10 +7,12 @@ import * as THREE from './vendor/three.module.min.js';
 const P = 1500, PW = 600, PH = 400, DEG = Math.PI / 180;
 const PAL = {
   '': [[255, 122, 55], [255, 196, 140]], hot: [[255, 176, 84], [255, 236, 190]], red: [[255, 75, 58], [255, 170, 150]],
-  dim: [[150, 135, 125], [205, 190, 180]], good: [[70, 210, 150], [170, 255, 215]], sel: [[255, 214, 140], [255, 250, 225]]
+  dim: [[150, 135, 125], [205, 190, 180]], good: [[70, 210, 150], [170, 255, 215]], sel: [[255, 240, 200], [255, 255, 245]],
+  blue: [[77, 163, 255], [190, 222, 255]], violet: [[155, 123, 255], [216, 204, 255]], teal: [[47, 214, 195], [180, 246, 238]],
+  pink: [[255, 95, 162], [255, 196, 222]], lime: [[170, 220, 70], [225, 245, 170]]
 };
-const DOT = { r: [255, 90, 72], '': [255, 196, 107], n: [231, 214, 200] };
-const ZONE = [[[255, 75, 58], .30], [[255, 190, 90], .22], [[255, 150, 90], .05]];
+const DOT = { r: [255, 90, 72], '': [255, 196, 107], n: [111, 182, 255] };
+const ZONE = [[[255, 75, 58], .30], [[255, 190, 90], .22], [[77, 163, 255], .16]];
 const col = a => new THREE.Color().setRGB(a[0] / 255, a[1] / 255, a[2] / 255, THREE.SRGBColorSpace);
 const clamp01 = t => Math.min(1, Math.max(0, t));
 const easeBack = t => { t = clamp01(t); const c1 = 1.1, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2) };
@@ -143,9 +145,9 @@ export function createGL() {
         const g = new THREE.Group(); g.position.set(it.x, it.y, 4); g.scale.z = .55; g.rotation.z = -Math.PI / 2;
         const bg = new THREE.Mesh(new THREE.TorusGeometry(it.r, 7, 10, 72), new THREE.MeshStandardMaterial({ color: 0x6b3a1e, emissive: 0xff9a5a, emissiveIntensity: .12, roughness: .5 }));
         bg.userData.ownGeo = true; bg.receiveShadow = true;
-        const fg = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ color: 0xffd08a, emissive: 0xffc070, emissiveIntensity: .75, roughness: .3 }));
+        const fg = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ color: 0x58e0a8, emissive: 0x46d296, emissiveIntensity: .7, roughness: .3 }));
         fg.userData.ownGeo = true; fg.castShadow = true; fg.position.z = 1.5; fg.visible = false;
-        const glow = new THREE.Mesh(unitPlane, glowMat(0xff9a4a, .4)); glow.scale.set(it.r * 3.4, it.r * 3.4, 1); glow.position.z = -3;
+        const glow = new THREE.Mesh(unitPlane, glowMat(0x46d296, .35)); glow.scale.set(it.r * 3.4, it.r * 3.4, 1); glow.position.z = -3;
         g.add(glow, bg, fg); dyn.add(g); items.push({ ...it, fg, arc: -1 });
       }
     }
