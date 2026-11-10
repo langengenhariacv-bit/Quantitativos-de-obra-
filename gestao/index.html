@@ -74,6 +74,7 @@ main{min-width:0;width:100%;max-width:1450px;margin:0 auto;padding:24px}.page-he
 .h3d-box>.f3{left:0;top:0;height:100%;width:var(--h);transform-origin:0 50%;transform:rotateY(-90deg);background:linear-gradient(to right,rgba(var(--k),.10),rgba(var(--k),.55))}
 .h3d-box>.f4{right:0;top:0;height:100%;width:var(--h);transform-origin:100% 50%;transform:rotateY(90deg);background:linear-gradient(to left,rgba(var(--k),.16),rgba(var(--k),.86))}
 .h3d-box[data-info]{cursor:pointer}
+.h3d-box:before{content:"";position:absolute;inset:-16px;border-radius:50%;background:radial-gradient(closest-side,rgba(var(--k),.55),rgba(var(--k),0));transform:translateZ(.5px);pointer-events:none}
 .h3d-pad{position:absolute;border:1px solid rgba(255,170,110,.4);background:rgba(255,122,55,.07);transform:translateZ(1px)}
 /* billboards: sempre de frente para a câmera */
 .h3d-bb{position:absolute;--z:0px;transform:translateZ(var(--z)) rotateZ(calc(var(--rz,-38deg)*-1)) rotateX(calc(var(--rx,58deg)*-1)) scale(var(--bs,1)) translate(-50%,-100%);transform-origin:0 0;
@@ -90,6 +91,12 @@ button.h3d-kpi:hover{border-color:var(--hy);background:rgba(40,26,18,.9)}
 .h3d-lab.hot{color:#fff}
 .h3d-tag{font-size:10px;font-weight:800;color:#fff;padding:3px 7px;border-radius:8px;background:rgba(20,15,12,.8);border:1px solid rgba(255,170,110,.5)}
 .h3d-tag b{color:var(--hy);font-size:12px;margin-right:4px}
+.h3d-tag.solo{padding:4px 9px;border-radius:999px}.h3d-tag.solo b{margin:0;font-size:13px;font-variant-numeric:tabular-nums}
+.h3d-foot{padding:3px 8px;border-radius:999px;background:rgba(15,11,9,.62);border:1px solid rgba(255,170,110,.18);color:#f3dccb;transition:color .2s,border-color .2s}
+.h3d-narrow .h3d-foot{font-size:9.5px;padding:2px 6px;letter-spacing:.03em}
+.h3d-foot:hover,.h3d-lab.sel{color:#fff;border-color:var(--hy)}
+.h3d-kpi.solo{padding:7px 13px 8px;border-radius:14px}.h3d-narrow .h3d-kpi.solo{padding:5px 10px 6px}.h3d-narrow .h3d-kpi.solo strong{font-size:22px}.h3d-narrow .h3d-kpi.solo.sm strong{font-size:16px}
+.h3d-kpi.good{border-color:rgba(88,224,168,.7);box-shadow:0 0 22px rgba(70,210,150,.35)}
 .h3d-kpi span i{font-style:normal}.h3d-narrow .h3d-kpi span i{display:none}.h3d-narrow .h3d-kpi{padding:6px 9px 7px}.h3d-narrow .h3d-kpi span,.h3d-narrow .h3d-lab,.h3d-narrow .h3d-tag{font-size:11px}
 /* anel de progresso */
 .h3d-ring{position:absolute;transform:translateZ(3px);overflow:visible;filter:drop-shadow(0 0 9px rgba(255,150,70,.9));pointer-events:none}
@@ -101,6 +108,8 @@ button.h3d-kpi:hover{border-color:var(--hy);background:rgba(40,26,18,.9)}
 .h3d-dot.r{--dc:#ff5a48}.h3d-dot.n{--dc:#e7d6c8}
 .h3d-dot:hover,.h3d-dot:focus-visible{box-shadow:0 0 0 3px #fff,0 0 20px var(--dc,#ffc46b)}
 .h3d-shadow{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:rgba(0,0,0,.45);transform:translateZ(2px);filter:blur(3px);pointer-events:none}
+.h3d-dot:after{content:"";position:absolute;left:50%;top:100%;width:2px;margin-left:-1px;height:calc(var(--z)*sin(var(--rx,58deg))/var(--bs,1));background:linear-gradient(to bottom,var(--dc,#ffc46b),rgba(255,255,255,0));opacity:.8;pointer-events:none}
+.h3d-shadow.r{background:rgba(255,60,40,.55)}
 @keyframes h3dBob{from{--z:var(--z0,18px)}to{--z:calc(var(--z0,18px) + 12px)}}
 /* camada de rótulos sempre por cima das barras */
 .h3d-world{transition:left .5s ease,top .5s ease}
@@ -148,7 +157,8 @@ button.h3d-row>div b:after{content:" ›";color:var(--hy);font-weight:900}
 .h3d-narrow .h3d-panel{left:10px;right:10px;top:auto;bottom:10px;width:auto;max-height:330px}
 .h3d-narrow.h3d-has-panel .h3d-info{display:none}
 /* HUD */
-.h3d-title{position:absolute;left:18px;top:14px;pointer-events:none}
+.h3d-title{position:absolute;left:18px;right:18px;top:14px;pointer-events:none}
+.h3d-title small,.h3d-title b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .h3d-title small{display:block;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#d59a78}
 .h3d-title b{display:block;font-size:20px;letter-spacing:-.01em;margin-top:3px;color:#fff}
 .h3d-info{position:absolute;left:18px;right:18px;bottom:14px;min-height:34px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;pointer-events:none}
@@ -1391,15 +1401,20 @@ const mountDash3D=(()=>{
   }
   const SCENE={
     overview(d){
-      const kpis=[['projects','Projetos ativos',d.active.length,'','Projetos<i> ativos</i>'],['processes','Processos em aberto',d.openProc,'','Processos<i> em aberto</i>'],['budgets','Orçamentos em aberto',d.openBud,'','Orçamentos<i> em aberto</i>'],['overdue','Prazos vencidos',d.over,d.over?'red':'good','<i>Prazos </i>vencidos']];
-      const max=Math.max(1,...kpis.map(k=>k[2]));
-      let h=kpis.map((k,i)=>box(d.narrow?44+i*148:40+i*140,i%2?(d.narrow?140:112):24,74,74,26+118*k[2]/max,k[3],i*110,'',
-        `<button class="h3d-bb h3d-kpi ${k[3]==='red'?'red':''}" data-open="kpi:${k[0]}" data-info="<b>${esc(k[1])}:</b> ${k[2]} · toque para ver os detalhes" style="animation-delay:${300+i*110}ms"><strong>${pad2(k[2])}</strong><span>${k[4]}</span></button>`)).join('');
-      const R=78,C=2*Math.PI*R;
-      h+=`<svg class="h3d-ring" style="left:40px;top:196px" width="190" height="190" viewBox="0 0 190 190"><circle class="bg" cx="95" cy="95" r="${R}"/><circle class="fg" cx="95" cy="95" r="${R}" transform="rotate(-90 95 95)" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-off="${(C*(1-d.avg/100)).toFixed(1)}"/></svg>`;
-      h+=`<button class="h3d-bb h3d-kpi" data-open="kpi:avg" data-info="<b>Progresso médio:</b> ${d.avg}% das etapas concluídas em ${d.tracked.length} projeto(s) com etapas · toque para ver a conta" style="left:135px;top:291px;--z:34px;animation-delay:500ms"><strong>${d.avg}%</strong><span>Progresso médio</span></button>`;
-      h+=box(390,262,150,96,14,'hot',420,'',`<button class="h3d-bb h3d-kpi sm" data-open="kpi:receivable" data-info="<b>A receber:</b> ${brl(d.fin.receivable)} · já recebido ${brl(d.fin.received)} · toque para ver de quem" style="animation-delay:700ms"><strong>${compact(d.fin.receivable)}</strong><span>A receber</span></button>`);
-      return {html:h,title:'Visão geral',eyebrow:'Toque num item para ver os detalhes',info:`<b>${d.active.length}</b> projeto(s) ativo(s), <b>${d.openTasks.length}</b> prazo(s) em aberto${d.over?`, <b>${d.over}</b> vencido(s)`:''}. Toque num item para ver a explicação.`};
+      const kpis=[['projects','Projetos ativos',d.active.length,'','Projetos'],['processes','Processos em aberto',d.openProc,'','Processos'],['budgets','Orçamentos em aberto',d.openBud,'','Orçamentos'],['overdue','Prazos vencidos',d.over,d.over?'red':'good','Vencidos']];
+      const max=Math.max(1,...kpis.map(k=>k[2]));let over='';
+      const foot=(key,text,x,y)=>`<span class="h3d-bb h3d-lab h3d-foot" data-open="${key}" style="left:${x}px;top:${y}px;--z:0px">${esc(text)}</span>`;
+      let h=kpis.map((k,i)=>{
+        const x=45+i*140,y=14,bh=Math.round(26+118*k[2]/max),key='kpi:'+k[0],at=`data-open="${key}" data-info="<b>${esc(k[1])}:</b> ${k[2]} · toque para ver os detalhes"`;
+        over+=`<button class="h3d-bb h3d-kpi solo h3d-grow ${k[3]}" ${at} aria-label="${esc(k[1])}: ${k[2]}" data-z="${bh+12}" style="left:${x+35}px;top:${y+35}px;--z:0px;transition-delay:${i*110}ms;animation-delay:${300+i*110}ms"><strong>${pad2(k[2])}</strong></button>`+foot(key,d.narrow?k[4]:k[1],x+35,y+106);
+        return box(x,y,70,70,bh,k[3],i*110,at,'');
+      }).join('');
+      const R=62,C=2*Math.PI*R,avgAt=`data-open="kpi:avg" data-info="<b>Progresso médio:</b> ${d.avg}% das etapas concluídas em ${plural(d.tracked.length,'projeto','projetos')} com etapas · toque para ver a conta"`,recAt=`data-open="kpi:receivable" data-info="<b>A receber:</b> ${brl(d.fin.receivable)} · já recebido ${brl(d.fin.received)} · toque para ver de quem"`;
+      h+=`<svg class="h3d-ring" style="left:40px;top:228px" width="160" height="160" viewBox="0 0 160 160"><circle class="bg" cx="80" cy="80" r="${R}"/><circle class="fg" cx="80" cy="80" r="${R}" transform="rotate(-90 80 80)" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-off="${(C*(1-d.avg/100)).toFixed(1)}"/></svg>`;
+      over+=`<button class="h3d-bb h3d-kpi solo" ${avgAt} aria-label="Progresso médio: ${d.avg}%" style="left:120px;top:308px;--z:22px;animation-delay:500ms"><strong>${d.avg}%</strong></button>`+foot('kpi:avg','Progresso médio',120,408);
+      h+=box(345,258,200,100,14,'hot',420,recAt,'');
+      over+=`<button class="h3d-bb h3d-kpi solo sm h3d-grow" ${recAt} aria-label="A receber: ${brl(d.fin.receivable)}" data-z="22" style="left:445px;top:308px;--z:0px;transition-delay:420ms;animation-delay:700ms"><strong>${d.narrow?short(d.fin.receivable):compact(d.fin.receivable)}</strong></button>`+foot('kpi:receivable','A receber',445,392);
+      return {html:h,over,title:'Visão geral',eyebrow:'Meu escritório',info:`<b>${d.active.length}</b> ${d.active.length===1?'projeto ativo':'projetos ativos'} · <b>${d.openTasks.length}</b> ${d.openTasks.length===1?'prazo':'prazos'} em aberto${d.over?` · <b>${d.over}</b> ${d.over===1?'vencido':'vencidos'}`:''}. Toque num item para ver os detalhes.`};
     },
     finance(d){
       const m=d.monthly,max=Math.max(1,...m.map(x=>x.value)),total=m.reduce((a,x)=>a+x.value,0);
@@ -1417,29 +1432,31 @@ const mountDash3D=(()=>{
       if(!d.narrow)h+=`<button class="h3d-bb h3d-kpi sm" data-open="kpi:year" data-info="<b>Recebido em ${d.year}:</b> ${brl(total)} · toque para ver mês a mês" style="left:70px;top:8px;--z:70px"><strong>${compact(total)}</strong><span>Recebido em ${d.year}</span></button>`;
       if(!d.narrow)h+=`<button class="h3d-bb h3d-kpi sm ${d.fin.overdue>0?'red':''}" data-open="kpi:receivable" data-info="<b>A receber:</b> ${brl(d.fin.receivable)}${d.fin.overdue>0?' · '+brl(d.fin.overdue)+' com previsão vencida':''} · toque para ver de quem" style="left:70px;top:398px;--z:8px"><strong>${compact(d.fin.receivable)}</strong><span>A receber</span></button>`;
       if(!total)h+=`<span class="h3d-bb h3d-lab" style="left:300px;top:110px;--z:40px">Nenhum recebimento lançado em ${d.year}</span>`;
-      return {html:h,over,title:'Faturamento '+d.year,eyebrow:'Toque num mês para ver os recebimentos',info:`Recebido em ${d.year}: <b>${brl(total)}</b> · a receber: <b>${brl(d.fin.receivable)}</b>`};
+      return {html:h,over,title:'Faturamento '+d.year,eyebrow:'Recebido mês a mês',info:`Recebido em ${d.year}: <b>${brl(total)}</b> · a receber: <b>${brl(d.fin.receivable)}</b>. Toque num mês para ver de quem.`};
     },
     projects(d){
-      const list=d.active.slice().sort((a,b)=>progress(b)-progress(a)).slice(0,d.narrow?6:10),cols=Math.min(d.narrow?3:5,Math.max(1,list.length)),gap=540/cols;
+      const list=d.active.slice().sort((a,b)=>progress(b)-progress(a)).slice(0,d.narrow?6:10),cols=Math.min(d.narrow?3:5,Math.max(1,list.length)),gap=540/cols;let over='';
       let h=list.map((p,i)=>{
-        const pc=p.recoveryPending?0:progress(p),col=i%cols,row=Math.floor(i/cols),x=30+col*gap+gap/2-30,y=(list.length>cols?70:160)+row*190;
-        return box(x,y,60,60,8+150*pc/100,p.recoveryPending?'dim':pc===100?'good':pc>=60?'hot':'',i*80,'',
-          `<button class="h3d-bb h3d-tag" data-open="project:${esc(p.id)}" data-info="<b>${esc(p.name)}</b> · ${esc(clientName(p.clientId))} · ${p.recoveryPending?'dados a recuperar':pc+'% das etapas'} · toque para ver os detalhes" style="animation-delay:${400+i*80}ms"><b>${p.recoveryPending?'—':pc+'%'}</b>${esc(cut(p.name,d.narrow?11:12))}</button>`);
+        const pc=p.recoveryPending?0:progress(p),col=i%cols,row=Math.floor(i/cols),x=30+col*gap+gap/2-30,y=(list.length>cols?(d.narrow?34:60):150)+row*(d.narrow?215:190),bh=Math.round(8+150*pc/100),key='project:'+esc(p.id);
+        const at=`data-open="${key}" data-info="<b>${esc(p.name)}</b> · ${esc(clientName(p.clientId))} · ${p.recoveryPending?'dados a recuperar':pc+'% das etapas'} · toque para ver os detalhes"`;
+        over+=`<button class="h3d-bb h3d-tag solo h3d-grow" ${at} aria-label="${esc(p.name)}" data-z="${bh+10}" style="left:${x+30}px;top:${y+30}px;--z:0px;transition-delay:${i*80}ms;animation-delay:${400+i*80}ms"><b>${p.recoveryPending?'—':pc+'%'}</b></button>`+
+          `<span class="h3d-bb h3d-lab h3d-foot" data-open="${key}" style="left:${x+30}px;top:${y+96}px;--z:0px;animation-delay:${400+i*80}ms">${esc(cut(p.name,d.narrow?11:16))}</span>`;
+        return box(x,y,60,60,bh,p.recoveryPending?'dim':pc===100?'good':pc>=60?'hot':'',i*80,at,'');
       }).join('');
       if(!list.length)h=`<span class="h3d-bb h3d-lab" style="left:300px;top:200px;--z:40px">Nenhum projeto ativo</span>`;
       const extra=d.active.length-list.length;
-      return {html:h,title:'Projetos em andamento',eyebrow:'Altura = etapas concluídas · toque num projeto',info:`<b>${d.active.length}</b> projeto(s) ativo(s) · progresso médio <b>${d.avg}%</b>${extra>0?` · mais ${extra} na lista de projetos`:''}`};
+      return {html:h,over,title:'Projetos em andamento',eyebrow:'Altura = etapas concluídas',info:`<b>${d.active.length}</b> ${d.active.length===1?'projeto ativo':'projetos ativos'} · progresso médio <b>${d.avg}%</b>${extra>0?` · mais ${extra} na lista`:''}. Toque num projeto para ver os detalhes.`};
     },
     tasks(d){
       const zones=taskZones(d.openTasks);
       const names=d.narrow?['Vencidos','7 dias','Depois']:['Vencidos','Próximos 7 dias','Mais adiante'],cls=['r','','n'];
       let h=zones.map((z,zi)=>`<div class="h3d-zone z${zi}" style="left:${zi*200}px;width:200px"></div><button class="h3d-bb h3d-tag" data-open="zone:${zi}" data-info="<b>${ZONES[zi]}:</b> ${z.length} prazo(s) · toque para ver a lista" style="left:${zi*200+100}px;top:14px;--z:64px"><b>${pad2(z.length)}</b>${names[zi]}</button>`).join('');
-      zones.forEach((z,zi)=>z.slice(0,16).forEach((t,i)=>{
-        const k=hash((t.id||t.title)+"#"+i),x=zi*200+34+(i%3)*56+(k%22),y=66+Math.floor(i/3)*58+((k>>>5)%22),z0=14+((k>>>10)%26);
-        h+=`<i class="h3d-shadow" style="left:${x}px;top:${y}px"></i><button class="h3d-bb h3d-dot ${cls[zi]}" data-open="task:${esc(taskKey(t))}" aria-label="${esc(t.title)}" data-info="<b>${esc(t.title)}</b> · ${t.due?fmtDate(t.due):'sem data'} · ${esc(clientName(t.clientId))} · ${esc(t.status||'')} · toque para ver os detalhes" style="left:${x}px;top:${y}px;--z:${z0}px;--z0:${z0}px;animation-delay:${i*50}ms,${(k%20)*-170}ms"></button>`;
-      }));
+      zones.forEach((z,zi)=>{const list=z.slice(0,15),rows=Math.ceil(list.length/3),sp=Math.min(84,290/Math.max(1,rows));list.forEach((t,i)=>{
+        const inRow=Math.min(3,list.length-Math.floor(i/3)*3),k=hash((t.id||t.title)+"#"+i),x=zi*200+100+((i%3)-(inRow-1)/2)*58+(k%18)-9,y=222-(rows-1)*sp/2+Math.floor(i/3)*sp+((k>>>5)%18)-9,z0=22+((k>>>10)%30),bob=(k%20)*-170;
+        h+=`<i class="h3d-shadow ${cls[zi]}" style="left:${x}px;top:${y}px"></i><button class="h3d-bb h3d-dot ${cls[zi]}" data-open="task:${esc(taskKey(t))}" aria-label="${esc(t.title)}" data-info="<b>${esc(t.title)}</b> · ${t.due?fmtDate(t.due):'sem data'} · ${esc(clientName(t.clientId))} · ${esc(t.status||'')} · toque para ver os detalhes" style="left:${x}px;top:${y}px;--z:${z0}px;--z0:${z0}px;animation-delay:${i*50}ms,${bob}ms"></button>`;
+      })});
       if(!d.openTasks.length)h+=`<span class="h3d-bb h3d-lab" style="left:300px;top:210px;--z:40px">Nenhum prazo em aberto</span>`;
-      return {html:h,title:'Mapa de prazos',eyebrow:'Cada esfera é um prazo · toque para detalhes',info:`<b>${zones[0].length}</b> vencido(s) · <b>${zones[1].length}</b> nos próximos 7 dias · <b>${zones[2].length}</b> mais adiante. Toque numa esfera ou numa faixa para ver os detalhes.`};
+      return {html:h,title:'Mapa de prazos',eyebrow:'Cada esfera é um prazo em aberto',info:`<b>${zones[0].length}</b> ${zones[0].length===1?'vencido':'vencidos'} · <b>${zones[1].length}</b> nos próximos 7 dias · <b>${zones[2].length}</b> mais adiante. Toque numa esfera ou numa faixa para ver os detalhes.`};
     }
   };
   function setInfo(html){const e=stage&&stage.querySelector('#h3dInfoText');if(e)e.innerHTML=esc(html||defaultInfo).replace(/&lt;(\/?)b&gt;/g,'<$1b>')}
