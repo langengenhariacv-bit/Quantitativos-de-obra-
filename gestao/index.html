@@ -53,6 +53,8 @@ main{min-width:0;width:100%;max-width:1450px;margin:0 auto;padding:24px}.page-he
 .h3d-stage{position:relative;height:520px;perspective:1500px;perspective-origin:50% 38%;overflow:hidden;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none;
  background:radial-gradient(60% 45% at 50% 62%,rgba(255,122,55,.20),transparent 70%),radial-gradient(120% 90% at 50% 0%,#2a1b13 0%,#15110f 55%,#0b0a09 100%)}
 .h3d-stage.drag{cursor:grabbing}
+/* modo WebGL: a cena é desenhada no canvas; os elementos HTML ficam só como área de toque */
+.h3d-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .h3d-stage:before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,200,150,.35) 1px,transparent 1.4px);background-size:46px 46px;opacity:.16;pointer-events:none}
 .h3d-world{position:absolute;left:50%;top:53%;width:0;height:0;transform-style:preserve-3d;transform:scale(var(--sc,1)) rotateX(var(--rx,58deg)) rotateZ(var(--rz,-38deg))}
 .h3d-plate{position:absolute;left:-300px;top:-200px;width:600px;height:400px;transform-style:preserve-3d;border:1px solid rgba(255,170,110,.55);
@@ -119,6 +121,11 @@ button.h3d-kpi:hover{border-color:var(--hy);background:rgba(40,26,18,.9)}
 .h3d-tag.hot{border-color:var(--hy);color:#fff;box-shadow:0 0 14px rgba(255,190,110,.55)}
 button.h3d-tag:hover{border-color:var(--hy)}
 .h3d-box.sel{--k:255,214,140;--kt:255,250,225}
+.h3d-gl .h3d-plate{background:none;border-color:transparent;box-shadow:none}
+.h3d-gl .h3d-plate:before,.h3d-gl .h3d-plate:after,.h3d-gl .h3d-c,.h3d-gl .h3d-brand,.h3d-gl .h3d-ring,.h3d-gl .h3d-zone,.h3d-gl .h3d-shadow,.h3d-gl .h3d-box:before,.h3d-gl .h3d-dot:after{display:none}
+.h3d-gl .h3d-box>i{opacity:0}
+.h3d-gl .h3d-dot{opacity:0;animation:none;--z:calc(var(--z0,18px) + 6px)!important}
+.h3d-gl .h3d-dot:focus-visible{opacity:1;background:none;box-shadow:0 0 0 3px #fff}
 .h3d-stage [data-open]{cursor:pointer}
 .h3d-kpi.sel,.h3d-tag.sel{border-color:var(--hy);background:rgba(52,34,20,.94);box-shadow:0 0 0 2px rgba(255,208,138,.55),0 0 22px rgba(255,190,110,.6)}
 .h3d-dot.sel{box-shadow:0 0 0 3px #fff,0 0 24px var(--dc,#ffc46b)}
@@ -1364,7 +1371,7 @@ const mountDash3D=(()=>{
   const CAM={overview:[-38,58],finance:[-27,60],projects:[-46,57],tasks:[-33,50]};
   const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let sceneId='overview',rz=-38,rx=58,trz=-38,trx=58,raf=0,auto=!reduce,lastTouch=0,lastSwitch=0,stage=null,world=null,ro=null,defaultInfo='',selKey=null,backKeys=[],finYear=0;
+  let sceneId='overview',rz=-38,rx=58,trz=-38,trx=58,raf=0,auto=!reduce,lastTouch=0,lastSwitch=0,stage=null,world=null,ro=null,defaultInfo='',selKey=null,backKeys=[],finYear=0,gl=null,glTried=false,G=[],curSc=1,curBs=1;
   const MONTH_FULL=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const short=(n,k)=>{n=Number(n||0);if(n<1000)return (k?'':'R$ ')+Math.round(n);const v=n/1000,t=v.toLocaleString('pt-BR',{maximumFractionDigits:v<10?1:0});return k?t+'k':'R$ '+t+' mil'};
   const pad2=n=>String(n).padStart(2,'0');
@@ -1384,6 +1391,7 @@ const mountDash3D=(()=>{
   const setOff=v=>{try{v?localStorage.setItem(LS_KEY,'1'):localStorage.removeItem(LS_KEY)}catch(e){}};
   // prisma 3D: x,y = posição na base; w,d = pegada; h = altura
   function box(x,y,w,d,h,cls,delay,attrs,inner){
+    G.push({t:'box',x,y,w,d,h:Math.round(h),cls:String(cls||'').trim().split(' ')[0],delay:delay||0,key:(/data-open="([^"]+)"/.exec(attrs||'')||[])[1]||''});
     return `<div class="h3d-box ${cls||''}" style="left:${x}px;top:${y}px;width:${w}px;height:${d}px;transition-delay:${delay||0}ms" data-h="${Math.round(h)}" ${attrs||''}><i class="ft"></i><i class="f1"></i><i class="f2"></i><i class="f3"></i><i class="f4"></i>${inner||''}</div>`;
   }
   function data(){
@@ -1410,6 +1418,7 @@ const mountDash3D=(()=>{
         return box(x,y,70,70,bh,k[3],i*110,at,'');
       }).join('');
       const R=62,C=2*Math.PI*R,avgAt=`data-open="kpi:avg" data-info="<b>Progresso médio:</b> ${d.avg}% das etapas concluídas em ${plural(d.tracked.length,'projeto','projetos')} com etapas · toque para ver a conta"`,recAt=`data-open="kpi:receivable" data-info="<b>A receber:</b> ${brl(d.fin.receivable)} · já recebido ${brl(d.fin.received)} · toque para ver de quem"`;
+      G.push({t:'ring',x:120,y:308,r:R,pct:d.avg});
       h+=`<svg class="h3d-ring" style="left:40px;top:228px" width="160" height="160" viewBox="0 0 160 160"><circle class="bg" cx="80" cy="80" r="${R}"/><circle class="fg" cx="80" cy="80" r="${R}" transform="rotate(-90 80 80)" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-off="${(C*(1-d.avg/100)).toFixed(1)}"/></svg>`;
       over+=`<button class="h3d-bb h3d-kpi solo" ${avgAt} aria-label="Progresso médio: ${d.avg}%" style="left:120px;top:308px;--z:22px;animation-delay:500ms"><strong>${d.avg}%</strong></button>`+foot('kpi:avg','Progresso médio',120,408);
       h+=box(345,258,200,100,14,'hot',420,recAt,'');
@@ -1450,9 +1459,11 @@ const mountDash3D=(()=>{
     tasks(d){
       const zones=taskZones(d.openTasks);
       const names=d.narrow?['Vencidos','7 dias','Depois']:['Vencidos','Próximos 7 dias','Mais adiante'],cls=['r','','n'];
+      zones.forEach((z,zi)=>G.push({t:'zone',x:zi*200,w:200,zi}));
       let h=zones.map((z,zi)=>`<div class="h3d-zone z${zi}" style="left:${zi*200}px;width:200px"></div><button class="h3d-bb h3d-tag" data-open="zone:${zi}" data-info="<b>${ZONES[zi]}:</b> ${z.length} prazo(s) · toque para ver a lista" style="left:${zi*200+100}px;top:14px;--z:64px"><b>${pad2(z.length)}</b>${names[zi]}</button>`).join('');
       zones.forEach((z,zi)=>{const list=z.slice(0,15),rows=Math.ceil(list.length/3),sp=Math.min(84,290/Math.max(1,rows));list.forEach((t,i)=>{
         const inRow=Math.min(3,list.length-Math.floor(i/3)*3),k=hash((t.id||t.title)+"#"+i),x=zi*200+100+((i%3)-(inRow-1)/2)*58+(k%18)-9,y=222-(rows-1)*sp/2+Math.floor(i/3)*sp+((k>>>5)%18)-9,z0=22+((k>>>10)%30),bob=(k%20)*-170;
+        G.push({t:'dot',x,y,z:z0,cls:cls[zi],key:'task:'+taskKey(t),ph:k%20});
         h+=`<i class="h3d-shadow ${cls[zi]}" style="left:${x}px;top:${y}px"></i><button class="h3d-bb h3d-dot ${cls[zi]}" data-open="task:${esc(taskKey(t))}" aria-label="${esc(t.title)}" data-info="<b>${esc(t.title)}</b> · ${t.due?fmtDate(t.due):'sem data'} · ${esc(clientName(t.clientId))} · ${esc(t.status||'')} · toque para ver os detalhes" style="left:${x}px;top:${y}px;--z:${z0}px;--z0:${z0}px;animation-delay:${i*50}ms,${bob}ms"></button>`;
       })});
       if(!d.openTasks.length)h+=`<span class="h3d-bb h3d-lab" style="left:300px;top:210px;--z:40px">Nenhum prazo em aberto</span>`;
@@ -1464,8 +1475,8 @@ const mountDash3D=(()=>{
     if(!stage||!stage.isConnected)return;
     const keep=!byUser&&id===sceneId?selKey:null,keepBack=backKeys;
     sceneId=id;lastSwitch=performance.now();if(byUser)lastTouch=lastSwitch;
-    const s=SCENE[id](data());
-    closePanel();
+    G=[];const s=SCENE[id](data());
+    closePanel();if(gl)gl.setScene(G,reduce);
     stage.querySelector('#h3dScene').innerHTML=s.html;stage.querySelector('#h3dOver').innerHTML=s.over||'';
     stage.querySelector('.h3d-title').innerHTML=`<small>${esc(s.eyebrow)}</small><b>${esc(s.title)}</b>`;
     defaultInfo=s.info;setInfo('');
@@ -1578,10 +1589,11 @@ const mountDash3D=(()=>{
       `<button class="h3d-tool h3d-pgo" ${s.project?`data-project="${esc(s.project)}"`:`data-go="${s.go}"`}>${esc(s.goLabel)}</button>`;
     p.hidden=false;p.scrollTop=0;stage.classList.add('h3d-has-panel');
     stage.querySelectorAll('.sel').forEach(b=>b.classList.remove('sel'));
+    if(gl)gl.setSel(key);
     stage.querySelectorAll('#h3dScene [data-open],#h3dOver [data-open]').forEach(b=>{if(b.dataset.open!==key)return;b.classList.add('sel');const bx=b.closest('.h3d-box');if(bx)bx.classList.add('sel')});
   }
   function closePanel(){
-    selKey=null;backKeys=[];if(!stage)return;const p=stage.querySelector('#h3dPanel');if(p){p.hidden=true;p.innerHTML=''}
+    selKey=null;backKeys=[];if(gl)gl.setSel(null);if(!stage)return;const p=stage.querySelector('#h3dPanel');if(p){p.hidden=true;p.innerHTML=''}
     stage.classList.remove('h3d-has-panel');stage.querySelectorAll('.sel').forEach(b=>b.classList.remove('sel'));
   }
   function tick(t){
@@ -1589,6 +1601,7 @@ const mountDash3D=(()=>{
     rz+=(trz-rz)*.07;rx+=(trx-rx)*.07;
     const sway=reduce?0:Math.sin(t/2700)*4;
     stage.style.setProperty('--rz',(rz+sway).toFixed(2)+'deg');stage.style.setProperty('--rx',rx.toFixed(2)+'deg');
+    if(gl)try{gl.frame(t,+(rz+sway).toFixed(2),+rx.toFixed(2),curSc,curBs)}catch(e){console.error('Painel 3D',e);gl=null;stage.classList.remove('h3d-gl')}
     if(auto&&selKey===null&&t-lastSwitch>9000&&t-lastTouch>14000&&!document.querySelector('.modal-bg')){const i=SCENES.findIndex(s=>s[0]===sceneId);show(SCENES[(i+1)%SCENES.length][0])}
     raf=requestAnimationFrame(tick);
   }
@@ -1620,7 +1633,7 @@ const mountDash3D=(()=>{
   }
   // ajusta a escala da cena ao tamanho do painel (celular, tablet, computador)
   function fit(reshow){
-    if(!stage||!world)return;const w=stage.clientWidth,narrow=w<520,sc=Math.max(.36,Math.min(1.05,w/(narrow?735:900),stage.clientHeight/540));const flip=stage.classList.contains('h3d-narrow')!==narrow;stage.classList.toggle('h3d-narrow',narrow);stage.style.setProperty('--sc',sc.toFixed(3));stage.style.setProperty('--bs',Math.min(narrow?1.8:1.4,Math.max(1,.95/sc)).toFixed(3));if(flip&&reshow)show(sceneId);
+    if(!stage||!world)return;const w=stage.clientWidth,narrow=w<520,sc=Math.max(.36,Math.min(1.05,w/(narrow?735:900),stage.clientHeight/540));const flip=stage.classList.contains('h3d-narrow')!==narrow;stage.classList.toggle('h3d-narrow',narrow);curSc=+sc.toFixed(3);curBs=+Math.min(narrow?1.8:1.4,Math.max(1,.95/sc)).toFixed(3);stage.style.setProperty('--sc',curSc);stage.style.setProperty('--bs',curBs);if(flip&&reshow)show(sceneId);
   }
   return function mount(){
     const main=document.getElementById('main'),metrics=main&&main.querySelector('.metrics');
@@ -1637,6 +1650,9 @@ const mountDash3D=(()=>{
     const head=main.querySelector('.page-head');(head||metrics).after(sec);metrics.remove();
     if(ro){ro.disconnect();ro=null}
     stage=sec.querySelector('#h3dStage');world=sec.querySelector('.h3d-world');
+    const useGL=()=>{if(!gl||!stage||!stage.isConnected)return;gl.attach(stage,world);stage.classList.add('h3d-gl')};
+    useGL();
+    if(!gl&&!glTried){glTried=true;import('./h3d-gl.js').then(m=>{const g=m.createGL();if(!g)return;gl=g;useGL();gl.setScene(G,reduce);gl.setSel(selKey)}).catch(e=>console.warn('Painel 3D sem WebGL',e))}
     bind(sec);fit(false);show(sceneId);
     if(!raf)raf=requestAnimationFrame(tick);
   };
