@@ -110,8 +110,10 @@ button.h3d-kpi:hover{border-color:var(--hy);background:rgba(40,26,18,.9)}
 .h3d-tag.hot{border-color:var(--hy);color:#fff;box-shadow:0 0 14px rgba(255,190,110,.55)}
 button.h3d-tag:hover{border-color:var(--hy)}
 .h3d-box.sel{--k:255,214,140;--kt:255,250,225}
-.h3d-box[data-month],.h3d-lab[data-month]{cursor:pointer}
-/* painel de detalhes do mês */
+.h3d-stage [data-open]{cursor:pointer}
+.h3d-kpi.sel,.h3d-tag.sel{border-color:var(--hy);background:rgba(52,34,20,.94);box-shadow:0 0 0 2px rgba(255,208,138,.55),0 0 22px rgba(255,190,110,.6)}
+.h3d-dot.sel{box-shadow:0 0 0 3px #fff,0 0 24px var(--dc,#ffc46b)}
+/* painel de detalhes (abre ao tocar em qualquer item, sem sair do 3D) */
 .h3d-panel{position:absolute;right:14px;top:14px;bottom:14px;width:min(310px,44%);z-index:3;overflow:auto;cursor:default;background:rgba(18,14,12,.94);border:1px solid rgba(255,170,110,.5);border-radius:14px;padding:13px;box-shadow:0 0 30px rgba(255,122,55,.22);touch-action:pan-y}
 .h3d-panel[hidden]{display:none}
 .h3d-ph{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
@@ -124,6 +126,21 @@ button.h3d-tag:hover{border-color:var(--hy)}
 .h3d-pt{display:flex;justify-content:space-between;gap:10px;border-top:1px solid #5a4636;padding-top:10px;margin-top:2px;font-size:13px;color:#e6d5c8}.h3d-pt b{font-size:16px;color:var(--hy)}
 .h3d-pe{margin:14px 0;font-size:13px;color:#cdbfb4}
 .h3d-pgo{width:100%;margin-top:12px;padding:9px 10px}
+.h3d-ph>div{flex:1;min-width:0}.h3d-ph b{overflow-wrap:anywhere}
+.h3d-pb{font-size:17px}
+.h3d-px{margin:0 0 10px;font-size:12px;line-height:1.5;color:#d8c9bd}
+.h3d-row>div span{min-width:0;overflow-wrap:anywhere}
+button.h3d-row{display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid #33291f;border-radius:0;color:inherit;font:inherit;cursor:pointer}
+button.h3d-row:hover{background:rgba(255,122,55,.1)}button.h3d-row:focus-visible,.h3d-x:focus-visible{outline:2px solid var(--hy);outline-offset:-2px}
+button.h3d-row>div b:after{content:" ›";color:var(--hy);font-weight:900}
+.h3d-fact{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #33291f;font-size:12px}
+.h3d-fact span{color:#a8998d;flex:none}.h3d-fact b{color:#fff;font-weight:700;text-align:right;min-width:0;overflow-wrap:anywhere}
+.h3d-sub{margin:14px 0 6px;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#d59a78}
+.h3d-meter{height:6px;border-radius:999px;background:#2b221c;overflow:hidden;margin-bottom:6px}.h3d-meter u{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--hc),var(--hy))}
+.h3d-st{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:#cdbfb4}
+.h3d-st>i{flex:none;width:16px;height:16px;border-radius:50%;border:1px solid #6a5546;font-style:normal;font-size:11px;line-height:15px;text-align:center;color:#10231a}
+.h3d-st.ok{color:#fff}.h3d-st.ok>i{background:var(--hg);border-color:var(--hg)}
+.h3d-st span{flex:1;min-width:0;overflow-wrap:anywhere}.h3d-st em{flex:none;font-style:normal;font-size:11px;color:#a8998d}
 .h3d-has-panel .h3d-world{left:34%}
 .h3d-has-panel .h3d-info{right:calc(min(310px,44%) + 28px)}
 .h3d-narrow.h3d-has-panel{height:650px}
@@ -1337,13 +1354,22 @@ const mountDash3D=(()=>{
   const CAM={overview:[-38,58],finance:[-27,60],projects:[-46,57],tasks:[-33,50]};
   const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let sceneId='overview',rz=-38,rx=58,trz=-38,trx=58,raf=0,auto=!reduce,lastTouch=0,lastSwitch=0,stage=null,world=null,ro=null,defaultInfo='',selMonth=null,finYear=0;
+  let sceneId='overview',rz=-38,rx=58,trz=-38,trx=58,raf=0,auto=!reduce,lastTouch=0,lastSwitch=0,stage=null,world=null,ro=null,defaultInfo='',selKey=null,backKeys=[],finYear=0;
   const MONTH_FULL=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const short=(n,k)=>{n=Number(n||0);if(n<1000)return (k?'':'R$ ')+Math.round(n);const v=n/1000,t=v.toLocaleString('pt-BR',{maximumFractionDigits:v<10?1:0});return k?t+'k':'R$ '+t+' mil'};
   const pad2=n=>String(n).padStart(2,'0');
   const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}h^=h>>>13;h=Math.imul(h,1540483477);return (h^(h>>>15))>>>0};
   const cut=(s,n)=>{s=String(s||'');return s.length>n?s.slice(0,n-1).trimEnd()+'…':s};
   const compact=n=>{n=Number(n||0);if(n>=1e6)return 'R$ '+(n/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mi';if(n>=1e4)return 'R$ '+(n/1e3).toLocaleString('pt-BR',{maximumFractionDigits:0})+' mil';return brl(n)};
+  const ZONES=['Vencidos','Próximos 7 dias','Mais adiante'];
+  const plural=(n,one,many)=>n+' '+(n===1?one:many);
+  const dot=a=>a.filter(Boolean).join(' · ');
+  const byDue=(a,b)=>(a.due||'9999').localeCompare(b.due||'9999');
+  const taskKey=t=>String(t.id||t.title);
+  const dayDiff=due=>Math.round((new Date(due+'T12:00:00')-new Date(today()+'T12:00:00'))/864e5);
+  const dueText=t=>{if(!t.due)return 'Sem data definida';const n=dayDiff(t.due);return n<0?'Venceu há '+plural(-n,'dia','dias'):n===0?'Vence hoje':'Vence em '+plural(n,'dia','dias')};
+  // separa os prazos em: vencidos, próximos 7 dias e mais adiante
+  const taskZones=list=>{const t0=today(),lim=new Date(Date.now()+7*864e5).toISOString().slice(0,10),z=[[],[],[]];list.forEach(t=>z[t.due&&t.due<t0?0:(t.due&&t.due<=lim?1:2)].push(t));return z};
   const isOff=()=>{try{return localStorage.getItem(LS_KEY)==='1'}catch(e){return false}};
   const setOff=v=>{try{v?localStorage.setItem(LS_KEY,'1'):localStorage.removeItem(LS_KEY)}catch(e){}};
   // prisma 3D: x,y = posição na base; w,d = pegada; h = altura
@@ -1360,35 +1386,36 @@ const mountDash3D=(()=>{
     const avg=tracked.length?Math.round(tracked.reduce((a,p)=>a+progress(p),0)/tracked.length):0;
     let fin={received:0,receivable:0,overdue:0},year=Number(today().slice(0,4)),monthly=[];
     try{fin=financeRecoveredMetrics();monthly=financeMonthlyReceived(year);if(!monthly.some(m=>m.value>0)){const prev=financeMonthlyReceived(year-1);if(prev.some(m=>m.value>0)){year--;monthly=prev}}}catch(e){monthly=[]}
+    finYear=year;
     return {active,openProc,openBud,openTasks,over,avg,tracked,fin,year,monthly,narrow:!!stage&&stage.clientWidth<520};
   }
   const SCENE={
     overview(d){
-      const kpis=[['projects','Projetos ativos',d.active.length,'','Projetos<i> ativos</i>'],['processes','Processos em aberto',d.openProc,'','Processos<i> em aberto</i>'],['budgets','Orçamentos em aberto',d.openBud,'','Orçamentos<i> em aberto</i>'],['tasks','Prazos vencidos',d.over,d.over?'red':'good','<i>Prazos </i>vencidos']];
+      const kpis=[['projects','Projetos ativos',d.active.length,'','Projetos<i> ativos</i>'],['processes','Processos em aberto',d.openProc,'','Processos<i> em aberto</i>'],['budgets','Orçamentos em aberto',d.openBud,'','Orçamentos<i> em aberto</i>'],['overdue','Prazos vencidos',d.over,d.over?'red':'good','<i>Prazos </i>vencidos']];
       const max=Math.max(1,...kpis.map(k=>k[2]));
       let h=kpis.map((k,i)=>box(d.narrow?44+i*148:40+i*140,i%2?(d.narrow?140:112):24,74,74,26+118*k[2]/max,k[3],i*110,'',
-        `<button class="h3d-bb h3d-kpi ${k[3]==='red'?'red':''}" data-go="${k[0]}" data-info="<b>${esc(k[1])}:</b> ${k[2]} · toque para abrir" style="animation-delay:${300+i*110}ms"><strong>${pad2(k[2])}</strong><span>${k[4]}</span></button>`)).join('');
+        `<button class="h3d-bb h3d-kpi ${k[3]==='red'?'red':''}" data-open="kpi:${k[0]}" data-info="<b>${esc(k[1])}:</b> ${k[2]} · toque para ver os detalhes" style="animation-delay:${300+i*110}ms"><strong>${pad2(k[2])}</strong><span>${k[4]}</span></button>`)).join('');
       const R=78,C=2*Math.PI*R;
       h+=`<svg class="h3d-ring" style="left:40px;top:196px" width="190" height="190" viewBox="0 0 190 190"><circle class="bg" cx="95" cy="95" r="${R}"/><circle class="fg" cx="95" cy="95" r="${R}" transform="rotate(-90 95 95)" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-off="${(C*(1-d.avg/100)).toFixed(1)}"/></svg>`;
-      h+=`<button class="h3d-bb h3d-kpi" data-go="projects" data-info="<b>Progresso médio:</b> ${d.avg}% das etapas concluídas em ${d.tracked.length} projeto(s) com etapas" style="left:135px;top:291px;--z:34px;animation-delay:500ms"><strong>${d.avg}%</strong><span>Progresso médio</span></button>`;
-      h+=box(390,262,150,96,14,'hot',420,'',`<button class="h3d-bb h3d-kpi sm" data-go="finance" data-info="<b>A receber:</b> ${brl(d.fin.receivable)} · já recebido ${brl(d.fin.received)}" style="animation-delay:700ms"><strong>${compact(d.fin.receivable)}</strong><span>A receber</span></button>`);
-      return {html:h,title:'Visão geral',eyebrow:'Meu escritório',info:`<b>${d.active.length}</b> projeto(s) ativo(s), <b>${d.openTasks.length}</b> prazo(s) em aberto${d.over?`, <b>${d.over}</b> vencido(s)`:''}.`};
+      h+=`<button class="h3d-bb h3d-kpi" data-open="kpi:avg" data-info="<b>Progresso médio:</b> ${d.avg}% das etapas concluídas em ${d.tracked.length} projeto(s) com etapas · toque para ver a conta" style="left:135px;top:291px;--z:34px;animation-delay:500ms"><strong>${d.avg}%</strong><span>Progresso médio</span></button>`;
+      h+=box(390,262,150,96,14,'hot',420,'',`<button class="h3d-bb h3d-kpi sm" data-open="kpi:receivable" data-info="<b>A receber:</b> ${brl(d.fin.receivable)} · já recebido ${brl(d.fin.received)} · toque para ver de quem" style="animation-delay:700ms"><strong>${compact(d.fin.receivable)}</strong><span>A receber</span></button>`);
+      return {html:h,title:'Visão geral',eyebrow:'Toque num item para ver os detalhes',info:`<b>${d.active.length}</b> projeto(s) ativo(s), <b>${d.openTasks.length}</b> prazo(s) em aberto${d.over?`, <b>${d.over}</b> vencido(s)`:''}. Toque num item para ver a explicação.`};
     },
     finance(d){
       const m=d.monthly,max=Math.max(1,...m.map(x=>x.value)),total=m.reduce((a,x)=>a+x.value,0);
       const cur=d.year===Number(today().slice(0,4))?Number(today().slice(5,7))-1:-1;
       const best=m.reduce((bi,x,i)=>x.value>m[bi].value?i:bi,0);
-      finYear=d.year;let over='';const zs=[];
+      let over='';const zs=[];
       let h=m.map((x,i)=>{
         const hot=i===cur,bh=x.value?10+175*x.value/max:3;
         let tz=Math.round(bh+10);const G=d.narrow?52:30;
         if(x.value>0){for(let n=0;n<4;n++){const hit=[zs[i-1],zs[i-2]].find(v=>v!=null&&Math.abs(v-tz)<G);if(hit==null)break;tz=hit+G}zs[i]=tz}
-        if(x.value>0)over+=`<button class="h3d-bb h3d-tag h3d-grow ${hot?'hot':''}" data-month="${i}" data-z="${tz}" style="left:${45+i*46}px;top:180px;--z:0px;transition-delay:${i*60}ms" aria-label="${MONTH_FULL[i]}: ${brl(x.value)}">${short(x.value,d.narrow)}</button>`;
-        return box(30+i*46,150,30,60,bh,(hot?'hot':(x.value?'':'dim'))+(i===selMonth?' sel':''),i*60,`data-month="${i}" data-info="<b>${MONTH_FULL[i]} de ${d.year}:</b> ${brl(x.value)} recebido · toque para ver de quem"`,'')+
-          `<span class="h3d-bb h3d-lab ${hot?'hot':''}" data-month="${i}" style="left:${45+i*46}px;top:246px;--z:0px">${d.narrow?MONTHS[i][0]:MONTHS[i]}</span>`;
+        if(x.value>0)over+=`<button class="h3d-bb h3d-tag h3d-grow ${hot?'hot':''}" data-open="month:${i}" data-z="${tz}" style="left:${45+i*46}px;top:180px;--z:0px;transition-delay:${i*60}ms" aria-label="${MONTH_FULL[i]}: ${brl(x.value)}">${short(x.value,d.narrow)}</button>`;
+        return box(30+i*46,150,30,60,bh,(hot?'hot':(x.value?'':'dim')),i*60,`data-open="month:${i}" data-info="<b>${MONTH_FULL[i]} de ${d.year}:</b> ${brl(x.value)} recebido · toque para ver de quem"`,'')+
+          `<span class="h3d-bb h3d-lab ${hot?'hot':''}" data-open="month:${i}" style="left:${45+i*46}px;top:246px;--z:0px">${d.narrow?MONTHS[i][0]:MONTHS[i]}</span>`;
       }).join('');
-      if(!d.narrow)h+=`<button class="h3d-bb h3d-kpi sm" data-go="finance" data-info="<b>Recebido em ${d.year}:</b> ${brl(total)}" style="left:70px;top:8px;--z:70px"><strong>${compact(total)}</strong><span>Recebido em ${d.year}</span></button>`;
-      if(!d.narrow)h+=`<button class="h3d-bb h3d-kpi sm ${d.fin.overdue>0?'red':''}" data-go="finance" data-info="<b>A receber:</b> ${brl(d.fin.receivable)}${d.fin.overdue>0?' · '+brl(d.fin.overdue)+' com previsão vencida':''}" style="left:70px;top:398px;--z:8px"><strong>${compact(d.fin.receivable)}</strong><span>A receber</span></button>`;
+      if(!d.narrow)h+=`<button class="h3d-bb h3d-kpi sm" data-open="kpi:year" data-info="<b>Recebido em ${d.year}:</b> ${brl(total)} · toque para ver mês a mês" style="left:70px;top:8px;--z:70px"><strong>${compact(total)}</strong><span>Recebido em ${d.year}</span></button>`;
+      if(!d.narrow)h+=`<button class="h3d-bb h3d-kpi sm ${d.fin.overdue>0?'red':''}" data-open="kpi:receivable" data-info="<b>A receber:</b> ${brl(d.fin.receivable)}${d.fin.overdue>0?' · '+brl(d.fin.overdue)+' com previsão vencida':''} · toque para ver de quem" style="left:70px;top:398px;--z:8px"><strong>${compact(d.fin.receivable)}</strong><span>A receber</span></button>`;
       if(!total)h+=`<span class="h3d-bb h3d-lab" style="left:300px;top:110px;--z:40px">Nenhum recebimento lançado em ${d.year}</span>`;
       return {html:h,over,title:'Faturamento '+d.year,eyebrow:'Toque num mês para ver os recebimentos',info:`Recebido em ${d.year}: <b>${brl(total)}</b> · a receber: <b>${brl(d.fin.receivable)}</b>`};
     },
@@ -1397,34 +1424,35 @@ const mountDash3D=(()=>{
       let h=list.map((p,i)=>{
         const pc=p.recoveryPending?0:progress(p),col=i%cols,row=Math.floor(i/cols),x=30+col*gap+gap/2-30,y=(list.length>cols?70:160)+row*190;
         return box(x,y,60,60,8+150*pc/100,p.recoveryPending?'dim':pc===100?'good':pc>=60?'hot':'',i*80,'',
-          `<button class="h3d-bb h3d-tag" data-project="${esc(p.id)}" data-info="<b>${esc(p.name)}</b> · ${esc(clientName(p.clientId))} · ${p.recoveryPending?'dados a recuperar':pc+'% das etapas'} · toque para abrir" style="animation-delay:${400+i*80}ms"><b>${p.recoveryPending?'—':pc+'%'}</b>${esc(cut(p.name,d.narrow?11:12))}</button>`);
+          `<button class="h3d-bb h3d-tag" data-open="project:${esc(p.id)}" data-info="<b>${esc(p.name)}</b> · ${esc(clientName(p.clientId))} · ${p.recoveryPending?'dados a recuperar':pc+'% das etapas'} · toque para ver os detalhes" style="animation-delay:${400+i*80}ms"><b>${p.recoveryPending?'—':pc+'%'}</b>${esc(cut(p.name,d.narrow?11:12))}</button>`);
       }).join('');
       if(!list.length)h=`<span class="h3d-bb h3d-lab" style="left:300px;top:200px;--z:40px">Nenhum projeto ativo</span>`;
       const extra=d.active.length-list.length;
-      return {html:h,title:'Projetos em andamento',eyebrow:'Altura = etapas concluídas',info:`<b>${d.active.length}</b> projeto(s) ativo(s) · progresso médio <b>${d.avg}%</b>${extra>0?` · mais ${extra} na lista de projetos`:''}`};
+      return {html:h,title:'Projetos em andamento',eyebrow:'Altura = etapas concluídas · toque num projeto',info:`<b>${d.active.length}</b> projeto(s) ativo(s) · progresso médio <b>${d.avg}%</b>${extra>0?` · mais ${extra} na lista de projetos`:''}`};
     },
     tasks(d){
-      const t0=today(),lim=new Date(Date.now()+7*864e5).toISOString().slice(0,10),zones=[[],[],[]];
-      d.openTasks.forEach(t=>zones[t.due&&t.due<t0?0:(t.due&&t.due<=lim?1:2)].push(t));
+      const zones=taskZones(d.openTasks);
       const names=d.narrow?['Vencidos','7 dias','Depois']:['Vencidos','Próximos 7 dias','Mais adiante'],cls=['r','','n'];
-      let h=zones.map((z,zi)=>`<div class="h3d-zone z${zi}" style="left:${zi*200}px;width:200px"></div><span class="h3d-bb h3d-tag" style="left:${zi*200+100}px;top:14px;--z:64px"><b>${pad2(z.length)}</b>${names[zi]}</span>`).join('');
+      let h=zones.map((z,zi)=>`<div class="h3d-zone z${zi}" style="left:${zi*200}px;width:200px"></div><button class="h3d-bb h3d-tag" data-open="zone:${zi}" data-info="<b>${ZONES[zi]}:</b> ${z.length} prazo(s) · toque para ver a lista" style="left:${zi*200+100}px;top:14px;--z:64px"><b>${pad2(z.length)}</b>${names[zi]}</button>`).join('');
       zones.forEach((z,zi)=>z.slice(0,16).forEach((t,i)=>{
         const k=hash((t.id||t.title)+"#"+i),x=zi*200+34+(i%3)*56+(k%22),y=66+Math.floor(i/3)*58+((k>>>5)%22),z0=14+((k>>>10)%26);
-        h+=`<i class="h3d-shadow" style="left:${x}px;top:${y}px"></i><button class="h3d-bb h3d-dot ${cls[zi]}" data-go="tasks" aria-label="${esc(t.title)}" data-info="<b>${esc(t.title)}</b> · ${t.due?fmtDate(t.due):'sem data'} · ${esc(clientName(t.clientId))} · ${esc(t.status||'')}" style="left:${x}px;top:${y}px;--z:${z0}px;--z0:${z0}px;animation-delay:${i*50}ms,${(k%20)*-170}ms"></button>`;
+        h+=`<i class="h3d-shadow" style="left:${x}px;top:${y}px"></i><button class="h3d-bb h3d-dot ${cls[zi]}" data-open="task:${esc(taskKey(t))}" aria-label="${esc(t.title)}" data-info="<b>${esc(t.title)}</b> · ${t.due?fmtDate(t.due):'sem data'} · ${esc(clientName(t.clientId))} · ${esc(t.status||'')} · toque para ver os detalhes" style="left:${x}px;top:${y}px;--z:${z0}px;--z0:${z0}px;animation-delay:${i*50}ms,${(k%20)*-170}ms"></button>`;
       }));
       if(!d.openTasks.length)h+=`<span class="h3d-bb h3d-lab" style="left:300px;top:210px;--z:40px">Nenhum prazo em aberto</span>`;
-      return {html:h,title:'Mapa de prazos',eyebrow:'Cada esfera é um prazo em aberto',info:`<b>${zones[0].length}</b> vencido(s) · <b>${zones[1].length}</b> nos próximos 7 dias · <b>${zones[2].length}</b> mais adiante. Passe o mouse ou toque numa esfera.`};
+      return {html:h,title:'Mapa de prazos',eyebrow:'Cada esfera é um prazo · toque para detalhes',info:`<b>${zones[0].length}</b> vencido(s) · <b>${zones[1].length}</b> nos próximos 7 dias · <b>${zones[2].length}</b> mais adiante. Toque numa esfera ou numa faixa para ver os detalhes.`};
     }
   };
   function setInfo(html){const e=stage&&stage.querySelector('#h3dInfoText');if(e)e.innerHTML=esc(html||defaultInfo).replace(/&lt;(\/?)b&gt;/g,'<$1b>')}
   function show(id,byUser){
     if(!stage||!stage.isConnected)return;
+    const keep=!byUser&&id===sceneId?selKey:null,keepBack=backKeys;
     sceneId=id;lastSwitch=performance.now();if(byUser)lastTouch=lastSwitch;
     const s=SCENE[id](data());
     closePanel();
     stage.querySelector('#h3dScene').innerHTML=s.html;stage.querySelector('#h3dOver').innerHTML=s.over||'';
     stage.querySelector('.h3d-title').innerHTML=`<small>${esc(s.eyebrow)}</small><b>${esc(s.title)}</b>`;
     defaultInfo=s.info;setInfo('');
+    if(keep){backKeys=keepBack;openPanel(keep,'keep')}
     [trz,trx]=CAM[id];
     document.querySelectorAll('.h3d-tab').forEach(b=>{const on=b.dataset.scene===id;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
     // dispara a animação de crescimento depois do primeiro layout
@@ -1443,27 +1471,108 @@ const mountDash3D=(()=>{
     });
     return [...map.values()].sort((a,b)=>b.value-a.value);
   }
-  function openMonth(i){
-    if(!stage)return;selMonth=i;lastTouch=performance.now();
-    const p=stage.querySelector('#h3dPanel');let rows=[];try{rows=monthRows(finYear,i)}catch(e){}
-    const total=rows.reduce((a,r)=>a+r.value,0),max=Math.max(1,...rows.map(r=>r.value));
-    p.innerHTML=`<div class="h3d-ph"><div><small>Recebimentos</small><b>${MONTH_FULL[i]} de ${finYear}</b></div><button class="h3d-x" id="h3dPanelX" aria-label="Fechar detalhes">×</button></div>`+
-      (rows.length?rows.map(r=>{const note=[r.count>1?r.count+' recebimentos':'',[...r.notes].slice(0,2).join(', ')].filter(Boolean).join(' · ');return `<div class="h3d-row"><div><span>${esc(r.name)}</span><b>${brl(r.value)}</b></div><i><u style="width:${Math.max(4,Math.round(r.value/max*100))}%"></u></i>${note?`<em>${esc(note)}</em>`:''}</div>`}).join('')+`<div class="h3d-pt"><span>Total do mês</span><b>${brl(total)}</b></div>`:'<p class="h3d-pe">Nenhum recebimento lançado neste mês.</p>')+
-      `<button class="h3d-tool h3d-pgo" data-go="finance">Abrir o Financeiro</button>`;
+  // peças do painel de detalhes
+  const pRow=(name,value,o={})=>{const tag=o.open?'button':'div';return `<${tag} class="h3d-row"${o.open?` data-open="${esc(o.open)}"`:''}><div><span>${esc(name)}</span><b>${esc(value)}</b></div>${o.pct!=null?`<i><u style="width:${o.pct>0?Math.max(4,Math.round(o.pct)):0}%"></u></i>`:''}${o.note?`<em>${esc(o.note)}</em>`:''}</${tag}>`};
+  const pFact=(l,v)=>v?`<div class="h3d-fact"><span>${esc(l)}</span><b>${esc(v)}</b></div>`:'';
+  const pSub=t=>`<div class="h3d-sub">${esc(t)}</div>`;
+  const pTotal=(l,v)=>`<div class="h3d-pt"><span>${esc(l)}</span><b>${esc(v)}</b></div>`;
+  const pEmpty=t=>`<p class="h3d-pe">${esc(t)}</p>`;
+  const taskRows=list=>list.map(t=>pRow(t.title,t.due?fmtDate(t.due):'sem data',{note:dot([dueText(t),t.clientId&&clientName(t.clientId),t.status]),open:'task:'+taskKey(t)})).join('');
+  // conteúdo do painel para cada tipo de item: mês, indicador, projeto, prazo e faixa de prazos
+  function panelSpec(key,d){
+    const cut0=key.indexOf(':'),kind=key.slice(0,cut0),arg=key.slice(cut0+1),t0=today();
+    if(kind==='month'){
+      const i=+arg;let rows=[];try{rows=monthRows(finYear,i)}catch(e){}
+      const total=rows.reduce((a,r)=>a+r.value,0),max=Math.max(1,...rows.map(r=>r.value));
+      return {eyebrow:'Recebimentos',title:MONTH_FULL[i]+' de '+finYear,intro:'Valores efetivamente recebidos neste mês, somados por cliente.',
+        body:rows.length?rows.map(r=>pRow(r.name,brl(r.value),{pct:r.value/max*100,note:dot([r.count>1?r.count+' recebimentos':'',[...r.notes].slice(0,2).join(', ')])})).join('')+pTotal('Total do mês',brl(total)):pEmpty('Nenhum recebimento lançado neste mês.'),
+        goLabel:'Abrir o Financeiro',go:'finance'};
+    }
+    if(kind==='kpi'&&arg==='year'){
+      const m=d.monthly,total=m.reduce((a,x)=>a+x.value,0),max=Math.max(1,...m.map(x=>x.value)),rows=m.map((x,i)=>x.value>0?pRow(MONTH_FULL[i],brl(x.value),{pct:x.value/max*100,open:'month:'+i}):'').join('');
+      return {eyebrow:'Faturamento',title:'Recebido em '+d.year,intro:'Soma de tudo o que foi efetivamente recebido no ano, mês a mês. Toque num mês para ver de quem veio.',
+        body:rows?rows+pTotal('Total do ano',brl(total)):pEmpty('Nenhum recebimento lançado em '+d.year+'.'),goLabel:'Abrir o Financeiro',go:'finance'};
+    }
+    if(kind==='kpi'&&arg==='receivable'){
+      const map=new Map();(d.fin.pending||[]).forEach(x=>{const name=x.clientId?clientName(x.clientId):(x.description||'Sem cliente'),r=map.get(name)||{name,value:0,count:0,late:0},k=x.dueDate||x.date||'';r.value+=x.remaining;r.count++;if(x.legacyOverdue||(k&&k<t0))r.late+=x.remaining;map.set(name,r)});
+      const rows=[...map.values()].sort((a,b)=>b.value-a.value),max=Math.max(1,...rows.map(r=>r.value));
+      return {eyebrow:'Financeiro',title:'A receber',intro:'Honorários contratados que ainda não entraram, já descontados os recebimentos lançados.'+(d.fin.overdue>0?' '+brl(d.fin.overdue)+' está com a previsão vencida.':'')+' Já recebido até hoje: '+brl(d.fin.received)+'.',
+        body:rows.length?rows.map(r=>pRow(r.name,brl(r.value),{pct:r.value/max*100,note:dot([plural(r.count,'lançamento','lançamentos'),r.late>0?brl(r.late)+' com previsão vencida':''])})).join('')+pTotal('Total a receber',brl(d.fin.receivable)):pEmpty('Nenhum valor pendente de recebimento.'),
+        goLabel:'Abrir o Financeiro',go:'finance'};
+    }
+    if(kind==='kpi'&&arg==='projects'){
+      const list=d.active.slice().sort((a,b)=>progress(b)-progress(a));
+      return {eyebrow:'Visão geral',title:'Projetos ativos',intro:'Projetos que ainda não foram arquivados. A barra mostra quanto das etapas já foi concluído. Toque num projeto para ver os detalhes.',
+        body:list.length?list.map(p=>pRow(p.name,p.recoveryPending?'—':progress(p)+'%',{pct:p.recoveryPending?0:progress(p),note:dot([p.clientId&&clientName(p.clientId),p.status]),open:'project:'+p.id})).join('')+pTotal('Total',plural(list.length,'projeto','projetos')):pEmpty('Nenhum projeto ativo.'),
+        goLabel:'Abrir Projetos',go:'projects'};
+    }
+    if(kind==='kpi'&&arg==='avg'){
+      const list=d.tracked.slice().sort((a,b)=>progress(b)-progress(a)),out=d.active.length-list.length;
+      return {eyebrow:'Visão geral',title:'Progresso médio',intro:'Média do percentual de etapas concluídas nos projetos ativos que têm etapas cadastradas.'+(out>0?' '+plural(out,'projeto','projetos')+' sem etapas ou com dados a recuperar '+(out===1?'fica':'ficam')+' fora da conta.':''),
+        body:list.length?list.map(p=>pRow(p.name,progress(p)+'%',{pct:progress(p),note:p.stages.filter(s=>s.done).length+' de '+plural(p.stages.length,'etapa','etapas'),open:'project:'+p.id})).join('')+pTotal('Média',d.avg+'%'):pEmpty('Nenhum projeto ativo com etapas cadastradas.'),
+        goLabel:'Abrir Projetos',go:'projects'};
+    }
+    if(kind==='kpi'&&arg==='processes'){
+      const list=state.processes.filter(p=>!['Concluído','Arquivado'].includes(p.status)).sort(byDue);
+      return {eyebrow:'Visão geral',title:'Processos em aberto',intro:'Protocolos em prefeituras e órgãos que ainda não foram concluídos nem arquivados, do prazo mais próximo ao mais distante.',
+        body:list.length?list.map(x=>{const pr=state.projects.find(p=>p.id===x.projectId);return pRow(x.title,x.status||'—',{note:dot([x.clientId&&clientName(x.clientId),x.agency||pr?.agency,x.protocol&&'protocolo '+x.protocol,x.due&&'prazo '+fmtDate(x.due)])})}).join('')+pTotal('Total',plural(list.length,'processo','processos')):pEmpty('Nenhum processo em aberto.'),
+        goLabel:'Abrir Processos',go:'processes'};
+    }
+    if(kind==='kpi'&&arg==='budgets'){
+      const list=state.budgets.filter(b=>!['Aceito','Recusado'].includes(b.status)).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')),sum=list.reduce((a,b)=>a+Number(b.value||0),0);
+      return {eyebrow:'Visão geral',title:'Orçamentos em aberto',intro:'Propostas que ainda não foram aceitas nem recusadas pelo cliente. O total é o valor que pode virar contrato.',
+        body:list.length?list.map(b=>pRow(b.title||'Orçamento',brl(b.value),{note:dot([b.clientId&&clientName(b.clientId),b.status])})).join('')+pTotal('Em negociação',brl(sum)):pEmpty('Nenhum orçamento em aberto.'),
+        goLabel:'Abrir Orçamentos',go:'budgets'};
+    }
+    if(kind==='kpi'&&arg==='overdue'||kind==='zone'){
+      const zi=kind==='zone'?+arg:0,list=taskZones(d.openTasks)[zi].slice().sort(byDue);
+      const intro=['Tarefas em aberto cuja data já passou. São as que pedem atenção primeiro.','Tarefas em aberto que vencem de hoje até daqui a 7 dias.','Tarefas em aberto com prazo depois dos próximos 7 dias ou ainda sem data definida.'][zi];
+      return {eyebrow:kind==='zone'?'Mapa de prazos':'Visão geral',title:kind==='zone'?ZONES[zi]:'Prazos vencidos',intro:intro+(list.length?' Toque num prazo para ver os detalhes.':''),
+        body:list.length?taskRows(list)+pTotal('Total',plural(list.length,'prazo','prazos')):pEmpty(zi===0?'Nenhum prazo vencido. Tudo em dia.':'Nenhum prazo nesta faixa.'),
+        goLabel:'Abrir Tarefas e prazos',go:'tasks'};
+    }
+    if(kind==='project'){
+      const p=state.projects.find(x=>x.id===arg);if(!p)return null;
+      const n=p.stages.length,done=p.stages.filter(s=>s.done).length,pc=progress(p),tasks=d.openTasks.filter(t=>t.projectId===p.id).sort(byDue);let fs=null;try{fs=projectFinanceSummary(p.id)}catch(e){}
+      return {eyebrow:'Projeto',title:p.name,intro:p.recoveryPending?'Os dados deste projeto ainda precisam ser recuperados; por isso a torre aparece baixa e cinza.':n?`A altura da torre mostra as etapas concluídas: ${done} de ${n} (${pc}%).`:'Este projeto ainda não tem etapas cadastradas.',
+        body:pFact('Cliente',p.clientId?clientName(p.clientId):'')+pFact('Serviço',p.service)+pFact('Status',p.status)+pFact('Prazo final',p.deadline?fmtDate(p.deadline):'')+pFact('Próxima ação',dot([p.nextAction,p.nextActionDate&&fmtDate(p.nextActionDate)]))+
+          (n?pSub(`Etapas · ${done} de ${n}`)+`<div class="h3d-meter"><u style="width:${pc}%"></u></div>`+p.stages.map(s=>`<div class="h3d-st ${s.done?'ok':''}"><i>${s.done?'✓':''}</i><span>${esc(s.title)}</span>${s.due?`<em>${fmtDate(s.due)}</em>`:''}</div>`).join(''):'')+
+          (fs&&(fs.contracted||fs.received)?pSub('Financeiro')+pFact('Contratado',brl(fs.contracted))+pFact('Recebido',brl(fs.received))+pFact('A receber',brl(fs.receivable)):'')+
+          (tasks.length?pSub('Prazos em aberto')+taskRows(tasks):''),
+        goLabel:'Abrir o projeto',project:p.id};
+    }
+    if(kind==='task'){
+      const t=d.openTasks.find(x=>taskKey(x)===arg);if(!t)return null;
+      const zi=taskZones([t]).findIndex(z=>z.length);
+      return {eyebrow:'Prazo · '+ZONES[zi],title:t.title,intro:dueText(t)+'. '+['Esfera vermelha: o prazo já passou.','Esfera amarela: vence nos próximos 7 dias.','Esfera clara: prazo mais adiante ou sem data.'][zi],
+        body:pFact('Data',t.due?fmtDate(t.due):'Sem data')+pFact('Cliente',t.clientId?clientName(t.clientId):'')+pFact('Projeto',t.projectId?projectName(t.projectId):'')+pFact('Tipo',t.type||'Tarefa')+pFact('Status',t.status)+(t.notes?pSub('Observações')+`<p class="h3d-px">${esc(t.notes)}</p>`:''),
+        goLabel:'Abrir Tarefas e prazos',go:'tasks'};
+    }
+    return null;
+  }
+  function openPanel(key,fromPanel){
+    if(!stage)return;let s=null;try{s=panelSpec(key,data())}catch(e){console.error('Painel 3D',e)}
+    if(!s){closePanel();return}
+    if(fromPanel==='back')backKeys.pop();else if(fromPanel&&selKey&&selKey!==key)backKeys.push(selKey);else if(!fromPanel)backKeys=[];
+    selKey=key;lastTouch=performance.now();
+    const p=stage.querySelector('#h3dPanel');
+    p.innerHTML=`<div class="h3d-ph">${backKeys.length?'<button class="h3d-x h3d-pb" data-back="1" aria-label="Voltar">←</button>':''}<div><small>${esc(s.eyebrow)}</small><b>${esc(s.title)}</b></div><button class="h3d-x" data-close="1" aria-label="Fechar detalhes">×</button></div>`+
+      (s.intro?`<p class="h3d-px">${esc(s.intro)}</p>`:'')+s.body+
+      `<button class="h3d-tool h3d-pgo" ${s.project?`data-project="${esc(s.project)}"`:`data-go="${s.go}"`}>${esc(s.goLabel)}</button>`;
     p.hidden=false;p.scrollTop=0;stage.classList.add('h3d-has-panel');
-    stage.querySelectorAll('.h3d-box[data-month]').forEach(b=>b.classList.toggle('sel',+b.dataset.month===i));
-    p.querySelector('#h3dPanelX').onclick=e=>{e.stopPropagation();closePanel()};
+    stage.querySelectorAll('.sel').forEach(b=>b.classList.remove('sel'));
+    stage.querySelectorAll('#h3dScene [data-open],#h3dOver [data-open]').forEach(b=>{if(b.dataset.open!==key)return;b.classList.add('sel');const bx=b.closest('.h3d-box');if(bx)bx.classList.add('sel')});
   }
   function closePanel(){
-    selMonth=null;if(!stage)return;const p=stage.querySelector('#h3dPanel');if(p){p.hidden=true;p.innerHTML=''}
-    stage.classList.remove('h3d-has-panel');stage.querySelectorAll('.h3d-box.sel').forEach(b=>b.classList.remove('sel'));
+    selKey=null;backKeys=[];if(!stage)return;const p=stage.querySelector('#h3dPanel');if(p){p.hidden=true;p.innerHTML=''}
+    stage.classList.remove('h3d-has-panel');stage.querySelectorAll('.sel').forEach(b=>b.classList.remove('sel'));
   }
   function tick(t){
     if(!stage||!stage.isConnected){raf=0;stage=null;if(ro){ro.disconnect();ro=null}return}
     rz+=(trz-rz)*.07;rx+=(trx-rx)*.07;
     const sway=reduce?0:Math.sin(t/2700)*4;
     stage.style.setProperty('--rz',(rz+sway).toFixed(2)+'deg');stage.style.setProperty('--rx',rx.toFixed(2)+'deg');
-    if(auto&&selMonth===null&&t-lastSwitch>9000&&t-lastTouch>14000&&!document.querySelector('.modal-bg')){const i=SCENES.findIndex(s=>s[0]===sceneId);show(SCENES[(i+1)%SCENES.length][0])}
+    if(auto&&selKey===null&&t-lastSwitch>9000&&t-lastTouch>14000&&!document.querySelector('.modal-bg')){const i=SCENES.findIndex(s=>s[0]===sceneId);show(SCENES[(i+1)%SCENES.length][0])}
     raf=requestAnimationFrame(tick);
   }
   function go(el){
@@ -1485,7 +1594,7 @@ const mountDash3D=(()=>{
     });
     const up=()=>{down=null;stage.classList.remove('drag');setTimeout(()=>{moved=false},0)};
     stage.addEventListener('pointerup',up);stage.addEventListener('pointercancel',up);
-    stage.addEventListener('click',e=>{if(moved){e.preventDefault();return}const mo=e.target.closest('[data-month]');if(mo&&stage.contains(mo)){openMonth(+mo.dataset.month);return}const el=e.target.closest('[data-go],[data-project]');if(el&&stage.contains(el))go(el)});
+    stage.addEventListener('click',e=>{if(moved){e.preventDefault();return}if(e.target.closest('[data-close]')){closePanel();return}if(e.target.closest('[data-back]')){openPanel(backKeys[backKeys.length-1],'back');return}const op=e.target.closest('[data-open]');if(op&&stage.contains(op)){openPanel(op.dataset.open,!!op.closest('.h3d-panel'));return}const el=e.target.closest('[data-go],[data-project]');if(el&&stage.contains(el))go(el)});
     const hover=e=>{const el=e.target.closest&&e.target.closest('[data-info]');setInfo(el?el.dataset.info:'');if(el)lastTouch=performance.now()};
     stage.addEventListener('pointerover',hover);stage.addEventListener('focusin',hover);
     stage.addEventListener('pointerleave',()=>setInfo(''));
