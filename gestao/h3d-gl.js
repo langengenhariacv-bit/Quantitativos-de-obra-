@@ -88,15 +88,15 @@ export function createGL(opts = {}) {
   Object.assign(sun.shadow.camera, { left: -470, right: 470, top: 470, bottom: -470, near: 50, far: 2200 });
   sun.shadow.bias = -0.0006; sun.shadow.normalBias = 1.2; sun.shadow.radius = 5;
   root.add(sun, sun.target);
-  const warm = new THREE.PointLight(0xff8a45, 50000, 0, 2); warm.position.set(PW / 2, PH / 2, 190); root.add(warm);
+  const warm = new THREE.PointLight(0xff8a45, 32000, 0, 2); warm.position.set(PW / 2, PH / 2, 190); root.add(warm);
 
   // base: máscara do espelho, piso semitransparente, moldura luminosa e brilho por baixo
   const mask = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp }));
   mask.position.set(PW / 2, PH / 2, 0); mask.renderOrder = -3; root.add(mask);
   const floorTex = floorTexture(renderer.capabilities.getMaxAnisotropy());
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), new THREE.MeshStandardMaterial({ map: floorTex, emissiveMap: floorTex, emissive: 0xffffff, emissiveIntensity: 1.0, roughness: .35, metalness: .4, transparent: true, opacity: .74, depthWrite: false }));
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), new THREE.MeshStandardMaterial({ map: floorTex, emissiveMap: floorTex, emissive: 0xffffff, emissiveIntensity: .8, roughness: .35, metalness: .4, transparent: true, opacity: .74, depthWrite: false }));
   floor.position.set(PW / 2, PH / 2, 0); floor.receiveShadow = true; floor.renderOrder = -1; root.add(floor);
-  const under = new THREE.Mesh(unitPlane, addMat(0xff5a1c, .26)); under.scale.set(PW * 1.8, PH * 2, 1); under.position.set(PW / 2, PH / 2, -90); under.renderOrder = -4; root.add(under);
+  const under = new THREE.Mesh(unitPlane, addMat(0xff5a1c, .15)); under.scale.set(PW * 1.8, PH * 2, 1); under.position.set(PW / 2, PH / 2, -90); under.renderOrder = -4; root.add(under);
   const sweep = new THREE.Mesh(unitPlane, addMat(0xffc48a, .0, sweepTex)); sweep.scale.set(150, PH - 6, 1); sweep.position.set(0, PH / 2, .8); root.add(sweep);
   const pulse = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 72), addMat(0xffb070, 0)); pulse.material.map = null; pulse.position.set(PW / 2, PH / 2, 1.1); pulse.visible = false; root.add(pulse);
   const selRing = new THREE.Group(); selRing.visible = false; root.add(selRing);
@@ -106,7 +106,7 @@ export function createGL(opts = {}) {
   const N = 130, pp = new Float32Array(N * 3);
   for (let i = 0; i < N; i++) { pp[i * 3] = -80 + Math.random() * (PW + 160); pp[i * 3 + 1] = -80 + Math.random() * (PH + 160); pp[i * 3 + 2] = 6 + Math.random() * 300 }
   const dustGeo = new THREE.BufferGeometry(); dustGeo.setAttribute('position', new THREE.BufferAttribute(pp, 3));
-  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ map: glowTex, color: 0xffc89a, size: 5, sizeAttenuation: false, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false }));
+  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ map: glowTex, color: 0xffc89a, size: 4, sizeAttenuation: false, transparent: true, opacity: .32, blending: THREE.AdditiveBlending, depthWrite: false }));
   root.add(dust);
 
   // geometrias compartilhadas (caixa unitária com base em z=0 e topo em z=1, mais clara em cima)
@@ -123,7 +123,7 @@ export function createGL(opts = {}) {
       const rt = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType, samples: 4, stencilBuffer: true, depthBuffer: true });
       composer = new THREE.EffectComposer(renderer, rt);
       composer.addPass(new THREE.RenderPass(scene, cam));
-      bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), .5, .5, .8); composer.addPass(bloom);
+      bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), .26, .45, .9); composer.addPass(bloom);
       composer.addPass(new THREE.OutputPass());
     } catch (e) { composer = null; fxOn = false }
   }
@@ -139,8 +139,8 @@ export function createGL(opts = {}) {
 
   function paintBox(o) {
     const [k, kt] = PAL[o.key && o.key === selKey ? 'sel' : o.cls] || PAL[''];
-    const c = col(k), ct = col(kt), big = o.w * o.d > 9000, capC = c.clone().lerp(ct, big ? .1 : .45), dimC = c.clone().multiplyScalar(.45);
-    o.body.material.color.copy(c); o.body.material.emissive.copy(c); o.cap.material.color.copy(capC); o.edges.material.color.copy(ct); o.glow.material.color.copy(c);
+    const c = col(k), ct = col(kt), big = o.w * o.d > 9000, capC = c.clone().lerp(ct, big ? .05 : .22), edgeC = c.clone().lerp(ct, .55), dimC = c.clone().multiplyScalar(.45);
+    o.body.material.color.copy(c); o.body.material.emissive.copy(c); o.cap.material.color.copy(capC); o.edges.material.color.copy(edgeC); o.glow.material.color.copy(c);
     if (o.beam) o.beam.material.color.copy(c);
     if (o.mirror) { o.mirror.children[0].material.color.copy(dimC); o.mirror.children[0].material.emissive.copy(dimC); o.mirror.children[1].material.color.copy(c) }
   }
@@ -153,7 +153,7 @@ export function createGL(opts = {}) {
     for (const it of list || []) {
       if (it.t === 'box') {
         const g = new THREE.Group(); g.position.set(it.x + it.w / 2, it.y + it.d / 2, 0);
-        const body = new THREE.Mesh(boxGeo, new THREE.MeshStandardMaterial({ emissiveIntensity: .34, roughness: .22, metalness: .2, vertexColors: true }));
+        const body = new THREE.Mesh(boxGeo, new THREE.MeshStandardMaterial({ emissiveIntensity: .24, roughness: .22, metalness: .2, vertexColors: true }));
         body.castShadow = true; body.scale.set(it.w, it.d, 1);
         const edges = new THREE.LineSegments(edgeGeo, new THREE.LineBasicMaterial()); edges.scale.copy(body.scale);
         const cap = new THREE.Mesh(unitPlane, new THREE.MeshBasicMaterial()); cap.scale.set(it.w, it.d, 1);
@@ -168,9 +168,9 @@ export function createGL(opts = {}) {
         const o = { ...it, body, edges, cap, glow, beam, beamOk, mirror }; paintBox(o); items.push(o);
       } else if (it.t === 'dot') {
         const c = col(DOT[it.cls] || DOT['']), g = new THREE.Group(); g.position.set(it.x, it.y, 0);
-        const ball = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: .7, roughness: .16, metalness: .05 })); ball.castShadow = true;
+        const ball = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: .42, roughness: .16, metalness: .05 })); ball.castShadow = true;
         const stem = new THREE.Mesh(stemGeo, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .7 }));
-        const glow = new THREE.Mesh(unitPlane, addMat(c, .6)); glow.scale.set(60, 60, 1); glow.position.z = 1;
+        const glow = new THREE.Mesh(unitPlane, addMat(c, .36)); glow.scale.set(60, 60, 1); glow.position.z = 1;
         const mirror = new THREE.Mesh(sphereGeo, new THREE.MeshStandardMaterial({ color: c.clone().multiplyScalar(.5), emissive: c, emissiveIntensity: .25, roughness: .2, ...mirrorProps })); mirror.renderOrder = -2;
         g.add(mirror, glow, stem, ball); dyn.add(g); items.push({ ...it, ball, stem, glow, mirror });
       } else if (it.t === 'zone') {
@@ -182,9 +182,9 @@ export function createGL(opts = {}) {
         const g = new THREE.Group(); g.position.set(it.x, it.y, 4); g.scale.z = .55; g.rotation.z = -Math.PI / 2;
         const bg = new THREE.Mesh(new THREE.TorusGeometry(it.r, 7, 10, 72), new THREE.MeshStandardMaterial({ color: 0x1f3a30, emissive: 0x46d296, emissiveIntensity: .1, roughness: .5 }));
         bg.userData.ownGeo = true; bg.receiveShadow = true;
-        const fg = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ color: 0x58e0a8, emissive: 0x46d296, emissiveIntensity: 1.1, roughness: .3 }));
+        const fg = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ color: 0x58e0a8, emissive: 0x46d296, emissiveIntensity: .6, roughness: .3 }));
         fg.userData.ownGeo = true; fg.castShadow = true; fg.position.z = 1.5; fg.visible = false;
-        const glow = new THREE.Mesh(unitPlane, addMat(0x46d296, .4)); glow.scale.set(it.r * 3.4, it.r * 3.4, 1); glow.position.z = -3;
+        const glow = new THREE.Mesh(unitPlane, addMat(0x46d296, .22)); glow.scale.set(it.r * 3.4, it.r * 3.4, 1); glow.position.z = -3;
         g.add(glow, bg, fg); dyn.add(g); items.push({ ...it, fg, arc: -1 });
       }
     }
@@ -226,14 +226,14 @@ export function createGL(opts = {}) {
         const h = Math.max(.6, o.h * (still ? 1 : easeBack((el - o.delay) / 1100)));
         o.body.scale.z = o.edges.scale.z = h; o.cap.position.z = h + .25; o.beam.position.z = h;
         o.mirror.children[0].scale.z = o.mirror.children[1].scale.z = -h;
-        o.beam.material.opacity = still ? .16 : .13 + .07 * Math.sin(t / 900 + o.x * .02);
-        o.glow.material.opacity = still ? .5 : .44 + .12 * Math.sin(t / 1300 + o.x * .03);
+        o.beam.material.opacity = still ? .08 : .065 + .035 * Math.sin(t / 900 + o.x * .02);
+        o.glow.material.opacity = still ? .28 : .24 + .07 * Math.sin(t / 1300 + o.x * .03);
       } else if (o.t === 'dot') {
         const sel = o.key && o.key === selKey, beat = !still && o.cls === 'r' ? 1 + .16 * Math.pow(Math.max(0, Math.sin(t / 330 + o.ph)), 6) : 1;
         const r = 10 * (bs || 1) * (sel ? 1.3 : 1) * beat, z = o.z + 6 + (still ? 0 : 6 * Math.sin(t / 1080 + o.ph));
         o.ball.scale.setScalar(r); o.ball.position.z = z + r; o.stem.scale.set(1.8, 1.8, z + r * .3);
         o.mirror.scale.setScalar(r); o.mirror.position.z = -(z + r);
-        o.ball.material.emissiveIntensity = sel ? 1.3 : .7; o.glow.scale.setScalar(60 * beat);
+        o.ball.material.emissiveIntensity = sel ? .9 : .42; o.glow.scale.setScalar(60 * beat);
       } else if (o.t === 'ring') {
         const arc = Math.round(o.pct / 100 * (still ? 1 : easeOut((el - 150) / 1400)) * 200) / 200;
         if (arc !== o.arc) {
@@ -245,8 +245,8 @@ export function createGL(opts = {}) {
     if (still) { sweep.material.opacity = 0; pulse.visible = false }
     else {
       // onda que se abre a cada troca de cena, faixa de luz que varre o piso e partículas subindo
-      const pu = el / 1300; pulse.visible = pu < 1; if (pulse.visible) { const s = 30 + 430 * easeOut(pu); pulse.scale.set(s, s, 1); pulse.material.opacity = .85 * (1 - pu) }
-      const sw = (t % 6500) / 2300; sweep.material.opacity = sw < 1 ? .5 * Math.sin(sw * Math.PI) : 0; sweep.position.x = -75 + (PW + 150) * sw;
+      const pu = el / 1300; pulse.visible = pu < 1; if (pulse.visible) { const s = 30 + 430 * easeOut(pu); pulse.scale.set(s, s, 1); pulse.material.opacity = .45 * (1 - pu) }
+      const sw = (t % 6500) / 2300; sweep.material.opacity = sw < 1 ? .26 * Math.sin(sw * Math.PI) : 0; sweep.position.x = -75 + (PW + 150) * sw;
       selRing.rotation.z = t / 700;
       const a = dustGeo.attributes.position;
       for (let i = 0; i < N; i++) { let z = a.getZ(i) + .22 + (i % 5) * .06; if (z > 320) z = 6; a.setZ(i, z) }
