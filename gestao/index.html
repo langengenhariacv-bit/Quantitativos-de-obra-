@@ -111,6 +111,15 @@ main{min-width:0;width:100%;max-width:1450px;margin:0 auto;padding:24px}.page-he
 .h3d-stage.drag{cursor:grabbing}
 /* modo WebGL: a cena é desenhada no canvas; os elementos HTML ficam só como área de toque */
 .h3d-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.h3d-gl.h3d-stage:before{display:none}
+.h3d-gl.h3d-stage:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px),radial-gradient(120% 95% at 50% 46%,transparent 52%,rgba(0,0,0,.62))}
+.h3d-title b{animation:h3dTitle .75s cubic-bezier(.2,.8,.2,1) both}.h3d-title small{animation:h3dTitle .75s .08s cubic-bezier(.2,.8,.2,1) both}
+@keyframes h3dTitle{from{opacity:0;letter-spacing:.32em;filter:blur(6px)}to{opacity:1;filter:blur(0)}}
+.h3d-title b{text-shadow:0 0 12px rgba(255,140,70,.25)}
+.h3d-timer{position:absolute;left:0;bottom:-1px;height:2px;width:0;background:linear-gradient(90deg,transparent,var(--hc),var(--hy));box-shadow:0 0 10px var(--hc);pointer-events:none}
+.h3d-bar{position:relative}
+.h3d-gl .h3d-kpi{background:rgba(10,8,7,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.h3d-gl .h3d-tag,.h3d-gl .h3d-foot{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
 .h3d-stage:before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,200,150,.35) 1px,transparent 1.4px);background-size:46px 46px;opacity:.16;pointer-events:none}
 .h3d-world{position:absolute;left:50%;top:53%;width:0;height:0;transform-style:preserve-3d;transform:scale(var(--sc,1)) rotateX(var(--rx,58deg)) rotateZ(var(--rz,-38deg))}
 .h3d-plate{position:absolute;left:-300px;top:-200px;width:600px;height:400px;transform-style:preserve-3d;border:1px solid rgba(255,170,110,.55);
@@ -234,7 +243,7 @@ button.h3d-row>div b:after{content:" ›";color:var(--hy);font-weight:900}
 .h3d-back{margin:0 0 18px;display:flex;justify-content:flex-end}
 @media(max-width:820px){.h3d-stage{height:430px}.h3d-title b{font-size:17px}.h3d-hint{display:none}.h3d-info p{max-width:100%}}
 @media(max-width:560px){.h3d{border-radius:18px;margin-left:-4px;margin-right:-4px}.h3d-stage{height:390px}.h3d-bar{padding:8px}.h3d-tab{padding:7px 10px}.h3d-tool span{display:none}}
-@media(prefers-reduced-motion:reduce){.h3d-box,.h3d-grow,.h3d-world{transition:none}.h3d-bb,.h3d-dot{animation:none}.h3d-ring .fg{transition:none}}
+@media(prefers-reduced-motion:reduce){.h3d-title b,.h3d-title small{animation:none}.h3d-box,.h3d-grow,.h3d-world{transition:none}.h3d-bb,.h3d-dot{animation:none}.h3d-ring .fg{transition:none}}
 </style>
 </head>
 <body>
@@ -1446,7 +1455,7 @@ const mountDash3D=(()=>{
   const CAM={overview:[-38,58],finance:[-27,60],projects:[-46,57],tasks:[-33,50]};
   const MONTHS=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let sceneId='overview',rz=-38,rx=58,trz=-38,trx=58,raf=0,auto=!reduce,lastTouch=0,lastSwitch=0,stage=null,world=null,ro=null,defaultInfo='',selKey=null,backKeys=[],finYear=0,gl=null,glTried=false,G=[],curSc=1,curBs=1;
+  let sceneId='overview',rz=-38,rx=58,trz=-38,trx=58,raf=0,auto=!reduce,lastTouch=0,lastSwitch=0,stage=null,world=null,ro=null,defaultInfo='',selKey=null,backKeys=[],finYear=0,introAt=-1e9,gl=null,glTried=false,G=[],curSc=1,curBs=1;
   const MONTH_FULL=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const short=(n,k)=>{n=Number(n||0);if(n<1000)return (k?'':'R$ ')+Math.round(n);const v=n/1000,t=v.toLocaleString('pt-BR',{maximumFractionDigits:v<10?1:0});return k?t+'k':'R$ '+t+' mil'};
   const pad2=n=>String(n).padStart(2,'0');
@@ -1466,6 +1475,9 @@ const mountDash3D=(()=>{
   const dueText=t=>{if(!t.due)return 'Sem data definida';const n=dayDiff(t.due);return n<0?'Venceu há '+plural(-n,'dia','dias'):n===0?'Vence hoje':'Vence em '+plural(n,'dia','dias')};
   // separa os prazos em: vencidos, próximos 7 dias e mais adiante
   const taskZones=list=>{const t0=today(),lim=new Date(Date.now()+7*864e5).toISOString().slice(0,10),z=[[],[],[]];list.forEach(t=>z[t.due&&t.due<t0?0:(t.due&&t.due<=lim?1:2)].push(t));return z};
+  // efeitos do painel: 'auto' (padrão), 'full' ou 'lite'; se o aparelho já se mostrou lento, o automático começa leve
+  const fxPref=()=>{try{const v=localStorage.getItem('langFx')||'auto';return v==='auto'&&localStorage.getItem('langFxSlow')==='1'?'lite':v}catch(e){return 'auto'}};
+  window.addEventListener('lang-fx',()=>{if(gl)gl.setFx(fxPref())});
   const isOff=()=>{try{return localStorage.getItem(LS_KEY)==='1'}catch(e){return false}};
   const setOff=v=>{try{v?localStorage.setItem(LS_KEY,'1'):localStorage.removeItem(LS_KEY)}catch(e){}};
   // prisma 3D: x,y = posição na base; w,d = pegada; h = altura
@@ -1493,13 +1505,13 @@ const mountDash3D=(()=>{
       const foot=(key,text,x,y)=>`<span class="h3d-bb h3d-lab h3d-foot" data-open="${key}" style="left:${x}px;top:${y}px;--z:0px">${esc(text)}</span>`;
       let h=kpis.map((k,i)=>{
         const x=45+i*140,y=14,bh=Math.round(26+118*k[2]/max),key='kpi:'+k[0],at=`data-open="${key}" data-info="<b>${esc(k[1])}:</b> ${k[2]} · toque para ver os detalhes"`;
-        over+=`<button class="h3d-bb h3d-kpi solo h3d-grow h3d-ac" ${at} aria-label="${esc(k[1])}: ${k[2]}" data-z="${bh+12}" style="${ac(k[3])}left:${x+35}px;top:${y+35}px;--z:0px;transition-delay:${i*110}ms;animation-delay:${300+i*110}ms"><strong>${pad2(k[2])}</strong></button>`+foot(key,d.narrow?k[4]:k[1],x+35,y+106);
+        over+=`<button class="h3d-bb h3d-kpi solo h3d-grow h3d-ac" ${at} aria-label="${esc(k[1])}: ${k[2]}" data-z="${bh+12}" style="${ac(k[3])}left:${x+35}px;top:${y+35}px;--z:0px;transition-delay:${i*110}ms;animation-delay:${300+i*110}ms"><strong data-cnt="${k[2]}" data-pad="1">${pad2(k[2])}</strong></button>`+foot(key,d.narrow?k[4]:k[1],x+35,y+106);
         return box(x,y,70,70,bh,k[3],i*110,at,'');
       }).join('');
       const R=62,C=2*Math.PI*R,avgAt=`data-open="kpi:avg" data-info="<b>Progresso médio:</b> ${d.avg}% das etapas concluídas em ${plural(d.tracked.length,'projeto','projetos')} com etapas · toque para ver a conta"`,recAt=`data-open="kpi:receivable" data-info="<b>A receber:</b> ${brl(d.fin.receivable)} · já recebido ${brl(d.fin.received)} · toque para ver de quem"`;
       G.push({t:'ring',x:120,y:308,r:R,pct:d.avg});
       h+=`<svg class="h3d-ring" style="left:40px;top:228px" width="160" height="160" viewBox="0 0 160 160"><circle class="bg" cx="80" cy="80" r="${R}"/><circle class="fg" cx="80" cy="80" r="${R}" transform="rotate(-90 80 80)" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-off="${(C*(1-d.avg/100)).toFixed(1)}"/></svg>`;
-      over+=`<button class="h3d-bb h3d-kpi solo h3d-ac" ${avgAt} aria-label="Progresso médio: ${d.avg}%" style="${ac('good')}left:120px;top:308px;--z:22px;animation-delay:500ms"><strong>${d.avg}%</strong></button>`+foot('kpi:avg','Progresso médio',120,408);
+      over+=`<button class="h3d-bb h3d-kpi solo h3d-ac" ${avgAt} aria-label="Progresso médio: ${d.avg}%" style="${ac('good')}left:120px;top:308px;--z:22px;animation-delay:500ms"><strong data-cnt="${d.avg}" data-suf="%">${d.avg}%</strong></button>`+foot('kpi:avg','Progresso médio',120,408);
       h+=box(345,258,200,100,14,'hot',420,recAt,'');
       over+=`<button class="h3d-bb h3d-kpi solo sm h3d-grow h3d-ac" ${recAt} aria-label="A receber: ${brl(d.fin.receivable)}" data-z="22" style="${ac('hot')}left:445px;top:308px;--z:0px;transition-delay:420ms;animation-delay:700ms"><strong>${d.narrow?short(d.fin.receivable):compact(d.fin.receivable)}</strong></button>`+foot('kpi:receivable','A receber',445,392);
       return {html:h,over,title:'Visão geral',eyebrow:'Meu escritório',info:`<b>${d.active.length}</b> ${d.active.length===1?'projeto ativo':'projetos ativos'} · <b>${d.openTasks.length}</b> ${d.openTasks.length===1?'prazo':'prazos'} em aberto${d.over?` · <b>${d.over}</b> ${d.over===1?'vencido':'vencidos'}`:''}. Toque num item para ver os detalhes.`};
@@ -1533,7 +1545,7 @@ const mountDash3D=(()=>{
       }).join('');
       if(!list.length)h=`<span class="h3d-bb h3d-lab" style="left:300px;top:200px;--z:40px">Nenhum projeto ativo</span>`;
       const extra=d.active.length-list.length;
-      return {html:h,over,title:'Projetos em andamento',eyebrow:'Altura = etapas concluídas · uma cor por projeto',info:`<b>${d.active.length}</b> ${d.active.length===1?'projeto ativo':'projetos ativos'} · progresso médio <b>${d.avg}%</b>${extra>0?` · mais ${extra} na lista`:''}. Toque num projeto para ver os detalhes.`};
+      return {html:h,over,title:'Projetos em andamento',eyebrow:'Altura = etapas concluídas',info:`<b>${d.active.length}</b> ${d.active.length===1?'projeto ativo':'projetos ativos'} · progresso médio <b>${d.avg}%</b>${extra>0?` · mais ${extra} na lista`:''}. Toque num projeto para ver os detalhes.`};
     },
     tasks(d){
       const zones=taskZones(d.openTasks);
@@ -1561,6 +1573,7 @@ const mountDash3D=(()=>{
     defaultInfo=s.info;setInfo('');
     if(keep){backKeys=keepBack;openPanel(keep,'keep')}
     [trz,trx]=CAM[id];
+    if(!reduce&&!keep){rz=trz-64;rx=Math.min(76,trx+13);introAt=lastSwitch} // a câmera entra girando e aproximando
     document.querySelectorAll('.h3d-tab').forEach(b=>{const on=b.dataset.scene===id;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
     // dispara a animação de crescimento depois do primeiro layout
     setTimeout(()=>{
@@ -1568,7 +1581,14 @@ const mountDash3D=(()=>{
       stage.querySelectorAll('.h3d-box').forEach(b=>b.style.setProperty('--h',b.dataset.h+'px'));
       stage.querySelectorAll('.h3d-grow').forEach(b=>b.style.setProperty('--z',b.dataset.z+'px'));
       stage.querySelectorAll('.h3d-ring .fg').forEach(c=>c.style.strokeDashoffset=c.dataset.off);
+      if(!reduce)countUp();
     },60);
+  }
+  // os números sobem de zero até o valor
+  function countUp(){
+    const els=[...stage.querySelectorAll('[data-cnt]')],start=performance.now(),dur=1100;
+    const step=now=>{const k=Math.min(1,(now-start)/dur),e=1-Math.pow(1-k,3);els.forEach(el=>{if(!el.isConnected)return;const v=Math.round(Number(el.dataset.cnt)*e);el.textContent=(el.dataset.pad?pad2(v):v)+(el.dataset.suf||'')});if(k<1&&stage)requestAnimationFrame(step)};
+    requestAnimationFrame(step);
   }
   function monthRows(year,i){
     const key=year+'-'+pad2(i+1),map=new Map();
@@ -1680,7 +1700,9 @@ const mountDash3D=(()=>{
     rz+=(trz-rz)*.07;rx+=(trx-rx)*.07;
     const sway=reduce?0:Math.sin(t/2700)*4;
     stage.style.setProperty('--rz',(rz+sway).toFixed(2)+'deg');stage.style.setProperty('--rx',rx.toFixed(2)+'deg');
-    if(gl)try{gl.frame(t,+(rz+sway).toFixed(2),+rx.toFixed(2),curSc,curBs)}catch(e){console.error('Painel 3D',e);gl=null;stage.classList.remove('h3d-gl')}
+    const zoom=+(curSc*(reduce?1:1-.24*Math.pow(1-Math.min(1,(t-introAt)/1300),3))).toFixed(3);stage.style.setProperty('--sc',zoom);
+    const tm=document.getElementById('h3dTimer');if(tm)tm.style.width=(auto&&selKey===null?Math.max(0,Math.min(1,(t-lastSwitch)/9000,(t-lastTouch)/14000))*100:0).toFixed(1)+'%';
+    if(gl)try{gl.frame(t,+(rz+sway).toFixed(2),+rx.toFixed(2),zoom,curBs)}catch(e){console.error('Painel 3D',e);gl=null;stage.classList.remove('h3d-gl')}
     if(auto&&selKey===null&&t-lastSwitch>9000&&t-lastTouch>14000&&!document.querySelector('.modal-bg')){const i=SCENES.findIndex(s=>s[0]===sceneId);show(SCENES[(i+1)%SCENES.length][0])}
     raf=requestAnimationFrame(tick);
   }
@@ -1722,7 +1744,7 @@ const mountDash3D=(()=>{
       metrics.after(wrap);wrap.firstChild.onclick=()=>{setOff(false);render()};return;
     }
     const sec=document.createElement('section');sec.className='h3d';sec.id='h3d';sec.setAttribute('aria-label','Painel 3D do escritório');
-    sec.innerHTML=`<div class="h3d-bar"><div class="h3d-tabs" role="tablist">${SCENES.map(s=>`<button class="h3d-tab" role="tab" data-scene="${s[0]}">${s[1]}</button>`).join('')}</div><div class="h3d-tools"><button class="h3d-tool" id="h3dAuto"></button><button class="h3d-tool" id="h3dSimple" title="Voltar aos cartões simples">2D<span> · Modo simples</span></button></div></div>
+    sec.innerHTML=`<div class="h3d-bar"><div class="h3d-tabs" role="tablist">${SCENES.map(s=>`<button class="h3d-tab" role="tab" data-scene="${s[0]}">${s[1]}</button>`).join('')}</div><div class="h3d-tools"><button class="h3d-tool" id="h3dAuto"></button><button class="h3d-tool" id="h3dSimple" title="Voltar aos cartões simples">2D<span> · Modo simples</span></button></div><i class="h3d-timer" id="h3dTimer"></i></div>
 <div class="h3d-stage" id="h3dStage"><div class="h3d-world"><div class="h3d-plate"><i class="h3d-c c1"></i><i class="h3d-c c2"></i><i class="h3d-c c3"></i><i class="h3d-c c4"></i><div class="h3d-brand">LANG ENGENHARIA</div><div class="h3d-scene" id="h3dScene"></div></div></div>
 <div class="h3d-world h3d-over"><div class="h3d-plate2" id="h3dOver"></div></div>
 <div class="h3d-title"></div><div class="h3d-panel" id="h3dPanel" hidden></div><div class="h3d-info"><p id="h3dInfoText" aria-live="polite"></p><span class="h3d-hint">Arraste para girar</span></div></div>`;
@@ -1731,7 +1753,7 @@ const mountDash3D=(()=>{
     stage=sec.querySelector('#h3dStage');world=sec.querySelector('.h3d-world');
     const useGL=()=>{if(!gl||!stage||!stage.isConnected)return;gl.attach(stage,world);stage.classList.add('h3d-gl')};
     useGL();
-    if(!gl&&!glTried){glTried=true;import('./h3d-gl.js').then(m=>{const g=m.createGL();if(!g)return;gl=g;useGL();gl.setScene(G,reduce);gl.setSel(selKey)}).catch(e=>console.warn('Painel 3D sem WebGL',e))}
+    if(!gl&&!glTried){glTried=true;import('./h3d-gl.js').then(m=>{const g=m.createGL({fx:fxPref()});if(!g)return;gl=g;useGL();gl.setScene(G,reduce);gl.setSel(selKey)}).catch(e=>console.warn('Painel 3D sem WebGL',e))}
     bind(sec);fit(false);show(sceneId);
     if(!raf)raf=requestAnimationFrame(tick);
   };
@@ -1881,9 +1903,10 @@ function afterLogin(){
 /* ===== Ajustes do aparelho ===== */
 async function settingsModal(){
   const bioOk=await bioAvailable(),bio=!!bioRec(),rem=remOn(),remCan='Notification'in window;
-  let theme='light';try{theme=localStorage.getItem('langTheme')||'light'}catch(e){}
+  let theme='light',fxMode='auto';try{theme=localStorage.getItem('langTheme')||'light';fxMode=localStorage.getItem('langFx')||'auto'}catch(e){}
   modal('Ajustes',`<div>
     <div class="set-row"><div><b>Aparência</b><div class="meta">Tema claro, escuro ou o mesmo do aparelho.</div></div><div class="seg" id="setTheme">${[['light','Claro'],['dark','Escuro'],['auto','Auto']].map(([k,l])=>`<button data-t="${k}" class="${theme===k?'on':''}">${l}</button>`).join('')}</div></div>
+    <div class="set-row"><div><b>Efeitos do painel 3D</b><div class="meta">Brilho neon e chão espelhado. No automático, desligam sozinhos se o aparelho ficar lento.</div></div><div class="seg" id="setFx">${[['auto','Auto'],['full','Sempre'],['lite','Leve']].map(([k,l])=>`<button data-t="${k}" class="${fxMode===k?'on':''}">${l}</button>`).join('')}</div></div>
     <div class="set-row"><div><b>Modelos de projeto</b><div class="meta">Etapas, prazos e documentos padrão por tipo de serviço.</div></div><button class="btn soft sm" id="setTpl">Abrir</button></div>
     <div class="set-row"><div><b>Entrar com digital ou rosto</b><div class="meta">${bio?'Ativado neste aparelho.':bioOk?'Entre sem digitar a senha. Ela fica guardada só neste aparelho, protegida pela biometria.':'Este aparelho ou navegador não oferece biometria para este app.'}</div></div>${bio?'<button class="btn soft sm" id="setBio">Desativar</button>':bioOk?'<button class="btn primary sm" id="setBio">Ativar</button>':''}</div>
     <div class="set-row"><div><b>Lembretes de prazo</b><div class="meta">${rem?'Ativados. Avisa sobre prazos vencidos, de hoje e de amanhã, e cobranças vencidas.':remCan?'Aviso no aparelho sobre prazos vencidos, de hoje e de amanhã, e cobranças vencidas. Os títulos e datas ficam guardados neste aparelho.':'Este navegador não mostra notificações. No iPhone, instale o app na Tela de Início primeiro.'}</div></div>${rem?'<button class="btn soft sm" id="setRem">Desativar</button>':remCan?'<button class="btn primary sm" id="setRem">Ativar</button>':''}</div>
@@ -1897,6 +1920,7 @@ async function settingsModal(){
   if($('#setRemTest'))$('#setRemTest').onclick=async()=>{if(!reminderItems().length)return toast('Nenhum prazo para avisar agora');await updateReminders(true,true);toast('Lembrete enviado')};
   if($('#setSync'))$('#setSync').onclick=run(async()=>{if(!await syncPending())throw new Error('Ainda sem conexão. As alterações continuam guardadas.')});
   $('#setBackup').onclick=backupModal;$('#setTpl').onclick=templatesModal;
+  document.querySelectorAll('#setFx button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('langFx',b.dataset.t);localStorage.removeItem('langFxSlow')}catch(e){}window.dispatchEvent(new Event('lang-fx'));document.querySelectorAll('#setFx button').forEach(x=>x.classList.toggle('on',x===b))});
   document.querySelectorAll('#setTheme button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('langTheme',b.dataset.t)}catch(e){}themeApply();document.querySelectorAll('#setTheme button').forEach(x=>x.classList.toggle('on',x===b))});
 }
 
