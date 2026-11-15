@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#171717">
-<title>Visita Técnica</title>
+<title>Visita Técnica | Absolut Construtora</title>
 <link rel="manifest" href="./manifest.json">
-<link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="./assets/icon.svg">
+<link rel="icon" href="./assets/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="./assets/icon-192.png">
 <style>
-:root{--ink:#171717;--muted:#6b6b6b;--line:#e6e6e6;--bg:#f6f6f4;--card:#fff;--brand:#ff5a00;--brand-ink:#fff;--ok:#2e7d32;--warn:#f2a900;--high:#ef6c00;--crit:#c62828;--radius:14px}
+:root{--ink:#171717;--muted:#6b6b6b;--line:#e6e6e6;--bg:#f6f6f4;--card:#fff;--brand:#f4502d;--brand-ink:#fff;--ok:#2e7d32;--warn:#f2a900;--high:#ef6c00;--crit:#c62828;--radius:14px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -71,7 +71,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--brand);outline-o
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
 .dock .in{max-width:780px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:8px}
 .dock .btn{min-height:50px;font-size:14px}
-.fab{position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:30;border:0;background:var(--brand);color:#fff;border-radius:99px;padding:15px 22px;font-weight:700;display:flex;gap:8px;align-items:center;box-shadow:0 6px 18px rgba(255,90,0,.35);cursor:pointer}
+.fab{position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:30;border:0;background:var(--brand);color:#fff;border-radius:99px;padding:15px 22px;font-weight:700;display:flex;gap:8px;align-items:center;box-shadow:0 6px 18px rgba(244,80,45,.35);cursor:pointer}
 .fab svg{width:22px;height:22px}
 /* Diálogos */
 dialog{border:0;padding:0;border-radius:18px 18px 0 0;width:100%;max-width:780px;max-height:94vh;margin:auto auto 0;background:#fff;color:var(--ink)}
@@ -215,7 +215,7 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
     <label class="check"><input type="checkbox" id="rpSummary" checked> Quadro-resumo das constatações</label>
     <label class="check"><input type="checkbox" id="rpDisc" checked> Texto de ressalva técnica</label>
     <label class="check"><input type="checkbox" id="rpSig" checked> Bloco de assinatura</label>
-    <div id="rpOut" class="hidden card" style="margin-top:10px;background:#fff8f3;border-color:#ffd9c2">
+    <div id="rpOut" class="hidden card" style="margin-top:10px;background:#fff6f3;border-color:#fdd3c7">
       <b id="rpName"></b><p class="note" id="rpSize" style="margin:4px 0 10px"></p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn primary" id="rpShare" style="flex:1">Compartilhar</button>
@@ -240,7 +240,7 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
       <label class="f"><span>E-mail</span><input type="email" data-s="email"></label>
     </div>
     <label class="f"><span>Logo da empresa (aparece no cabeçalho do relatório)</span></label>
-    <div style="display:flex;gap:10px;align-items:center;margin:-4px 0 12px"><img id="logoPrev" alt="" style="max-height:48px;max-width:150px;border:1px solid var(--line);border-radius:8px;padding:4px;background:#fff"><button class="btn sm" id="logoPick">Escolher imagem</button><button class="btn sm danger" id="logoDel">Remover</button><input type="file" id="logoFile" accept="image/*" class="hidden"></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:-4px 0 12px"><img id="logoPrev" alt="" style="max-height:48px;max-width:150px;border:1px solid var(--line);border-radius:8px;padding:4px;background:#fff"><button class="btn sm" id="logoPick">Escolher imagem</button><button class="btn sm danger" id="logoDel">Remover</button><button class="btn sm" id="logoDef">Usar logo da Absolut</button><input type="file" id="logoFile" accept="image/*" class="hidden"></div>
     <label class="f"><span>Objetivo padrão (preenchido em toda visita nova)</span><textarea data-s="objetivoPadrao" rows="3"></textarea></label>
     <label class="f"><span>Cidade (para a data da assinatura)</span><input type="text" data-s="cidade" placeholder="Ex.: Cascavel - PR"></label>
     <label class="f"><span>Texto de ressalva técnica</span><textarea data-s="ressalva" rows="4"></textarea></label>
@@ -307,7 +307,7 @@ const kvGet=k=>tx('kv','readonly',s=>s.get(k));
 const kvSet=(k,v)=>tx('kv','readwrite',s=>s.put(v,k));
 
 /* ---------------- configurações ---------------- */
-const DEFAULTS={titulo:'Eng. Civil',nome:'Geovane Lang',crea:'152359-1',empresa:'Absolut Construtora',telefone:'',email:'',cidade:'',logo:null,objetivoPadrao:'Visita técnica para registro fotográfico e avaliação das condições do imóvel, com indicação das constatações e das providências recomendadas.',
+const DEFAULTS={titulo:'Eng. Civil',nome:'Geovane Lang',crea:'152359-1',empresa:'Absolut Construtora',telefone:'',email:'',cidade:'',logo:'default',objetivoPadrao:'Visita técnica para registro fotográfico e avaliação das condições do imóvel, com indicação das constatações e das providências recomendadas.',
   ressalva:'As constatações deste relatório referem-se às condições visualmente observadas na data e no horário da visita técnica, nas áreas acessíveis, sem a realização de ensaios, prospecções ou demolições, salvo quando expressamente indicado. Alterações posteriores à visita não estão contempladas.',assinatura:null};
 let ST={...DEFAULTS};
 const respName=()=>[ST.titulo,ST.nome].filter(Boolean).join(' ');
@@ -480,17 +480,17 @@ async function buildPdf(opt){
   let y=TOP;
   const font=(st='normal',sz=10,col=[23,23,23])=>{doc.setFont('helvetica',st);doc.setFontSize(sz);doc.setTextColor(...col)};
   function header(){
-    if(ST.logo){try{const k=Math.min(48/ST.logoW,12/ST.logoH);doc.addImage(ST.logo,'PNG',M,21.5-ST.logoH*k,ST.logoW*k,ST.logoH*k,'logo','FAST')}catch(e){}}
-    else if(/^lang\b/i.test(ST.empresa||'')){font('bold',17);doc.text('L',M,16.5);const wl=doc.getTextWidth('L');font('bold',17,[255,90,0]);doc.text('ANG',M+wl,16.5);font('bold',6.3);doc.text('E N G E N H A R I A',M+.3,20.5)}
+    const lg=curLogo();if(lg){try{const k=Math.min(44/lg.w,17/lg.h);doc.addImage(lg.src,'PNG',M,22.3-lg.h*k,lg.w*k,lg.h*k,'logo','FAST')}catch(e){}}
+    else if(/^lang\b/i.test(ST.empresa||'')){font('bold',17);doc.text('L',M,16.5);const wl=doc.getTextWidth('L');font('bold',17,[244,80,45]);doc.text('ANG',M+wl,16.5);font('bold',6.3);doc.text('E N G E N H A R I A',M+.3,20.5)}
     else{font('bold',13);doc.text(ST.empresa||respName(),M,18)}
     font('bold',9.5);doc.text('RELATÓRIO DE VISITA TÉCNICA',W-M,15,{align:'right'});
     font('normal',8.5,[110,110,110]);doc.text('Nº '+V.numero+(V.data?'  ·  '+fmtDate(V.data):''),W-M,19.5,{align:'right'});
-    doc.setDrawColor(255,90,0);doc.setLineWidth(.6);doc.line(M,24,W-M,24);
+    doc.setDrawColor(244,80,45);doc.setLineWidth(.6);doc.line(M,24,W-M,24);
   }
   const newPage=()=>{doc.addPage();header();y=TOP};
   const ensure=h=>{if(y+h>BOT)newPage()};
   let secN=0;
-  function section(t){ensure(16);y+=2;doc.setFillColor(255,90,0);doc.rect(M,y-4,1.6,5.4,'F');font('bold',11.5);doc.text((++secN)+'. '+t.toUpperCase(),M+4,y);y+=6}
+  function section(t){ensure(16);y+=2;doc.setFillColor(244,80,45);doc.rect(M,y-4,1.6,5.4,'F');font('bold',11.5);doc.text((++secN)+'. '+t.toUpperCase(),M+4,y);y+=6}
   function para(t,sz=10,col=[35,35,35],st='normal'){font(st,sz,col);const lh=sz*.43;for(const l of doc.splitTextToSize(t,CW)){ensure(lh);doc.text(l,M,y);y+=lh}y+=2}
 
   header();
@@ -548,7 +548,7 @@ async function buildPdf(opt){
       for(const o of ops){
         if(o.gap){yy+=o.gap;continue}
         if(breakable&&yy+o.h>BOT){newPage();yy=y}
-        if(o.title){font('bold',10.5,[255,90,0]);doc.text(o.title,x,yy+3.6);
+        if(o.title){font('bold',10.5,[244,80,45]);doc.text(o.title,x,yy+3.6);
           if(o.sev){const tw=doc.getTextWidth(o.title)+4;font('bold',7.5,[255,255,255]);const sw=doc.getTextWidth(o.sev.n.toUpperCase())+5;doc.setFillColor(...o.sev.rgb);doc.roundedRect(x+tw,yy,sw,4.8,1.2,1.2,'F');doc.text(o.sev.n.toUpperCase(),x+tw+2.5,yy+3.4)}
           yy+=o.h;continue}
         font(o.st,o.sz,o.col);doc.text(o.t,x,yy+o.h*.78);yy+=o.h;
@@ -623,12 +623,16 @@ $('#rpDl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObj
 $('#rpOpen').onclick=()=>{const u=URL.createObjectURL(lastPdf);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),120000)};
 
 /* ---------------- configurações ---------------- */
-async function loadSettings(){ST={...DEFAULTS,...((await kvGet('settings'))||{})}}
+async function loadSettings(){ST={...DEFAULTS,...((await kvGet('settings'))||{})};
+  try{const b=await (await fetch('./assets/absolut-logo.png')).blob(),src=await blobToDataURL(b),im=await loadImg(src);DEF_LOGO={src,w:im.naturalWidth,h:im.naturalHeight}}catch(e){DEF_LOGO=null}}
+let DEF_LOGO=null;
+const curLogo=()=>ST.logo==='default'?DEF_LOGO:(ST.logo?{src:ST.logo,w:ST.logoW,h:ST.logoH}:null);
 const saveSettings=()=>kvSet('settings',ST);
-function renderLogo(){$('#appLogo').innerHTML=ST.logo?`<img src="${ST.logo}" alt="${esc(ST.empresa)}">`:esc(ST.empresa||'');const pv=$('#logoPrev');pv.src=ST.logo||'';pv.classList.toggle('hidden',!ST.logo);$('#logoDel').classList.toggle('hidden',!ST.logo)}
+function renderLogo(){const lg=curLogo();$('#appLogo').innerHTML=lg?`<img src="${lg.src}" alt="${esc(ST.empresa)}">`:esc(ST.empresa||'');const pv=$('#logoPrev');pv.src=lg?lg.src:'';pv.classList.toggle('hidden',!lg);$('#logoDel').classList.toggle('hidden',!lg);$('#logoDef').classList.toggle('hidden',ST.logo==='default')}
 $('#logoPick').onclick=()=>$('#logoFile').click();
 $('#logoFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const u=URL.createObjectURL(f);try{const im=await loadImg(u);const k=Math.min(1,700/Math.max(im.naturalWidth,im.naturalHeight));const c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ST.logo=c.toDataURL('image/png');ST.logoW=c.width;ST.logoH=c.height;await saveSettings();renderLogo()}catch(err){toast('Imagem inválida')}finally{URL.revokeObjectURL(u)}};
 $('#logoDel').onclick=async()=>{ST.logo=null;await saveSettings();renderLogo()};
+$('#logoDef').onclick=async()=>{ST.logo='default';await saveSettings();renderLogo()};
 $('#btnSettings').onclick=()=>{$$('[data-s]').forEach(i=>i.value=ST[i.dataset.s]||'');renderLogo();$('#dSettings').showModal();sigInit()};
 $$('[data-s]').forEach(i=>i.addEventListener('input',()=>{ST[i.dataset.s]=i.value;saveSettings()}));
 $('#dSettings').addEventListener('close',renderHome);
