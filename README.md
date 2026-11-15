@@ -76,12 +76,12 @@ A bateria mede robustez do carregamento, decodificação e reconhecimento geomé
 
 ## Visita Técnica (`/vistoria/`)
 
-App de celular (PWA, funciona offline) para registrar visitas técnicas com fotos e gerar o relatório em PDF assinado por **Eng. Civil Geovane Lang — CREA 152359-1**.
+App de celular (PWA, funciona offline) para registrar visitas técnicas com fotos e gerar o relatório em PDF em nome da **Absolut Construtora**, tendo como vistoriador o **Eng. Civil Geovane Lang — CREA 152359-1**.
 
-1. **Nova visita** → preencha cliente, endereço, data/horário, contato e objetivo.
+1. **Nova visita** → digite o endereço (o cursor já abre nesse campo). Unidade, cliente/proprietário e as demais informações são opcionais.
 2. **Câmera** tira a foto e já abre a ficha (local, constatação, gravidade e recomendação). **Galeria** importa várias fotos de uma vez.
-3. Toque no ✓ de cada foto para escolher quais entram no relatório. A numeração (Foto 01, 02…) segue só as selecionadas; use ↑/↓ para reordenar.
-4. **✏️ Marcar na foto**: setas, círculos e traço livre em vermelho/amarelo/branco (a original fica guardada).
-5. **Relatório** → escolha o layout (foto ao lado do texto, foto grande ou grade 2×2) e gere o PDF para compartilhar no WhatsApp/e-mail ou baixar.
+3. Toque no ✓ de cada foto para escolher quais entram no relatório. A numeração (Foto 01, 02…) conta só as fotos selecionadas; use ↑/↓ para reordenar.
+4. **✏️ Marcar na foto**: setas, círculos e traço livre (a foto original fica guardada).
+5. **Relatório** → escolha o layout (foto ao lado do texto, foto grande ou grade 2×2) e gere o PDF para compartilhar ou baixar.
 
-Na engrenagem da tela inicial ficam os dados do responsável técnico, a cidade, o texto de ressalva, a assinatura desenhada com o dedo e o backup. As fotos ficam salvas só no aparelho: exporte o backup periodicamente.
+Na engrenagem da tela inicial ficam a empresa, o logo do cabeçalho, os dados do vistoriador, o objetivo padrão, a cidade, o texto de ressalva, a assinatura desenhada com o dedo e o backup. As fotos ficam salvas só no aparelho: exporte o backup periodicamente.

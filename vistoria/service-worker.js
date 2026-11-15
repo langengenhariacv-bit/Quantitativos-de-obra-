@@ -1,5 +1,5 @@
-const CACHE='lang-vistoria-v1';
-const APP_SHELL=['./','./manifest.json','./vendor/jspdf.umd.min.js','./assets/lang-icon-192.svg','./assets/lang-icon-512.svg'];
+const CACHE='lang-vistoria-v3';
+const APP_SHELL=['./','./manifest.json','./vendor/jspdf.umd.min.js','./assets/icon.svg'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP_SHELL)))});
 self.addEventListener('activate',e=>{e.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('lang-vistoria-')&&k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()]))});
 self.addEventListener('fetch',e=>{const req=e.request,url=new URL(req.url);if(req.method!=='GET'||url.origin!==self.location.origin)return;
