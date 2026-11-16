@@ -112,18 +112,37 @@ final class LgTv {
     }
 
     synchronized boolean key(String name) {
+        return pointerSend("type:button\nname:" + name + "\n\n");
+    }
+
+    /** Envia uma mensagem crua pelo canal do ponteiro (teclas, mover, clicar, rolar). */
+    synchronized boolean pointerSend(String raw) {
         if (!registered) {
             return false;
         }
         if (pointer != null) {
-            pointer.send("type:button\nname:" + name + "\n\n");
+            pointer.send(raw);
             return true;
         }
-        queuedKeys.add(name);
+        if (queuedKeys.size() < 64) {
+            queuedKeys.add(raw);
+        }
         if (!pointerPending) {
             pointerPending = true;
             send("request", "ptr_" + (++seq), POINTER_URI, null);
         }
+        return true;
+    }
+
+    /**
+     * Pede um dado à TV. Com subscribe=true a TV avisa de novo a cada mudança.
+     * As respostas voltam para a tela pelo estado "sub".
+     */
+    synchronized boolean ask(String uri, boolean subscribe) {
+        if (!registered) {
+            return false;
+        }
+        send(subscribe ? "subscribe" : "request", "sub_" + (++seq), uri, null);
         return true;
     }
 
@@ -255,6 +274,14 @@ final class LgTv {
             return;
         }
 
+        if (id.startsWith("sub_")) {
+            // Respostas de consultas (ex.: volume); erros aqui não incomodam o usuário.
+            if (!"error".equals(type) && payload != null) {
+                state("sub", payload.toString());
+            }
+            return;
+        }
+
         if (id.startsWith("ptr_")) {
             String path = payload == null ? "" : payload.optString("socketPath", "");
             if (!path.isEmpty()) {
@@ -282,8 +309,8 @@ final class LgTv {
                     }
                     pointer = ws;
                     pointerPending = false;
-                    for (String name : queuedKeys) {
-                        ws.send("type:button\nname:" + name + "\n\n");
+                    for (String raw : queuedKeys) {
+                        ws.send(raw);
                     }
                     queuedKeys.clear();
                 }

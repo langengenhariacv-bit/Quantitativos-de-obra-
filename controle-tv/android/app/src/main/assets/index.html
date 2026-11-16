@@ -42,6 +42,26 @@ button:active,button.hold{background:var(--btn2);transform:scale(.97)}
 .seg button.on{background:var(--txt);color:#111}
 .wifi-only{position:relative}
 .ghost{background:transparent;color:var(--mut);font-weight:400}
+button.on{background:var(--txt);color:#111}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.tabs button{padding:9px 4px;font-size:13px;font-weight:500}
+#pad{position:relative;height:290px;border-radius:16px;background:var(--btn);touch-action:none;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#pad.active{background:#303034}
+#padHint{color:var(--mut);font-size:13px;line-height:1.5;text-align:center;padding:0 60px 0 16px;pointer-events:none}
+#padScroll{position:absolute;right:0;top:0;bottom:0;width:52px;border-left:1px dashed #4a4a50;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:20px}
+#padDot{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(255,255,255,.12);pointer-events:none;display:none}
+.vol{display:flex;align-items:center;gap:10px}
+.vol>button{flex:0 0 58px;height:58px;font-size:22px}
+.volmid{flex:1;text-align:center}
+#volNum{font-size:30px;font-weight:700;line-height:1.1;margin:2px 0 8px;font-variant-numeric:tabular-nums}
+#volNum small{font-size:14px;color:var(--acc);font-weight:600;margin-left:6px}
+#volBar{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;padding:0}
+#volBar::-webkit-slider-runnable-track{height:8px;border-radius:8px;background:linear-gradient(90deg,var(--txt) var(--p,0%),var(--btn2) var(--p,0%))}
+#volBar::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;margin-top:-9px;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+#volBar::-moz-range-track{height:8px;border-radius:8px;background:var(--btn2)}
+#volBar::-moz-range-progress{height:8px;border-radius:8px;background:var(--txt)}
+#volBar::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:0}
+#volBar:disabled{opacity:.35}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#333;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;text-align:center}
 #toast.show{opacity:1}
 </style>
@@ -57,18 +77,31 @@ button:active,button.hold{background:var(--btn2);transform:scale(.97)}
 </section>
 
 <section class="card">
+  <div class="tabs" id="navTabs"><button data-nav="keys">✥ Setas</button><button data-nav="pad">🖱 Touchpad</button></div>
+  <div id="navKeys">
   <div class="dpad">
     <span></span><button data-k="UP" data-repeat>▲</button><span></span>
     <button data-k="LEFT" data-repeat>◀</button><button class="ok" data-k="ENTER">OK</button><button data-k="RIGHT" data-repeat>▶</button>
     <span></span><button data-k="DOWN" data-repeat>▼</button><span></span>
+  </div>
+  </div>
+  <div id="navPad" style="display:none">
+    <div id="pad"><div id="padHint">Arraste o dedo para mover o ponteiro.<br>Toque rápido para clicar.<br>Role com dois dedos ou na faixa ⇕ à direita.</div><div id="padScroll">⇕</div><div id="padDot"></div></div>
   </div>
   <div class="grid3" style="margin-top:10px">
     <button data-k="BACK">↩ Voltar</button><button data-k="MENU">⚙ Menu</button><button data-k="EXIT">✕ Sair</button>
   </div>
 </section>
 
+<section class="card">
+  <div class="vol">
+    <button data-u="ssap://audio/volumeDown" data-ir="VOLUMEDOWN" data-repeat aria-label="Baixar volume">－</button>
+    <div class="volmid"><div class="lbl">Volume</div><div id="volNum">—</div><input type="range" id="volBar" min="0" max="100" value="0" disabled aria-label="Volume"></div>
+    <button data-u="ssap://audio/volumeUp" data-ir="VOLUMEUP" data-repeat aria-label="Aumentar volume">＋</button>
+  </div>
+</section>
+
 <section class="card row">
-  <div class="col"><div class="lbl">Volume</div><button data-u="ssap://audio/volumeUp" data-ir="VOLUMEUP" data-repeat>＋</button><button data-u="ssap://audio/volumeDown" data-ir="VOLUMEDOWN" data-repeat>－</button></div>
   <div class="col"><div class="lbl">Canal</div><button data-u="ssap://tv/channelUp" data-ir="CHANNELUP">＋</button><button data-u="ssap://tv/channelDown" data-ir="CHANNELDOWN">－</button></div>
   <div class="col"><div class="lbl">Mídia</div><button data-u="ssap://media.controls/play" data-ir="PLAY">▶</button><button data-u="ssap://media.controls/pause" data-ir="PAUSE">❚❚</button></div>
 </section>
@@ -118,7 +151,8 @@ button:active,button.hold{background:var(--btn2);transform:scale(.97)}
 // Fora do app (navegador), usa um simulador para dar para ver a tela.
 const B = window.TV || {
   hasIr: () => true, ir: () => true, connected: () => false, connect() {}, forget() {},
-  request: () => false, key: () => false, getPref: () => '', setPref() {}, savedIp: () => '', vibrate() {}
+  request: () => false, key: () => false, getPref: () => '', setPref() {}, savedIp: () => '', vibrate() {},
+  pointer: () => false, subscribe: () => false, query: () => false
 };
 const $ = s => document.querySelector(s);
 const hasIr = B.hasIr();
@@ -142,10 +176,12 @@ function paintStatus() {
   else if (texts[tvStatus] && mode !== 'ir') label.textContent = texts[tvStatus];
   else if (canIr()) { st.className = 'ir'; label.textContent = 'infravermelho'; }
   else label.textContent = 'desconectado';
+  paintVol();
 }
 
 window.tvState = (state, detail) => {
   if (state === 'error') { toast('TV: ' + detail); return; }
+  if (state === 'sub') { onTvData(detail); return; }
   tvStatus = state;
   const cert = $('#cert');
   if (state === 'offline' && detail === 'cert') {
@@ -154,8 +190,41 @@ window.tvState = (state, detail) => {
   } else if (state !== 'offline') cert.style.display = 'none';
   if (state === 'prompt') toast('Confirme o pedido de conexão na TV');
   if (state === 'refused') toast('A TV recusou a conexão');
+  if (state === 'connected' && B.subscribe) { B.subscribe('ssap://audio/getVolume'); queryVol(); }
+  if (state !== 'connected') vol = null;
   paintStatus();
 };
+
+// ---------- Volume: número e barra ----------
+let vol = null, dragging = false, volSendT = 0, volLast = -1, volQ;
+const bar = $('#volBar');
+function onTvData(json) {
+  let p; try { p = JSON.parse(json); } catch (e) { return; }
+  const s = p.volumeStatus || p;          // webOS novo manda volumeStatus; antigo manda direto
+  if (typeof s.volume !== 'number') return;
+  vol = s.volume;
+  const m = s.muteStatus !== undefined ? s.muteStatus : (s.muted !== undefined ? s.muted : s.mute);
+  if (typeof m === 'boolean') muted = m;
+  if (typeof s.maxVolume === 'number' && s.maxVolume > 0) bar.max = s.maxVolume;
+  paintVol();
+}
+function paintVol() {
+  const on = useWifi() && vol !== null;
+  const shown = dragging ? +bar.value : vol;
+  $('#volNum').innerHTML = on ? shown + (muted ? '<small>mudo</small>' : '') : '—';
+  bar.disabled = !on;
+  if (on && !dragging) bar.value = vol;
+  bar.style.setProperty('--p', (on ? (bar.value / bar.max) * 100 : 0) + '%');
+  document.querySelector('[data-mute]').classList.toggle('on', on && muted);
+}
+function queryVol() { clearTimeout(volQ); volQ = setTimeout(() => B.query && B.query('ssap://audio/getVolume'), 350); }
+function sendVol(v) { if (v === volLast) return; volLast = v; B.request('ssap://audio/setVolume', JSON.stringify({ volume: v })); }
+bar.addEventListener('input', () => {
+  dragging = true; paintVol();
+  const now = Date.now();
+  if (now - volSendT > 120) { volSendT = now; sendVol(+bar.value); }
+});
+bar.addEventListener('change', () => { sendVol(+bar.value); vol = +bar.value; dragging = false; volLast = -1; B.vibrate(); paintVol(); queryVol(); });
 
 function act(b) {
   B.vibrate();
@@ -171,7 +240,8 @@ function act(b) {
   }
   if (useWifi()) {
     if (k) { B.key(k); return; }
-    if (b.hasAttribute('data-mute')) { muted = !muted; B.request(u, JSON.stringify({ mute: muted })); return; }
+    if (b.hasAttribute('data-mute')) { muted = !muted; B.request(u, JSON.stringify({ mute: muted })); paintVol(); queryVol(); return; }
+    if (u && u.indexOf('ssap://audio/') === 0) { B.request(u, ''); queryVol(); return; }
     if (app) { B.request('ssap://system.launcher/launch', JSON.stringify({ id: app })); return; }
     if (u) { B.request(u, ''); return; }
   }
@@ -243,6 +313,61 @@ function setMode(m) {
   paintStatus();
 }
 document.querySelectorAll('#mode button').forEach(x => x.onclick = () => setMode(x.dataset.mode));
+
+// ---------- Touchpad (ponteiro da TV) ----------
+function setNav(n) {
+  B.setPref('nav', n);
+  $('#navKeys').style.display = n === 'pad' ? 'none' : '';
+  $('#navPad').style.display = n === 'pad' ? '' : 'none';
+  document.querySelectorAll('#navTabs button').forEach(x => x.classList.toggle('on', x.dataset.nav === n));
+}
+document.querySelectorAll('#navTabs button').forEach(x => x.onclick = () => setNav(x.dataset.nav));
+setNav(B.getPref('nav') || 'keys');
+(function () {
+  const pad = $('#pad'), dot = $('#padDot');
+  const fingers = new Map();
+  const acc = { x: 0, y: 0, s: 0 };
+  let raf = 0, t0 = 0, travel = 0, scrolling = false, warned = false;
+  const ptr = raw => B.pointer && B.pointer(raw);
+  function flush() {
+    raf = 0;
+    const dx = Math.trunc(acc.x), dy = Math.trunc(acc.y);
+    if (dx || dy) { ptr('type:move\ndx:' + dx + '\ndy:' + dy + '\ndown:0\n\n'); acc.x -= dx; acc.y -= dy; }
+    const ds = Math.trunc(acc.s);
+    if (ds) { ptr('type:scroll\ndx:0\ndy:' + ds + '\n\n'); acc.s -= ds; }
+  }
+  const schedule = () => { if (!raf) raf = requestAnimationFrame(flush); };
+  function showDot(e) { const r = pad.getBoundingClientRect(); dot.style.left = (e.clientX - r.left) + 'px'; dot.style.top = (e.clientY - r.top) + 'px'; dot.style.display = 'block'; }
+  pad.addEventListener('pointerdown', e => {
+    if (!useWifi()) { if (!warned) toast('O touchpad funciona só pelo Wi-Fi'); warned = true; return; }
+    warned = false;
+    pad.setPointerCapture(e.pointerId);
+    fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (fingers.size === 1) { t0 = performance.now(); travel = 0; scrolling = !!e.target.closest('#padScroll'); }
+    else scrolling = true;                                  // dois dedos = rolar
+    pad.classList.add('active'); showDot(e);
+  });
+  pad.addEventListener('pointermove', e => {
+    const f = fingers.get(e.pointerId); if (!f) return;
+    const dx = e.clientX - f.x, dy = e.clientY - f.y;
+    f.x = e.clientX; f.y = e.clientY;
+    travel += Math.abs(dx) + Math.abs(dy);
+    if (scrolling) acc.s += -dy * 0.35 / fingers.size;      // arrastar para cima rola para baixo, como no celular
+    else {
+      const gain = 1.4 + Math.min(Math.hypot(dx, dy), 40) * 0.07;   // mais rápido = vai mais longe
+      acc.x += dx * gain; acc.y += dy * gain;
+    }
+    showDot(e); schedule();
+  });
+  function up(e) {
+    if (!fingers.delete(e.pointerId)) return;
+    if (fingers.size) return;
+    if (!scrolling && travel < 10 && performance.now() - t0 < 300) { ptr('type:click\n\n'); B.vibrate(); }
+    scrolling = false; pad.classList.remove('active'); dot.style.display = 'none';
+  }
+  pad.addEventListener('pointerup', up);
+  pad.addEventListener('pointercancel', up);
+})();
 
 if (!hasIr) { $('#mode').style.display = 'none'; $('#irHint').style.display = 'none'; mode = 'wifi'; }
 $('#ip').value = B.savedIp();
