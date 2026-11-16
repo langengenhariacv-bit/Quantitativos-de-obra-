@@ -503,7 +503,7 @@ function normalize(s){
 function clientName(id){return state.clients.find(x=>x.id===id)?.name||'Sem cliente'}
 function toast(msg){const e=$('#toast');e.textContent=msg;e.classList.remove('hidden');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.add('hidden'),2500)}
 function status(msg,type=''){const e=$('#syncStatus');if(!e)return;e.textContent=msg;e.className='sync '+type}
-function buf64(buf){return btoa(String.fromCharCode(...new Uint8Array(buf)))}
+function buf64(buf){const bytes=new Uint8Array(buf),parts=[];for(let i=0;i<bytes.length;i+=8192)parts.push(String.fromCharCode(...bytes.subarray(i,i+8192)));return btoa(parts.join(''))}
 function unbuf64(s){return Uint8Array.from(atob(s),c=>c.charCodeAt(0))}
 async function derive(password,salt){const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:180000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
 async function encryptData(data,password){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await derive(password,salt);const plain=new TextEncoder().encode(JSON.stringify(data));const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,plain);return {app:'lang-engenharia-gestao-v1',salt:buf64(salt),iv:buf64(iv),data:buf64(cipher)}}
@@ -519,7 +519,7 @@ async function load(){status('Sincronizando…');
     if(e.status===404&&currentPassword===INITIAL_PASSWORD){const raw=seedState();ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);ensureRecoveredProjectFinance20260930(raw);state=normalize(raw);await putBlob(await encryptData(state,currentPassword));status('Sincronizado','ok');offStatus();return}
     throw e}
   const raw=await decryptData(p,currentPassword);const migratedProjects=ensureChromeProjects(raw),migratedFinance=ensureFinanceSnapshot20260930(raw),migratedProjectFinance=ensureRecoveredProjectFinance20260930(raw),migratedAgent=ensureAgentLinks(raw),migrated=migratedProjects||migratedFinance||migratedProjectFinance||migratedAgent;state=normalize(raw);
-  if(pend){await syncPending();return}
+  if(pend){state=normalize(await decryptData(pend,currentPassword));await syncPending();return}
   if(migrated){state.revision=Number(state.revision||0)+1;state.updatedAt=new Date().toISOString();try{await putBlob(await encryptData(state,currentPassword))}catch(e){if(!e.offline)throw e}}else offDB.set('synced',p).catch(()=>{});
   status('Sincronizado','ok');offStatus()}
 async function mutate(fn){status('Salvando…');try{if(offPending)await (offSyncP||syncPending());if(offPending)throw netError();let remote;try{const raw=await decryptData(await fetchBlob(),currentPassword);ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);ensureRecoveredProjectFinance20260930(raw);remote=normalize(raw)}catch(e){if(e.status===404){const raw=seedState();ensureChromeProjects(raw);ensureFinanceSnapshot20260930(raw);ensureRecoveredProjectFinance20260930(raw);remote=normalize(raw)}else throw e}await fn(remote);ensureAgentLinks(remote);remote.revision=Number(remote.revision||0)+1;remote.updatedAt=new Date().toISOString();await putBlob(await encryptData(remote,currentPassword));state=remote;status('Sincronizado','ok');offStatus();render();toast('Alteração salva');updateReminders(false)}catch(e){
@@ -1762,16 +1762,17 @@ const renderDashboardFlat=renderDashboard;
 renderDashboard=function(){renderDashboardFlat();try{mountDash3D()}catch(e){console.error('Painel 3D',e)}};
 
 /* ===== Uso sem internet: cópia local criptografada e envio posterior ===== */
-let offPending=false,offNet=false,offSyncP=null;
+let offPending=false,offNet=false,offSyncP=null,offLastError='';
+function syncErrorMessage(e){if(e&&e.offline)return 'Não foi possível comunicar com o servidor. As alterações continuam guardadas neste aparelho.';if(e&&e.name==='OperationError')return 'Não foi possível abrir os dados criptografados. Confira a senha usada neste aparelho. As alterações continuam guardadas.';return (e&&e.message||'Falha ao sincronizar com o servidor.')+' As alterações continuam guardadas neste aparelho.';}
 function netError(){offNet=true;const e=new Error('Sem conexão com a internet');e.offline=true;return e}
 const offDB=(()=>{let p;
   const open=()=>p||(p=new Promise((res,rej)=>{const r=indexedDB.open('lang-gestao-offline',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
   const tx=(mode,fn)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction('kv',mode),rq=fn(t.objectStore('kv'));t.oncomplete=()=>res(rq&&rq.result);t.onerror=t.onabort=()=>rej(t.error||new Error('Falha ao gravar no aparelho'))}));
   return {get:k=>tx('readonly',st=>st.get(k)).catch(()=>undefined),set:(k,v)=>tx('readwrite',st=>st.put(v,k)),del:k=>tx('readwrite',st=>st.delete(k)).catch(()=>{})}})();
 function offStatus(){
-  if(offPending)status('Alterações aguardando internet','bad');else if(offNet)status('Sem internet','bad');
+  if(offPending)status('Alterações aguardando envio','bad');else if(offNet)status('Sem internet','bad');
   const bar=$('#offBar');if(!bar)return;
-  if(offPending){bar.innerHTML='<span>Há alterações guardadas neste aparelho, aguardando internet para enviar.</span><button id="offSend">Enviar agora</button>';bar.classList.remove('hidden');$('#offSend').onclick=()=>syncPending().then(ok=>{if(!ok)toast('Ainda sem conexão. Tentaremos de novo.')})}
+  if(offPending){bar.innerHTML='<span>Há alterações guardadas neste aparelho, aguardando envio ao servidor.</span><button id="offSend">Enviar agora</button>';bar.classList.remove('hidden');$('#offSend').onclick=()=>syncPending().then(ok=>{if(!ok)toast(offLastError||'As alterações continuam guardadas. Tente enviar novamente.')})}
   else if(offNet){bar.textContent='Sem internet — mostrando a última cópia deste aparelho. O que você alterar fica guardado e é enviado depois.';bar.classList.remove('hidden')}
   else bar.classList.add('hidden');
 }
@@ -1791,10 +1792,10 @@ function merge3(base,local,remote){
 }
 function syncPending(){
   if(offSyncP)return offSyncP;
-  if(!currentPassword)return Promise.resolve(false);
+  if(!currentPassword){offLastError='Entre novamente para enviar as alterações guardadas.';return Promise.resolve(false);}
   offSyncP=(async()=>{
     try{
-      const lp=await offDB.get('local');if(!lp){offPending=false;offStatus();return false}
+      offLastError='';const lp=await offDB.get('local');if(!lp){offPending=false;offStatus();return true}
       const rp=await fetchBlob(),remoteRaw=await decryptData(rp,currentPassword);
       ensureChromeProjects(remoteRaw);ensureFinanceSnapshot20260930(remoteRaw);ensureRecoveredProjectFinance20260930(remoteRaw);
       const remote=normalize(remoteRaw),local=normalize(await decryptData(lp,currentPassword));
@@ -1802,9 +1803,9 @@ function syncPending(){
       const untouched=!base||Number(base.revision||0)===Number(remote.revision||0),out=untouched?local:merge3(base,local,remote);
       ensureAgentLinks(out);out.revision=Number(remote.revision||0)+1;out.updatedAt=new Date().toISOString();
       const payload=await encryptData(out,currentPassword);await putBlob(payload);
-      await offDB.set('synced',payload).catch(()=>{});await offDB.del('local');offPending=false;offNet=false;
+      await offDB.set('synced',payload);await offDB.del('local');offPending=false;offNet=false;offLastError='';
       state=normalize(out);status('Sincronizado','ok');offStatus();if(!document.querySelector('.modal-bg'))render();toast('Alterações feitas sem internet foram enviadas');updateReminders(false);return true;
-    }catch(e){if(e&&e.offline)offStatus();else{status('Erro ao sincronizar','bad');console.error('Sincronização',e)}return false}
+    }catch(e){offLastError=syncErrorMessage(e);offStatus();status('Erro ao sincronizar','bad');console.error('Sincronização',e);return false}
     finally{offSyncP=null}
   })();
   return offSyncP;
@@ -1918,7 +1919,7 @@ async function settingsModal(){
   if($('#setBio'))$('#setBio').onclick=run(async()=>{if(bio)bioDisable();else{await bioEnable();toast('Biometria ativada')}});
   if($('#setRem'))$('#setRem').onclick=run(async()=>{if(rem)await remindersDisable();else{await remindersEnable();toast('Lembretes ativados')}});
   if($('#setRemTest'))$('#setRemTest').onclick=async()=>{if(!reminderItems().length)return toast('Nenhum prazo para avisar agora');await updateReminders(true,true);toast('Lembrete enviado')};
-  if($('#setSync'))$('#setSync').onclick=run(async()=>{if(!await syncPending())throw new Error('Ainda sem conexão. As alterações continuam guardadas.')});
+  if($('#setSync'))$('#setSync').onclick=run(async()=>{if(!await syncPending())throw new Error(offLastError||'As alterações continuam guardadas. Tente enviar novamente.')});
   $('#setBackup').onclick=backupModal;$('#setTpl').onclick=templatesModal;
   document.querySelectorAll('#setFx button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('langFx',b.dataset.t);localStorage.removeItem('langFxSlow')}catch(e){}window.dispatchEvent(new Event('lang-fx'));document.querySelectorAll('#setFx button').forEach(x=>x.classList.toggle('on',x===b))});
   document.querySelectorAll('#setTheme button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('langTheme',b.dataset.t)}catch(e){}themeApply();document.querySelectorAll('#setTheme button').forEach(x=>x.classList.toggle('on',x===b))});
