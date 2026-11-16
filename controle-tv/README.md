@@ -4,6 +4,10 @@ Controle remoto para a TV LG, sem anúncios, que funciona de dois jeitos:
 
 - **Wi-Fi** (TVs LG webOS): setas, volume, canais, mídia, atalhos de apps
   (Netflix, YouTube, Prime, Disney+, Globoplay), entradas e digitação de texto.
+  - **Touchpad**: na aba 🖱 Touchpad, arraste o dedo para mover o ponteiro da TV,
+    toque para clicar e role com dois dedos ou na faixa ⇕.
+  - **Volume na tela**: mostra o volume atual da TV e se está no mudo; arraste a
+    barra para ir direto ao volume desejado.
 - **Infravermelho** (celulares com emissor IR, como o POCO X7 Pro): liga a TV,
   setas, volume, canais, números e menus, sem precisar de rede.
 

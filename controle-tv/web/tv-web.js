@@ -103,6 +103,10 @@
       }
       return;
     }
+    if (id.startsWith('sub_')) {
+      if (d.type !== 'error') emit('sub', JSON.stringify(payload));
+      return;
+    }
     if (id.startsWith('ptr_')) {
       if (payload.socketPath) openPointer(payload.socketPath);
       else { pointerPending = false; queued = []; }
@@ -122,7 +126,7 @@
       if (g !== gen) { s.close(); return; }
       pointer = s;
       pointerPending = false;
-      queued.forEach(name => s.send('type:button\nname:' + name + '\n\n'));
+      queued.forEach(raw => s.send(raw));
       queued = [];
     };
     s.onclose = () => {
@@ -131,10 +135,13 @@
     };
   }
 
-  function key(name) {
+  function key(name) { return pointerSend('type:button\nname:' + name + '\n\n'); }
+
+  // Canal do ponteiro: teclas, mover, clicar e rolar.
+  function pointerSend(raw) {
     if (!registered) return false;
-    if (pointer && pointer.readyState === 1) { pointer.send('type:button\nname:' + name + '\n\n'); return true; }
-    queued.push(name);
+    if (pointer && pointer.readyState === 1) { pointer.send(raw); return true; }
+    if (queued.length < 64) queued.push(raw);
     if (!pointerPending) { pointerPending = true; send('request', 'ptr_' + (++seq), POINTER_URI, null); }
     return true;
   }
@@ -153,6 +160,9 @@
       return true;
     },
     key,
+    pointer: pointerSend,
+    subscribe(uri) { if (!registered) return false; send('subscribe', 'sub_' + (++seq), uri, null); return true; },
+    query(uri) { if (!registered) return false; send('request', 'sub_' + (++seq), uri, null); return true; },
     getPref: n => store.get('ui_' + n),
     setPref: (n, v) => store.set('ui_' + n, v),
     savedIp: () => store.get('lg_ip'),

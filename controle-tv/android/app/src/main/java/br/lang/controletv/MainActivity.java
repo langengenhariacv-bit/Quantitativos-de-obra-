@@ -161,6 +161,21 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public boolean pointer(String raw) {
+            return tv.pointerSend(raw);
+        }
+
+        @JavascriptInterface
+        public boolean subscribe(String uri) {
+            return tv.ask(uri, true);
+        }
+
+        @JavascriptInterface
+        public boolean query(String uri) {
+            return tv.ask(uri, false);
+        }
+
+        @JavascriptInterface
         public String getPref(String name) {
             return prefs.getString("ui_" + name, "");
         }
