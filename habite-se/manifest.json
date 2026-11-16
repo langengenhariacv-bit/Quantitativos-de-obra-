@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Vistoria Habite-se CBMSC",
   "short_name": "Habite-se",
-  "description": "Checklist de vistoria para habite-se do CBMSC por Instrução Normativa, com fotos e relatório em PDF.",
+  "description": "Questionário de vistoria para habite-se do CBMSC: preenche os Anexos I e J da IN 1 e anexa as fotos.",
   "lang": "pt-BR",
   "start_url": "./",
   "scope": "./",

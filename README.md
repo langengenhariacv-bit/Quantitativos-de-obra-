@@ -88,20 +88,18 @@ Na engrenagem da tela inicial ficam a empresa, o logo do cabeçalho, os dados do
 
 ## Vistoria Habite-se CBMSC (`/habite-se/`)
 
-App de celular (PWA, funciona offline) para a vistoria de habite-se do Corpo de Bombeiros Militar de Santa Catarina. Preenche sozinho os formulários da IN 1 e anexa as fotos:
+App de celular (PWA, funciona offline) para a vistoria de habite-se do Corpo de Bombeiros Militar de Santa Catarina. Você responde um questionário de 4 passos e o app entrega prontos, em PDF, os dois formulários da IN 1:
 
-- **Anexo I — Relatório de conformidade e termo de responsabilidade (atestado para habite-se):** dados do responsável técnico e do imóvel e a tabela dos 15 sistemas já marcada (Sim/Não em PPCI e NSCI, com a justificativa).
-- **Anexo J — Termo de entrega do imóvel:** responsável pelo imóvel, responsável técnico, dados da solicitação, descritivo de cada sistema instalado com as fotos e as declarações para assinatura.
-- **Relatório interno de vistoria:** checklist completo por IN, não conformidades e registro fotográfico.
+- **Anexo I — Relatório de conformidade e termo de responsabilidade (atestado para habite-se)**, com a tabela dos 15 sistemas já marcada.
+- **Anexo J — Termo de entrega do imóvel**, com o descritivo de cada sistema instalado e as fotos legendadas.
 
-Como usar:
+Antes da primeira vistoria, abra a engrenagem e preencha uma vez os dados do responsável técnico (CPF, RG, endereço, telefone, e-mail) e o responsável pelo imóvel padrão. Esses dados ficam só no aparelho.
 
-1. Na engrenagem, preencha uma vez os dados do responsável técnico (CPF, RG, endereço, telefone, e-mail) e o responsável pelo imóvel padrão. Esses dados ficam só no aparelho.
-2. **Nova vistoria** → endereço, RE, protocolo, ocupação, risco, área, pavimentos e blocos.
-3. Marque os sistemas que constam no PPCI aprovado (a vistoria nova começa com extintores, saídas, iluminação e sinalização). Os não marcados saem como "NÃO SE APLICA" no Anexo I.
-4. Em cada sistema: escreva o **descritivo** (vai para o Anexo J), tire a **foto do sistema** e percorra os itens marcando **Conforme / Não conforme / N/A**, com observação e fotos por item.
-5. **Relatório** → escolha o documento e gere o PDF. O app avisa o que falta (sistema sem foto, campo vazio, itens não verificados).
+1. **Imóvel** — endereço, RE, protocolo, ocupação, risco, área, pavimentos e blocos.
+2. **Sistemas** — para cada sistema, um toque: *Não tem*, *Conforme* ou *Não conforme* (com a justificativa). Um botão marca todos os não respondidos como "Não tem".
+3. **Fotos** — para cada sistema instalado, o descritivo e o botão **Tirar foto**, que abre a câmera; a legenda é pedida logo após cada foto e **Outra foto** volta direto para a câmera.
+4. **PDF** — o app lista o que falta (com atalho para corrigir) e gera os dois PDFs para compartilhar, abrir ou baixar.
 
-Regra da tabela do Anexo I: sistema marcado e sem item "não conforme" sai Sim/Sim; com item não conforme sai Não/Não e a justificativa é a observação do item; sistemas fora das 14 linhas do formulário (SPDA, chuveiros automáticos, controle de fumaça etc.) vão na linha "Outros".
+Regra da tabela do Anexo I: *Conforme* sai Sim/Sim; *Não conforme* sai Não/Não com a justificativa digitada; *Não tem* sai Não/Não com "NÃO SE APLICA".
 
-**Importante:** os PDFs reproduzem o texto dos Anexos I e J da IN 1 a partir dos modelos de 2025; confira se o CBMSC não publicou versão nova do formulário. Os itens do checklist ficam em `habite-se/catalogo.js` e são um roteiro de conferência, não a transcrição literal das INs — confira com o texto vigente e edite o arquivo (ao editar, aumente a versão do cache em `habite-se/service-worker.js`).
+**Importante:** os PDFs reproduzem o texto dos Anexos I e J da IN 1 a partir dos modelos de 2025; confira se o CBMSC não publicou versão nova do formulário. A lista de sistemas fica em `habite-se/catalogo.js` (ao editar, aumente a versão do cache em `habite-se/service-worker.js`).

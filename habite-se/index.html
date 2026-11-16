@@ -121,6 +121,24 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
 .sig{border:1.5px dashed #bbb;border-radius:10px;background:#fff;width:100%;height:150px;touch-action:none;display:block}
 details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size:13.5px;padding:6px 0;list-style:none}details.more summary::-webkit-details-marker{display:none}details.more summary::before{content:"▸ ";color:var(--brand)}details.more[open] summary::before{content:"▾ "}
 .busy{position:fixed;inset:0;background:rgba(255,255,255,.75);z-index:300;display:grid;place-items:center;font-weight:700}
+.visit .thumb{width:64px;height:64px;border-radius:10px;background:#eee center/cover;flex:none;display:grid;place-items:center;color:#aaa}
+.steps{position:sticky;top:calc(60px + env(safe-area-inset-top));z-index:19;background:var(--bg);display:flex;gap:6px;padding:10px 12px 6px;max-width:780px;margin:0 auto}
+.steps button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:7px 4px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.steps button i{font-style:normal;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#eee;margin-right:4px;font-size:11px}
+.steps button.on{border-color:var(--ink);background:var(--ink);color:#fff}.steps button.on i{background:var(--brand);color:#fff}
+.steps button.done i{background:var(--ok);color:#fff}
+.q{padding:12px}.q.nc{border-color:#f0b9b9;background:#fff7f6}.q.c{border-color:#bfe0c1}.q.na{opacity:.75}
+.st3{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:6px;margin-top:8px}
+.st3 button{border:1.5px solid var(--line);background:#fff;border-radius:10px;min-height:46px;font-weight:700;font-size:13.5px;cursor:pointer;padding:0 4px}
+.st3 button[data-v=c].on{background:var(--ok);border-color:var(--ok);color:#fff}
+.st3 button[data-v=nc].on{background:var(--crit);border-color:var(--crit);color:#fff}
+.st3 button[data-v=na].on{background:#616161;border-color:#616161;color:#fff}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.pc{cursor:pointer}.pc .im{aspect-ratio:1;border-radius:10px;background:#eee center/cover;border:1px solid var(--line)}
+.pc small{display:block;font-size:12px;line-height:1.25;margin-top:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pc small.sem{color:var(--crit);font-weight:600}
+.okbox{background:#e9f5ea;border:1px solid #bfe0c1;border-radius:10px;padding:9px 11px;font-size:13px;color:#1f5d23;margin-top:8px;font-weight:600}
+.warnbox a{color:var(--crit);font-weight:700}
 </style>
 </head>
 <body>
@@ -139,15 +157,17 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
   <button class="fab" id="btnNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Nova vistoria</button>
 </section>
 
-<!-- ============ VISTORIA ============ -->
+<!-- ============ VISTORIA (questionário em 4 passos) ============ -->
 <section id="vVisit" class="hidden">
   <header class="bar">
-    <button class="icon-btn" id="btnBack" aria-label="Voltar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <button class="icon-btn" id="btnBack" aria-label="Voltar à lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></button>
     <div class="title"><b id="vTitle">Vistoria</b><small id="vSub"></small></div>
     <button class="icon-btn" id="btnDelVisit" title="Excluir vistoria" aria-label="Excluir vistoria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
   </header>
+  <nav class="steps" id="steps"></nav>
   <main>
-    <h2>Edificação</h2>
+    <div class="step" data-step="0">
+      <h2>1. Dados do imóvel</h2>
     <div class="card" id="fields">
       <label class="f"><span>Logradouro e nº do imóvel</span><input type="text" data-k="endereco" id="fEndereco" placeholder="Rua, nº" autocomplete="street-address"></label>
       <div class="grid3">
@@ -170,7 +190,7 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
       </div>
       <div class="grid3">
         <label class="f"><span>Risco</span><select data-k="risco" id="fRisco"></select></label>
-        <label class="f"><span>Altura (m)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-k="altura"></label>
+        
         <label class="f"><span>Área alterada (m²)</span><input type="text" inputmode="decimal" data-k="areaAlt" placeholder="se houver"></label>
       </div>
       <details class="more">
@@ -187,82 +207,52 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
         </div>
         <p class="note" style="margin-top:0">Vem preenchido com o responsável padrão das configurações (⚙️).</p>
       </details>
-      <details class="more">
-        <summary>Outras informações</summary>
-        <div class="grid2" style="margin-top:10px">
-          <label class="f"><span>DRT (ART/RRT) de execução nº</span><input type="text" data-k="art"></label>
-          <label class="f"><span>Data da vistoria</span><input type="date" data-k="data"></label>
-          <label class="f"><span>Acompanhante</span><input type="text" data-k="acompanhante"></label>
-        </div>
-      </details>
+    </div>
     </div>
 
-    <h2>Sistemas e medidas previstos no PPCI</h2>
-    <div class="card">
-      <div class="seg" id="sysChips"></div>
-      <p class="warnbox" id="sysNote"></p>
+    <div class="step hidden" data-step="1">
+      <h2>2. Sistemas de segurança</h2>
+      <p class="note" style="margin:0 2px 10px">Responda cada sistema com um toque. Vale o que está no PPCI aprovado.</p>
+      <div id="qs"></div>
+      <button class="btn" id="btnRestNa" style="width:100%">Marcar os não respondidos como “Não tem”</button>
     </div>
 
-    <h2><span class="grow">Checklist por IN</span><span id="totals"></span></h2>
-    <div id="checklist"></div>
+    <div class="step hidden" data-step="2">
+      <h2>3. Fotos e descritivo</h2>
+      <p class="note" style="margin:0 2px 10px">Para cada sistema instalado: descreva o que há e tire ao menos uma foto. A legenda é pedida logo após cada foto.</p>
+      <div id="fotos"></div>
+    </div>
 
-    <h2><span class="grow">Fotos gerais</span><button class="btn sm" id="btnGenPhoto">+ Foto</button></h2>
-    <div class="card"><div class="thumbs" id="genThumbs" style="margin-top:0"></div><p class="note" id="genEmpty" style="margin:0">Fachada, acessos e outras fotos que não pertencem a um item do checklist.</p></div>
-
-    <h2>Parecer / conclusão</h2>
-    <div class="card">
-      <textarea data-k="conclusao" rows="5" placeholder="Se ficar em branco, o relatório traz um parecer automático conforme o resultado do checklist."></textarea>
+    <div class="step hidden" data-step="3">
+      <h2>4. Gerar os PDFs</h2>
+      <div class="card" id="resumo"></div>
+      <label class="check"><input type="checkbox" id="rpSig" checked> Inserir minha assinatura desenhada (⚙️)</label>
+      <button class="btn primary" id="btnGerar" style="width:100%;min-height:54px;font-size:16px;margin-top:6px">Gerar Anexo I e Anexo J</button>
+      <div id="out" style="margin-top:12px"></div>
     </div>
   </main>
-  <div class="dock"><div class="in">
-    <button class="btn" id="btnFilter">Só pendências</button>
-    <button class="btn dark" id="btnMarkAll">Abrir todos</button>
-    <button class="btn primary" id="btnReport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>Relatório</button>
+  <div class="dock"><div class="in" style="grid-template-columns:1fr 1.6fr">
+    <button class="btn" id="btnPrev">Voltar</button>
+    <button class="btn primary" id="btnNext">Avançar</button>
   </div></div>
-  <input type="file" id="inPhoto" accept="image/*" multiple class="hidden">
+  <input type="file" id="inCam" accept="image/*" capture="environment" class="hidden">
+  <input type="file" id="inGal" accept="image/*" multiple class="hidden">
 </section>
 
-<!-- ============ FOTO ============ -->
+<!-- ============ FOTO E LEGENDA ============ -->
 <dialog id="dPhoto">
   <div class="dlg-h"><b id="dpTitle">Foto</b><button class="icon-btn" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="dlg-b">
     <div class="preview"><img id="dpImg" alt=""><div class="over"><button class="btn sm" id="dpMark">✏️ Marcar na foto</button><button class="btn sm hidden" id="dpReset">Original</button></div></div>
-    <p class="note" id="dpItem" style="margin-top:0"></p>
-    <label class="check"><input type="checkbox" id="dpInc"> Incluir esta foto no relatório</label>
-    <label class="f"><span>Legenda</span><textarea id="dpDesc" placeholder="O que a foto mostra"></textarea></label>
-    <p class="note" id="dpWhen"></p>
+    <label class="f"><span>Legenda da foto</span><textarea id="dpDesc" rows="2" placeholder="Ex.: Extintor PQS 4 kg no acesso principal"></textarea></label>
+    <div class="seg" id="dpSug" style="margin:-4px 0 8px"></div>
+    <p class="note" id="dpWhen" style="margin:0"></p>
   </div>
   <div class="dlg-f">
-    <button class="btn sm danger" id="dpDel">Excluir</button>
+    <button class="btn sm danger" id="dpDel" style="flex:0 0 auto">Excluir</button>
+    <button class="btn dark" id="dpMore">📷 Outra foto</button>
     <button class="btn primary" data-close>Concluir</button>
   </div>
-</dialog>
-
-<!-- ============ RELATÓRIO ============ -->
-<dialog id="dReport">
-  <div class="dlg-h"><b>Gerar relatório</b><button class="icon-btn" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-  <div class="dlg-b">
-    <p id="rpInfo" style="margin-top:0"></p>
-    <label class="radio-card"><input type="radio" name="doc" value="I" checked><div><b>Anexo I — Relatório de conformidade e termo de responsabilidade</b><small>Formulário da IN 1 para o atestado de habite-se, com a tabela de sistemas já marcada.</small></div></label>
-    <label class="radio-card"><input type="radio" name="doc" value="J"><div><b>Anexo J — Termo de entrega do imóvel</b><small>Descritivo dos sistemas instalados com as fotos de cada um.</small></div></label>
-    <label class="radio-card"><input type="radio" name="doc" value="R"><div><b>Relatório interno de vistoria</b><small>Checklist completo, não conformidades e registro fotográfico.</small></div></label>
-    <p class="warnbox hidden" id="rpWarn" style="margin:0 0 8px"></p>
-    <div id="rpOptR">
-    <label class="check"><input type="checkbox" id="rpFull" checked> Checklist completo (todos os itens)</label>
-    <label class="check"><input type="checkbox" id="rpPhotos" checked> Registro fotográfico</label>
-    <label class="check"><input type="checkbox" id="rpDisc" checked> Texto de ressalva técnica</label>
-    </div>
-    <label class="check"><input type="checkbox" id="rpSig" checked> <span id="rpSigTxt">Bloco de assinatura</span></label>
-    <div id="rpOut" class="hidden card" style="margin-top:10px;background:#fff6f5;border-color:#f3c9c9">
-      <b id="rpName" style="word-break:break-all"></b><p class="note" id="rpSize" style="margin:4px 0 10px"></p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn primary" id="rpShare" style="flex:1">Compartilhar</button>
-        <button class="btn" id="rpOpen" style="flex:1">Abrir</button>
-        <button class="btn" id="rpDl" style="flex:1">Baixar</button>
-      </div>
-    </div>
-  </div>
-  <div class="dlg-f"><button class="btn primary" id="rpGo">Gerar PDF</button></div>
 </dialog>
 
 <!-- ============ CONFIGURAÇÕES ============ -->
@@ -298,8 +288,6 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
     </div>
     <label class="f"><span>Logo da empresa (cabeçalho do relatório)</span></label>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:-4px 0 12px"><img id="logoPrev" alt="" style="max-height:48px;max-width:150px;border:1px solid var(--line);border-radius:8px;padding:4px;background:#fff"><button class="btn sm" id="logoPick">Escolher imagem</button><button class="btn sm danger" id="logoDel">Remover</button><button class="btn sm" id="logoDef">Usar logo da Absolut</button><input type="file" id="logoFile" accept="image/*" class="hidden"></div>
-    <label class="f"><span>Cidade (para a data da assinatura)</span><input type="text" data-s="cidade" placeholder="Ex.: Chapecó - SC"></label>
-    <label class="f"><span>Texto de ressalva técnica</span><textarea data-s="ressalva" rows="5"></textarea></label>
     <label class="f"><span>Assinatura (desenhe com o dedo)</span></label>
     <canvas class="sig" id="sigPad"></canvas>
     <div style="display:flex;gap:8px;margin:8px 0 16px"><button class="btn sm" id="sigClear">Limpar assinatura</button><span class="note" style="align-self:center" id="sigState"></span></div>
@@ -307,8 +295,6 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
     <p class="note" style="margin-top:0">As vistorias e fotos ficam guardadas só neste aparelho. Exporte uma cópia de vez em quando.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="bkExport" style="flex:1">Exportar backup</button><button class="btn" id="bkImport" style="flex:1">Importar backup</button></div>
     <input type="file" id="bkFile" accept=".json,application/json" class="hidden">
-    <h2>Base normativa</h2>
-    <p class="note" style="margin-top:0" id="baseNote"></p>
   </div>
   <div class="dlg-f"><button class="btn primary" data-close>Salvar</button></div>
 </dialog>
@@ -371,24 +357,17 @@ let ST={...DEFAULTS};
 const respName=()=>[ST.titulo,ST.nome].filter(Boolean).join(' ');
 const creaTxt=()=>ST.crea?'CREA '+ST.crea.replace(/^CREA\s*/i,''):'';
 
-/* ---------------- estado e regras do checklist ---------------- */
-let V=null, P=[], urls=[], onlyPend=false;
+/* ---------------- estado ---------------- */
+let V=null, P=[], urls=[], step=0;
+const STEPS=['Imóvel','Sistemas','Fotos','PDF'];
 function freeUrls(){urls.forEach(u=>URL.revokeObjectURL(u));urls=[]}
 const objUrl=b=>{const u=URL.createObjectURL(b);urls.push(u);return u};
-const sysOf=k=>CATALOGO.find(s=>s.k===k);
-const isOn=(v,k)=>k==='docs'||!!(v.sis&&v.sis[k]);
-// sistemas que já vêm marcados numa vistoria nova (ver catalogo.js)
-function suggested(v){const o={};CATALOGO.forEach(s=>{if(s.k!=='docs')o[s.k]=s.regra==='sempre'});return o}
-function applySuggestion(v,force){const sg=suggested(v);v.sis=v.sis||{};v.sisManual=force?{}:(v.sisManual||{});for(const k in sg)if(!v.sisManual[k])v.sis[k]=sg[k]}
-// itens visíveis de um sistema (catálogo + itens criados pelo usuário)
-function itemsOf(v,s){const base=s.itens.filter(i=>!i.se||isOn(v,i.se)).map(i=>({id:i.id,t:i.t,ref:i.ref||s.ref}));
-  const cus=(v.custom||[]).filter(c=>c.sys===s.k).map(c=>({id:c.id,t:c.t,ref:s.ref,custom:true}));return base.concat(cus)}
-const activeSys=v=>CATALOGO.filter(s=>isOn(v,s.k));
-const stOf=(v,id)=>(v.itens&&v.itens[id]&&v.itens[id].st)||'';
-const obsOf=(v,id)=>(v.itens&&v.itens[id]&&v.itens[id].obs)||'';
-function countSys(v,s){const c={c:0,nc:0,na:0,pe:0,n:0};itemsOf(v,s).forEach(i=>{c.n++;c[stOf(v,i.id)||'pe']++});return c}
-function countAll(v){const t={c:0,nc:0,na:0,pe:0,n:0};activeSys(v).forEach(s=>{const c=countSys(v,s);for(const k in t)t[k]+=c[k]});return t}
-const ocupName=k=>{const o=OCUPACOES.find(o=>o.k===k);return o?o.n:(k||'')};
+const sisOf=k=>SISTEMAS.find(s=>s.k===k);
+const R=(v,k)=>(v.s[k]||(v.s[k]={st:'',just:'',desc:''}));           // resposta de um sistema
+const tem=(v,k)=>{const st=R(v,k).st;return st==='c'||st==='nc'};     // sistema existe no imóvel
+const nomeSis=(v,s)=>s.outros?((v.outNome||'').trim()||'Outros'):s.n;
+const presentes=v=>SISTEMAS.filter(s=>tem(v,s.k));
+const fotosDe=k=>P.filter(p=>(p.sys||null)===k).sort((a,b)=>a.ord-b.ord);
 const cityLine=v=>[v.bairro,v.cidade].filter(Boolean).join(' · ');
 
 /* ---------------- tela inicial ---------------- */
@@ -401,98 +380,85 @@ async function renderHome(){
   if(!vs.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13l2 2 4-4"/></svg><p>${q?'Nenhuma vistoria encontrada.':'Nenhuma vistoria ainda.<br>Toque em <b>Nova vistoria</b> para começar.'}</p></div>`;return}
   el.innerHTML='';
   for(const v of vs){
-    const t=countAll(v),done=t.n?Math.round((t.n-t.pe)/t.n*100):0;
+    v.s=v.s||{};const ph=await photosOf(v.id),n=presentes(v).length,nc=SISTEMAS.filter(s=>R(v,s.k).st==='nc').length;
     const card=document.createElement('div');card.className='card visit';
-    card.innerHTML=`<div class="ring" style="background:conic-gradient(${t.nc?'var(--crit)':'var(--ok)'} ${done}%,#e9e9e9 0)"><span style="background:#fff;border-radius:50%;width:42px;height:42px;display:grid;place-items:center">${done}%</span></div><div class="info"><b>${esc(v.endereco||v.empreendimento||'Endereço não informado')}</b><small>${esc([v.empreendimento,cityLine(v),ocupName(v.ocupacao)].filter(Boolean).join(' · ')||'—')}</small><small><span class="pill">Nº ${esc(v.numero)}</span> ${fmtDate(v.data)} ${t.nc?`<span class="pill nc">${t.nc} não conforme${t.nc===1?'':'s'}</span>`:''} ${t.pe?`<span class="pill pe">${t.pe} pendente${t.pe===1?'':'s'}</span>`:'<span class="pill ok">completo</span>'}</small></div>`;
+    const th=ph[0]?`style="background-image:url('${objUrl(ph[0].blob)}')"`:'';
+    card.innerHTML=`<div class="thumb" ${th}>${ph[0]?'':'📷'}</div><div class="info"><b>${esc(v.endereco||v.empreendimento||'Endereço não informado')}</b><small>${esc([v.empreendimento,cityLine(v),v.ocupacao].filter(Boolean).join(' · ')||'—')}</small><small><span class="pill">${esc(v.processo||'Nº '+v.numero)}</span> ${fmtDate(v.data)} · ${n} sistema${n===1?'':'s'} · ${ph.length} foto${ph.length===1?'':'s'} ${nc?`<span class="pill nc">${nc} não conforme${nc===1?'':'s'}</span>`:''}</small></div>`;
     card.onclick=()=>openVisit(v.id);el.appendChild(card);
   }
 }
 async function newVisit(){
   const y=new Date().getFullYear(), n=((await kvGet('seq-'+y))||0)+1;await kvSet('seq-'+y,n);
-  const v={id:uid(),numero:y+'/'+String(n).padStart(3,'0'),createdAt:Date.now(),updatedAt:Date.now(),endereco:'',bairro:'',cidade:'',cep:'',empreendimento:'',cnpj:'',re:'',ocupacao:'',risco:'',area:'',areaAlt:'',altura:'',pavimentos:'',blocos:'',processo:'',art:'',data:today(),acompanhante:'',conclusao:'',
-    rNome:ST.imvNome||'',rDoc:ST.imvDoc||'',rTel:ST.imvTel||'',rEmail:ST.imvEmail||'',rLogradouro:ST.imvLogradouro||'',rBairro:ST.imvBairro||'',rCidade:ST.imvCidade||'',rCep:ST.imvCep||'',sis:{},sisManual:{},itens:{},custom:[],desc:{}};
-  applySuggestion(v,true);await put('visits',v);await openVisit(v.id);setTimeout(()=>$('#fEndereco').focus(),150);
+  const v={id:uid(),numero:y+'/'+String(n).padStart(3,'0'),createdAt:Date.now(),updatedAt:Date.now(),endereco:'',bairro:'',cidade:'',cep:'',empreendimento:'',cnpj:'',re:'',ocupacao:'',risco:'',area:'',areaAlt:'',pavimentos:'',blocos:'',processo:'',data:today(),
+    rNome:ST.imvNome||'',rDoc:ST.imvDoc||'',rTel:ST.imvTel||'',rEmail:ST.imvEmail||'',rLogradouro:ST.imvLogradouro||'',rBairro:ST.imvBairro||'',rCidade:ST.imvCidade||'',rCep:ST.imvCep||'',s:{},outNome:''};
+  await put('visits',v);await openVisit(v.id);setTimeout(()=>$('#fEndereco').focus(),150);
 }
 
-/* ---------------- tela da vistoria ---------------- */
-$('#ocups').innerHTML=OCUPACOES.map(o=>`<option value="${esc(o.n)}">`).join('');
+/* ---------------- questionário ---------------- */
+$('#ocups').innerHTML=OCUPACOES.map(o=>`<option value="${esc(o)}">`).join('');
 $('#fRisco').innerHTML='<option value="">—</option>'+RISCOS.map(r=>`<option>${r}</option>`).join('');
+$('#steps').innerHTML=STEPS.map((t,i)=>`<button data-go="${i}"><i>${i+1}</i>${t}</button>`).join('');
+$$('#steps [data-go]').forEach(b=>b.onclick=()=>go(+b.dataset.go));
 async function openVisit(id){
   V=await get('visits',id);if(!V)return renderHome();
-  V.sis=V.sis||{};V.sisManual=V.sisManual||{};V.itens=V.itens||{};V.custom=V.custom||[];V.desc=V.desc||{};
+  V.s=V.s||{};V.outNome=V.outNome||'';
   $$('#vVisit [data-k]').forEach(i=>i.value=V[i.dataset.k]??'');
-  onlyPend=false;$('#btnFilter').classList.remove('on');
   show('vVisit');history.replaceState(null,'','#'+id);
-  P=await photosOf(V.id);renderAll();window.scrollTo(0,0);
+  P=await photosOf(V.id);lastOut=null;go(0);
 }
-function headerVisit(){$('#vTitle').textContent=V.endereco||V.empreendimento||'Nova vistoria';$('#vSub').textContent='Nº '+V.numero+(V.empreendimento?' · '+V.empreendimento:'')+(V.data?' · '+fmtDate(V.data):'')}
+function headerVisit(){$('#vTitle').textContent=V.endereco||V.empreendimento||'Nova vistoria';$('#vSub').textContent=[V.empreendimento,cityLine(V),V.processo].filter(Boolean).join(' · ')||'Nº '+V.numero}
 let saveT;
 function touch(){V.updatedAt=Date.now();clearTimeout(saveT);saveT=setTimeout(()=>put('visits',V),300)}
 $$('#vVisit [data-k]').forEach(i=>i.addEventListener('input',()=>{V[i.dataset.k]=i.value;touch();headerVisit()}));
+function go(n){
+  step=Math.max(0,Math.min(STEPS.length-1,n));headerVisit();
+  $$('#vVisit .step').forEach(d=>d.classList.toggle('hidden',+d.dataset.step!==step));
+  $$('#steps [data-go]').forEach((b,i)=>{b.classList.toggle('on',i===step);b.classList.toggle('done',i<step)});
+  $('#btnPrev').textContent=step?'Voltar':'Lista';$('#btnNext').classList.toggle('hidden',step===STEPS.length-1);
+  $('.dock .in').style.gridTemplateColumns=step===STEPS.length-1?'1fr':'1fr 1.6fr';
+  if(step===1)renderQs();if(step===2)renderFotos();if(step===3)renderResumo();
+  window.scrollTo(0,0);
+}
+$('#btnPrev').onclick=()=>step?go(step-1):$('#btnBack').click();
+$('#btnNext').onclick=()=>go(step+1);
 
-function renderAll(){headerVisit();renderChips();renderChecklist();renderGeneral()}
-function renderChips(){
-  const sg=suggested(V),box=$('#sysChips');box.innerHTML='';
-  CATALOGO.filter(s=>s.k!=='docs').forEach(s=>{const b=document.createElement('button');b.type='button';b.className=isOn(V,s.k)?'on':'';
-    b.innerHTML=esc(s.curto||s.n)+`<small>${esc(s.ref)}</small>`+(sg[s.k]&&!isOn(V,s.k)?' <small>(sugerido)</small>':'');
-    b.onclick=()=>{V.sis[s.k]=!V.sis[s.k];V.sisManual[s.k]=true;touch();renderChips();renderChecklist()};box.appendChild(b)});
-  $('#sysNote').innerHTML='Toda vistoria nova começa com extintores, saídas, iluminação e sinalização. <b>Marque exatamente os sistemas que constam no PPCI aprovado</b>: os não marcados saem como “não se aplica” no Anexo I.';
+// passo 2: uma pergunta por sistema
+function renderQs(){
+  const box=$('#qs');box.innerHTML='';
+  SISTEMAS.forEach(s=>{const r=R(V,s.k);
+    const d=document.createElement('div');d.className='card q '+(r.st||'');
+    d.innerHTML=`<b>${esc(s.n)}</b>${s.outros?'<small class="note" style="display:block">SPDA, chuveiros automáticos, controle de fumaça, recarga de veículos elétricos…</small>':''}
+      <div class="st3"><button data-v="na" class="${r.st==='na'?'on':''}">Não tem</button><button data-v="c" class="${r.st==='c'?'on':''}">Conforme</button><button data-v="nc" class="${r.st==='nc'?'on':''}">Não conforme</button></div>
+      ${s.outros?`<input type="text" data-f="out" class="${tem(V,s.k)?'':'hidden'}" placeholder="Qual sistema? Ex.: SPDA" value="${esc(V.outNome)}" style="margin-top:8px">`:''}
+      <textarea data-f="just" class="${r.st==='nc'?'':'hidden'}" placeholder="Justificativa da desconformidade (vai para o Anexo I)" style="margin-top:8px;min-height:64px">${esc(r.just)}</textarea>`;
+    d.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{r.st=r.st===b.dataset.v?'':b.dataset.v;touch();renderQs();if(r.st==='nc'){const t=$(`#qs [data-sys="${s.k}"] textarea`);if(t)t.focus()}});
+    d.dataset.sys=s.k;
+    d.querySelector('[data-f=just]').oninput=e=>{r.just=e.target.value;touch()};
+    const o=d.querySelector('[data-f=out]');if(o)o.oninput=e=>{V.outNome=e.target.value;touch()};
+    box.appendChild(d)});
+  const falta=SISTEMAS.filter(s=>!R(V,s.k).st).length;
+  $('#btnRestNa').classList.toggle('hidden',!falta);$('#btnRestNa').textContent=`Marcar os ${falta} não respondidos como “Não tem”`;
+}
+$('#btnRestNa').onclick=()=>{SISTEMAS.forEach(s=>{const r=R(V,s.k);if(!r.st)r.st='na'});touch();renderQs()};
+
+// passo 3: descritivo e fotos de cada sistema instalado
+function renderFotos(){
+  freeUrls();const box=$('#fotos');box.innerHTML='';
+  const grupos=presentes(V).map(s=>({k:s.k,n:nomeSis(V,s),s})).concat([{k:null,n:'Vistas gerais do imóvel (opcional)'}]);
+  if(grupos.length===1)box.innerHTML='<div class="warnbox" style="margin:0 0 12px">Nenhum sistema marcado como instalado. Volte ao passo 2 e responda os sistemas.</div>';
+  grupos.forEach(g=>{const ph=fotosDe(g.k);
+    const d=document.createElement('div');d.className='card';
+    d.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><b style="flex:1">${esc(g.n)}</b><span class="pill ${ph.length?'ok':(g.k?'pe':'')}">${ph.length} foto${ph.length===1?'':'s'}</span></div>
+      ${g.k?`<textarea data-f="desc" placeholder="Descritivo do sistema instalado. ${esc(g.s.desc)}" style="min-height:64px;margin-bottom:10px">${esc(R(V,g.k).desc)}</textarea>`:''}
+      <div class="pgrid"></div>
+      <div style="display:flex;gap:8px;margin-top:10px"><button class="btn dark" data-a="cam" style="flex:1.6">${CAM_SVG} Tirar foto</button><button class="btn" data-a="gal" style="flex:1">Galeria</button></div>`;
+    const t=d.querySelector('[data-f=desc]');if(t)t.oninput=e=>{R(V,g.k).desc=e.target.value;touch()};
+    d.querySelector('[data-a=cam]').onclick=()=>pick(g.k,true);d.querySelector('[data-a=gal]').onclick=()=>pick(g.k,false);
+    const grid=d.querySelector('.pgrid');ph.forEach(p=>{const c=document.createElement('div');c.className='pc';c.innerHTML=`<div class="im" style="background-image:url('${objUrl(p.blob)}')"></div><small class="${p.legenda?'':'sem'}">${esc(p.legenda||'Sem legenda — toque')}</small>`;c.onclick=()=>openPhoto(p.id);grid.appendChild(c)});
+    box.appendChild(d)});
 }
 
-const openSys=new Set();
-function renderChecklist(){
-  const box=$('#checklist');box.innerHTML='';let photoN=0;const numOf={};
-  // numeração das fotos incluídas, na ordem do checklist
-  const ordered=orderedPhotos();ordered.forEach((p,i)=>numOf[p.id]=i+1);
-  activeSys(V).forEach((s,si)=>{
-    const items=itemsOf(V,s),c=countSys(V,s);
-    const d=document.createElement('details');d.className='sys';d.open=openSys.has(s.k);
-    d.addEventListener('toggle',()=>{d.open?openSys.add(s.k):openSys.delete(s.k)});
-    d.innerHTML=`<summary><div class="nm"><b>${si+1}. ${esc(s.n)}</b><small>${esc(s.ref)} · ${c.n-c.pe}/${c.n} verificados</small></div><div class="cnt">${c.nc?`<span class="pill nc">${c.nc} NC</span>`:''}${c.pe?`<span class="pill pe">${c.pe} pend.</span>`:'<span class="pill ok">ok</span>'}</div></summary>`;
-    const tools=document.createElement('div');tools.className='sys-tools';
-    tools.innerHTML=`<button class="btn sm" data-a="allc">Pendentes → Conforme</button><button class="btn sm" data-a="add">+ Item próprio</button>`+(s.k==='docs'?'':`<button class="btn sm" data-a="foto">${CAM_SVG} Foto do sistema</button>
-      <textarea data-a="desc" style="flex-basis:100%;min-height:58px" placeholder="Descritivo do sistema instalado (Anexo J). ${esc(s.desc||'Quantidades, tipos e locais.')}">${esc(V.desc[s.k]||'')}</textarea><div class="thumbs" data-a="sth" style="margin:0;flex-basis:100%"></div>`);
-    if(s.k!=='docs'){tools.querySelector('[data-a=foto]').onclick=()=>pickPhoto(null,s.k);tools.querySelector('[data-a=desc]').oninput=e=>{V.desc[s.k]=e.target.value;touch()};
-      thumbs(tools.querySelector('[data-a=sth]'),P.filter(p=>p.sys===s.k&&!p.itemId),numOf)}
-    tools.querySelector('[data-a=allc]').onclick=()=>{items.forEach(i=>{if(!stOf(V,i.id))setItem(i.id,{st:'c'})});renderChecklist()};
-    tools.querySelector('[data-a=add]').onclick=()=>{const t=prompt('Descrição do item a verificar em "'+s.n+'":');if(!t||!t.trim())return;V.custom.push({id:'u'+uid(),sys:s.k,t:t.trim()});touch();renderChecklist()};
-    d.appendChild(tools);
-    items.forEach((it,ii)=>{
-      const st=stOf(V,it.id);if(onlyPend&&(st==='c'||st==='na'))return;
-      const row=document.createElement('div');row.className='it '+st;
-      const ph=P.filter(p=>p.itemId===it.id);
-      row.innerHTML=`<div class="tx"><span class="n">${si+1}.${ii+1}</span><div>${esc(it.t)}<span class="ref">${esc(it.ref)}${it.custom?' · item próprio <a href="#" data-rm style="color:var(--crit)">remover</a>':''}</span></div></div>
-        <div class="st"><button data-v="c" class="${st==='c'?'on':''}">Conforme</button><button data-v="nc" class="${st==='nc'?'on':''}">Não conforme</button><button data-v="na" class="${st==='na'?'on':''}">N/A</button><button class="cam" aria-label="Anexar foto">${CAM_SVG}</button></div>
-        <textarea class="${st==='nc'||obsOf(V,it.id)?'':'hidden'}" placeholder="${st==='nc'?'Descreva a não conformidade (o que, onde)':'Observação'}">${esc(obsOf(V,it.id))}</textarea>
-        <div class="thumbs ${ph.length?'':'hidden'}"></div>`;
-      row.querySelectorAll('.st [data-v]').forEach(b=>b.onclick=()=>{const nv=stOf(V,it.id)===b.dataset.v?'':b.dataset.v;setItem(it.id,{st:nv});renderChecklist();if(nv==='nc'){const ta=document.querySelector(`[data-item="${it.id}"] textarea`);if(ta)ta.focus()}});
-      row.dataset.item=it.id;
-      row.querySelector('.cam').onclick=()=>pickPhoto(it.id,s.k);
-      row.querySelector('textarea').oninput=e=>setItem(it.id,{obs:e.target.value});
-      const rm=row.querySelector('[data-rm]');if(rm)rm.onclick=async e=>{e.preventDefault();if(!confirm('Remover este item e as fotos dele?'))return;for(const p of P.filter(p=>p.itemId===it.id))await del('photos',p.id);P=P.filter(p=>p.itemId!==it.id);V.custom=V.custom.filter(c=>c.id!==it.id);delete V.itens[it.id];touch();renderChecklist()};
-      thumbs(row.querySelector('.thumbs'),ph,numOf);
-      d.appendChild(row);
-    });
-    if(onlyPend&&!d.querySelector('.it'))return;
-    tools.style.paddingBottom='10px';tools.style.borderBottom='1px solid var(--line)';
-    box.appendChild(d);
-  });
-  if(!box.children.length)box.innerHTML=`<div class="empty"><p>${onlyPend?'Nenhuma pendência nem não conformidade. 🎉':'Nenhum sistema selecionado.'}</p></div>`;
-  const t=countAll(V);
-  $('#totals').innerHTML=`<span class="pill ok">${t.c} C</span> <span class="pill nc">${t.nc} NC</span> <span class="pill pe">${t.pe} pend.</span>`;
-}
-function setItem(id,patch){V.itens[id]={...(V.itens[id]||{}),...patch};touch()}
-function thumbs(el,list,numOf){el.innerHTML='';list.forEach(p=>{const t=document.createElement('div');t.className='th'+(p.incluir?'':' off');t.style.backgroundImage=`url('${objUrl(p.blob)}')`;if(p.incluir&&numOf[p.id])t.innerHTML=`<span>${pad(numOf[p.id])}</span>`;t.onclick=()=>openPhoto(p.id);el.appendChild(t)})}
-function renderGeneral(){const g=P.filter(p=>!p.itemId&&!p.sys),numOf={};orderedPhotos().forEach((p,i)=>numOf[p.id]=i+1);thumbs($('#genThumbs'),g,numOf);$('#genEmpty').classList.toggle('hidden',g.length>0)}
-// fotos incluídas no relatório, na ordem: por sistema (fotos do sistema, depois as dos itens) e por fim as gerais
-function orderedPhotos(){const out=[];activeSys(V).forEach(s=>{P.filter(p=>p.sys===s.k&&!p.itemId&&p.incluir).forEach(p=>out.push(p));itemsOf(V,s).forEach(it=>P.filter(p=>p.itemId===it.id&&p.incluir).forEach(p=>out.push(p)))});P.filter(p=>!p.itemId&&!p.sys&&p.incluir).forEach(p=>out.push(p));return out}
-// localiza o item (número e texto) de uma foto
-function itemInfo(itemId){let r=null;activeSys(V).forEach((s,si)=>itemsOf(V,s).forEach((it,ii)=>{if(it.id===itemId)r={s,it,n:(si+1)+'.'+(ii+1)}}));return r}
-
-$('#btnFilter').onclick=()=>{onlyPend=!onlyPend;$('#btnFilter').classList.toggle('on',onlyPend);if(onlyPend)activeSys(V).forEach(s=>openSys.add(s.k));renderChecklist()};
-$('#btnMarkAll').onclick=()=>{const all=activeSys(V).every(s=>openSys.has(s.k));if(all)openSys.clear();else activeSys(V).forEach(s=>openSys.add(s.k));$('#btnMarkAll').textContent=all?'Abrir todos':'Fechar todos';renderChecklist()};
-
-/* ---------------- captura e compressão ---------------- */
+/* ---------------- câmera, compressão e legenda ---------------- */
 function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('Imagem inválida'));i.src=src})}
 async function compress(file,max=1800,q=.84){
   const u=URL.createObjectURL(file);
@@ -501,36 +467,38 @@ async function compress(file,max=1800,q=.84){
     const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',q));return{blob,w,h}}
   finally{URL.revokeObjectURL(u)}
 }
-let target={itemId:null,sys:null};
-function pickPhoto(itemId,sys){target={itemId:itemId||null,sys:sys||null};$('#inPhoto').click()}
-$('#btnGenPhoto').onclick=()=>pickPhoto(null,null);
-$('#inPhoto').onchange=async e=>{const files=[...e.target.files];e.target.value='';if(!files.length)return;
+let alvo=null;
+function pick(sys,cam){alvo=sys||null;$(cam?'#inCam':'#inGal').click()}
+async function addFiles(e,cam){const files=[...e.target.files];e.target.value='';if(!files.length)return;
   const done=files.length>1?busy('Processando '+files.length+' fotos…'):()=>{};
   let last=null,ord=P.length?Math.max(...P.map(p=>p.ord))+1:0;
   try{for(const f of files){try{const {blob,w,h}=await compress(f);
-    const p={id:uid(),visitId:V.id,itemId:target.itemId,sys:target.sys,ord:ord++,blob,w,h,takenAt:f.lastModified||Date.now(),legenda:'',incluir:true};
+    const p={id:uid(),visitId:V.id,sys:alvo,ord:ord++,blob,w,h,takenAt:cam?Date.now():(f.lastModified||Date.now()),legenda:'',incluir:true};
     await put('photos',p);P.push(p);last=p}catch(err){toast('Não foi possível ler '+(f.name||'a imagem'))}}}finally{done()}
-  touch();renderChecklist();renderGeneral();
-  if(files.length===1&&last)openPhoto(last.id);else if(last)toast(files.length+' fotos anexadas');
-};
+  touch();renderFotos();
+  if(files.length===1&&last)openPhoto(last.id,true);else if(last)toast(files.length+' fotos adicionadas — toque em cada uma para legendar',3500);
+}
+$('#inCam').onchange=e=>addFiles(e,true);$('#inGal').onchange=e=>addFiles(e,false);
 
-/* ---------------- foto ---------------- */
 let CP=null, cpUrl=null, cpT;
-function openPhoto(id){
+function openPhoto(id,focus){
   CP=P.find(p=>p.id===id);if(!CP)return;
-  const n=orderedPhotos().indexOf(CP),inf=CP.itemId?itemInfo(CP.itemId):null;
-  $('#dpTitle').textContent=CP.incluir&&n>=0?'Foto '+pad(n+1):'Foto (fora do relatório)';
-  $('#dpItem').textContent=inf?`Item ${inf.n} — ${inf.s.n} (${inf.it.ref}): ${inf.it.t}`:(CP.itemId?'Item de um sistema que não está selecionado.':CP.sys&&sysOf(CP.sys)?'Foto do sistema: '+sysOf(CP.sys).n+'.':'Foto geral.');
+  const s=CP.sys?sisOf(CP.sys):null,lista=fotosDe(CP.sys||null);
+  $('#dpTitle').textContent=(s?nomeSis(V,s):'Vista geral')+' — foto '+(lista.indexOf(CP)+1)+' de '+lista.length;
   if(cpUrl)URL.revokeObjectURL(cpUrl);cpUrl=URL.createObjectURL(CP.blob);$('#dpImg').src=cpUrl;
-  $('#dpInc').checked=!!CP.incluir;$('#dpDesc').value=CP.legenda||'';
+  $('#dpDesc').value=CP.legenda||'';
+  // sugestões: legendas já usadas neste sistema
+  const sug=[...new Set(P.filter(p=>p!==CP&&(p.sys||null)===(CP.sys||null)&&p.legenda).map(p=>p.legenda))].slice(0,4),box=$('#dpSug');box.innerHTML='';
+  sug.forEach(t=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.onclick=()=>{$('#dpDesc').value=t;CP.legenda=t;savePhoto()};box.appendChild(b)});
   $('#dpReset').classList.toggle('hidden',!CP.orig);$('#dpWhen').textContent='Registrada em '+fmtStamp(CP.takenAt);
-  $('#dPhoto').showModal();$('#dPhoto .dlg-b').scrollTop=0;
+  if(!$('#dPhoto').open)$('#dPhoto').showModal();$('#dPhoto .dlg-b').scrollTop=0;
+  if(focus)setTimeout(()=>$('#dpDesc').focus(),200);
 }
 function savePhoto(){clearTimeout(cpT);const p=CP;cpT=setTimeout(()=>{put('photos',p);touch()},250)}
 $('#dpDesc').oninput=e=>{CP.legenda=e.target.value;savePhoto()};
-$('#dpInc').onchange=e=>{CP.incluir=e.target.checked;savePhoto()};
-$('#dPhoto').addEventListener('close',async()=>{clearTimeout(cpT);if(CP)await put('photos',CP);if(V){touch();renderChecklist();renderGeneral()}});
+$('#dPhoto').addEventListener('close',async()=>{clearTimeout(cpT);if(CP)await put('photos',CP);if(V){touch();if(step===2)renderFotos()}});
 $('#dpDel').onclick=async()=>{if(!confirm('Excluir esta foto?'))return;const id=CP.id;await del('photos',id);CP=null;P=P.filter(p=>p.id!==id);$('#dPhoto').close()};
+$('#dpMore').onclick=()=>{const sys=CP.sys||null;$('#dPhoto').close();pick(sys,true)};
 $('#dpReset').onclick=async()=>{if(!CP.orig||!confirm('Remover as marcações e voltar à foto original?'))return;CP.blob=CP.orig;delete CP.orig;delete CP.marks;await put('photos',CP);openPhoto(CP.id)};
 
 /* ---------------- marcação na foto ---------------- */
@@ -572,140 +540,14 @@ function mkDraw(){
   };
 })();
 
-/* ---------------- relatório PDF ---------------- */
-const ST_TXT={c:'Conforme',nc:'Não conforme',na:'Não se aplica','':'Não verificado'};
-const ST_RGB={c:[46,125,50],nc:[198,40,40],na:[97,97,97],'':[178,106,0]};
-function autoParecer(t){
-  if(t.nc)return `Foram constatadas ${t.nc} não conformidade(s) entre os ${t.n} itens do checklist`+(t.pe?`, além de ${t.pe} item(ns) ainda não verificado(s)`:'')+'. Recomenda-se regularizar os itens apontados no quadro de não conformidades antes de solicitar a vistoria de habite-se ao CBMSC.';
-  if(t.pe)return `Não foram constatadas não conformidades nos itens verificados, porém ${t.pe} item(ns) do checklist ainda não foi(ram) verificado(s). Recomenda-se concluir a verificação antes de solicitar a vistoria de habite-se ao CBMSC.`;
-  return 'Não foram constatadas não conformidades nos itens verificados. Na data da vistoria, os sistemas e medidas de segurança contra incêndio previstos no projeto aprovado encontravam-se instalados e em condições de ser submetidos à vistoria de habite-se do CBMSC.';
-}
-async function buildPdf(opt){
-  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',format:'a4',compress:true});
-  const W=210,H=297,M=15,CW=W-2*M,TOP=31,BOT=H-20,RED=[198,40,40];
-  let y=TOP;
-  const font=(st='normal',sz=10,col=[23,23,23])=>{doc.setFont('helvetica',st);doc.setFontSize(sz);doc.setTextColor(...col)};
-  function header(){
-    const lg=curLogo();if(lg){try{const k=Math.min(44/lg.w,17/lg.h);doc.addImage(lg.src,'PNG',M,22.3-lg.h*k,lg.w*k,lg.h*k,'logo','FAST')}catch(e){}}
-    else{font('bold',13);doc.text(ST.empresa||respName(),M,18)}
-    font('bold',9.5);doc.text('VISTORIA PARA HABITE-SE — CBMSC',W-M,15,{align:'right'});
-    font('normal',8.5,[110,110,110]);doc.text('Nº '+V.numero+(V.data?'  ·  '+fmtDate(V.data):''),W-M,19.5,{align:'right'});
-    doc.setDrawColor(...RED);doc.setLineWidth(.6);doc.line(M,24,W-M,24);
-  }
-  const newPage=()=>{doc.addPage();header();y=TOP};
-  const ensure=h=>{if(y+h>BOT)newPage()};
-  let secN=0;
-  function section(t){ensure(18);y+=3;doc.setFillColor(...RED);doc.rect(M,y-4,1.6,5.4,'F');font('bold',11.5);doc.text((++secN)+'. '+t.toUpperCase(),M+4,y);y+=6}
-  function para(t,sz=10,col=[35,35,35],st='normal'){font(st,sz,col);const lh=sz*.43;for(const l of doc.splitTextToSize(t,CW)){ensure(lh);doc.text(l,M,y);y+=lh}y+=2}
-  // tabela genérica: cols [{t,w,align}], linhas = arrays de células (string ou {t,st,col})
-  function table(cols,rows,sz=8.5){
-    const lh=sz*.44;
-    const head=()=>{ensure(14);doc.setFillColor(23,23,23);doc.rect(M,y,CW,6.6,'F');font('bold',8,[255,255,255]);let x=M;cols.forEach(c=>{doc.text(c.t,c.align==='center'?x+c.w/2:x+2,y+4.5,c.align==='center'?{align:'center'}:undefined);x+=c.w});y+=6.6};
-    head();
-    rows.forEach((r,ri)=>{
-      const cells=r.map((c,i)=>{const o=typeof c==='object'&&c?c:{t:c};font(o.st||'normal',sz);return{...o,lines:doc.splitTextToSize(String(o.t??''),cols[i].w-4)}});
-      const h=Math.max(...cells.map(c=>c.lines.length))*lh+3;
-      if(y+h>BOT){newPage();head()}
-      if(ri%2){doc.setFillColor(250,250,249);doc.rect(M,y,CW,h,'F')}
-      doc.setDrawColor(228,228,228);doc.setLineWidth(.2);doc.line(M,y+h,M+CW,y+h);
-      let x=M;cells.forEach((c,i)=>{font(c.st||'normal',sz,c.col||[35,35,35]);const al=cols[i].align==='center';doc.text(c.lines,al?x+cols[i].w/2:x+2,y+lh+.9,al?{align:'center'}:undefined);x+=cols[i].w});
-      y+=h;
-    });
-    y+=4;
-  }
-
-  const sys=activeSys(V),tot=countAll(V);
-  header();
-  font('bold',17);doc.text('Relatório de Vistoria para Habite-se',M,y+4);y+=9;
-  font('normal',10,[100,100,100]);doc.text('Segurança contra incêndio e pânico — Instruções Normativas do CBMSC',M,y);y+=6;
-  const dim=[num(V.area)!=null?'Área '+fmtNum(V.area)+' m²':'',num(V.altura)!=null?'Altura '+fmtNum(V.altura)+' m':'',V.pavimentos?V.pavimentos+' pavimento(s)':'',V.blocos?V.blocos+' bloco(s)':''].filter(Boolean).join('  ·  ');
-  const rows=[['Nº do relatório',V.numero],['Empresa',ST.empresa],['Edificação',V.empreendimento],['Endereço',[V.endereco,V.bairro,V.cidade,V.cep].filter(Boolean).join(', ')],['Responsável pelo imóvel',V.rNome],['RE',V.re],['Protocolo',V.processo],['Ocupação',ocupName(V.ocupacao)+(V.risco?'  ·  Risco '+V.risco:'')],['Dimensões',dim],['DRT de execução',V.art],['Data da vistoria',fmtDate(V.data)],['Acompanhante',V.acompanhante],['Vistoriador / resp. técnico',respName()+(creaTxt()?' — '+creaTxt():'')]].filter(r=>r[1]);
-  doc.setDrawColor(225,225,225);doc.setLineWidth(.25);
-  for(const [k,v] of rows){
-    font('normal',9.5);const lines=doc.splitTextToSize(String(v),CW-50),h=Math.max(7.5,lines.length*4.2+3.4);ensure(h);
-    doc.setFillColor(246,246,244);doc.rect(M,y,46,h,'F');doc.rect(M,y,CW,h);
-    font('bold',8.5,[90,90,90]);doc.text(k,M+2.5,y+4.9);font('normal',9.5);doc.text(lines,M+49,y+4.9);y+=h;
-  }
-  y+=5;
-
-  // Resumo por sistema
-  section('Resumo por sistema');
-  table([{t:'Sistema / medida',w:CW-28-4*15-30},{t:'Norma',w:28},{t:'Conf.',w:15,align:'center'},{t:'Não conf.',w:15,align:'center'},{t:'N/A',w:15,align:'center'},{t:'Pend.',w:15,align:'center'},{t:'Situação',w:30}],
-    sys.map((s,i)=>{const c=countSys(V,s),k=c.nc?'nc':c.pe?'':'c';return[(i+1)+'. '+s.n,s.ref,String(c.c),{t:String(c.nc),st:c.nc?'bold':'normal',col:c.nc?RED:undefined},String(c.na),String(c.pe),{t:c.nc?'Com não conformidade':c.pe?'Verificação pendente':'Conforme',st:'bold',col:ST_RGB[k]}]}));
-  font('normal',9,[80,80,80]);ensure(6);doc.text(`Total: ${tot.n} itens  ·  ${tot.c} conformes  ·  ${tot.nc} não conformes  ·  ${tot.na} não se aplicam  ·  ${tot.pe} não verificados`,M,y);y+=6;
-
-  // numeração das fotos
-  const photos=opt.photos?orderedPhotos():[],numOf={};photos.forEach((p,i)=>numOf[p.id]=i+1);
-  const fotosDe=id=>{const l=photos.filter(p=>p.itemId===id).map(p=>pad(numOf[p.id]));return l.length?'Foto'+(l.length>1?'s ':' ')+l.join(', '):''};
-
-  // Não conformidades
-  const ncs=[];sys.forEach((s,si)=>itemsOf(V,s).forEach((it,ii)=>{if(stOf(V,it.id)==='nc')ncs.push({s,it,n:(si+1)+'.'+(ii+1)})}));
-  section('Não conformidades');
-  if(!ncs.length)para('Nenhuma não conformidade registrada.',10,[46,125,50],'bold');
-  else table([{t:'Item',w:12},{t:'Critério',w:58},{t:'Constatação',w:CW-12-58-48},{t:'Providência / referência',w:48}],
-    ncs.map(o=>[{t:o.n,st:'bold'},o.it.t,[obsOf(V,o.it.id)||'Em desacordo com o critério.',fotosDe(o.it.id)].filter(Boolean).join(' — '),'Adequar ao projeto aprovado e à '+o.it.ref+(o.it.ref!==o.s.ref?'':'')+' ('+o.s.n+').']));
-
-  // Checklist completo
-  if(opt.full){
-    section('Checklist por instrução normativa');
-    sys.forEach((s,si)=>{
-      ensure(22);font('bold',10.5);doc.text((si+1)+'. '+s.n,M,y+1);font('normal',8.5,[110,110,110]);doc.text(s.ref,W-M,y+1,{align:'right'});y+=4;
-      table([{t:'Item',w:12},{t:'Critério verificado',w:CW-12-28-46},{t:'Situação',w:28},{t:'Observação',w:46}],
-        itemsOf(V,s).map((it,ii)=>{const st=stOf(V,it.id);return[{t:(si+1)+'.'+(ii+1),st:'bold'},it.t,{t:ST_TXT[st],st:'bold',col:ST_RGB[st]},[obsOf(V,it.id),fotosDe(it.id)].filter(Boolean).join(' — ')]}),8.2);
-    });
-  }
-
-  // Registro fotográfico
-  if(photos.length){
-    section('Registro fotográfico');
-    const imgs=await Promise.all(photos.map(p=>blobToDataURL(p.blob)));
-    const gap=6,bw=(CW-gap)/2,bh=bw*.75;
-    const cap=(p)=>{const inf=p.itemId?itemInfo(p.itemId):null;const a=[];if(!inf&&p.sys&&sysOf(p.sys))a.push({t:sysOf(p.sys).n+' · '+sysOf(p.sys).ref,st:'bold',sz:8,col:[90,90,90]});if(inf)a.push({t:'Item '+inf.n+' · '+inf.it.ref+' · '+ST_TXT[stOf(V,p.itemId)],st:'bold',sz:8,col:ST_RGB[stOf(V,p.itemId)]});
-      const txt=p.legenda||(inf?(obsOf(V,p.itemId)||inf.it.t):'');if(txt)a.push({t:txt,st:'normal',sz:8.5,col:[50,50,50]});return a};
-    const ops=(p,i)=>{const o=[{t:'Foto '+pad(i+1),st:'bold',sz:10,col:RED,h:5}];cap(p).forEach(c=>{font(c.st,c.sz);let l=doc.splitTextToSize(c.t,bw);if(l.length>4){l=l.slice(0,4);l[3]=l[3].replace(/\s*\S*$/,'')+'…'}l.forEach(t=>o.push({...c,t,h:c.sz*.43}))});return o};
-    const opsH=o=>o.reduce((s,l)=>s+l.h,0);
-    const draw=(o,x,yy)=>{o.forEach(l=>{font(l.st,l.sz,l.col);doc.text(l.t,x,yy+l.h*.8);yy+=l.h})};
-    const putImg=(i,x,yy)=>{const p=photos[i];doc.setFillColor(240,240,238);doc.rect(x,yy,bw,bh,'F');const k=Math.min(bw/p.w,bh/p.h),w=p.w*k,h=p.h*k;doc.addImage(imgs[i],'JPEG',x+(bw-w)/2,yy+(bh-h)/2,w,h,'f'+p.id,'FAST');doc.setDrawColor(215,215,215);doc.setLineWidth(.2);doc.rect(x,yy,bw,bh)};
-    for(let i=0;i<photos.length;i+=2){
-      const o1=ops(photos[i],i),o2=photos[i+1]?ops(photos[i+1],i+1):[];
-      const rh=bh+2+Math.max(opsH(o1),opsH(o2));ensure(rh);
-      putImg(i,M,y);draw(o1,M,y+bh+2);
-      if(photos[i+1]){putImg(i+1,M+bw+gap,y);draw(o2,M+bw+gap,y+bh+2)}
-      y+=rh+6;
-    }
-  }
-
-  section('Parecer');para(V.conclusao&&V.conclusao.trim()?V.conclusao:autoParecer(tot));
-  if(opt.disc&&ST.ressalva){section('Ressalvas');para(ST.ressalva+' Base de referência do checklist: '+BASE_NORMATIVA,9,[80,80,80])}
-
-  if(opt.sig){
-    ensure(58);y+=8;
-    font('normal',10);doc.text((ST.cidade?ST.cidade+', ':'')+longDate(V.data)+'.',W-M,y,{align:'right'});y+=8;
-    const cx=W/2;
-    if(ST.assinatura){try{const im=await loadImg(ST.assinatura);const k=Math.min(70/im.naturalWidth,24/im.naturalHeight);const w=im.naturalWidth*k,h=im.naturalHeight*k;doc.addImage(ST.assinatura,'PNG',cx-w/2,y+24-h,w,h)}catch(e){}}
-    y+=25;doc.setDrawColor(23,23,23);doc.setLineWidth(.3);doc.line(cx-38,y,cx+38,y);y+=5;
-    font('bold',10.5);doc.text(respName(),cx,y,{align:'center'});y+=4.6;
-    font('normal',9.5,[70,70,70]);if(creaTxt()){doc.text(creaTxt(),cx,y,{align:'center'});y+=4.4}
-    if(ST.empresa){doc.text(ST.empresa,cx,y,{align:'center'});y+=4.4}
-  }
-  const n=doc.getNumberOfPages(),contact=[ST.telefone,ST.email].filter(Boolean).join('  ·  ');
-  for(let i=1;i<=n;i++){doc.setPage(i);doc.setDrawColor(220,220,220);doc.setLineWidth(.2);doc.line(M,H-14,W-M,H-14);
-    font('bold',8,[60,60,60]);doc.text([ST.empresa,respName(),creaTxt()].filter(Boolean).join('  ·  '),M,H-9.5);
-    if(contact){font('normal',7.5,[120,120,120]);doc.text(contact,M,H-6)}
-    font('normal',8,[120,120,120]);doc.text('Página '+i+' de '+n,W-M,H-9.5,{align:'right'})}
-  return doc.output('blob');
-}
-
 /* ---------------- Anexos I e J da IN 1 (formulários oficiais do CBMSC) ---------------- */
-// situação de uma linha da tabela do Anexo I, a partir dos sistemas marcados e do checklist
-function anexoRow(r){
-  const on=r.k.filter(k=>isOn(V,k)).map(sysOf);
-  if(!on.length)return r.outros?{ppci:'',nsci:'',just:'NÃO SE APLICA'}:{ppci:'n',nsci:'n',just:'NÃO SE APLICA'};
-  const ncs=[];on.forEach(s=>itemsOf(V,s).forEach(it=>{if(stOf(V,it.id)==='nc')ncs.push(obsOf(V,it.id).trim()||it.t)}));
-  const nomes=r.outros?on.map(s=>s.curto||s.n).join(', '):'';
-  return ncs.length?{ppci:'n',nsci:'n',just:(nomes?nomes+': ':'')+ncs.join('; ')}:{ppci:'s',nsci:'s',just:nomes};
+// situação de uma linha da tabela do Anexo I
+function anexoRow(s){
+  const r=R(V,s.k);
+  if(r.st==='c')return{ppci:'s',nsci:'s',just:s.outros?(V.outNome||'').trim():''};
+  if(r.st==='nc')return{ppci:'n',nsci:'n',just:(s.outros&&(V.outNome||'').trim()?V.outNome.trim()+': ':'')+(r.just||'').trim()};
+  return s.outros?{ppci:'',nsci:'',just:'NÃO SE APLICA'}:{ppci:'n',nsci:'n',just:'NÃO SE APLICA'};
 }
-const sysPhotos=k=>orderedPhotos().filter(p=>p.sys===k);
 async function buildAnexo(kind,opt){
   const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',format:'a4',compress:true});
   const W=210,H=297,M=18,CW=W-2*M,BOT=H-16;let y=0;
@@ -715,25 +557,22 @@ async function buildAnexo(kind,opt){
   const val=v=>{v=String(v??'').trim();return v||'____________'};
   const title=t=>{font('bold',11);doc.text(t,W/2,y,{align:'center'});y+=9};
   const sec=t=>{ensure(14);y+=2;font('bold',9.5);doc.text(t,W/2,y,{align:'center'});y+=6};
-  // linha de "Rótulo: valor" separados por espaços, com quebra automática
   const line=(pairs,gap=2.2)=>{font('normal',9);const t=pairs.map(([k,v])=>k+': '+val(v)).join('     ');for(const l of doc.splitTextToSize(t,CW)){ensure(5);doc.text(l,M,y);y+=4.6}y+=gap};
   const para=(t,st='normal',sz=9)=>{font(st,sz);for(const l of doc.splitTextToSize(t,CW)){ensure(5);doc.text(l,M,y);y+=sz*.47}y+=2};
-  // cabeçalho oficial
   if(BRASAO){try{doc.addImage(BRASAO.src,'PNG',M+1,13,11.5,11.5*BRASAO.h/BRASAO.w,'brasao','FAST')}catch(e){}}
   font('normal',9.5);['ESTADO DE SANTA CATARINA','SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA','CORPO DE BOMBEIROS MILITAR DE SANTA CATARINA'].forEach((t,i)=>doc.text(t,M+17,17.5+i*4.3));
   y=36;
-  const rtEnd=[['Logradouro',ST.rtLogradouro],['Nº',ST.rtNumero],['Bairro',ST.rtBairro],['Cidade',ST.rtCidade],['CEP',ST.rtCep]];
-  const sign=async(cx,label)=>{ // linha de assinatura centrada em cx; devolve nada
-    if(label==='rt'&&opt.sig&&ST.assinatura){try{const im=await loadImg(ST.assinatura);const k=Math.min(60/im.naturalWidth,18/im.naturalHeight);const w=im.naturalWidth*k,h=im.naturalHeight*k;doc.addImage(ST.assinatura,'PNG',cx-w/2,y-1-h,w,h)}catch(e){}}
+  const sign=async(cx,rt)=>{
+    if(rt&&opt.sig&&ST.assinatura){try{const im=await loadImg(ST.assinatura);const k=Math.min(60/im.naturalWidth,18/im.naturalHeight);const w=im.naturalWidth*k,h=im.naturalHeight*k;doc.addImage(ST.assinatura,'PNG',cx-w/2,y-1-h,w,h)}catch(e){}}
     doc.setDrawColor(0);doc.setLineWidth(.25);doc.line(cx-42,y,cx+42,y)};
 
   if(kind==='I'){
     title('Relatório de conformidade e termo de responsabilidade - ATESTADO PARA HABITE-SE');
     sec('1. Responsável técnico pela execução da obra ou responsável pelo imóvel');
     line([['Nome',ST.nome],['Telefone(s)',ST.telefone],['CPF/CNPJ',ST.cpf],['RG',ST.rg],['Nº de registro no conselho de classe (se RT)',ST.crea]]);
-    line([['E-mail',ST.email],...rtEnd]);
+    line([['E-mail',ST.email],['Logradouro',ST.rtLogradouro],['Nº',ST.rtNumero],['Bairro',ST.rtBairro],['Cidade',ST.rtCidade],['CEP',ST.rtCep]]);
     sec('2. Descrição do imóvel');
-    line([['RE',V.re],['CNPJ',V.cnpj],['Protocolo',V.processo],['Ocupação',ocupName(V.ocupacao)],['Logradouro',V.endereco],['Bairro',V.bairro],['Cidade',V.cidade],['CEP',V.cep]]);
+    line([['RE',V.re],['CNPJ',V.cnpj],['Protocolo',V.processo],['Ocupação',V.ocupacao],['Logradouro',V.endereco],['Bairro',V.bairro],['Cidade',V.cidade],['CEP',V.cep]]);
     line([['Nome da edificação',V.empreendimento]]);
     line([['Nome da empresa',V.rNome||ST.empresa]]);
     sec('3. Relatório dos Sistemas e Medidas de Segurança Contra Incêndio e Pânico');
@@ -745,7 +584,7 @@ async function buildAnexo(kind,opt){
       doc.text(doc.splitTextToSize('Justificativa em caso de desconformidade',jw-4),xs[5]+2,y+(h1+h2)/2+1.2);
       ['Sim','Não','Sim','Não'].forEach((t,i)=>doc.text(t,xs[1+i]+cs/2,y+h1+3.9,{align:'center'}));y+=h1+h2};
     ensure(40);thead();
-    for(const r of ANEXO_I){const s=anexoRow(r);font('normal',8.5);
+    for(const r of SISTEMAS){const s=anexoRow(r);font('normal',8.5);
       const ln=doc.splitTextToSize(r.n,c0-4),lj=doc.splitTextToSize(s.just,jw-4),h=Math.max(ln.length,lj.length)*3.7+1.9;
       if(y+h>BOT){newPage();thead()}
       grid(y,h,[1,2,3,4,5]);font('normal',8.5);doc.text(ln,M+2,y+3.8);doc.text(lj,xs[5]+2,y+3.8);
@@ -753,15 +592,13 @@ async function buildAnexo(kind,opt){
       if(s.ppci)doc.text('X',xs[s.ppci==='s'?1:2]+cs/2,mid,{align:'center'});
       if(s.nsci)doc.text('X',xs[s.nsci==='s'?3:4]+cs/2,mid,{align:'center'});
       y+=h}
-    // declaração e assinatura, dentro da última célula da tabela
     const decl='Na qualidade de responsável técnico pela execução dos SMSCI, declaro que as informações prestadas neste documento são verdadeiras e estou ciente de minha responsabilidade acerca dos SMSCI instalados no imóvel, conforme definido pela Lei Estadual nº 16.157 de 2013. Estou ciente que a concessão do atestado para habite-se está condicionada a existência e a operacionalidade dos SMSCI. O descumprimento ocasiona aplicação das sanções legais cabíveis, além de possível responsabilidade civil e criminal.';
     font('normal',8.5);const dl=doc.splitTextToSize(decl,CW-4),bh=dl.length*3.9+30;
     if(y+bh>BOT)newPage();
     doc.setDrawColor(0);doc.rect(M,y,CW,bh);font('normal',8.5);doc.text(dl,M+2,y+4.4);
-    const y0=y;y=y0+dl.length*3.9+21;await sign(M+55,'rt');
+    const y0=y;y=y0+dl.length*3.9+21;await sign(M+55,true);
     font('normal',8.5);doc.text('Assinatura do Responsável Técnico',M+55,y+4,{align:'center'});
     const d=new Date();doc.text('Data: '+fmtDate(today())+'     Hora: '+pad(d.getHours())+'h '+pad(d.getMinutes())+'min',M+CW-4,y+4,{align:'right'});
-    y=y0+bh;
   }else{
     title('Termo de entrega do imóvel');
     sec('1. Responsável pelo imóvel');
@@ -772,76 +609,76 @@ async function buildAnexo(kind,opt){
     line([['RE',V.re],['CNPJ',V.cnpj],['Logradouro',V.endereco],['Bairro',V.bairro],['Cidade',V.cidade],['CEP',V.cep]]);
     sec('4. Dados da solicitação');
     line([['Área total da solicitação (m²)',fmtNum(V.area)],['Protocolo',V.processo],['Área da alteração/ampliação/reforma',V.areaAlt]]);
-    font('normal',9);ensure(6);doc.text('Ocupação(ões): '+val(ocupName(V.ocupacao))+'     Risco: '+RISCOS.map(r=>'('+(V.risco===r?'X':'  ')+') '+r).join('  ')+'     Nº de pavimentos: '+val(V.pavimentos)+'     Nº de blocos: '+val(V.blocos),M,y,{maxWidth:CW});
-    y+=doc.splitTextToSize('Ocupação(ões): '+val(ocupName(V.ocupacao))+'     Risco: ( ) II ( ) III ( ) IV ( ) V     Nº de pavimentos: '+val(V.pavimentos)+'     Nº de blocos: '+val(V.blocos),CW).length*4.6+2;
+    const l4='Ocupação(ões): '+val(V.ocupacao)+'     Risco: '+RISCOS.map(r=>'('+(V.risco===r?'X':'  ')+') '+r).join('  ')+'     Nº de pavimentos: '+val(V.pavimentos)+'     Nº de blocos: '+val(V.blocos);
+    font('normal',9);for(const l of doc.splitTextToSize(l4,CW)){ensure(5);doc.text(l,M,y);y+=4.6}y+=2;
     sec('5. Descritivo dos sistemas e medidas de segurança contra incêndio instalados');
     para('Apresentar o descritivo quali-quantitativo dos sistemas e medidas de segurança contra incêndio executados no imóvel, anexando no mínimo uma foto ilustrativa de cada sistema previsto.');
     y+=2;
     const gap=6,bw=(CW-gap)/2,bh=bw*1.12;
-    const grupos=activeSys(V).filter(s=>s.k!=='docs').map(s=>({n:s.n,d:(V.desc[s.k]||'').trim(),ph:sysPhotos(s.k)}));
-    const gerais=orderedPhotos().filter(p=>!p.sys&&!p.itemId);if(gerais.length)grupos.push({n:'Vistas gerais do imóvel',d:'',ph:gerais});
+    const grupos=presentes(V).map(s=>({n:nomeSis(V,s),d:(R(V,s.k).desc||'').trim(),ph:fotosDe(s.k)}));
+    const gerais=fotosDe(null);if(gerais.length)grupos.push({n:'Vistas gerais do imóvel',d:'',ph:gerais});
     for(const g of grupos){
       ensure(g.ph.length?bh+22:12);font('bold',9.5);doc.text(g.n.toUpperCase(),M,y);y+=5;
       if(g.d)para(g.d);
       const imgs=await Promise.all(g.ph.map(p=>blobToDataURL(p.blob)));
       for(let i=0;i<g.ph.length;i+=2){
-        const caps=[0,1].map(j=>{const p=g.ph[i+j];if(!p)return[];const inf=p.itemId?itemInfo(p.itemId):null;const t=p.legenda||(inf?inf.it.t:'');font('normal',8);let l=t?doc.splitTextToSize(t,bw):[];if(l.length>3){l=l.slice(0,3);l[2]=l[2].replace(/\s*\S*$/,'')+'…'}return l});
-        const rh=bh+2+Math.max(caps[0].length,caps[1].length)*3.5;ensure(rh);
+        const caps=[0,1].map(j=>{const p=g.ph[i+j];if(!p||!p.legenda)return[];font('normal',8.5);let l=doc.splitTextToSize(p.legenda,bw);if(l.length>4){l=l.slice(0,4);l[3]=l[3].replace(/\s*\S*$/,'')+'…'}return l});
+        const rh=bh+2+Math.max(caps[0].length,caps[1].length)*3.7;ensure(rh);
         [0,1].forEach(j=>{const p=g.ph[i+j];if(!p)return;const x=M+j*(bw+gap),k=Math.min(bw/p.w,bh/p.h),w=p.w*k,h=p.h*k;
-          doc.addImage(imgs[i+j],'JPEG',x+(bw-w)/2,y+(bh-h)/2,w,h,'f'+p.id,'FAST');font('normal',8,[60,60,60]);if(caps[j].length)doc.text(caps[j],x,y+bh+4.5)});
+          doc.addImage(imgs[i+j],'JPEG',x+(bw-w)/2,y+(bh-h)/2,w,h,'f'+p.id,'FAST');font('normal',8.5,[40,40,40]);if(caps[j].length)doc.text(caps[j],x+bw/2,y+bh+4.6,{align:'center'})});
         y+=rh+5;
       }
       y+=3;
     }
     ensure(86);sec('6. Declaração de entrega e recebimento');
     para('Declaro que recebi o imóvel conforme o descritivo apresentado, em conformidade com as NSCI, estando ciente de que após o recebimento é minha responsabilidade manter as características do imóvel inalteradas, bem como a operacionalidade e manutenção dos SMSCI previstos.');
-    y+=20;await sign(W/2,'imovel');font('normal',9);doc.text('Assinatura do responsável pelo imóvel',W/2,y+4.5,{align:'center'});y+=14;
+    y+=20;await sign(W/2,false);font('normal',9);doc.text('Assinatura do responsável pelo imóvel',W/2,y+4.5,{align:'center'});y+=14;
     para('Declaro que realizei a entrega do imóvel em conformidade com o descritivo apresentado.');
-    y+=20;await sign(W/2,'rt');font('normal',9);doc.text('Assinatura do responsável técnico',W/2,y+4.5,{align:'center'});
+    y+=20;await sign(W/2,true);font('normal',9);doc.text('Assinatura do responsável técnico',W/2,y+4.5,{align:'center'});
   }
   return doc.output('blob');
 }
 
-let lastPdf=null;
-const docKind=()=>document.querySelector('input[name=doc]:checked').value;
-function reportInfo(){
-  const k=docKind(),t=countAll(V),w=[],falta=(l,v)=>{if(!String(v??'').trim())w.push('Falta preencher: '+l+'.')};
-  $('#rpOptR').classList.toggle('hidden',k!=='R');$('#rpOut').classList.add('hidden');
-  $('#rpSigTxt').textContent=k==='R'?'Bloco de assinatura':'Inserir minha assinatura desenhada (⚙️)';
-  if(k==='I'){
-    const rows=ANEXO_I.map(r=>[r,anexoRow(r)]),sim=rows.filter(a=>a[1].ppci==='s').length,nc=rows.filter(a=>a[1].ppci==='n'&&a[1].just!=='NÃO SE APLICA').length;
-    $('#rpInfo').innerHTML=`Tabela do Anexo I: <b>${sim}</b> sistema${sim===1?'':'s'} em conformidade`+(nc?`, <b style="color:var(--crit)">${nc} com desconformidade</b> (a justificativa sai das observações)`:'')+'; os demais como “não se aplica”.';
-    if(t.pe)w.push(t.pe+' item(ns) do checklist ainda não verificado(s): os sistemas saem como conformes mesmo assim.');
-    falta('CPF do responsável técnico (⚙️)',ST.cpf);falta('telefone e e-mail do responsável técnico (⚙️)',ST.telefone&&ST.email);falta('RE',V.re);falta('protocolo',V.processo);falta('ocupação',V.ocupacao);
-  }else if(k==='J'){
-    const ss=activeSys(V).filter(s=>s.k!=='docs'),sem=ss.filter(s=>!sysPhotos(s.k).length),semD=ss.filter(s=>!(V.desc[s.k]||'').trim());
-    $('#rpInfo').innerHTML=`Termo de entrega com <b>${ss.length}</b> sistema${ss.length===1?'':'s'} e <b>${orderedPhotos().filter(p=>p.sys!=='docs').length}</b> foto(s).`;
-    if(sem.length)w.push('Sem foto (o formulário pede ao menos uma por sistema): '+sem.map(s=>s.curto||s.n).join(', ')+'.');
-    if(semD.length)w.push('Sem descritivo: '+semD.map(s=>s.curto||s.n).join(', ')+'.');
-    falta('responsável pelo imóvel',V.rNome);falta('RE',V.re);falta('protocolo',V.processo);falta('área total',V.area);falta('risco',V.risco);
-  }else{
-    const f=orderedPhotos().length;
-    $('#rpInfo').innerHTML=`<b>${t.n}</b> itens: ${t.c} conformes, <b style="color:var(--crit)">${t.nc} não conformes</b>, ${t.na} N/A`+(t.pe?` e <b style="color:var(--warn)">${t.pe} ainda não verificados</b>`:'')+`. ${f} foto${f===1?'':'s'} no relatório.`;
-  }
-  $('#rpWarn').innerHTML=w.map(esc).join('<br>');$('#rpWarn').classList.toggle('hidden',!w.length);
+// passo 4: conferência e geração
+let lastOut=null;
+function pendencias(){
+  const w=[],falta=(l,v)=>{if(!String(v??'').trim())w.push({t:'Falta '+l,go:0})};
+  falta('o logradouro do imóvel',V.endereco);falta('a cidade',V.cidade);falta('o RE',V.re);falta('o protocolo',V.processo);falta('a ocupação',V.ocupacao);falta('o risco',V.risco);falta('a área total',V.area);falta('o responsável pelo imóvel',V.rNome);
+  const sr=SISTEMAS.filter(s=>!R(V,s.k).st);if(sr.length)w.push({t:sr.length+' sistema(s) sem resposta (sairão como “não se aplica”): '+sr.map(s=>s.n).join(', '),go:1});
+  SISTEMAS.forEach(s=>{const r=R(V,s.k);if(r.st==='nc'&&!(r.just||'').trim())w.push({t:nomeSis(V,s)+': não conforme sem justificativa',go:1})});
+  if(tem(V,'out')&&!(V.outNome||'').trim())w.push({t:'“Outros”: informe qual é o sistema',go:1});
+  presentes(V).forEach(s=>{const ph=fotosDe(s.k);if(!ph.length)w.push({t:nomeSis(V,s)+': sem foto (o Anexo J pede ao menos uma)',go:2});if(!(R(V,s.k).desc||'').trim())w.push({t:nomeSis(V,s)+': sem descritivo',go:2})});
+  const sl=P.filter(p=>!p.legenda).length;if(sl)w.push({t:sl+' foto(s) sem legenda',go:2});
+  if(!(ST.cpf&&ST.telefone&&ST.email))w.push({t:'Complete CPF, telefone e e-mail do responsável técnico na engrenagem da tela inicial',go:-1});
+  return w;
 }
-$$('input[name=doc]').forEach(r=>r.onchange=reportInfo);
-$('#btnReport').onclick=()=>{reportInfo();$('#dReport').showModal()};
-$('#rpGo').onclick=async()=>{
-  const k=docKind(),done=busy('Gerando PDF…');
-  try{await put('visits',V);
-    const blob=k==='R'?await buildPdf({full:$('#rpFull').checked,photos:$('#rpPhotos').checked,disc:$('#rpDisc').checked,sig:$('#rpSig').checked}):await buildAnexo(k,{sig:$('#rpSig').checked});
+function renderResumo(){
+  const ps=presentes(V),w=pendencias(),nc=ps.filter(s=>R(V,s.k).st==='nc').length;
+  const el=$('#resumo');el.innerHTML=`<b>${ps.length} sistema${ps.length===1?'':'s'} instalado${ps.length===1?'':'s'}</b>${nc?` · <b style="color:var(--crit)">${nc} não conforme${nc===1?'':'s'}</b>`:''} · <b>${P.length}</b> foto${P.length===1?'':'s'}<div class="note" style="margin-top:4px">${esc(ps.map(s=>nomeSis(V,s)).join(' · ')||'Nenhum sistema marcado.')}</div>`+
+    (w.length?`<div class="warnbox"><b>Antes de gerar, confira:</b><ul style="margin:6px 0 0;padding-left:18px">${w.map((x,i)=>`<li>${esc(x.t)}${x.go>=0?` <a href="#" data-w="${i}">corrigir</a>`:''}</li>`).join('')}</ul></div>`:'<div class="okbox">Tudo preenchido. Pode gerar.</div>');
+  el.querySelectorAll('[data-w]').forEach(a=>a.onclick=e=>{e.preventDefault();go(w[+a.dataset.w].go)});
+  renderOut();
+}
+function renderOut(){
+  const box=$('#out');box.innerHTML='';if(!lastOut)return;
+  const canShare=f=>navigator.canShare&&navigator.canShare({files:f});
+  lastOut.forEach(f=>{const d=document.createElement('div');d.className='card';d.style.cssText='background:#fff6f5;border-color:#f3c9c9';
+    d.innerHTML=`<b style="word-break:break-all">${esc(f.name)}</b><p class="note" style="margin:4px 0 10px">${(f.size/1048576).toFixed(1).replace('.',',')} MB</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary ${canShare([f])?'':'hidden'}" data-a="share" style="flex:1">Compartilhar</button><button class="btn" data-a="open" style="flex:1">Abrir</button><button class="btn" data-a="dl" style="flex:1">Baixar</button></div>`;
+    d.querySelector('[data-a=share]').onclick=async()=>{try{await navigator.share({files:[f],title:f.name})}catch(e){if(e.name!=='AbortError')toast('Não foi possível compartilhar')}};
+    d.querySelector('[data-a=open]').onclick=()=>{const u=URL.createObjectURL(f);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),120000)};
+    d.querySelector('[data-a=dl]').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000)};
+    box.appendChild(d)});
+  if(canShare(lastOut)){const b=document.createElement('button');b.className='btn dark';b.style.width='100%';b.textContent='Compartilhar os dois PDFs';b.onclick=async()=>{try{await navigator.share({files:lastOut,title:'Habite-se CBMSC'})}catch(e){if(e.name!=='AbortError')toast('Não foi possível compartilhar')}};box.appendChild(b)}
+}
+$('#btnGerar').onclick=async()=>{
+  const done=busy('Gerando os PDFs…');
+  try{clearTimeout(saveT);await put('visits',V);const opt={sig:$('#rpSig').checked};
     const safe=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w]+/g,'_').replace(/^_|_$/g,'').slice(0,40);
-    const id=safe(V.processo)||V.numero.replace('/','-'),nm=safe(V.empreendimento||V.endereco);
-    const name=({R:'Vistoria_Habite-se_CBMSC_',I:'IN1_Anexo_I_Relatorio_de_conformidade_',J:'IN1_Anexo_J_Termo_de_entrega_'})[k]+id+(nm?'_'+nm:'')+'.pdf';
-    lastPdf=new File([blob],name,{type:'application/pdf'});
-    $('#rpName').textContent=name;$('#rpSize').textContent=(blob.size/1048576).toFixed(1).replace('.',',')+' MB';
-    $('#rpOut').classList.remove('hidden');$('#rpShare').classList.toggle('hidden',!(navigator.canShare&&navigator.canShare({files:[lastPdf]})));
-  }catch(e){console.error(e);alert('Erro ao gerar o PDF: '+e.message)}finally{done()}
+    const id=safe(V.processo)||V.numero.replace('/','-'),nm=safe(V.empreendimento||V.endereco),suf=id+(nm?'_'+nm:'')+'.pdf';
+    lastOut=[new File([await buildAnexo('I',opt)],'IN1_Anexo_I_Relatorio_de_conformidade_'+suf,{type:'application/pdf'}),new File([await buildAnexo('J',opt)],'IN1_Anexo_J_Termo_de_entrega_'+suf,{type:'application/pdf'})];
+    renderOut();$('#out').scrollIntoView({behavior:'smooth'});
+  }catch(e){console.error(e);alert('Erro ao gerar os PDFs: '+e.message)}finally{done()}
 };
-$('#rpShare').onclick=async()=>{try{await navigator.share({files:[lastPdf],title:'Vistoria para Habite-se '+V.numero})}catch(e){if(e.name!=='AbortError')toast('Não foi possível compartilhar')}};
-$('#rpDl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(lastPdf);a.download=lastPdf.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000)};
-$('#rpOpen').onclick=()=>{const u=URL.createObjectURL(lastPdf);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),120000)};
 
 /* ---------------- configurações ---------------- */
 let DEF_LOGO=null, BRASAO=null;
@@ -855,7 +692,6 @@ $('#logoPick').onclick=()=>$('#logoFile').click();
 $('#logoFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const u=URL.createObjectURL(f);try{const im=await loadImg(u);const k=Math.min(1,700/Math.max(im.naturalWidth,im.naturalHeight));const c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ST.logo=c.toDataURL('image/png');ST.logoW=c.width;ST.logoH=c.height;await saveSettings();renderLogo()}catch(err){toast('Imagem inválida')}finally{URL.revokeObjectURL(u)}};
 $('#logoDel').onclick=async()=>{ST.logo=null;await saveSettings();renderLogo()};
 $('#logoDef').onclick=async()=>{ST.logo='default';await saveSettings();renderLogo()};
-$('#baseNote').textContent=BASE_NORMATIVA;
 $('#btnSettings').onclick=()=>{$$('[data-s]').forEach(i=>i.value=ST[i.dataset.s]||'');renderLogo();$('#dSettings').showModal();sigInit()};
 $$('[data-s]').forEach(i=>i.addEventListener('input',()=>{ST[i.dataset.s]=i.value;saveSettings()}));
 $('#dSettings').addEventListener('close',renderHome);
@@ -897,7 +733,7 @@ $('#bkFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!
 /* ---------------- navegação ---------------- */
 function show(id){['vHome','vVisit'].forEach(s=>$('#'+s).classList.toggle('hidden',s!==id))}
 $('#btnNew').onclick=newVisit;
-$('#btnBack').onclick=async()=>{clearTimeout(saveT);if(V)await put('visits',V);V=null;openSys.clear();history.replaceState(null,'','./');show('vHome');renderHome()};
+$('#btnBack').onclick=async()=>{clearTimeout(saveT);if(V)await put('visits',V);V=null;history.replaceState(null,'','./');show('vHome');renderHome()};
 $('#btnDelVisit').onclick=async()=>{if(!confirm('Excluir esta vistoria e todas as suas fotos? Esta ação não pode ser desfeita.'))return;clearTimeout(saveT);for(const p of P)await del('photos',p.id);await del('visits',V.id);V=null;P=[];history.replaceState(null,'','./');show('vHome');renderHome()};
 $('#search').oninput=renderHome;
 $$('dialog [data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
