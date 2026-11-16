@@ -86,7 +86,7 @@ App de celular (PWA, funciona offline) para registrar visitas técnicas com foto
 
 Na engrenagem da tela inicial ficam a empresa, o logo do cabeçalho, os dados do vistoriador, o objetivo padrão, a cidade, o texto de ressalva, a assinatura desenhada com o dedo e o backup. As fotos ficam salvas só no aparelho: exporte o backup periodicamente.
 
-## Vistoria Habite-se CBMSC (`/habite-se/`)
+## Lang PPCI — vistoria de habite-se CBMSC (`/habite-se/`)
 
 App de celular (PWA, funciona offline) para a vistoria de habite-se do Corpo de Bombeiros Militar de Santa Catarina. Você responde um questionário de 4 passos e o app entrega prontos, em PDF, os dois formulários da IN 1:
 

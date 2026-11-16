@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#171717">
-<title>Vistoria Habite-se CBMSC</title>
+<title>Lang PPCI</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./assets/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="./assets/icon-192.png">
 <style>
-:root{--ink:#171717;--muted:#6b6b6b;--line:#e6e6e6;--bg:#f6f6f4;--card:#fff;--brand:#c62828;--brand-ink:#fff;--ok:#2e7d32;--warn:#b26a00;--crit:#c62828;--radius:14px}
+:root{--ink:#171717;--muted:#6b6b6b;--line:#e6e6e6;--bg:#f6f6f4;--card:#fff;--brand:#ff5a00;--brand-ink:#fff;--ok:#2e7d32;--warn:#b26a00;--crit:#c62828;--radius:14px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -90,7 +90,7 @@ details.sys[open]>summary{border-bottom:1px solid var(--line)}
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
 .dock .in{max-width:780px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:8px}
 .dock .btn{min-height:50px;font-size:14px;padding:8px 6px}
-.fab{position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:30;border:0;background:var(--brand);color:#fff;border-radius:99px;padding:15px 22px;font-weight:700;display:flex;gap:8px;align-items:center;box-shadow:0 6px 18px rgba(198,40,40,.35);cursor:pointer}
+.fab{position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:30;border:0;background:var(--brand);color:#fff;border-radius:99px;padding:15px 22px;font-weight:700;display:flex;gap:8px;align-items:center;box-shadow:0 6px 18px rgba(255,90,0,.35);cursor:pointer}
 .fab svg{width:22px;height:22px}
 dialog{border:0;padding:0;border-radius:18px 18px 0 0;width:100%;max-width:780px;max-height:94vh;margin:auto auto 0;background:#fff;color:var(--ink)}
 @media(min-width:800px){dialog{border-radius:18px;margin:auto}}
@@ -138,6 +138,7 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
 .pc small{display:block;font-size:12px;line-height:1.25;margin-top:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .pc small.sem{color:var(--crit);font-weight:600}
 .okbox{background:#e9f5ea;border:1px solid #bfe0c1;border-radius:10px;padding:9px 11px;font-size:13px;color:#1f5d23;margin-top:8px;font-weight:600}
+a{color:inherit}
 .warnbox a{color:var(--crit);font-weight:700}
 </style>
 </head>
@@ -147,7 +148,7 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
 <section id="vHome">
   <header class="bar">
     <div class="logo" id="appLogo"></div>
-    <div class="title"><b>Habite-se CBMSC</b><small id="hResp"></small></div>
+    <div class="title"><b>Lang PPCI</b><small id="hResp"></small></div>
     <button class="icon-btn" id="btnSettings" title="Configurações" aria-label="Configurações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </header>
   <main>
@@ -286,8 +287,8 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
       <label class="f"><span>Cidade</span><input type="text" data-s="imvCidade"></label>
       <label class="f"><span>CEP</span><input type="text" data-s="imvCep"></label>
     </div>
-    <label class="f"><span>Logo da empresa (cabeçalho do relatório)</span></label>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:-4px 0 12px"><img id="logoPrev" alt="" style="max-height:48px;max-width:150px;border:1px solid var(--line);border-radius:8px;padding:4px;background:#fff"><button class="btn sm" id="logoPick">Escolher imagem</button><button class="btn sm danger" id="logoDel">Remover</button><button class="btn sm" id="logoDef">Usar logo da Absolut</button><input type="file" id="logoFile" accept="image/*" class="hidden"></div>
+    <label class="f"><span>Logo no topo do app</span></label>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:-4px 0 12px"><img id="logoPrev" alt="" style="max-height:48px;max-width:150px;border:1px solid var(--line);border-radius:8px;padding:4px;background:#fff"><button class="btn sm" id="logoPick">Escolher imagem</button><button class="btn sm danger" id="logoDel">Remover</button><button class="btn sm" id="logoDef">Usar logo da Lang</button><input type="file" id="logoFile" accept="image/*" class="hidden"></div>
     <label class="f"><span>Assinatura (desenhe com o dedo)</span></label>
     <canvas class="sig" id="sigPad"></canvas>
     <div style="display:flex;gap:8px;margin:8px 0 16px"><button class="btn sm" id="sigClear">Limpar assinatura</button><span class="note" style="align-self:center" id="sigState"></span></div>
@@ -351,7 +352,7 @@ const kvGet=k=>tx('kv','readonly',s=>s.get(k));
 const kvSet=(k,v)=>tx('kv','readwrite',s=>s.put(v,k));
 
 /* ---------------- configurações ---------------- */
-const DEFAULTS={titulo:'Eng. Civil',nome:'Geovane Lang',crea:'152359-1',empresa:'Absolut Construtora',telefone:'',email:'',cidade:'',logo:'default',cpf:'',rg:'',rtLogradouro:'',rtNumero:'',rtBairro:'',rtCidade:'',rtCep:'',imvNome:'',imvDoc:'',imvTel:'',imvEmail:'',imvLogradouro:'',imvBairro:'',imvCidade:'',imvCep:'',
+const DEFAULTS={titulo:'Eng. Civil',nome:'Geovane Lang',crea:'152359-1',empresa:'Lang Engenharia',telefone:'',email:'',cidade:'',logo:'default',cpf:'',rg:'',rtLogradouro:'',rtNumero:'',rtBairro:'',rtCidade:'',rtCep:'',imvNome:'',imvDoc:'',imvTel:'',imvEmail:'',imvLogradouro:'',imvBairro:'',imvCidade:'',imvCep:'',
   ressalva:'Este relatório registra a verificação prévia dos sistemas e medidas de segurança contra incêndio e pânico, realizada pelo responsável técnico com base no projeto aprovado e nas Instruções Normativas do CBMSC indicadas em cada item, nas áreas acessíveis e nas condições observadas na data da vistoria. Não substitui a vistoria oficial nem o atestado de habite-se emitido pelo Corpo de Bombeiros Militar de Santa Catarina. Os critérios do checklist são um roteiro de conferência e devem ser confrontados com o texto vigente das INs.',assinatura:null};
 let ST={...DEFAULTS};
 const respName=()=>[ST.titulo,ST.nome].filter(Boolean).join(' ');
@@ -683,7 +684,7 @@ $('#btnGerar').onclick=async()=>{
 /* ---------------- configurações ---------------- */
 let DEF_LOGO=null, BRASAO=null;
 async function loadSettings(){ST={...DEFAULTS,...((await kvGet('settings'))||{})};
-  try{const b=await (await fetch('./assets/absolut-logo.png')).blob(),src=await blobToDataURL(b),im=await loadImg(src);DEF_LOGO={src,w:im.naturalWidth,h:im.naturalHeight}}catch(e){DEF_LOGO=null}
+  try{const b=await (await fetch('./assets/lang-logo.png')).blob(),src=await blobToDataURL(b),im=await loadImg(src);DEF_LOGO={src,w:im.naturalWidth,h:im.naturalHeight}}catch(e){DEF_LOGO=null}
   try{const b=await (await fetch('./assets/brasao-sc.png')).blob(),src=await blobToDataURL(b),im=await loadImg(src);BRASAO={src,w:im.naturalWidth,h:im.naturalHeight}}catch(e){BRASAO=null}}
 const curLogo=()=>ST.logo==='default'?DEF_LOGO:(ST.logo?{src:ST.logo,w:ST.logoW,h:ST.logoH}:null);
 const saveSettings=()=>kvSet('settings',ST);
