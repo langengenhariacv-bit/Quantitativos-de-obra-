@@ -169,6 +169,13 @@ a{color:inherit}
   <main>
     <div class="step" data-step="0">
       <h2>1. Dados do imóvel</h2>
+      <div class="card">
+        <b>Tem o Atestado de Aprovação de Projeto?</b>
+        <p class="note" style="margin:2px 0 10px">Envie o PDF emitido pelo e-SCI e o app preenche o imóvel, o responsável e os sistemas aprovados. A leitura é feita no aparelho.</p>
+        <button class="btn dark" id="btnImp" style="width:100%">📄 Puxar dados do atestado (PDF)</button>
+        <input type="file" id="inPdf" accept="application/pdf,.pdf" class="hidden">
+        <div class="okbox hidden" id="impRes" style="font-weight:500"></div>
+      </div>
     <div class="card" id="fields">
       <label class="f"><span>Logradouro e nº do imóvel</span><input type="text" data-k="endereco" id="fEndereco" placeholder="Rua, nº" autocomplete="street-address"></label>
       <div class="grid3">
@@ -319,6 +326,7 @@ a{color:inherit}
 
 <script src="./vendor/jspdf.umd.min.js"></script>
 <script src="./catalogo.js"></script>
+<script src="./atestado.js"></script>
 <script>
 'use strict';
 /* ---------------- utilidades ---------------- */
@@ -405,7 +413,7 @@ async function openVisit(id){
   V.s=V.s||{};V.outNome=V.outNome||'';
   $$('#vVisit [data-k]').forEach(i=>i.value=V[i.dataset.k]??'');
   show('vVisit');history.replaceState(null,'','#'+id);
-  P=await photosOf(V.id);lastOut=null;go(0);
+  P=await photosOf(V.id);lastOut=null;$('#impRes').classList.add('hidden');go(0);
 }
 function headerVisit(){$('#vTitle').textContent=V.endereco||V.empreendimento||'Nova vistoria';$('#vSub').textContent=[V.empreendimento,cityLine(V),V.processo].filter(Boolean).join(' · ')||'Nº '+V.numero}
 let saveT;
@@ -423,12 +431,37 @@ function go(n){
 $('#btnPrev').onclick=()=>step?go(step-1):$('#btnBack').click();
 $('#btnNext').onclick=()=>go(step+1);
 
+// passo 1: importação do Atestado de Aprovação de Projeto (PDF do e-SCI)
+const ROTULOS={re:'RE',empreendimento:'edificação',endereco:'logradouro',bairro:'bairro',cidade:'cidade',cep:'CEP',rNome:'responsável pelo imóvel',rDoc:'CPF/CNPJ do responsável',cnpj:'CNPJ do imóvel',blocos:'blocos',area:'área',pavimentos:'pavimentos',ocupacao:'ocupação',risco:'risco'};
+$('#btnImp').onclick=()=>$('#inPdf').click();
+$('#inPdf').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  const done=busy('Lendo o atestado…');
+  try{
+    const txt=await lerPdfTexto(f);
+    if(txt.replace(/\s/g,'').length<80)throw new Error('este PDF não tem texto (parece escaneado ou foto). Use o PDF original emitido pelo e-SCI.');
+    const a=parseAtestado(txt),ks=Object.keys(a.campos);
+    if(!ks.length&&!a.sistemas.length)throw new Error('não encontrei os dados do atestado neste PDF.');
+    const jaTem=ks.filter(k=>String(V[k]??'').trim()&&String(V[k]).trim()!==a.campos[k]);
+    if(jaTem.length&&!confirm('Substituir os dados já preenchidos ('+jaTem.map(k=>ROTULOS[k]||k).join(', ')+') pelos do atestado?'))return;
+    ks.forEach(k=>V[k]=a.campos[k]);
+    // sistemas: os aprovados ficam para responder; os demais passam a "Não tem" (sem mexer no que já foi respondido)
+    if(a.sistemas.length||a.outros.length){V.ppci={};a.sistemas.forEach(k=>V.ppci[k]=true);
+      if(a.outros.length){V.ppci.out=true;if(!(V.outNome||'').trim())V.outNome=a.outros.join(', ')}
+      SISTEMAS.forEach(s=>{const r=R(V,s.k);if(V.ppci[s.k]){if(r.st==='na')r.st=''}else if(!r.st)r.st='na'})}
+    $$('#vVisit [data-k]').forEach(i=>i.value=V[i.dataset.k]??'');touch();headerVisit();
+    const nomes=SISTEMAS.filter(s=>V.ppci&&V.ppci[s.k]).map(s=>nomeSis(V,s));
+    const el=$('#impRes');el.classList.remove('hidden');
+    el.innerHTML='<b>Dados puxados do atestado:</b> '+esc(ks.map(k=>ROTULOS[k]||k).join(', ')||'nenhum campo')+'.'+(nomes.length?'<br><b>Sistemas aprovados:</b> '+esc(nomes.join(', '))+'. Os demais foram marcados como “Não tem”.':'')+
+      '<br><b>Não puxei:</b> o protocolo (o do atestado'+(a.protocoloProjeto?', '+esc(a.protocoloProjeto)+',':'')+' é o da aprovação do projeto; informe o da solicitação de habite-se)'+(a.campos.risco?'':' e o risco')+'.'+a.avisos.map(x=>'<br>⚠️ '+esc(x)).join('');
+  }catch(err){console.error(err);alert('Não foi possível ler o atestado: '+err.message)}finally{done()}
+};
+
 // passo 2: uma pergunta por sistema
 function renderQs(){
   const box=$('#qs');box.innerHTML='';
   SISTEMAS.forEach(s=>{const r=R(V,s.k);
     const d=document.createElement('div');d.className='card q '+(r.st||'');
-    d.innerHTML=`<b>${esc(s.n)}</b>${s.outros?'<small class="note" style="display:block">SPDA, chuveiros automáticos, controle de fumaça, recarga de veículos elétricos…</small>':''}
+    d.innerHTML=`<b>${esc(s.n)}</b>${V.ppci&&V.ppci[s.k]?' <span class="pill ok">no PPCI aprovado</span>':''}${s.outros?'<small class="note" style="display:block">SPDA, chuveiros automáticos, controle de fumaça, recarga de veículos elétricos…</small>':''}
       <div class="st3"><button data-v="na" class="${r.st==='na'?'on':''}">Não tem</button><button data-v="c" class="${r.st==='c'?'on':''}">Conforme</button><button data-v="nc" class="${r.st==='nc'?'on':''}">Não conforme</button></div>
       ${s.outros?`<input type="text" data-f="out" class="${tem(V,s.k)?'':'hidden'}" placeholder="Qual sistema? Ex.: SPDA" value="${esc(V.outNome)}" style="margin-top:8px">`:''}
       <textarea data-f="just" class="${r.st==='nc'?'':'hidden'}" placeholder="Justificativa da desconformidade (vai para o Anexo I)" style="margin-top:8px;min-height:64px">${esc(r.just)}</textarea>`;

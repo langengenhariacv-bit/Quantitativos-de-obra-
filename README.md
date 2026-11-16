@@ -95,7 +95,7 @@ App de celular (PWA, funciona offline) para a vistoria de habite-se do Corpo de 
 
 Antes da primeira vistoria, abra a engrenagem e preencha uma vez os dados do responsável técnico (CPF, RG, endereço, telefone, e-mail) e o responsável pelo imóvel padrão. Esses dados ficam só no aparelho.
 
-1. **Imóvel** — endereço, RE, protocolo, ocupação, risco, área, pavimentos e blocos.
+1. **Imóvel** — endereço, RE, protocolo, ocupação, risco, área, pavimentos e blocos. O botão **Puxar dados do atestado (PDF)** lê o Atestado de Aprovação de Projeto emitido pelo e-SCI e preenche o imóvel, o responsável e os sistemas aprovados (os demais sistemas passam a "Não tem"). A leitura é feita no aparelho; o protocolo não é puxado, porque o do atestado é o da aprovação do projeto, não o do habite-se.
 2. **Sistemas** — para cada sistema, um toque: *Não tem*, *Conforme* ou *Não conforme* (com a justificativa). Um botão marca todos os não respondidos como "Não tem".
 3. **Fotos** — para cada sistema instalado, o descritivo e o botão **Tirar foto**, que abre a câmera; a legenda é pedida logo após cada foto e **Outra foto** volta direto para a câmera.
 4. **PDF** — o app lista o que falta (com atalho para corrigir) e gera os dois PDFs para compartilhar, abrir ou baixar.
