@@ -10,16 +10,33 @@
  *   k      chave do sistema (não alterar depois de haver vistorias salvas)
  *   n      nome completo; curto = nome no botão
  *   ref    norma de referência impressa no relatório
- *   regra  'sempre' = sugerido para toda edificação
- *          'porte'  = sugerido quando área >= LIMITE_AREA ou altura >= LIMITE_ALTURA
- *          'manual' = só entra se o usuário marcar (depende da ocupação/projeto)
+ *   regra  'sempre' = já vem marcado em toda vistoria nova
+ *          'manual' = só entra se o usuário marcar (depende da ocupação, do risco e do PPCI)
+ *   desc   exemplo de descritivo quali-quantitativo (aparece como dica no campo do Anexo J)
  *   itens  {id, t, se?}  id único e estável; `se` = só aparece se aquele sistema estiver marcado
  */
-const BASE_NORMATIVA = 'Roteiro de conferência baseado nas Instruções Normativas do CBMSC (IN 1 Partes 1 e 2, IN 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 19 e 23). Catálogo de 16/11/2026, redigido sem acesso ao texto integral das INs (portal de documentos do CBMSC em manutenção na data): confira com a versão vigente de cada IN.';
+const BASE_NORMATIVA = 'Roteiro de conferência baseado nas Instruções Normativas do CBMSC (IN 1 Partes 1 e 2 e Anexos I e J, IN 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 19 e 23). Catálogo de 16/11/2026, redigido sem acesso ao texto integral das INs (portal de documentos do CBMSC em manutenção na data): confira com a versão vigente de cada IN.';
 
-// Limites que separam as tabelas de exigências da IN 1 – Parte 2 (imóveis de menor porte x demais)
-const LIMITE_AREA = 750;   // m²
-const LIMITE_ALTURA = 12;  // m
+// Linhas da tabela do Anexo I da IN 1 (Relatório de conformidade), na ordem do formulário oficial,
+// e os sistemas do catálogo que respondem por cada linha.
+const ANEXO_I = [
+  {n:'Acesso de Viaturas', k:['via']},
+  {n:'Materiais de acabamento e revestimento', k:['cmar']},
+  {n:'Detecção automática de incêndio', k:['det']},
+  {n:'Gás combustível', k:['gas']},
+  {n:'Iluminação de Emergência', k:['ilu']},
+  {n:'Plano de emergência', k:['pem']},
+  {n:'Proteção estrutural contra incêndio', k:['comp']},
+  {n:'Brigada de incêndio', k:['bri']},
+  {n:'Alarme de incêndio', k:['ala']},
+  {n:'Extintores', k:['ext']},
+  {n:'Hidráulico preventivo', k:['shp']},
+  {n:'Instalações elétricas', k:['ele']},
+  {n:'Sinalização abandono de local', k:['sin']},
+  {n:'Saídas de emergência', k:['sai']},
+  {n:'Outros', k:['press','fum','spk','spda','ve'], outros:true}
+];
+const RISCOS = ['II','III','IV','V'];
 
 const OCUPACOES = [
   {k:'A2', n:'A-2 — Residencial multifamiliar'},
@@ -51,7 +68,7 @@ const CATALOGO = [
     {id:'docs9', se:'cmar', t:'Laudos, ensaios ou declarações dos materiais de acabamento e revestimento (CMAR), quando exigidos.'},
     {id:'docs10', se:'sai', t:'Laudo do coeficiente de atrito dos pisos antiderrapantes das rotas de fuga, quando exigido.'}
   ]},
-  {k:'ext', n:'Sistema preventivo por extintores', curto:'Extintores', ref:'IN 6', regra:'sempre', itens:[
+  {k:'ext', n:'Sistema preventivo por extintores', curto:'Extintores', ref:'IN 6', desc:'Ex.: 6 extintores de pó químico ABC 4 kg (2-A:20-B:C) e 1 de CO2 6 kg, instalados conforme PPCI.', regra:'sempre', itens:[
     {id:'ext1', t:'Extintores instalados nos locais, quantidades, tipos e capacidades extintoras previstos no projeto aprovado.'},
     {id:'ext2', t:'Altura de instalação: alça a no máximo 1,60 m do piso, ou extintor sobre suporte de piso.'},
     {id:'ext3', t:'Local visível, de fácil acesso e desobstruído, com a sinalização do extintor instalada.'},
@@ -61,7 +78,7 @@ const CATALOGO = [
     {id:'ext7', t:'Agente extintor compatível com o risco protegido (casa de máquinas, quadros elétricos, central de gás, garagem etc.).'},
     {id:'ext8', t:'Todos os pavimentos e riscos especiais atendidos, respeitada a distância máxima a percorrer do projeto.'}
   ]},
-  {k:'shp', n:'Sistema hidráulico preventivo', curto:'Hidrantes (SHP)', ref:'IN 7', regra:'porte', itens:[
+  {k:'shp', n:'Sistema hidráulico preventivo', curto:'Hidrantes (SHP)', ref:'IN 7', desc:'Ex.: 4 hidrantes com mangueiras de 40 mm x 30 m, RTI de 12.000 L e bomba de 5 cv.', regra:'manual', itens:[
     {id:'shp1', t:'Hidrantes ou mangotinhos instalados nos locais e quantidades do projeto aprovado.'},
     {id:'shp2', t:'Abrigos completos e sinalizados: mangueiras (tipo, diâmetro e comprimento do projeto), esguicho e chave de mangueira; acesso desobstruído.'},
     {id:'shp3', t:'Mangueiras com marcação de conformidade, acondicionadas corretamente e sem danos.'},
@@ -73,7 +90,7 @@ const CATALOGO = [
     {id:'shp9', t:'Registro de recalque no passeio ou fachada, sinalizado, com tampa e acessível à viatura.'},
     {id:'shp10', t:'Válvula de retenção e registros de manobra instalados, acessíveis e na posição de operação.'}
   ]},
-  {k:'gas', n:'Instalações de gás combustível', curto:'Gás (GLP/GN)', ref:'IN 8', regra:'manual', itens:[
+  {k:'gas', n:'Instalações de gás combustível', curto:'Gás (GLP/GN)', ref:'IN 8', desc:'Ex.: central de GLP com 2 P-45, rede em cobre e teste de estanqueidade aprovado.', regra:'manual', itens:[
     {id:'gas1', t:'Central de GLP ou abrigo de medidores no local e com a capacidade do projeto; afastamentos de segurança respeitados.'},
     {id:'gas2', t:'Central ventilada, com fechamento conforme projeto, sinalização de perigo/proibido fumar e extintor.'},
     {id:'gas3', t:'Rede de distribuição conforme projeto, identificada, protegida contra danos e sem passar por locais não permitidos.'},
@@ -83,7 +100,7 @@ const CATALOGO = [
     {id:'gas7', t:'Pontos de consumo sem aparelho instalado tamponados (plugados).'},
     {id:'gas8', t:'Teste de estanqueidade da rede realizado, sem vazamentos.'}
   ]},
-  {k:'sai', n:'Sistema de saídas de emergência', curto:'Saídas de emergência', ref:'IN 9', regra:'sempre', itens:[
+  {k:'sai', n:'Sistema de saídas de emergência', curto:'Saídas de emergência', ref:'IN 9', desc:'Ex.: 2 saídas com portas de 1,60 m abrindo no sentido de fuga; rotas livres e desobstruídas.', regra:'sempre', itens:[
     {id:'sai1', t:'Rotas de fuga livres e desobstruídas, com larguras de corredores, escadas, rampas e portas conforme projeto aprovado.'},
     {id:'sai2', t:'Escadas do tipo previsto no projeto (comum, protegida, enclausurada ou à prova de fumaça), executadas conforme aprovado.'},
     {id:'sai3', t:'Degraus uniformes (piso e espelho conforme projeto) e com piso antiderrapante.'},
@@ -107,7 +124,7 @@ const CATALOGO = [
     {id:'fum3', t:'Alimentação elétrica de emergência conforme projeto.'},
     {id:'fum4', t:'Teste de funcionamento realizado e documentado.'}
   ]},
-  {k:'ilu', n:'Sistema de iluminação de emergência', curto:'Iluminação de emergência', ref:'IN 11', regra:'sempre', itens:[
+  {k:'ilu', n:'Sistema de iluminação de emergência', curto:'Iluminação de emergência', ref:'IN 11', desc:'Ex.: 12 blocos autônomos de LED com autonomia de 2 h nas rotas de fuga e saídas.', regra:'sempre', itens:[
     {id:'ilu1', t:'Luminárias instaladas nos locais e quantidades do projeto (rotas de fuga, escadas, mudanças de direção, halls, garagens e áreas técnicas).'},
     {id:'ilu2', t:'Teste de funcionamento: as luminárias acendem automaticamente na falta de energia (desligando o circuito).'},
     {id:'ilu3', t:'Autonomia mínima conforme IN 11 verificada (teste de descarga).'},
@@ -115,16 +132,20 @@ const CATALOGO = [
     {id:'ilu5', t:'Iluminamento suficiente em toda a rota de fuga, sem trechos escuros.'},
     {id:'ilu6', t:'Luminárias íntegras e bem fixadas.'}
   ]},
-  {k:'ala', n:'Sistema de detecção e alarme de incêndio', curto:'Alarme e detecção', ref:'IN 12', regra:'porte', itens:[
+  {k:'ala', n:'Sistema de alarme de incêndio', curto:'Alarme', ref:'IN 12', desc:'Ex.: central de alarme endereçável, 6 acionadores manuais e 6 sirenes audiovisuais.', regra:'manual', itens:[
     {id:'ala1', t:'Central de alarme instalada no local previsto no projeto, identificada e com fonte de alimentação auxiliar (baterias).'},
     {id:'ala2', t:'Acionadores manuais nos locais do projeto, em altura adequada, sinalizados e desobstruídos.'},
     {id:'ala3', t:'Avisadores sonoros e visuais instalados conforme projeto e audíveis em toda a edificação.'},
-    {id:'ala4', t:'Detectores instalados nos ambientes previstos no projeto, quando exigidos.'},
     {id:'ala5', t:'Teste de funcionamento: o acionamento é indicado corretamente na central (setor/laço) e dispara os avisadores.'},
     {id:'ala6', t:'Central sem indicação de falha e operando pelas baterias na falta de energia.'},
     {id:'ala7', t:'Infraestrutura e fiação conforme projeto (eletrodutos e circuito exclusivos).'}
   ]},
-  {k:'sin', n:'Sinalização para abandono de local', curto:'Sinalização', ref:'IN 13', regra:'sempre', itens:[
+  {k:'det', n:'Sistema de detecção automática de incêndio', curto:'Detecção automática', ref:'IN 12', regra:'manual', itens:[
+    {id:'ala4', t:'Detectores instalados nos ambientes previstos no projeto, com tipo e espaçamento conforme aprovado.'},
+    {id:'det2', t:'Teste de funcionamento: a atuação do detector é indicada corretamente na central e dispara os avisadores.'},
+    {id:'det3', t:'Detectores limpos, sem capas de proteção de obra e sem obstruções.'}
+  ]},
+  {k:'sin', n:'Sinalização para abandono de local', curto:'Sinalização', ref:'IN 13', desc:'Ex.: 9 placas fotoluminescentes de saída e orientação, mais sinalização dos extintores.', regra:'sempre', itens:[
     {id:'sin1', t:'Placas de saída instaladas nas rotas de fuga, sobre as portas e nas mudanças de direção, indicando o sentido correto, conforme projeto.'},
     {id:'sin2', t:'Placas fotoluminescentes ou luminosas no padrão da IN 13 (dimensões, cores e símbolos).'},
     {id:'sin3', t:'Placas visíveis de qualquer ponto da rota, na altura de instalação prevista na IN 13.'},
@@ -132,7 +153,7 @@ const CATALOGO = [
     {id:'sin5', t:'Sinalização dos equipamentos (extintores, hidrantes, acionadores de alarme) e das portas corta-fogo.'},
     {id:'sin6', t:'Sinalização de proibição e de risco onde prevista (elevadores, central de gás, casa de bombas, quadros elétricos).'}
   ]},
-  {k:'comp', n:'Compartimentação, proteção estrutural e isolamento de risco', curto:'Compartimentação / TRRF', ref:'IN 14', regra:'porte', itens:[
+  {k:'comp', n:'Compartimentação, proteção estrutural e isolamento de risco', curto:'Compartimentação / TRRF', ref:'IN 14', regra:'manual', itens:[
     {id:'comp1', t:'Compartimentação horizontal e vertical (paredes, lajes e fachadas) executada conforme projeto aprovado.'},
     {id:'comp2', t:'Selagem corta-fogo de shafts, prumadas, dutos e passagens de instalações entre pavimentos e compartimentos.'},
     {id:'comp3', t:'Portas e demais elementos corta-fogo de compartimentação instalados, identificados e funcionando.'},
@@ -146,29 +167,31 @@ const CATALOGO = [
     {id:'spk4', t:'Teste de funcionamento (dreno/ensaio) com acionamento do alarme de fluxo.'},
     {id:'spk5', t:'Chuveiros sobressalentes e chave de instalação disponíveis.'}
   ]},
-  {k:'cmar', n:'Controle de materiais de acabamento e revestimento', curto:'Materiais (CMAR)', ref:'IN 18', regra:'sempre', itens:[
+  {k:'cmar', n:'Controle de materiais de acabamento e revestimento', curto:'Materiais (CMAR)', ref:'IN 18', regra:'manual', itens:[
     {id:'cmar1', t:'Materiais de piso, parede/divisória e teto/forro das rotas de fuga e saídas de emergência conforme as classes do projeto aprovado.'},
     {id:'cmar2', t:'Ausência de materiais combustíveis não previstos no projeto nas rotas de fuga (forros, espumas, revestimentos e decoração).'},
     {id:'cmar3', t:'Documentação dos materiais aplicados (ensaios, laudos ou declarações do fabricante) disponível.'}
   ]},
-  {k:'ele', n:'Instalações elétricas de baixa tensão', curto:'Instalações elétricas', ref:'IN 19', regra:'sempre', itens:[
+  {k:'ele', n:'Instalações elétricas de baixa tensão', curto:'Instalações elétricas', ref:'IN 19', regra:'manual', itens:[
     {id:'ele1', t:'Quadros de distribuição identificados, com barreiras de proteção, sem partes vivas expostas e com circuitos identificados.'},
     {id:'ele2', t:'Dispositivos de proteção (disjuntores, DR e DPS) instalados conforme projeto.'},
     {id:'ele3', t:'Condutores em eletrodutos, eletrocalhas ou canaletas; sem fiação exposta nem emendas improvisadas.'},
     {id:'ele4', t:'Aterramento e equipotencialização executados conforme projeto.'},
     {id:'ele5', t:'Circuitos dos sistemas de segurança (bomba de incêndio, iluminação de emergência, alarme) independentes e identificados.'}
   ]},
-  {k:'spda', n:'Sistema de proteção contra descargas atmosféricas', curto:'SPDA', ref:'IN 1 – Parte 2 / NBR 5419', regra:'porte', itens:[
+  {k:'spda', n:'Sistema de proteção contra descargas atmosféricas', curto:'SPDA', ref:'IN 1 – Parte 2 / NBR 5419', regra:'manual', itens:[
     {id:'spda1', t:'Subsistemas de captação, descidas e aterramento executados conforme projeto.'},
     {id:'spda2', t:'Conexões, fixações e condutores íntegros e contínuos.'},
     {id:'spda3', t:'Equipotencialização das massas metálicas e caixas de inspeção acessíveis.'}
   ]},
-  {k:'via', n:'Acesso de viaturas na edificação', curto:'Acesso de viaturas', ref:'IN 1 – Parte 2', regra:'porte', itens:[
+  {k:'via', n:'Acesso de viaturas na edificação', curto:'Acesso de viaturas', ref:'IN 1 – Parte 2', regra:'manual', itens:[
     {id:'via1', t:'Via de acesso e portão com largura e altura livres conforme projeto, desobstruídos.'},
     {id:'via2', t:'Viatura alcança o registro de recalque e as fachadas previstas no projeto.'}
   ]},
-  {k:'pem', n:'Brigada de incêndio e plano de emergência', curto:'Brigada / plano de emergência', ref:'IN 1 – Parte 2', regra:'manual', itens:[
-    {id:'pem1', t:'Plano de emergência elaborado e disponível, quando exigido para a ocupação.'},
+  {k:'pem', n:'Plano de emergência', ref:'IN 1 – Parte 2', regra:'manual', itens:[
+    {id:'pem1', t:'Plano de emergência elaborado e disponível, quando exigido para a ocupação.'}
+  ]},
+  {k:'bri', n:'Brigada de incêndio', ref:'IN 1 – Parte 2', regra:'manual', itens:[
     {id:'pem2', t:'Brigada de incêndio dimensionada e treinada, com comprovação, quando exigida (em geral, na vistoria de funcionamento).'}
   ]},
   {k:'ve', n:'Pontos de recarga de veículos elétricos', curto:'Recarga de veículos elétricos', ref:'IN 23', regra:'manual', itens:[

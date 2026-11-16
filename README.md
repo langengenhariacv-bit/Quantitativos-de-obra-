@@ -88,12 +88,20 @@ Na engrenagem da tela inicial ficam a empresa, o logo do cabeçalho, os dados do
 
 ## Vistoria Habite-se CBMSC (`/habite-se/`)
 
-App de celular (PWA, funciona offline) para a vistoria prévia de habite-se do Corpo de Bombeiros Militar de Santa Catarina, com checklist organizado por Instrução Normativa, fotos anexadas a cada item e relatório em PDF.
+App de celular (PWA, funciona offline) para a vistoria de habite-se do Corpo de Bombeiros Militar de Santa Catarina. Preenche sozinho os formulários da IN 1 e anexa as fotos:
 
-1. **Nova vistoria** → endereço, ocupação, área e altura. Com área e altura o app sugere os sistemas (limites de 750 m² e 12 m da IN 1 – Parte 2); **ajuste os botões para ficar igual ao PPCI aprovado**.
-2. O checklist é montado sozinho, um bloco por sistema/IN (extintores IN 6, hidrantes IN 7, gás IN 8, saídas IN 9, iluminação IN 11, alarme IN 12, sinalização IN 13 etc.), mais a documentação do processo.
-3. Em cada item: **Conforme / Não conforme / N/A**, observação e 📷 para anexar fotos (com setas e círculos). **+ Item próprio** acrescenta verificações suas.
-4. **Só pendências** filtra o que falta ver ou está não conforme.
-5. **Relatório** → PDF com resumo por sistema, quadro de não conformidades com a IN de referência, checklist completo, registro fotográfico, parecer e assinatura.
+- **Anexo I — Relatório de conformidade e termo de responsabilidade (atestado para habite-se):** dados do responsável técnico e do imóvel e a tabela dos 15 sistemas já marcada (Sim/Não em PPCI e NSCI, com a justificativa).
+- **Anexo J — Termo de entrega do imóvel:** responsável pelo imóvel, responsável técnico, dados da solicitação, descritivo de cada sistema instalado com as fotos e as declarações para assinatura.
+- **Relatório interno de vistoria:** checklist completo por IN, não conformidades e registro fotográfico.
 
-**Importante:** os critérios ficam em `habite-se/catalogo.js` e são um roteiro de conferência, não a transcrição literal das INs — foram redigidos em 16/11/2026 com o portal de documentos do CBMSC em manutenção. Confira com o texto vigente de cada IN e edite o arquivo (ao editar, aumente a versão do cache em `habite-se/service-worker.js`). A sugestão de sistemas considera só área e altura; as tabelas por ocupação da IN 1 – Parte 2 não estão codificadas. O relatório não substitui a vistoria oficial do CBMSC.
+Como usar:
+
+1. Na engrenagem, preencha uma vez os dados do responsável técnico (CPF, RG, endereço, telefone, e-mail) e o responsável pelo imóvel padrão. Esses dados ficam só no aparelho.
+2. **Nova vistoria** → endereço, RE, protocolo, ocupação, risco, área, pavimentos e blocos.
+3. Marque os sistemas que constam no PPCI aprovado (a vistoria nova começa com extintores, saídas, iluminação e sinalização). Os não marcados saem como "NÃO SE APLICA" no Anexo I.
+4. Em cada sistema: escreva o **descritivo** (vai para o Anexo J), tire a **foto do sistema** e percorra os itens marcando **Conforme / Não conforme / N/A**, com observação e fotos por item.
+5. **Relatório** → escolha o documento e gere o PDF. O app avisa o que falta (sistema sem foto, campo vazio, itens não verificados).
+
+Regra da tabela do Anexo I: sistema marcado e sem item "não conforme" sai Sim/Sim; com item não conforme sai Não/Não e a justificativa é a observação do item; sistemas fora das 14 linhas do formulário (SPDA, chuveiros automáticos, controle de fumaça etc.) vão na linha "Outros".
+
+**Importante:** os PDFs reproduzem o texto dos Anexos I e J da IN 1 a partir dos modelos de 2025; confira se o CBMSC não publicou versão nova do formulário. Os itens do checklist ficam em `habite-se/catalogo.js` e são um roteiro de conferência, não a transcrição literal das INs — confira com o texto vigente e edite o arquivo (ao editar, aumente a versão do cache em `habite-se/service-worker.js`).

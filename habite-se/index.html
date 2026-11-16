@@ -104,6 +104,9 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
 .preview{position:relative;border-radius:12px;overflow:hidden;background:#111;margin-bottom:12px}
 .preview img{display:block;width:100%;max-height:46vh;object-fit:contain}
 .preview .over{position:absolute;right:8px;bottom:8px;display:flex;gap:6px}
+.radio-card{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+.radio-card input{margin-top:3px;accent-color:var(--brand);width:18px;height:18px;flex:none}
+.radio-card small{display:block;color:var(--muted)}
 .check{display:flex;gap:10px;align-items:center;padding:8px 0;font-weight:600;cursor:pointer}
 .check input{width:22px;height:22px;accent-color:var(--brand)}
 #markup{position:fixed;inset:0;z-index:100;background:#000;display:flex;flex-direction:column}
@@ -130,7 +133,7 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
     <button class="icon-btn" id="btnSettings" title="Configurações" aria-label="Configurações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </header>
   <main>
-    <input type="text" id="search" placeholder="Buscar por endereço, empreendimento ou nº…" style="margin-bottom:12px">
+    <input type="text" id="search" placeholder="Buscar por endereço, edificação ou protocolo…" style="margin-bottom:12px">
     <div id="list"></div>
   </main>
   <button class="fab" id="btnNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Nova vistoria</button>
@@ -146,21 +149,47 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
   <main>
     <h2>Edificação</h2>
     <div class="card" id="fields">
-      <label class="f"><span>Endereço da obra</span><input type="text" data-k="endereco" id="fEndereco" placeholder="Rua, nº, bairro, cidade" autocomplete="street-address"></label>
-      <div class="grid2">
-        <label class="f"><span>Empreendimento</span><input type="text" data-k="empreendimento" placeholder="Ex.: Res. Jardins"></label>
-        <label class="f"><span>Proprietário / construtora</span><input type="text" data-k="proprietario"></label>
-      </div>
-      <label class="f"><span>Ocupação (IN 1 – Parte 2)</span><select data-k="ocupacao" id="fOcup"></select></label>
+      <label class="f"><span>Logradouro e nº do imóvel</span><input type="text" data-k="endereco" id="fEndereco" placeholder="Rua, nº" autocomplete="street-address"></label>
       <div class="grid3">
-        <label class="f"><span>Área total (m²)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-k="area" data-calc></label>
-        <label class="f"><span>Altura (m)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-k="altura" data-calc></label>
+        <label class="f"><span>Bairro</span><input type="text" data-k="bairro"></label>
+        <label class="f"><span>Cidade</span><input type="text" data-k="cidade"></label>
+        <label class="f"><span>CEP</span><input type="text" inputmode="numeric" data-k="cep"></label>
+      </div>
+      <div class="grid2">
+        <label class="f"><span>Nome da edificação</span><input type="text" data-k="empreendimento" placeholder="Ex.: Res. Jardins"></label>
+        <label class="f"><span>CNPJ / CPF do imóvel</span><input type="text" data-k="cnpj"></label>
+        <label class="f"><span>RE (registro da edificação)</span><input type="text" data-k="re" placeholder="RE…"></label>
+        <label class="f"><span>Protocolo da solicitação</span><input type="text" data-k="processo"></label>
+      </div>
+      <label class="f"><span>Ocupação(ões)</span><input type="text" data-k="ocupacao" list="ocups" placeholder="Ex.: I-1 [indústria]"></label>
+      <datalist id="ocups"></datalist>
+      <div class="grid3">
+        <label class="f"><span>Área total (m²)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-k="area"></label>
         <label class="f"><span>Pavimentos</span><input type="number" inputmode="numeric" min="0" step="1" data-k="pavimentos"></label>
+        <label class="f"><span>Blocos</span><input type="number" inputmode="numeric" min="0" step="1" data-k="blocos"></label>
+      </div>
+      <div class="grid3">
+        <label class="f"><span>Risco</span><select data-k="risco" id="fRisco"></select></label>
+        <label class="f"><span>Altura (m)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-k="altura"></label>
+        <label class="f"><span>Área alterada (m²)</span><input type="text" inputmode="decimal" data-k="areaAlt" placeholder="se houver"></label>
       </div>
       <details class="more">
-        <summary>Processo e outras informações</summary>
+        <summary>Responsável pelo imóvel (Anexo J)</summary>
         <div class="grid2" style="margin-top:10px">
-          <label class="f"><span>Nº do processo / PPCI (e-SCI)</span><input type="text" data-k="processo"></label>
+          <label class="f"><span>Nome / razão social</span><input type="text" data-k="rNome"></label>
+          <label class="f"><span>CPF / CNPJ</span><input type="text" data-k="rDoc"></label>
+          <label class="f"><span>Telefone(s)</span><input type="tel" data-k="rTel"></label>
+          <label class="f"><span>E-mail</span><input type="email" data-k="rEmail"></label>
+          <label class="f"><span>Logradouro e nº</span><input type="text" data-k="rLogradouro"></label>
+          <label class="f"><span>Bairro</span><input type="text" data-k="rBairro"></label>
+          <label class="f"><span>Cidade</span><input type="text" data-k="rCidade"></label>
+          <label class="f"><span>CEP</span><input type="text" inputmode="numeric" data-k="rCep"></label>
+        </div>
+        <p class="note" style="margin-top:0">Vem preenchido com o responsável padrão das configurações (⚙️).</p>
+      </details>
+      <details class="more">
+        <summary>Outras informações</summary>
+        <div class="grid2" style="margin-top:10px">
           <label class="f"><span>DRT (ART/RRT) de execução nº</span><input type="text" data-k="art"></label>
           <label class="f"><span>Data da vistoria</span><input type="date" data-k="data"></label>
           <label class="f"><span>Acompanhante</span><input type="text" data-k="acompanhante"></label>
@@ -168,7 +197,7 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
       </details>
     </div>
 
-    <h2><span class="grow">Sistemas e medidas previstos no PPCI</span><button class="btn sm" id="btnSuggest">Refazer sugestão</button></h2>
+    <h2>Sistemas e medidas previstos no PPCI</h2>
     <div class="card">
       <div class="seg" id="sysChips"></div>
       <p class="warnbox" id="sysNote"></p>
@@ -214,10 +243,16 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
   <div class="dlg-h"><b>Gerar relatório</b><button class="icon-btn" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="dlg-b">
     <p id="rpInfo" style="margin-top:0"></p>
+    <label class="radio-card"><input type="radio" name="doc" value="I" checked><div><b>Anexo I — Relatório de conformidade e termo de responsabilidade</b><small>Formulário da IN 1 para o atestado de habite-se, com a tabela de sistemas já marcada.</small></div></label>
+    <label class="radio-card"><input type="radio" name="doc" value="J"><div><b>Anexo J — Termo de entrega do imóvel</b><small>Descritivo dos sistemas instalados com as fotos de cada um.</small></div></label>
+    <label class="radio-card"><input type="radio" name="doc" value="R"><div><b>Relatório interno de vistoria</b><small>Checklist completo, não conformidades e registro fotográfico.</small></div></label>
+    <p class="warnbox hidden" id="rpWarn" style="margin:0 0 8px"></p>
+    <div id="rpOptR">
     <label class="check"><input type="checkbox" id="rpFull" checked> Checklist completo (todos os itens)</label>
     <label class="check"><input type="checkbox" id="rpPhotos" checked> Registro fotográfico</label>
     <label class="check"><input type="checkbox" id="rpDisc" checked> Texto de ressalva técnica</label>
-    <label class="check"><input type="checkbox" id="rpSig" checked> Bloco de assinatura</label>
+    </div>
+    <label class="check"><input type="checkbox" id="rpSig" checked> <span id="rpSigTxt">Bloco de assinatura</span></label>
     <div id="rpOut" class="hidden card" style="margin-top:10px;background:#fff6f5;border-color:#f3c9c9">
       <b id="rpName" style="word-break:break-all"></b><p class="note" id="rpSize" style="margin:4px 0 10px"></p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -232,7 +267,7 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
 
 <!-- ============ CONFIGURAÇÕES ============ -->
 <dialog id="dSettings">
-  <div class="dlg-h"><b>Empresa e vistoriador</b><button class="icon-btn" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="dlg-h"><b>Responsável técnico e empresa</b><button class="icon-btn" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="dlg-b" id="setFields">
     <div class="grid2">
       <label class="f"><span>Título</span><input type="text" data-s="titulo"></label>
@@ -241,6 +276,25 @@ details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size
       <label class="f"><span>Empresa</span><input type="text" data-s="empresa"></label>
       <label class="f"><span>Telefone</span><input type="tel" data-s="telefone"></label>
       <label class="f"><span>E-mail</span><input type="email" data-s="email"></label>
+      <label class="f"><span>CPF</span><input type="text" data-s="cpf"></label>
+      <label class="f"><span>RG</span><input type="text" data-s="rg"></label>
+      <label class="f"><span>Logradouro</span><input type="text" data-s="rtLogradouro"></label>
+      <label class="f"><span>Nº</span><input type="text" data-s="rtNumero"></label>
+      <label class="f"><span>Bairro</span><input type="text" data-s="rtBairro"></label>
+      <label class="f"><span>Cidade</span><input type="text" data-s="rtCidade"></label>
+      <label class="f"><span>CEP</span><input type="text" data-s="rtCep"></label>
+    </div>
+    <h2>Responsável pelo imóvel padrão</h2>
+    <p class="note" style="margin-top:0">Copiado para cada vistoria nova (Anexo J). Pode ser alterado em cada vistoria.</p>
+    <div class="grid2">
+      <label class="f"><span>Nome / razão social</span><input type="text" data-s="imvNome"></label>
+      <label class="f"><span>CPF / CNPJ</span><input type="text" data-s="imvDoc"></label>
+      <label class="f"><span>Telefone(s)</span><input type="tel" data-s="imvTel"></label>
+      <label class="f"><span>E-mail</span><input type="email" data-s="imvEmail"></label>
+      <label class="f"><span>Logradouro e nº</span><input type="text" data-s="imvLogradouro"></label>
+      <label class="f"><span>Bairro</span><input type="text" data-s="imvBairro"></label>
+      <label class="f"><span>Cidade</span><input type="text" data-s="imvCidade"></label>
+      <label class="f"><span>CEP</span><input type="text" data-s="imvCep"></label>
     </div>
     <label class="f"><span>Logo da empresa (cabeçalho do relatório)</span></label>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:-4px 0 12px"><img id="logoPrev" alt="" style="max-height:48px;max-width:150px;border:1px solid var(--line);border-radius:8px;padding:4px;background:#fff"><button class="btn sm" id="logoPick">Escolher imagem</button><button class="btn sm danger" id="logoDel">Remover</button><button class="btn sm" id="logoDef">Usar logo da Absolut</button><input type="file" id="logoFile" accept="image/*" class="hidden"></div>
@@ -311,7 +365,7 @@ const kvGet=k=>tx('kv','readonly',s=>s.get(k));
 const kvSet=(k,v)=>tx('kv','readwrite',s=>s.put(v,k));
 
 /* ---------------- configurações ---------------- */
-const DEFAULTS={titulo:'Eng. Civil',nome:'Geovane Lang',crea:'152359-1',empresa:'Absolut Construtora',telefone:'',email:'',cidade:'',logo:'default',
+const DEFAULTS={titulo:'Eng. Civil',nome:'Geovane Lang',crea:'152359-1',empresa:'Absolut Construtora',telefone:'',email:'',cidade:'',logo:'default',cpf:'',rg:'',rtLogradouro:'',rtNumero:'',rtBairro:'',rtCidade:'',rtCep:'',imvNome:'',imvDoc:'',imvTel:'',imvEmail:'',imvLogradouro:'',imvBairro:'',imvCidade:'',imvCep:'',
   ressalva:'Este relatório registra a verificação prévia dos sistemas e medidas de segurança contra incêndio e pânico, realizada pelo responsável técnico com base no projeto aprovado e nas Instruções Normativas do CBMSC indicadas em cada item, nas áreas acessíveis e nas condições observadas na data da vistoria. Não substitui a vistoria oficial nem o atestado de habite-se emitido pelo Corpo de Bombeiros Militar de Santa Catarina. Os critérios do checklist são um roteiro de conferência e devem ser confrontados com o texto vigente das INs.',assinatura:null};
 let ST={...DEFAULTS};
 const respName=()=>[ST.titulo,ST.nome].filter(Boolean).join(' ');
@@ -323,9 +377,8 @@ function freeUrls(){urls.forEach(u=>URL.revokeObjectURL(u));urls=[]}
 const objUrl=b=>{const u=URL.createObjectURL(b);urls.push(u);return u};
 const sysOf=k=>CATALOGO.find(s=>s.k===k);
 const isOn=(v,k)=>k==='docs'||!!(v.sis&&v.sis[k]);
-// sugestão inicial dos sistemas a partir de área e altura (ver catalogo.js)
-function suggested(v){const a=num(v.area),h=num(v.altura),o={};const big=(a!=null&&a>=LIMITE_AREA)||(h!=null&&h>=LIMITE_ALTURA);
-  CATALOGO.forEach(s=>{if(s.k==='docs')return;o[s.k]=s.regra==='sempre'||(s.regra==='porte'&&big)});return o}
+// sistemas que já vêm marcados numa vistoria nova (ver catalogo.js)
+function suggested(v){const o={};CATALOGO.forEach(s=>{if(s.k!=='docs')o[s.k]=s.regra==='sempre'});return o}
 function applySuggestion(v,force){const sg=suggested(v);v.sis=v.sis||{};v.sisManual=force?{}:(v.sisManual||{});for(const k in sg)if(!v.sisManual[k])v.sis[k]=sg[k]}
 // itens visíveis de um sistema (catálogo + itens criados pelo usuário)
 function itemsOf(v,s){const base=s.itens.filter(i=>!i.se||isOn(v,i.se)).map(i=>({id:i.id,t:i.t,ref:i.ref||s.ref}));
@@ -335,35 +388,38 @@ const stOf=(v,id)=>(v.itens&&v.itens[id]&&v.itens[id].st)||'';
 const obsOf=(v,id)=>(v.itens&&v.itens[id]&&v.itens[id].obs)||'';
 function countSys(v,s){const c={c:0,nc:0,na:0,pe:0,n:0};itemsOf(v,s).forEach(i=>{c.n++;c[stOf(v,i.id)||'pe']++});return c}
 function countAll(v){const t={c:0,nc:0,na:0,pe:0,n:0};activeSys(v).forEach(s=>{const c=countSys(v,s);for(const k in t)t[k]+=c[k]});return t}
-const ocupName=k=>{const o=OCUPACOES.find(o=>o.k===k);return o?o.n:''};
+const ocupName=k=>{const o=OCUPACOES.find(o=>o.k===k);return o?o.n:(k||'')};
+const cityLine=v=>[v.bairro,v.cidade].filter(Boolean).join(' · ');
 
 /* ---------------- tela inicial ---------------- */
 async function renderHome(){
   freeUrls();renderLogo();$('#hResp').textContent=respName()+(creaTxt()?' · '+creaTxt():'');
   const q=$('#search').value.trim().toLowerCase();
   let vs=(await getAll('visits')).sort((a,b)=>b.updatedAt-a.updatedAt);
-  if(q)vs=vs.filter(v=>[v.numero,v.endereco,v.empreendimento,v.proprietario,v.processo].join(' ').toLowerCase().includes(q));
+  if(q)vs=vs.filter(v=>[v.numero,v.endereco,v.bairro,v.cidade,v.empreendimento,v.rNome,v.processo,v.re].join(' ').toLowerCase().includes(q));
   const el=$('#list');
   if(!vs.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13l2 2 4-4"/></svg><p>${q?'Nenhuma vistoria encontrada.':'Nenhuma vistoria ainda.<br>Toque em <b>Nova vistoria</b> para começar.'}</p></div>`;return}
   el.innerHTML='';
   for(const v of vs){
     const t=countAll(v),done=t.n?Math.round((t.n-t.pe)/t.n*100):0;
     const card=document.createElement('div');card.className='card visit';
-    card.innerHTML=`<div class="ring" style="background:conic-gradient(${t.nc?'var(--crit)':'var(--ok)'} ${done}%,#e9e9e9 0)"><span style="background:#fff;border-radius:50%;width:42px;height:42px;display:grid;place-items:center">${done}%</span></div><div class="info"><b>${esc(v.endereco||v.empreendimento||'Endereço não informado')}</b><small>${esc([v.empreendimento,ocupName(v.ocupacao)].filter(Boolean).join(' · ')||'—')}</small><small><span class="pill">Nº ${esc(v.numero)}</span> ${fmtDate(v.data)} ${t.nc?`<span class="pill nc">${t.nc} não conforme${t.nc===1?'':'s'}</span>`:''} ${t.pe?`<span class="pill pe">${t.pe} pendente${t.pe===1?'':'s'}</span>`:'<span class="pill ok">completo</span>'}</small></div>`;
+    card.innerHTML=`<div class="ring" style="background:conic-gradient(${t.nc?'var(--crit)':'var(--ok)'} ${done}%,#e9e9e9 0)"><span style="background:#fff;border-radius:50%;width:42px;height:42px;display:grid;place-items:center">${done}%</span></div><div class="info"><b>${esc(v.endereco||v.empreendimento||'Endereço não informado')}</b><small>${esc([v.empreendimento,cityLine(v),ocupName(v.ocupacao)].filter(Boolean).join(' · ')||'—')}</small><small><span class="pill">Nº ${esc(v.numero)}</span> ${fmtDate(v.data)} ${t.nc?`<span class="pill nc">${t.nc} não conforme${t.nc===1?'':'s'}</span>`:''} ${t.pe?`<span class="pill pe">${t.pe} pendente${t.pe===1?'':'s'}</span>`:'<span class="pill ok">completo</span>'}</small></div>`;
     card.onclick=()=>openVisit(v.id);el.appendChild(card);
   }
 }
 async function newVisit(){
   const y=new Date().getFullYear(), n=((await kvGet('seq-'+y))||0)+1;await kvSet('seq-'+y,n);
-  const v={id:uid(),numero:y+'/'+String(n).padStart(3,'0'),createdAt:Date.now(),updatedAt:Date.now(),endereco:'',empreendimento:'',proprietario:'',ocupacao:'',area:'',altura:'',pavimentos:'',processo:'',art:'',data:today(),acompanhante:'',conclusao:'',sis:{},sisManual:{},itens:{},custom:[]};
+  const v={id:uid(),numero:y+'/'+String(n).padStart(3,'0'),createdAt:Date.now(),updatedAt:Date.now(),endereco:'',bairro:'',cidade:'',cep:'',empreendimento:'',cnpj:'',re:'',ocupacao:'',risco:'',area:'',areaAlt:'',altura:'',pavimentos:'',blocos:'',processo:'',art:'',data:today(),acompanhante:'',conclusao:'',
+    rNome:ST.imvNome||'',rDoc:ST.imvDoc||'',rTel:ST.imvTel||'',rEmail:ST.imvEmail||'',rLogradouro:ST.imvLogradouro||'',rBairro:ST.imvBairro||'',rCidade:ST.imvCidade||'',rCep:ST.imvCep||'',sis:{},sisManual:{},itens:{},custom:[],desc:{}};
   applySuggestion(v,true);await put('visits',v);await openVisit(v.id);setTimeout(()=>$('#fEndereco').focus(),150);
 }
 
 /* ---------------- tela da vistoria ---------------- */
-$('#fOcup').innerHTML='<option value="">— selecione —</option>'+OCUPACOES.map(o=>`<option value="${o.k}">${esc(o.n)}</option>`).join('');
+$('#ocups').innerHTML=OCUPACOES.map(o=>`<option value="${esc(o.n)}">`).join('');
+$('#fRisco').innerHTML='<option value="">—</option>'+RISCOS.map(r=>`<option>${r}</option>`).join('');
 async function openVisit(id){
   V=await get('visits',id);if(!V)return renderHome();
-  V.sis=V.sis||{};V.sisManual=V.sisManual||{};V.itens=V.itens||{};V.custom=V.custom||[];
+  V.sis=V.sis||{};V.sisManual=V.sisManual||{};V.itens=V.itens||{};V.custom=V.custom||[];V.desc=V.desc||{};
   $$('#vVisit [data-k]').forEach(i=>i.value=V[i.dataset.k]??'');
   onlyPend=false;$('#btnFilter').classList.remove('on');
   show('vVisit');history.replaceState(null,'','#'+id);
@@ -372,8 +428,7 @@ async function openVisit(id){
 function headerVisit(){$('#vTitle').textContent=V.endereco||V.empreendimento||'Nova vistoria';$('#vSub').textContent='Nº '+V.numero+(V.empreendimento?' · '+V.empreendimento:'')+(V.data?' · '+fmtDate(V.data):'')}
 let saveT;
 function touch(){V.updatedAt=Date.now();clearTimeout(saveT);saveT=setTimeout(()=>put('visits',V),300)}
-$$('#vVisit [data-k]').forEach(i=>i.addEventListener('input',()=>{V[i.dataset.k]=i.value;touch();headerVisit();
-  if(i.dataset.calc!==undefined){applySuggestion(V,false);renderChips();renderChecklist()}}));
+$$('#vVisit [data-k]').forEach(i=>i.addEventListener('input',()=>{V[i.dataset.k]=i.value;touch();headerVisit()}));
 
 function renderAll(){headerVisit();renderChips();renderChecklist();renderGeneral()}
 function renderChips(){
@@ -381,10 +436,8 @@ function renderChips(){
   CATALOGO.filter(s=>s.k!=='docs').forEach(s=>{const b=document.createElement('button');b.type='button';b.className=isOn(V,s.k)?'on':'';
     b.innerHTML=esc(s.curto||s.n)+`<small>${esc(s.ref)}</small>`+(sg[s.k]&&!isOn(V,s.k)?' <small>(sugerido)</small>':'');
     b.onclick=()=>{V.sis[s.k]=!V.sis[s.k];V.sisManual[s.k]=true;touch();renderChips();renderChecklist()};box.appendChild(b)});
-  const a=num(V.area),h=num(V.altura);
-  $('#sysNote').innerHTML=(a==null&&h==null?'Informe área e altura para a sugestão automática. ':`Sugestão para ${a!=null?fmtNum(a)+' m²':'área não informada'} e ${h!=null?fmtNum(h)+' m de altura':'altura não informada'}. `)+'A sugestão é só um ponto de partida: <b>marque exatamente os sistemas que constam no PPCI aprovado</b> (tabelas da IN 1 – Parte 2 para a ocupação).';
+  $('#sysNote').innerHTML='Toda vistoria nova começa com extintores, saídas, iluminação e sinalização. <b>Marque exatamente os sistemas que constam no PPCI aprovado</b>: os não marcados saem como “não se aplica” no Anexo I.';
 }
-$('#btnSuggest').onclick=()=>{applySuggestion(V,true);touch();renderChips();renderChecklist();toast('Sistemas redefinidos pela sugestão')};
 
 const openSys=new Set();
 function renderChecklist(){
@@ -397,7 +450,10 @@ function renderChecklist(){
     d.addEventListener('toggle',()=>{d.open?openSys.add(s.k):openSys.delete(s.k)});
     d.innerHTML=`<summary><div class="nm"><b>${si+1}. ${esc(s.n)}</b><small>${esc(s.ref)} · ${c.n-c.pe}/${c.n} verificados</small></div><div class="cnt">${c.nc?`<span class="pill nc">${c.nc} NC</span>`:''}${c.pe?`<span class="pill pe">${c.pe} pend.</span>`:'<span class="pill ok">ok</span>'}</div></summary>`;
     const tools=document.createElement('div');tools.className='sys-tools';
-    tools.innerHTML=`<button class="btn sm" data-a="allc">Pendentes → Conforme</button><button class="btn sm" data-a="add">+ Item próprio</button>`;
+    tools.innerHTML=`<button class="btn sm" data-a="allc">Pendentes → Conforme</button><button class="btn sm" data-a="add">+ Item próprio</button>`+(s.k==='docs'?'':`<button class="btn sm" data-a="foto">${CAM_SVG} Foto do sistema</button>
+      <textarea data-a="desc" style="flex-basis:100%;min-height:58px" placeholder="Descritivo do sistema instalado (Anexo J). ${esc(s.desc||'Quantidades, tipos e locais.')}">${esc(V.desc[s.k]||'')}</textarea><div class="thumbs" data-a="sth" style="margin:0;flex-basis:100%"></div>`);
+    if(s.k!=='docs'){tools.querySelector('[data-a=foto]').onclick=()=>pickPhoto(null,s.k);tools.querySelector('[data-a=desc]').oninput=e=>{V.desc[s.k]=e.target.value;touch()};
+      thumbs(tools.querySelector('[data-a=sth]'),P.filter(p=>p.sys===s.k&&!p.itemId),numOf)}
     tools.querySelector('[data-a=allc]').onclick=()=>{items.forEach(i=>{if(!stOf(V,i.id))setItem(i.id,{st:'c'})});renderChecklist()};
     tools.querySelector('[data-a=add]').onclick=()=>{const t=prompt('Descrição do item a verificar em "'+s.n+'":');if(!t||!t.trim())return;V.custom.push({id:'u'+uid(),sys:s.k,t:t.trim()});touch();renderChecklist()};
     d.appendChild(tools);
@@ -418,6 +474,7 @@ function renderChecklist(){
       d.appendChild(row);
     });
     if(onlyPend&&!d.querySelector('.it'))return;
+    tools.style.paddingBottom='10px';tools.style.borderBottom='1px solid var(--line)';
     box.appendChild(d);
   });
   if(!box.children.length)box.innerHTML=`<div class="empty"><p>${onlyPend?'Nenhuma pendência nem não conformidade. 🎉':'Nenhum sistema selecionado.'}</p></div>`;
@@ -426,9 +483,9 @@ function renderChecklist(){
 }
 function setItem(id,patch){V.itens[id]={...(V.itens[id]||{}),...patch};touch()}
 function thumbs(el,list,numOf){el.innerHTML='';list.forEach(p=>{const t=document.createElement('div');t.className='th'+(p.incluir?'':' off');t.style.backgroundImage=`url('${objUrl(p.blob)}')`;if(p.incluir&&numOf[p.id])t.innerHTML=`<span>${pad(numOf[p.id])}</span>`;t.onclick=()=>openPhoto(p.id);el.appendChild(t)})}
-function renderGeneral(){const g=P.filter(p=>!p.itemId),numOf={};orderedPhotos().forEach((p,i)=>numOf[p.id]=i+1);thumbs($('#genThumbs'),g,numOf);$('#genEmpty').classList.toggle('hidden',g.length>0)}
-// fotos incluídas no relatório, na ordem: sistemas/itens do checklist e depois as gerais
-function orderedPhotos(){const out=[];activeSys(V).forEach(s=>itemsOf(V,s).forEach(it=>P.filter(p=>p.itemId===it.id&&p.incluir).forEach(p=>out.push(p))));P.filter(p=>!p.itemId&&p.incluir).forEach(p=>out.push(p));return out}
+function renderGeneral(){const g=P.filter(p=>!p.itemId&&!p.sys),numOf={};orderedPhotos().forEach((p,i)=>numOf[p.id]=i+1);thumbs($('#genThumbs'),g,numOf);$('#genEmpty').classList.toggle('hidden',g.length>0)}
+// fotos incluídas no relatório, na ordem: por sistema (fotos do sistema, depois as dos itens) e por fim as gerais
+function orderedPhotos(){const out=[];activeSys(V).forEach(s=>{P.filter(p=>p.sys===s.k&&!p.itemId&&p.incluir).forEach(p=>out.push(p));itemsOf(V,s).forEach(it=>P.filter(p=>p.itemId===it.id&&p.incluir).forEach(p=>out.push(p)))});P.filter(p=>!p.itemId&&!p.sys&&p.incluir).forEach(p=>out.push(p));return out}
 // localiza o item (número e texto) de uma foto
 function itemInfo(itemId){let r=null;activeSys(V).forEach((s,si)=>itemsOf(V,s).forEach((it,ii)=>{if(it.id===itemId)r={s,it,n:(si+1)+'.'+(ii+1)}}));return r}
 
@@ -463,7 +520,7 @@ function openPhoto(id){
   CP=P.find(p=>p.id===id);if(!CP)return;
   const n=orderedPhotos().indexOf(CP),inf=CP.itemId?itemInfo(CP.itemId):null;
   $('#dpTitle').textContent=CP.incluir&&n>=0?'Foto '+pad(n+1):'Foto (fora do relatório)';
-  $('#dpItem').textContent=inf?`Item ${inf.n} — ${inf.s.n} (${inf.it.ref}): ${inf.it.t}`:(CP.itemId?'Item de um sistema que não está selecionado.':'Foto geral.');
+  $('#dpItem').textContent=inf?`Item ${inf.n} — ${inf.s.n} (${inf.it.ref}): ${inf.it.t}`:(CP.itemId?'Item de um sistema que não está selecionado.':CP.sys&&sysOf(CP.sys)?'Foto do sistema: '+sysOf(CP.sys).n+'.':'Foto geral.');
   if(cpUrl)URL.revokeObjectURL(cpUrl);cpUrl=URL.createObjectURL(CP.blob);$('#dpImg').src=cpUrl;
   $('#dpInc').checked=!!CP.incluir;$('#dpDesc').value=CP.legenda||'';
   $('#dpReset').classList.toggle('hidden',!CP.orig);$('#dpWhen').textContent='Registrada em '+fmtStamp(CP.takenAt);
@@ -561,8 +618,8 @@ async function buildPdf(opt){
   header();
   font('bold',17);doc.text('Relatório de Vistoria para Habite-se',M,y+4);y+=9;
   font('normal',10,[100,100,100]);doc.text('Segurança contra incêndio e pânico — Instruções Normativas do CBMSC',M,y);y+=6;
-  const dim=[num(V.area)!=null?'Área '+fmtNum(V.area)+' m²':'',num(V.altura)!=null?'Altura '+fmtNum(V.altura)+' m':'',V.pavimentos?V.pavimentos+' pavimento(s)':''].filter(Boolean).join('  ·  ');
-  const rows=[['Nº do relatório',V.numero],['Empresa',ST.empresa],['Empreendimento',V.empreendimento],['Endereço',V.endereco],['Proprietário / construtora',V.proprietario],['Ocupação',ocupName(V.ocupacao)],['Dimensões',dim],['Processo / PPCI',V.processo],['DRT de execução',V.art],['Data da vistoria',fmtDate(V.data)],['Acompanhante',V.acompanhante],['Vistoriador / resp. técnico',respName()+(creaTxt()?' — '+creaTxt():'')]].filter(r=>r[1]);
+  const dim=[num(V.area)!=null?'Área '+fmtNum(V.area)+' m²':'',num(V.altura)!=null?'Altura '+fmtNum(V.altura)+' m':'',V.pavimentos?V.pavimentos+' pavimento(s)':'',V.blocos?V.blocos+' bloco(s)':''].filter(Boolean).join('  ·  ');
+  const rows=[['Nº do relatório',V.numero],['Empresa',ST.empresa],['Edificação',V.empreendimento],['Endereço',[V.endereco,V.bairro,V.cidade,V.cep].filter(Boolean).join(', ')],['Responsável pelo imóvel',V.rNome],['RE',V.re],['Protocolo',V.processo],['Ocupação',ocupName(V.ocupacao)+(V.risco?'  ·  Risco '+V.risco:'')],['Dimensões',dim],['DRT de execução',V.art],['Data da vistoria',fmtDate(V.data)],['Acompanhante',V.acompanhante],['Vistoriador / resp. técnico',respName()+(creaTxt()?' — '+creaTxt():'')]].filter(r=>r[1]);
   doc.setDrawColor(225,225,225);doc.setLineWidth(.25);
   for(const [k,v] of rows){
     font('normal',9.5);const lines=doc.splitTextToSize(String(v),CW-50),h=Math.max(7.5,lines.length*4.2+3.4);ensure(h);
@@ -603,7 +660,7 @@ async function buildPdf(opt){
     section('Registro fotográfico');
     const imgs=await Promise.all(photos.map(p=>blobToDataURL(p.blob)));
     const gap=6,bw=(CW-gap)/2,bh=bw*.75;
-    const cap=(p)=>{const inf=p.itemId?itemInfo(p.itemId):null;const a=[];if(inf)a.push({t:'Item '+inf.n+' · '+inf.it.ref+' · '+ST_TXT[stOf(V,p.itemId)],st:'bold',sz:8,col:ST_RGB[stOf(V,p.itemId)]});
+    const cap=(p)=>{const inf=p.itemId?itemInfo(p.itemId):null;const a=[];if(!inf&&p.sys&&sysOf(p.sys))a.push({t:sysOf(p.sys).n+' · '+sysOf(p.sys).ref,st:'bold',sz:8,col:[90,90,90]});if(inf)a.push({t:'Item '+inf.n+' · '+inf.it.ref+' · '+ST_TXT[stOf(V,p.itemId)],st:'bold',sz:8,col:ST_RGB[stOf(V,p.itemId)]});
       const txt=p.legenda||(inf?(obsOf(V,p.itemId)||inf.it.t):'');if(txt)a.push({t:txt,st:'normal',sz:8.5,col:[50,50,50]});return a};
     const ops=(p,i)=>{const o=[{t:'Foto '+pad(i+1),st:'bold',sz:10,col:RED,h:5}];cap(p).forEach(c=>{font(c.st,c.sz);let l=doc.splitTextToSize(c.t,bw);if(l.length>4){l=l.slice(0,4);l[3]=l[3].replace(/\s*\S*$/,'')+'…'}l.forEach(t=>o.push({...c,t,h:c.sz*.43}))});return o};
     const opsH=o=>o.reduce((s,l)=>s+l.h,0);
@@ -639,31 +696,158 @@ async function buildPdf(opt){
   return doc.output('blob');
 }
 
+/* ---------------- Anexos I e J da IN 1 (formulários oficiais do CBMSC) ---------------- */
+// situação de uma linha da tabela do Anexo I, a partir dos sistemas marcados e do checklist
+function anexoRow(r){
+  const on=r.k.filter(k=>isOn(V,k)).map(sysOf);
+  if(!on.length)return r.outros?{ppci:'',nsci:'',just:'NÃO SE APLICA'}:{ppci:'n',nsci:'n',just:'NÃO SE APLICA'};
+  const ncs=[];on.forEach(s=>itemsOf(V,s).forEach(it=>{if(stOf(V,it.id)==='nc')ncs.push(obsOf(V,it.id).trim()||it.t)}));
+  const nomes=r.outros?on.map(s=>s.curto||s.n).join(', '):'';
+  return ncs.length?{ppci:'n',nsci:'n',just:(nomes?nomes+': ':'')+ncs.join('; ')}:{ppci:'s',nsci:'s',just:nomes};
+}
+const sysPhotos=k=>orderedPhotos().filter(p=>p.sys===k);
+async function buildAnexo(kind,opt){
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',format:'a4',compress:true});
+  const W=210,H=297,M=18,CW=W-2*M,BOT=H-16;let y=0;
+  const font=(st='normal',sz=9,col=[0,0,0])=>{doc.setFont('helvetica',st);doc.setFontSize(sz);doc.setTextColor(...col)};
+  const newPage=()=>{doc.addPage();y=20};
+  const ensure=h=>{if(y+h>BOT)newPage()};
+  const val=v=>{v=String(v??'').trim();return v||'____________'};
+  const title=t=>{font('bold',11);doc.text(t,W/2,y,{align:'center'});y+=9};
+  const sec=t=>{ensure(14);y+=2;font('bold',9.5);doc.text(t,W/2,y,{align:'center'});y+=6};
+  // linha de "Rótulo: valor" separados por espaços, com quebra automática
+  const line=(pairs,gap=2.2)=>{font('normal',9);const t=pairs.map(([k,v])=>k+': '+val(v)).join('     ');for(const l of doc.splitTextToSize(t,CW)){ensure(5);doc.text(l,M,y);y+=4.6}y+=gap};
+  const para=(t,st='normal',sz=9)=>{font(st,sz);for(const l of doc.splitTextToSize(t,CW)){ensure(5);doc.text(l,M,y);y+=sz*.47}y+=2};
+  // cabeçalho oficial
+  if(BRASAO){try{doc.addImage(BRASAO.src,'PNG',M+1,13,11.5,11.5*BRASAO.h/BRASAO.w,'brasao','FAST')}catch(e){}}
+  font('normal',9.5);['ESTADO DE SANTA CATARINA','SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA','CORPO DE BOMBEIROS MILITAR DE SANTA CATARINA'].forEach((t,i)=>doc.text(t,M+17,17.5+i*4.3));
+  y=36;
+  const rtEnd=[['Logradouro',ST.rtLogradouro],['Nº',ST.rtNumero],['Bairro',ST.rtBairro],['Cidade',ST.rtCidade],['CEP',ST.rtCep]];
+  const sign=async(cx,label)=>{ // linha de assinatura centrada em cx; devolve nada
+    if(label==='rt'&&opt.sig&&ST.assinatura){try{const im=await loadImg(ST.assinatura);const k=Math.min(60/im.naturalWidth,18/im.naturalHeight);const w=im.naturalWidth*k,h=im.naturalHeight*k;doc.addImage(ST.assinatura,'PNG',cx-w/2,y-1-h,w,h)}catch(e){}}
+    doc.setDrawColor(0);doc.setLineWidth(.25);doc.line(cx-42,y,cx+42,y)};
+
+  if(kind==='I'){
+    title('Relatório de conformidade e termo de responsabilidade - ATESTADO PARA HABITE-SE');
+    sec('1. Responsável técnico pela execução da obra ou responsável pelo imóvel');
+    line([['Nome',ST.nome],['Telefone(s)',ST.telefone],['CPF/CNPJ',ST.cpf],['RG',ST.rg],['Nº de registro no conselho de classe (se RT)',ST.crea]]);
+    line([['E-mail',ST.email],...rtEnd]);
+    sec('2. Descrição do imóvel');
+    line([['RE',V.re],['CNPJ',V.cnpj],['Protocolo',V.processo],['Ocupação',ocupName(V.ocupacao)],['Logradouro',V.endereco],['Bairro',V.bairro],['Cidade',V.cidade],['CEP',V.cep]]);
+    line([['Nome da edificação',V.empreendimento]]);
+    line([['Nome da empresa',V.rNome||ST.empresa]]);
+    sec('3. Relatório dos Sistemas e Medidas de Segurança Contra Incêndio e Pânico');
+    const c0=58,cs=10,xs=[M,M+c0,M+c0+cs,M+c0+2*cs,M+c0+3*cs,M+c0+4*cs,M+CW],jw=CW-c0-4*cs;
+    doc.setDrawColor(0);doc.setLineWidth(.25);
+    const grid=(y0,h,cols)=>{doc.rect(M,y0,CW,h);cols.forEach(i=>doc.line(xs[i],y0,xs[i],y0+h))};
+    const thead=()=>{const h1=10,h2=5.5;grid(y,h1+h2,[1,3,5]);doc.line(xs[1],y+h1,xs[5],y+h1);doc.line(xs[2],y+h1,xs[2],y+h1+h2);doc.line(xs[4],y+h1,xs[4],y+h1+h2);
+      font('bold',8.5);doc.text('Sistemas',M+2,y+(h1+h2)/2+1.2);font('bold',6.4);doc.text(['Em conformidade','com PPCI'],xs[1]+cs,y+4,{align:'center'});doc.text(['Em conformidade','com NSCI'],xs[3]+cs,y+4,{align:'center'});font('bold',8.5);
+      doc.text(doc.splitTextToSize('Justificativa em caso de desconformidade',jw-4),xs[5]+2,y+(h1+h2)/2+1.2);
+      ['Sim','Não','Sim','Não'].forEach((t,i)=>doc.text(t,xs[1+i]+cs/2,y+h1+3.9,{align:'center'}));y+=h1+h2};
+    ensure(40);thead();
+    for(const r of ANEXO_I){const s=anexoRow(r);font('normal',8.5);
+      const ln=doc.splitTextToSize(r.n,c0-4),lj=doc.splitTextToSize(s.just,jw-4),h=Math.max(ln.length,lj.length)*3.7+1.9;
+      if(y+h>BOT){newPage();thead()}
+      grid(y,h,[1,2,3,4,5]);font('normal',8.5);doc.text(ln,M+2,y+3.8);doc.text(lj,xs[5]+2,y+3.8);
+      font('bold',9.5);const mid=y+h/2+1.3;
+      if(s.ppci)doc.text('X',xs[s.ppci==='s'?1:2]+cs/2,mid,{align:'center'});
+      if(s.nsci)doc.text('X',xs[s.nsci==='s'?3:4]+cs/2,mid,{align:'center'});
+      y+=h}
+    // declaração e assinatura, dentro da última célula da tabela
+    const decl='Na qualidade de responsável técnico pela execução dos SMSCI, declaro que as informações prestadas neste documento são verdadeiras e estou ciente de minha responsabilidade acerca dos SMSCI instalados no imóvel, conforme definido pela Lei Estadual nº 16.157 de 2013. Estou ciente que a concessão do atestado para habite-se está condicionada a existência e a operacionalidade dos SMSCI. O descumprimento ocasiona aplicação das sanções legais cabíveis, além de possível responsabilidade civil e criminal.';
+    font('normal',8.5);const dl=doc.splitTextToSize(decl,CW-4),bh=dl.length*3.9+30;
+    if(y+bh>BOT)newPage();
+    doc.setDrawColor(0);doc.rect(M,y,CW,bh);font('normal',8.5);doc.text(dl,M+2,y+4.4);
+    const y0=y;y=y0+dl.length*3.9+21;await sign(M+55,'rt');
+    font('normal',8.5);doc.text('Assinatura do Responsável Técnico',M+55,y+4,{align:'center'});
+    const d=new Date();doc.text('Data: '+fmtDate(today())+'     Hora: '+pad(d.getHours())+'h '+pad(d.getMinutes())+'min',M+CW-4,y+4,{align:'right'});
+    y=y0+bh;
+  }else{
+    title('Termo de entrega do imóvel');
+    sec('1. Responsável pelo imóvel');
+    line([['Nome',V.rNome],['Telefone(s)',V.rTel],['CPF/CNPJ',V.rDoc],['E-mail',V.rEmail],['Logradouro',V.rLogradouro],['Bairro',V.rBairro],['Cidade',V.rCidade],['CEP',V.rCep]]);
+    sec('2. Responsável técnico pela execução da obra');
+    line([['Nome',ST.nome],['Telefone(s)',ST.telefone],['CPF',ST.cpf],['E-mail',ST.email],['Nº de registro no conselho de classe',ST.crea]]);
+    sec('3. Descrição do imóvel');
+    line([['RE',V.re],['CNPJ',V.cnpj],['Logradouro',V.endereco],['Bairro',V.bairro],['Cidade',V.cidade],['CEP',V.cep]]);
+    sec('4. Dados da solicitação');
+    line([['Área total da solicitação (m²)',fmtNum(V.area)],['Protocolo',V.processo],['Área da alteração/ampliação/reforma',V.areaAlt]]);
+    font('normal',9);ensure(6);doc.text('Ocupação(ões): '+val(ocupName(V.ocupacao))+'     Risco: '+RISCOS.map(r=>'('+(V.risco===r?'X':'  ')+') '+r).join('  ')+'     Nº de pavimentos: '+val(V.pavimentos)+'     Nº de blocos: '+val(V.blocos),M,y,{maxWidth:CW});
+    y+=doc.splitTextToSize('Ocupação(ões): '+val(ocupName(V.ocupacao))+'     Risco: ( ) II ( ) III ( ) IV ( ) V     Nº de pavimentos: '+val(V.pavimentos)+'     Nº de blocos: '+val(V.blocos),CW).length*4.6+2;
+    sec('5. Descritivo dos sistemas e medidas de segurança contra incêndio instalados');
+    para('Apresentar o descritivo quali-quantitativo dos sistemas e medidas de segurança contra incêndio executados no imóvel, anexando no mínimo uma foto ilustrativa de cada sistema previsto.');
+    y+=2;
+    const gap=6,bw=(CW-gap)/2,bh=bw*1.12;
+    const grupos=activeSys(V).filter(s=>s.k!=='docs').map(s=>({n:s.n,d:(V.desc[s.k]||'').trim(),ph:sysPhotos(s.k)}));
+    const gerais=orderedPhotos().filter(p=>!p.sys&&!p.itemId);if(gerais.length)grupos.push({n:'Vistas gerais do imóvel',d:'',ph:gerais});
+    for(const g of grupos){
+      ensure(g.ph.length?bh+22:12);font('bold',9.5);doc.text(g.n.toUpperCase(),M,y);y+=5;
+      if(g.d)para(g.d);
+      const imgs=await Promise.all(g.ph.map(p=>blobToDataURL(p.blob)));
+      for(let i=0;i<g.ph.length;i+=2){
+        const caps=[0,1].map(j=>{const p=g.ph[i+j];if(!p)return[];const inf=p.itemId?itemInfo(p.itemId):null;const t=p.legenda||(inf?inf.it.t:'');font('normal',8);let l=t?doc.splitTextToSize(t,bw):[];if(l.length>3){l=l.slice(0,3);l[2]=l[2].replace(/\s*\S*$/,'')+'…'}return l});
+        const rh=bh+2+Math.max(caps[0].length,caps[1].length)*3.5;ensure(rh);
+        [0,1].forEach(j=>{const p=g.ph[i+j];if(!p)return;const x=M+j*(bw+gap),k=Math.min(bw/p.w,bh/p.h),w=p.w*k,h=p.h*k;
+          doc.addImage(imgs[i+j],'JPEG',x+(bw-w)/2,y+(bh-h)/2,w,h,'f'+p.id,'FAST');font('normal',8,[60,60,60]);if(caps[j].length)doc.text(caps[j],x,y+bh+4.5)});
+        y+=rh+5;
+      }
+      y+=3;
+    }
+    ensure(86);sec('6. Declaração de entrega e recebimento');
+    para('Declaro que recebi o imóvel conforme o descritivo apresentado, em conformidade com as NSCI, estando ciente de que após o recebimento é minha responsabilidade manter as características do imóvel inalteradas, bem como a operacionalidade e manutenção dos SMSCI previstos.');
+    y+=20;await sign(W/2,'imovel');font('normal',9);doc.text('Assinatura do responsável pelo imóvel',W/2,y+4.5,{align:'center'});y+=14;
+    para('Declaro que realizei a entrega do imóvel em conformidade com o descritivo apresentado.');
+    y+=20;await sign(W/2,'rt');font('normal',9);doc.text('Assinatura do responsável técnico',W/2,y+4.5,{align:'center'});
+  }
+  return doc.output('blob');
+}
+
 let lastPdf=null;
-$('#btnReport').onclick=()=>{
-  const t=countAll(V),f=orderedPhotos().length;
-  $('#rpInfo').innerHTML=`<b>${t.n}</b> itens: ${t.c} conformes, <b style="color:var(--crit)">${t.nc} não conformes</b>, ${t.na} N/A`+(t.pe?` e <b style="color:var(--warn)">${t.pe} ainda não verificados</b>`:'')+`. ${f} foto${f===1?'':'s'} no relatório.`;
-  $('#rpOut').classList.add('hidden');$('#dReport').showModal();
-};
+const docKind=()=>document.querySelector('input[name=doc]:checked').value;
+function reportInfo(){
+  const k=docKind(),t=countAll(V),w=[],falta=(l,v)=>{if(!String(v??'').trim())w.push('Falta preencher: '+l+'.')};
+  $('#rpOptR').classList.toggle('hidden',k!=='R');$('#rpOut').classList.add('hidden');
+  $('#rpSigTxt').textContent=k==='R'?'Bloco de assinatura':'Inserir minha assinatura desenhada (⚙️)';
+  if(k==='I'){
+    const rows=ANEXO_I.map(r=>[r,anexoRow(r)]),sim=rows.filter(a=>a[1].ppci==='s').length,nc=rows.filter(a=>a[1].ppci==='n'&&a[1].just!=='NÃO SE APLICA').length;
+    $('#rpInfo').innerHTML=`Tabela do Anexo I: <b>${sim}</b> sistema${sim===1?'':'s'} em conformidade`+(nc?`, <b style="color:var(--crit)">${nc} com desconformidade</b> (a justificativa sai das observações)`:'')+'; os demais como “não se aplica”.';
+    if(t.pe)w.push(t.pe+' item(ns) do checklist ainda não verificado(s): os sistemas saem como conformes mesmo assim.');
+    falta('CPF do responsável técnico (⚙️)',ST.cpf);falta('telefone e e-mail do responsável técnico (⚙️)',ST.telefone&&ST.email);falta('RE',V.re);falta('protocolo',V.processo);falta('ocupação',V.ocupacao);
+  }else if(k==='J'){
+    const ss=activeSys(V).filter(s=>s.k!=='docs'),sem=ss.filter(s=>!sysPhotos(s.k).length),semD=ss.filter(s=>!(V.desc[s.k]||'').trim());
+    $('#rpInfo').innerHTML=`Termo de entrega com <b>${ss.length}</b> sistema${ss.length===1?'':'s'} e <b>${orderedPhotos().filter(p=>p.sys!=='docs').length}</b> foto(s).`;
+    if(sem.length)w.push('Sem foto (o formulário pede ao menos uma por sistema): '+sem.map(s=>s.curto||s.n).join(', ')+'.');
+    if(semD.length)w.push('Sem descritivo: '+semD.map(s=>s.curto||s.n).join(', ')+'.');
+    falta('responsável pelo imóvel',V.rNome);falta('RE',V.re);falta('protocolo',V.processo);falta('área total',V.area);falta('risco',V.risco);
+  }else{
+    const f=orderedPhotos().length;
+    $('#rpInfo').innerHTML=`<b>${t.n}</b> itens: ${t.c} conformes, <b style="color:var(--crit)">${t.nc} não conformes</b>, ${t.na} N/A`+(t.pe?` e <b style="color:var(--warn)">${t.pe} ainda não verificados</b>`:'')+`. ${f} foto${f===1?'':'s'} no relatório.`;
+  }
+  $('#rpWarn').innerHTML=w.map(esc).join('<br>');$('#rpWarn').classList.toggle('hidden',!w.length);
+}
+$$('input[name=doc]').forEach(r=>r.onchange=reportInfo);
+$('#btnReport').onclick=()=>{reportInfo();$('#dReport').showModal()};
 $('#rpGo').onclick=async()=>{
-  const done=busy('Gerando relatório…');
+  const k=docKind(),done=busy('Gerando PDF…');
   try{await put('visits',V);
-    const blob=await buildPdf({full:$('#rpFull').checked,photos:$('#rpPhotos').checked,disc:$('#rpDisc').checked,sig:$('#rpSig').checked});
+    const blob=k==='R'?await buildPdf({full:$('#rpFull').checked,photos:$('#rpPhotos').checked,disc:$('#rpDisc').checked,sig:$('#rpSig').checked}):await buildAnexo(k,{sig:$('#rpSig').checked});
     const safe=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w]+/g,'_').replace(/^_|_$/g,'').slice(0,40);
-    const name='Vistoria_Habite-se_CBMSC_'+V.numero.replace('/','-')+(V.empreendimento?'_'+safe(V.empreendimento):V.endereco?'_'+safe(V.endereco):'')+'.pdf';
+    const id=safe(V.processo)||V.numero.replace('/','-'),nm=safe(V.empreendimento||V.endereco);
+    const name=({R:'Vistoria_Habite-se_CBMSC_',I:'IN1_Anexo_I_Relatorio_de_conformidade_',J:'IN1_Anexo_J_Termo_de_entrega_'})[k]+id+(nm?'_'+nm:'')+'.pdf';
     lastPdf=new File([blob],name,{type:'application/pdf'});
     $('#rpName').textContent=name;$('#rpSize').textContent=(blob.size/1048576).toFixed(1).replace('.',',')+' MB';
     $('#rpOut').classList.remove('hidden');$('#rpShare').classList.toggle('hidden',!(navigator.canShare&&navigator.canShare({files:[lastPdf]})));
-  }catch(e){console.error(e);alert('Erro ao gerar o relatório: '+e.message)}finally{done()}
+  }catch(e){console.error(e);alert('Erro ao gerar o PDF: '+e.message)}finally{done()}
 };
 $('#rpShare').onclick=async()=>{try{await navigator.share({files:[lastPdf],title:'Vistoria para Habite-se '+V.numero})}catch(e){if(e.name!=='AbortError')toast('Não foi possível compartilhar')}};
 $('#rpDl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(lastPdf);a.download=lastPdf.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000)};
 $('#rpOpen').onclick=()=>{const u=URL.createObjectURL(lastPdf);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),120000)};
 
 /* ---------------- configurações ---------------- */
-let DEF_LOGO=null;
+let DEF_LOGO=null, BRASAO=null;
 async function loadSettings(){ST={...DEFAULTS,...((await kvGet('settings'))||{})};
-  try{const b=await (await fetch('./assets/absolut-logo.png')).blob(),src=await blobToDataURL(b),im=await loadImg(src);DEF_LOGO={src,w:im.naturalWidth,h:im.naturalHeight}}catch(e){DEF_LOGO=null}}
+  try{const b=await (await fetch('./assets/absolut-logo.png')).blob(),src=await blobToDataURL(b),im=await loadImg(src);DEF_LOGO={src,w:im.naturalWidth,h:im.naturalHeight}}catch(e){DEF_LOGO=null}
+  try{const b=await (await fetch('./assets/brasao-sc.png')).blob(),src=await blobToDataURL(b),im=await loadImg(src);BRASAO={src,w:im.naturalWidth,h:im.naturalHeight}}catch(e){BRASAO=null}}
 const curLogo=()=>ST.logo==='default'?DEF_LOGO:(ST.logo?{src:ST.logo,w:ST.logoW,h:ST.logoH}:null);
 const saveSettings=()=>kvSet('settings',ST);
 function renderLogo(){const lg=curLogo();$('#appLogo').innerHTML=lg?`<img src="${lg.src}" alt="${esc(ST.empresa)}">`:esc(ST.empresa||'');const pv=$('#logoPrev');pv.src=lg?lg.src:'';pv.classList.toggle('hidden',!lg);$('#logoDel').classList.toggle('hidden',!lg);$('#logoDef').classList.toggle('hidden',ST.logo==='default')}
