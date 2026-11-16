@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#171717">
+<title>Lang PPCI</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./assets/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="./assets/icon-192.png">
+<style>
+:root{--ink:#171717;--muted:#6b6b6b;--line:#e6e6e6;--bg:#f6f6f4;--card:#fff;--brand:#ff5a00;--brand-ink:#fff;--ok:#2e7d32;--warn:#b26a00;--crit:#c62828;--radius:14px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+.hidden{display:none!important}
+header.bar{position:sticky;top:0;z-index:20;background:var(--ink);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;align-items:center;gap:10px}
+.logo{font-weight:800;font-size:15px;line-height:1.1;max-width:120px;flex:none}.logo img{display:block;max-height:34px;max-width:110px;background:#fff;border-radius:6px;padding:3px}
+header.bar .title{flex:1;min-width:0}
+header.bar .title b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header.bar .title small{color:#bbb;font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{background:none;border:0;color:inherit;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;cursor:pointer;flex:none}
+.icon-btn:active{background:rgba(255,255,255,.12)}
+.icon-btn svg{width:22px;height:22px}
+main{max-width:780px;margin:0 auto;padding:14px 16px 120px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+h2{font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin:18px 2px 8px;display:flex;align-items:center;gap:8px}
+h2 .grow{flex:1}
+.btn{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px}
+.btn svg{width:20px;height:20px}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.danger{color:var(--crit);border-color:#f0c9c9}
+.btn.sm{min-height:34px;padding:6px 10px;font-size:13px;border-radius:9px}
+.btn.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn:disabled{opacity:.5}
+label.f{display:block;margin-bottom:10px}
+label.f>span{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:4px}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=tel],input[type=email],select,textarea{width:100%;border:1px solid #d9d9d9;border-radius:10px;padding:10px 11px;background:#fff;min-height:44px}
+textarea{min-height:84px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--brand);outline-offset:-1px;border-color:transparent}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 10px}
+@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+.empty{text-align:center;color:var(--muted);padding:34px 10px}
+.empty svg{width:48px;height:48px;opacity:.35}
+.visit{display:flex;gap:12px;align-items:center;cursor:pointer}
+.visit .info{flex:1;min-width:0}
+.visit .info b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.visit .info small{color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ring{width:54px;height:54px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:800;font-size:13px;background:#eee}
+.pill{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:#f1f1f1;color:#444}
+.pill.nc{background:#fde7e7;color:var(--crit)}.pill.ok{background:#e6f3e7;color:var(--ok)}.pill.pe{background:#fff3dc;color:var(--warn)}
+.note{font-size:12.5px;color:var(--muted)}
+.warnbox{background:#fff8e6;border:1px solid #f1dca6;border-radius:10px;padding:9px 11px;font-size:12.5px;color:#6b5200;margin:8px 0 0}
+/* sistemas */
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer;min-height:38px;text-align:left}
+.seg button.on{border-color:var(--ink);background:var(--ink);color:#fff}
+.seg button small{font-weight:500;opacity:.7;margin-left:4px}
+/* checklist */
+details.sys{background:#fff;border:1px solid var(--line);border-radius:var(--radius);margin-bottom:10px;overflow:hidden}
+details.sys>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;align-items:center;gap:10px}
+details.sys>summary::-webkit-details-marker{display:none}
+details.sys>summary .nm{flex:1;min-width:0}
+details.sys>summary .nm b{display:block}
+details.sys>summary .nm small{color:var(--muted);font-size:12px}
+details.sys>summary .cnt{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;flex:none;max-width:45%}
+details.sys>summary::after{content:"▾";color:var(--muted);flex:none}
+details.sys[open]>summary::after{content:"▴"}
+details.sys[open]>summary{border-bottom:1px solid var(--line)}
+.sys-tools{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px 0}
+.it{padding:12px 14px;border-bottom:1px solid var(--line)}
+.it:last-child{border-bottom:0}
+.it.nc{background:#fff7f6}.it.c{background:#f8fcf8}
+.it .tx{display:flex;gap:8px;margin-bottom:8px}
+.it .tx .n{font-weight:800;color:var(--muted);font-size:12.5px;flex:none;min-width:30px;padding-top:1px}
+.it .tx .ref{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+.st{display:grid;grid-template-columns:1fr 1.25fr .8fr 48px;gap:6px}
+.st button{border:1.5px solid var(--line);background:#fff;border-radius:10px;min-height:42px;font-weight:700;font-size:13px;cursor:pointer;padding:0 4px}
+.st button[data-v=c].on{background:var(--ok);border-color:var(--ok);color:#fff}
+.st button[data-v=nc].on{background:var(--crit);border-color:var(--crit);color:#fff}
+.st button[data-v=na].on{background:#616161;border-color:#616161;color:#fff}
+.st button.cam svg{width:20px;height:20px;vertical-align:middle}
+.it textarea{margin-top:8px;min-height:60px}
+.thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.thumbs .th{width:68px;height:68px;border-radius:9px;background:#eee center/cover;border:2px solid var(--line);cursor:pointer;position:relative}
+.thumbs .th.off{filter:grayscale(.9) opacity(.5)}
+.thumbs .th span{position:absolute;left:3px;bottom:3px;background:rgba(0,0,0,.65);color:#fff;font-size:10.5px;font-weight:700;padding:0 5px;border-radius:5px}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+.dock .in{max-width:780px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:8px}
+.dock .btn{min-height:50px;font-size:14px;padding:8px 6px}
+.fab{position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:30;border:0;background:var(--brand);color:#fff;border-radius:99px;padding:15px 22px;font-weight:700;display:flex;gap:8px;align-items:center;box-shadow:0 6px 18px rgba(255,90,0,.35);cursor:pointer}
+.fab svg{width:22px;height:22px}
+dialog{border:0;padding:0;border-radius:18px 18px 0 0;width:100%;max-width:780px;max-height:94vh;margin:auto auto 0;background:#fff;color:var(--ink)}
+@media(min-width:800px){dialog{border-radius:18px;margin:auto}}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.dlg-h{position:sticky;top:0;background:#fff;z-index:2;display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.dlg-h b{flex:1;font-size:16px}
+.dlg-h .icon-btn{color:var(--ink)}
+.dlg-b{padding:14px 16px}
+.dlg-f{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;flex-wrap:wrap}
+.dlg-f .btn{flex:1}
+.preview{position:relative;border-radius:12px;overflow:hidden;background:#111;margin-bottom:12px}
+.preview img{display:block;width:100%;max-height:46vh;object-fit:contain}
+.preview .over{position:absolute;right:8px;bottom:8px;display:flex;gap:6px}
+.radio-card{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+.radio-card input{margin-top:3px;accent-color:var(--brand);width:18px;height:18px;flex:none}
+.radio-card small{display:block;color:var(--muted)}
+.check{display:flex;gap:10px;align-items:center;padding:8px 0;font-weight:600;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--brand)}
+#markup{position:fixed;inset:0;z-index:100;background:#000;display:flex;flex-direction:column}
+#markup .tools{display:flex;gap:6px;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;align-items:center;flex-wrap:wrap;background:#111}
+#markup .tools button{background:#2a2a2a;color:#fff;border:0;border-radius:9px;min-height:40px;padding:0 12px;font-weight:600;cursor:pointer}
+#markup .tools button.on{background:var(--brand)}
+#markup .tools .sw{width:30px;height:30px;min-height:30px;padding:0;border-radius:50%;border:2px solid #555}
+#markup .tools .sw.on{border-color:#fff;outline:2px solid var(--brand)}
+#markup .stage{flex:1;display:grid;place-items:center;overflow:hidden;touch-action:none}
+#markup canvas{max-width:100%;max-height:100%;touch-action:none}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;z-index:200;font-size:14px;max-width:90vw;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.sig{border:1.5px dashed #bbb;border-radius:10px;background:#fff;width:100%;height:150px;touch-action:none;display:block}
+details.more summary{cursor:pointer;font-weight:600;color:var(--muted);font-size:13.5px;padding:6px 0;list-style:none}details.more summary::-webkit-details-marker{display:none}details.more summary::before{content:"▸ ";color:var(--brand)}details.more[open] summary::before{content:"▾ "}
+.busy{position:fixed;inset:0;background:rgba(255,255,255,.75);z-index:300;display:grid;place-items:center;font-weight:700}
+.visit .thumb{width:64px;height:64px;border-radius:10px;background:#eee center/cover;flex:none;display:grid;place-items:center;color:#aaa}
+.steps{position:sticky;top:calc(60px + env(safe-area-inset-top));z-index:19;background:var(--bg);display:flex;gap:6px;padding:10px 12px 6px;max-width:780px;margin:0 auto}
+.steps button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:7px 4px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.steps button i{font-style:normal;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#eee;margin-right:4px;font-size:11px}
+.steps button.on{border-color:var(--ink);background:var(--ink);color:#fff}.steps button.on i{background:var(--brand);color:#fff}
+.steps button.done i{background:var(--ok);color:#fff}
+.q{padding:12px}.q.nc{border-color:#f0b9b9;background:#fff7f6}.q.c{border-color:#bfe0c1}.q.na{opacity:.75}
+.st3{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:6px;margin-top:8px}
+.st3 button{border:1.5px solid var(--line);background:#fff;border-radius:10px;min-height:46px;font-weight:700;font-size:13.5px;cursor:pointer;padding:0 4px}
+.st3 button[data-v=c].on{background:var(--ok);border-color:var(--ok);color:#fff}
+.st3 button[data-v=nc].on{background:var(--crit);border-color:var(--crit);color:#fff}
+.st3 button[data-v=na].on{background:#616161;border-color:#616161;color:#fff}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.pc{cursor:pointer}.pc .im{aspect-ratio:1;border-radius:10px;background:#eee center/cover;border:1px solid var(--line)}
+.pc small{display:block;font-size:12px;line-height:1.25;margin-top:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pc small.sem{color:var(--crit);font-weight:600}
+.okbox{background:#e9f5ea;border:1px solid #bfe0c1;border-radius:10px;padding:9px 11px;font-size:13px;color:#1f5d23;margin-top:8px;font-weight:600}
+a{color:inherit}
+.warnbox a{color:var(--crit);font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- ============ TELA INICIAL ============ -->
+<section id="vHome">
+  <header class="bar">
+    <div class="logo" id="appLogo"></div>
+    <div class="title"><b>Lang PPCI</b><small id="hResp"></small></div>
+    <button class="icon-btn" id="btnSettings" title="Configurações" aria-label="Configurações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </header>
+  <main>
+    <input type="text" id="search" placeholder="Buscar por endereço, edificação ou protocolo…" style="margin-bottom:12px">
+    <div id="list"></div>
+  </main>
+  <button class="fab" id="btnNew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Nova vistoria</button>
+</section>
+
+<!-- ============ VISTORIA (questionário em 4 passos) ============ -->
+<section id="vVisit" class="hidden">
+  <header class="bar">
+    <button class="icon-btn" id="btnBack" aria-label="Voltar à lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div class="title"><b id="vTitle">Vistoria</b><small id="vSub"></small></div>
+    <button class="icon-btn" id="btnDelVisit" title="Excluir vistoria" aria-label="Excluir vistoria"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+  </header>
+  <nav class="steps" id="steps"></nav>
+  <main>
+    <div class="step" data-step="0">
+      <h2>1. Dados do imóvel</h2>
+    <div class="card" id="fields">
+      <label class="f"><span>Logradouro e nº do imóvel</span><input type="text" data-k="endereco" id="fEndereco" placeholder="Rua, nº" autocomplete="street-address"></label>
+      <div class="grid3">
+        <label class="f"><span>Bairro</span><input type="text" data-k="bairro"></label>
+        <label class="f"><span>Cidade</span><input type="text" data-k="cidade"></label>
+        <label class="f"><span>CEP</span><input type="text" inputmode="numeric" data-k="cep"></label>
+      </div>
+      <div class="grid2">
+        <label class="f"><span>Nome da edificação</span><input type="text" data-k="empreendimento" placeholder="Ex.: Res. Jardins"></label>
+        <label class="f"><span>CNPJ / CPF do imóvel</span><input type="text" data-k="cnpj"></label>
+        <label class="f"><span>RE (registro da edificação)</span><input type="text" data-k="re" placeholder="RE…"></label>
+        <label class="f"><span>Protocolo da solicitação</span><input type="text" data-k="processo"></label>
+      </div>
+      <label class="f"><span>Ocupação(ões)</span><input type="text" data-k="ocupacao" list="ocups" placeholder="Ex.: I-1 [indústria]"></label>
+      <datalist id="ocups"></datalist>
+      <div class="grid3">
+        <label class="f"><span>Área total (m²)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-k="area"></label>
+        <label class="f"><span>Pavimentos</span><input type="number" inputmode="numeric" min="0" step="1" data-k="pavimentos"></label>
+        <label class="f"><span>Blocos</span><input type="number" inputmode="numeric" min="0" step="1" data-k="blocos"></label>
+      </div>
+      <div class="grid3">
+        <label class="f"><span>Risco</span><select data-k="risco" id="fRisco"></select></label>
+        
+        <label class="f"><span>Área alterada (m²)</span><input type="text" inputmode="decimal" data-k="areaAlt" placeholder="se houver"></label>
+      </div>
+      <details class="more">
+        <summary>Responsável pelo imóvel (Anexo J)</summary>
+        <div class="grid2" style="margin-top:10px">
+          <label class="f"><span>Nome / razão social</span><input type="text" data-k="rNome"></label>
+          <label class="f"><span>CPF / CNPJ</span><input type="text" data-k="rDoc"></label>
+          <label class="f"><span>Telefone(s)</span><input type="tel" data-k="rTel"></label>
+          <label class="f"><span>E-mail</span><input type="email" data-k="rEmail"></label>
+          <label class="f"><span>Logradouro e nº</span><input type="text" data-k="rLogradouro"></label>
+          <label class="f"><span>Bairro</span><input type="text" data-k="rBairro"></label>
+          <label class="f"><span>Cidade</span><input type="text" data-k="rCidade"></label>
+          <label class="f"><span>CEP</span><input type="text" inputmode="numeric" data-k="rCep"></label>
+        </div>
+        <p class="note" style="margin-top:0">Vem preenchido com o responsável padrão das configurações (⚙️).</p>
+      </details>
+    </div>
+    </div>
+
+    <div class="step hidden" data-step="1">
+      <h2>2. Sistemas de segurança</h2>
+      <p class="note" style="margin:0 2px 10px">Responda cada sistema com um toque. Vale o que está no PPCI aprovado.</p>
+      <div id="qs"></div>
+      <button class="btn" id="btnRestNa" style="width:100%">Marcar os não respondidos como “Não tem”</button>
+    </div>
+
+    <div class="step hidden" data-step="2">
+      <h2>3. Fotos e descritivo</h2>
+      <p class="note" style="margin:0 2px 10px">Para cada sistema instalado: descreva o que há e tire ao menos uma foto. A legenda é pedida logo após cada foto.</p>
+      <div id="fotos"></div>
+    </div>
+
+    <div class="step hidden" data-step="3">
+      <h2>4. Gerar os PDFs</h2>
+      <div class="card" id="resumo"></div>
+      <label class="check"><input type="checkbox" id="rpSig" checked> Inserir minha assinatura desenhada (⚙️)</label>
+      <button class="btn primary" id="btnGerar" style="width:100%;min-height:54px;font-size:16px;margin-top:6px">Gerar Anexo I e Anexo J</button>
+      <div id="out" style="margin-top:12px"></div>
+    </div>
+  </main>
+  <div class="dock"><div class="in" style="grid-template-columns:1fr 1.6fr">
+    <button class="btn" id="btnPrev">Voltar</button>
+    <button class="btn primary" id="btnNext">Avançar</button>
+  </div></div>
+  <input type="file" id="inCam" accept="image/*" capture="environment" class="hidden">
+  <input type="file" id="inGal" accept="image/*" multiple class="hidden">
+</section>
+
+<!-- ============ FOTO E LEGENDA ============ -->
+<dialog id="dPhoto">
+  <div class="dlg-h"><b id="dpTitle">Foto</b><button class="icon-btn" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="dlg-b">
+    <div class="preview"><img id="dpImg" alt=""><div class="over"><button class="btn sm" id="dpMark">✏️ Marcar na foto</button><button class="btn sm hidden" id="dpReset">Original</button></div></div>
+    <label class="f"><span>Legenda da foto</span><textarea id="dpDesc" rows="2" placeholder="Ex.: Extintor PQS 4 kg no acesso principal"></textarea></label>
+    <div class="seg" id="dpSug" style="margin:-4px 0 8px"></div>
+    <p class="note" id="dpWhen" style="margin:0"></p>
+  </div>
+  <div class="dlg-f">
+    <button class="btn sm danger" id="dpDel" style="flex:0 0 auto">Excluir</button>
+    <button class="btn dark" id="dpMore">📷 Outra foto</button>
+    <button class="btn primary" data-close>Concluir</button>
+  </div>
+</dialog>
+
+<!-- ============ CONFIGURAÇÕES ============ -->
+<dialog id="dSettings">
+  <div class="dlg-h"><b>Responsável técnico e empresa</b><button class="icon-btn" data-close aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="dlg-b" id="setFields">
+    <div class="grid2">
+      <label class="f"><span>Título</span><input type="text" data-s="titulo"></label>
+      <label class="f"><span>Nome</span><input type="text" data-s="nome"></label>
+      <label class="f"><span>CREA</span><input type="text" data-s="crea"></label>
+      <label class="f"><span>Empresa</span><input type="text" data-s="empresa"></label>
+      <label class="f"><span>Telefone</span><input type="tel" data-s="telefone"></label>
+      <label class="f"><span>E-mail</span><input type="email" data-s="email"></label>
+      <label class="f"><span>CPF</span><input type="text" data-s="cpf"></label>
+      <label class="f"><span>RG</span><input type="text" data-s="rg"></label>
+      <label class="f"><span>Logradouro</span><input type="text" data-s="rtLogradouro"></label>
+      <label class="f"><span>Nº</span><input type="text" data-s="rtNumero"></label>
+      <label class="f"><span>Bairro</span><input type="text" data-s="rtBairro"></label>
+      <label class="f"><span>Cidade</span><input type="text" data-s="rtCidade"></label>
+      <label class="f"><span>CEP</span><input type="text" data-s="rtCep"></label>
+    </div>
+    <h2>Responsável pelo imóvel padrão</h2>
+    <p class="note" style="margin-top:0">Copiado para cada vistoria nova (Anexo J). Pode ser alterado em cada vistoria.</p>
+    <div class="grid2">
+      <label class="f"><span>Nome / razão social</span><input type="text" data-s="imvNome"></label>
+      <label class="f"><span>CPF / CNPJ</span><input type="text" data-s="imvDoc"></label>
+      <label class="f"><span>Telefone(s)</span><input type="tel" data-s="imvTel"></label>
+      <label class="f"><span>E-mail</span><input type="email" data-s="imvEmail"></label>
+      <label class="f"><span>Logradouro e nº</span><input type="text" data-s="imvLogradouro"></label>
+      <label class="f"><span>Bairro</span><input type="text" data-s="imvBairro"></label>
+      <label class="f"><span>Cidade</span><input type="text" data-s="imvCidade"></label>
+      <label class="f"><span>CEP</span><input type="text" data-s="imvCep"></label>
+    </div>
+    <label class="f"><span>Logo no topo do app</span></label>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:-4px 0 12px"><img id="logoPrev" alt="" style="max-height:48px;max-width:150px;border:1px solid var(--line);border-radius:8px;padding:4px;background:#fff"><button class="btn sm" id="logoPick">Escolher imagem</button><button class="btn sm danger" id="logoDel">Remover</button><button class="btn sm" id="logoDef">Usar logo da Lang</button><input type="file" id="logoFile" accept="image/*" class="hidden"></div>
+    <label class="f"><span>Assinatura (desenhe com o dedo)</span></label>
+    <canvas class="sig" id="sigPad"></canvas>
+    <div style="display:flex;gap:8px;margin:8px 0 16px"><button class="btn sm" id="sigClear">Limpar assinatura</button><span class="note" style="align-self:center" id="sigState"></span></div>
+    <h2 style="margin-top:4px">Cópia de segurança</h2>
+    <p class="note" style="margin-top:0">As vistorias e fotos ficam guardadas só neste aparelho. Exporte uma cópia de vez em quando.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="bkExport" style="flex:1">Exportar backup</button><button class="btn" id="bkImport" style="flex:1">Importar backup</button></div>
+    <input type="file" id="bkFile" accept=".json,application/json" class="hidden">
+  </div>
+  <div class="dlg-f"><button class="btn primary" data-close>Salvar</button></div>
+</dialog>
+
+<!-- ============ MARCAÇÃO NA FOTO ============ -->
+<div id="markup" class="hidden">
+  <div class="tools">
+    <button data-tool="pen" class="on">✏️ Livre</button>
+    <button data-tool="arrow">➜ Seta</button>
+    <button data-tool="circle">◯ Círculo</button>
+    <button class="sw on" data-color="#ff1f1f" style="background:#ff1f1f" aria-label="Vermelho"></button>
+    <button class="sw" data-color="#ffd400" style="background:#ffd400" aria-label="Amarelo"></button>
+    <button class="sw" data-color="#ffffff" style="background:#fff" aria-label="Branco"></button>
+    <span style="flex:1"></span>
+    <button id="mkUndo">Desfazer</button>
+    <button id="mkCancel">Cancelar</button>
+    <button id="mkSave" style="background:var(--brand)">Salvar</button>
+  </div>
+  <div class="stage"><canvas id="mkCanvas"></canvas></div>
+</div>
+
+<script src="./vendor/jspdf.umd.min.js"></script>
+<script src="./catalogo.js"></script>
+<script>
+'use strict';
+/* ---------------- utilidades ---------------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const pad=n=>String(n).padStart(2,'0');
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const fmtDate=s=>s?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'';
+const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const longDate=s=>{if(!s)s=today();return +s.slice(8,10)+' de '+MESES[+s.slice(5,7)-1]+' de '+s.slice(0,4)};
+const fmtStamp=t=>{const d=new Date(t);return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes())};
+const num=v=>{const n=parseFloat(String(v??'').replace(',','.'));return isFinite(n)?n:null};
+const fmtNum=v=>{const n=num(v);return n==null?'':n.toLocaleString('pt-BR',{maximumFractionDigits:2})};
+function toast(msg,ms=2600){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms)}
+function busy(msg){const b=document.createElement('div');b.className='busy';b.textContent=msg;document.body.appendChild(b);return()=>b.remove()}
+const blobToDataURL=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsDataURL(b)});
+const dataURLToBlob=async u=>(await fetch(u)).blob();
+const CAM_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+
+/* ---------------- banco de dados (IndexedDB) ---------------- */
+let dbp;
+function db(){return dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open('lang-habitese',1);r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('visits',{keyPath:'id'});d.createObjectStore('photos',{keyPath:'id'}).createIndex('visitId','visitId');d.createObjectStore('kv')};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))}
+function tx(store,mode,fn){return db().then(d=>new Promise((res,rej)=>{const t=d.transaction(store,mode);const q=fn(t.objectStore(store));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)}))}
+const put=(st,v)=>tx(st,'readwrite',s=>s.put(v));
+const get=(st,k)=>tx(st,'readonly',s=>s.get(k));
+const del=(st,k)=>tx(st,'readwrite',s=>s.delete(k));
+const getAll=st=>tx(st,'readonly',s=>s.getAll());
+const photosOf=vid=>tx('photos','readonly',s=>s.index('visitId').getAll(vid)).then(a=>(a||[]).sort((x,y)=>x.ord-y.ord));
+const kvGet=k=>tx('kv','readonly',s=>s.get(k));
+const kvSet=(k,v)=>tx('kv','readwrite',s=>s.put(v,k));
+
+/* ---------------- configurações ---------------- */
+const DEFAULTS={titulo:'Eng. Civil',nome:'Geovane Lang',crea:'152359-1',empresa:'Lang Engenharia',telefone:'',email:'',cidade:'',logo:'default',cpf:'',rg:'',rtLogradouro:'',rtNumero:'',rtBairro:'',rtCidade:'',rtCep:'',imvNome:'',imvDoc:'',imvTel:'',imvEmail:'',imvLogradouro:'',imvBairro:'',imvCidade:'',imvCep:'',
+  ressalva:'Este relatório registra a verificação prévia dos sistemas e medidas de segurança contra incêndio e pânico, realizada pelo responsável técnico com base no projeto aprovado e nas Instruções Normativas do CBMSC indicadas em cada item, nas áreas acessíveis e nas condições observadas na data da vistoria. Não substitui a vistoria oficial nem o atestado de habite-se emitido pelo Corpo de Bombeiros Militar de Santa Catarina. Os critérios do checklist são um roteiro de conferência e devem ser confrontados com o texto vigente das INs.',assinatura:null};
+let ST={...DEFAULTS};
+const respName=()=>[ST.titulo,ST.nome].filter(Boolean).join(' ');
+const creaTxt=()=>ST.crea?'CREA '+ST.crea.replace(/^CREA\s*/i,''):'';
+
+/* ---------------- estado ---------------- */
+let V=null, P=[], urls=[], step=0;
+const STEPS=['Imóvel','Sistemas','Fotos','PDF'];
+function freeUrls(){urls.forEach(u=>URL.revokeObjectURL(u));urls=[]}
+const objUrl=b=>{const u=URL.createObjectURL(b);urls.push(u);return u};
+const sisOf=k=>SISTEMAS.find(s=>s.k===k);
+const R=(v,k)=>(v.s[k]||(v.s[k]={st:'',just:'',desc:''}));           // resposta de um sistema
+const tem=(v,k)=>{const st=R(v,k).st;return st==='c'||st==='nc'};     // sistema existe no imóvel
+const nomeSis=(v,s)=>s.outros?((v.outNome||'').trim()||'Outros'):s.n;
+const presentes=v=>SISTEMAS.filter(s=>tem(v,s.k));
+const fotosDe=k=>P.filter(p=>(p.sys||null)===k).sort((a,b)=>a.ord-b.ord);
+const cityLine=v=>[v.bairro,v.cidade].filter(Boolean).join(' · ');
+
+/* ---------------- tela inicial ---------------- */
+async function renderHome(){
+  freeUrls();renderLogo();$('#hResp').textContent=respName()+(creaTxt()?' · '+creaTxt():'');
+  const q=$('#search').value.trim().toLowerCase();
+  let vs=(await getAll('visits')).sort((a,b)=>b.updatedAt-a.updatedAt);
+  if(q)vs=vs.filter(v=>[v.numero,v.endereco,v.bairro,v.cidade,v.empreendimento,v.rNome,v.processo,v.re].join(' ').toLowerCase().includes(q));
+  const el=$('#list');
+  if(!vs.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13l2 2 4-4"/></svg><p>${q?'Nenhuma vistoria encontrada.':'Nenhuma vistoria ainda.<br>Toque em <b>Nova vistoria</b> para começar.'}</p></div>`;return}
+  el.innerHTML='';
+  for(const v of vs){
+    v.s=v.s||{};const ph=await photosOf(v.id),n=presentes(v).length,nc=SISTEMAS.filter(s=>R(v,s.k).st==='nc').length;
+    const card=document.createElement('div');card.className='card visit';
+    const th=ph[0]?`style="background-image:url('${objUrl(ph[0].blob)}')"`:'';
+    card.innerHTML=`<div class="thumb" ${th}>${ph[0]?'':'📷'}</div><div class="info"><b>${esc(v.endereco||v.empreendimento||'Endereço não informado')}</b><small>${esc([v.empreendimento,cityLine(v),v.ocupacao].filter(Boolean).join(' · ')||'—')}</small><small><span class="pill">${esc(v.processo||'Nº '+v.numero)}</span> ${fmtDate(v.data)} · ${n} sistema${n===1?'':'s'} · ${ph.length} foto${ph.length===1?'':'s'} ${nc?`<span class="pill nc">${nc} não conforme${nc===1?'':'s'}</span>`:''}</small></div>`;
+    card.onclick=()=>openVisit(v.id);el.appendChild(card);
+  }
+}
+async function newVisit(){
+  const y=new Date().getFullYear(), n=((await kvGet('seq-'+y))||0)+1;await kvSet('seq-'+y,n);
+  const v={id:uid(),numero:y+'/'+String(n).padStart(3,'0'),createdAt:Date.now(),updatedAt:Date.now(),endereco:'',bairro:'',cidade:'',cep:'',empreendimento:'',cnpj:'',re:'',ocupacao:'',risco:'',area:'',areaAlt:'',pavimentos:'',blocos:'',processo:'',data:today(),
+    rNome:ST.imvNome||'',rDoc:ST.imvDoc||'',rTel:ST.imvTel||'',rEmail:ST.imvEmail||'',rLogradouro:ST.imvLogradouro||'',rBairro:ST.imvBairro||'',rCidade:ST.imvCidade||'',rCep:ST.imvCep||'',s:{},outNome:''};
+  await put('visits',v);await openVisit(v.id);setTimeout(()=>$('#fEndereco').focus(),150);
+}
+
+/* ---------------- questionário ---------------- */
+$('#ocups').innerHTML=OCUPACOES.map(o=>`<option value="${esc(o)}">`).join('');
+$('#fRisco').innerHTML='<option value="">—</option>'+RISCOS.map(r=>`<option>${r}</option>`).join('');
+$('#steps').innerHTML=STEPS.map((t,i)=>`<button data-go="${i}"><i>${i+1}</i>${t}</button>`).join('');
+$$('#steps [data-go]').forEach(b=>b.onclick=()=>go(+b.dataset.go));
+async function openVisit(id){
+  V=await get('visits',id);if(!V)return renderHome();
+  V.s=V.s||{};V.outNome=V.outNome||'';
+  $$('#vVisit [data-k]').forEach(i=>i.value=V[i.dataset.k]??'');
+  show('vVisit');history.replaceState(null,'','#'+id);
+  P=await photosOf(V.id);lastOut=null;go(0);
+}
+function headerVisit(){$('#vTitle').textContent=V.endereco||V.empreendimento||'Nova vistoria';$('#vSub').textContent=[V.empreendimento,cityLine(V),V.processo].filter(Boolean).join(' · ')||'Nº '+V.numero}
+let saveT;
+function touch(){V.updatedAt=Date.now();clearTimeout(saveT);saveT=setTimeout(()=>put('visits',V),300)}
+$$('#vVisit [data-k]').forEach(i=>i.addEventListener('input',()=>{V[i.dataset.k]=i.value;touch();headerVisit()}));
+function go(n){
+  step=Math.max(0,Math.min(STEPS.length-1,n));headerVisit();
+  $$('#vVisit .step').forEach(d=>d.classList.toggle('hidden',+d.dataset.step!==step));
+  $$('#steps [data-go]').forEach((b,i)=>{b.classList.toggle('on',i===step);b.classList.toggle('done',i<step)});
+  $('#btnPrev').textContent=step?'Voltar':'Lista';$('#btnNext').classList.toggle('hidden',step===STEPS.length-1);
+  $('.dock .in').style.gridTemplateColumns=step===STEPS.length-1?'1fr':'1fr 1.6fr';
+  if(step===1)renderQs();if(step===2)renderFotos();if(step===3)renderResumo();
+  window.scrollTo(0,0);
+}
+$('#btnPrev').onclick=()=>step?go(step-1):$('#btnBack').click();
+$('#btnNext').onclick=()=>go(step+1);
+
+// passo 2: uma pergunta por sistema
+function renderQs(){
+  const box=$('#qs');box.innerHTML='';
+  SISTEMAS.forEach(s=>{const r=R(V,s.k);
+    const d=document.createElement('div');d.className='card q '+(r.st||'');
+    d.innerHTML=`<b>${esc(s.n)}</b>${s.outros?'<small class="note" style="display:block">SPDA, chuveiros automáticos, controle de fumaça, recarga de veículos elétricos…</small>':''}
+      <div class="st3"><button data-v="na" class="${r.st==='na'?'on':''}">Não tem</button><button data-v="c" class="${r.st==='c'?'on':''}">Conforme</button><button data-v="nc" class="${r.st==='nc'?'on':''}">Não conforme</button></div>
+      ${s.outros?`<input type="text" data-f="out" class="${tem(V,s.k)?'':'hidden'}" placeholder="Qual sistema? Ex.: SPDA" value="${esc(V.outNome)}" style="margin-top:8px">`:''}
+      <textarea data-f="just" class="${r.st==='nc'?'':'hidden'}" placeholder="Justificativa da desconformidade (vai para o Anexo I)" style="margin-top:8px;min-height:64px">${esc(r.just)}</textarea>`;
+    d.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{r.st=r.st===b.dataset.v?'':b.dataset.v;touch();renderQs();if(r.st==='nc'){const t=$(`#qs [data-sys="${s.k}"] textarea`);if(t)t.focus()}});
+    d.dataset.sys=s.k;
+    d.querySelector('[data-f=just]').oninput=e=>{r.just=e.target.value;touch()};
+    const o=d.querySelector('[data-f=out]');if(o)o.oninput=e=>{V.outNome=e.target.value;touch()};
+    box.appendChild(d)});
+  const falta=SISTEMAS.filter(s=>!R(V,s.k).st).length;
+  $('#btnRestNa').classList.toggle('hidden',!falta);$('#btnRestNa').textContent=`Marcar os ${falta} não respondidos como “Não tem”`;
+}
+$('#btnRestNa').onclick=()=>{SISTEMAS.forEach(s=>{const r=R(V,s.k);if(!r.st)r.st='na'});touch();renderQs()};
+
+// passo 3: descritivo e fotos de cada sistema instalado
+function renderFotos(){
+  freeUrls();const box=$('#fotos');box.innerHTML='';
+  const grupos=presentes(V).map(s=>({k:s.k,n:nomeSis(V,s),s})).concat([{k:null,n:'Vistas gerais do imóvel (opcional)'}]);
+  if(grupos.length===1)box.innerHTML='<div class="warnbox" style="margin:0 0 12px">Nenhum sistema marcado como instalado. Volte ao passo 2 e responda os sistemas.</div>';
+  grupos.forEach(g=>{const ph=fotosDe(g.k);
+    const d=document.createElement('div');d.className='card';
+    d.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><b style="flex:1">${esc(g.n)}</b><span class="pill ${ph.length?'ok':(g.k?'pe':'')}">${ph.length} foto${ph.length===1?'':'s'}</span></div>
+      ${g.k?`<textarea data-f="desc" placeholder="Descritivo do sistema instalado. ${esc(g.s.desc)}" style="min-height:64px;margin-bottom:10px">${esc(R(V,g.k).desc)}</textarea>`:''}
+      <div class="pgrid"></div>
+      <div style="display:flex;gap:8px;margin-top:10px"><button class="btn dark" data-a="cam" style="flex:1.6">${CAM_SVG} Tirar foto</button><button class="btn" data-a="gal" style="flex:1">Galeria</button></div>`;
+    const t=d.querySelector('[data-f=desc]');if(t)t.oninput=e=>{R(V,g.k).desc=e.target.value;touch()};
+    d.querySelector('[data-a=cam]').onclick=()=>pick(g.k,true);d.querySelector('[data-a=gal]').onclick=()=>pick(g.k,false);
+    const grid=d.querySelector('.pgrid');ph.forEach(p=>{const c=document.createElement('div');c.className='pc';c.innerHTML=`<div class="im" style="background-image:url('${objUrl(p.blob)}')"></div><small class="${p.legenda?'':'sem'}">${esc(p.legenda||'Sem legenda — toque')}</small>`;c.onclick=()=>openPhoto(p.id);grid.appendChild(c)});
+    box.appendChild(d)});
+}
+
+/* ---------------- câmera, compressão e legenda ---------------- */
+function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('Imagem inválida'));i.src=src})}
+async function compress(file,max=1800,q=.84){
+  const u=URL.createObjectURL(file);
+  try{const img=await loadImg(u);let w=img.naturalWidth,h=img.naturalHeight;const k=Math.min(1,max/Math.max(w,h));w=Math.round(w*k);h=Math.round(h*k);
+    const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(img,0,0,w,h);
+    const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',q));return{blob,w,h}}
+  finally{URL.revokeObjectURL(u)}
+}
+let alvo=null;
+function pick(sys,cam){alvo=sys||null;$(cam?'#inCam':'#inGal').click()}
+async function addFiles(e,cam){const files=[...e.target.files];e.target.value='';if(!files.length)return;
+  const done=files.length>1?busy('Processando '+files.length+' fotos…'):()=>{};
+  let last=null,ord=P.length?Math.max(...P.map(p=>p.ord))+1:0;
+  try{for(const f of files){try{const {blob,w,h}=await compress(f);
+    const p={id:uid(),visitId:V.id,sys:alvo,ord:ord++,blob,w,h,takenAt:cam?Date.now():(f.lastModified||Date.now()),legenda:'',incluir:true};
+    await put('photos',p);P.push(p);last=p}catch(err){toast('Não foi possível ler '+(f.name||'a imagem'))}}}finally{done()}
+  touch();renderFotos();
+  if(files.length===1&&last)openPhoto(last.id,true);else if(last)toast(files.length+' fotos adicionadas — toque em cada uma para legendar',3500);
+}
+$('#inCam').onchange=e=>addFiles(e,true);$('#inGal').onchange=e=>addFiles(e,false);
+
+let CP=null, cpUrl=null, cpT;
+function openPhoto(id,focus){
+  CP=P.find(p=>p.id===id);if(!CP)return;
+  const s=CP.sys?sisOf(CP.sys):null,lista=fotosDe(CP.sys||null);
+  $('#dpTitle').textContent=(s?nomeSis(V,s):'Vista geral')+' — foto '+(lista.indexOf(CP)+1)+' de '+lista.length;
+  if(cpUrl)URL.revokeObjectURL(cpUrl);cpUrl=URL.createObjectURL(CP.blob);$('#dpImg').src=cpUrl;
+  $('#dpDesc').value=CP.legenda||'';
+  // sugestões: legendas já usadas neste sistema
+  const sug=[...new Set(P.filter(p=>p!==CP&&(p.sys||null)===(CP.sys||null)&&p.legenda).map(p=>p.legenda))].slice(0,4),box=$('#dpSug');box.innerHTML='';
+  sug.forEach(t=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.onclick=()=>{$('#dpDesc').value=t;CP.legenda=t;savePhoto()};box.appendChild(b)});
+  $('#dpReset').classList.toggle('hidden',!CP.orig);$('#dpWhen').textContent='Registrada em '+fmtStamp(CP.takenAt);
+  if(!$('#dPhoto').open)$('#dPhoto').showModal();$('#dPhoto .dlg-b').scrollTop=0;
+  if(focus)setTimeout(()=>$('#dpDesc').focus(),200);
+}
+function savePhoto(){clearTimeout(cpT);const p=CP;cpT=setTimeout(()=>{put('photos',p);touch()},250)}
+$('#dpDesc').oninput=e=>{CP.legenda=e.target.value;savePhoto()};
+$('#dPhoto').addEventListener('close',async()=>{clearTimeout(cpT);if(CP)await put('photos',CP);if(V){touch();if(step===2)renderFotos()}});
+$('#dpDel').onclick=async()=>{if(!confirm('Excluir esta foto?'))return;const id=CP.id;await del('photos',id);CP=null;P=P.filter(p=>p.id!==id);$('#dPhoto').close()};
+$('#dpMore').onclick=()=>{const sys=CP.sys||null;$('#dPhoto').close();pick(sys,true)};
+$('#dpReset').onclick=async()=>{if(!CP.orig||!confirm('Remover as marcações e voltar à foto original?'))return;CP.blob=CP.orig;delete CP.orig;delete CP.marks;await put('photos',CP);openPhoto(CP.id)};
+
+/* ---------------- marcação na foto ---------------- */
+const MK={tool:'pen',color:'#ff1f1f',shapes:[],img:null,cur:null};
+$('#dpMark').onclick=async()=>{
+  const src=CP.orig||CP.blob;const u=URL.createObjectURL(src);MK.img=await loadImg(u);URL.revokeObjectURL(u);
+  MK.shapes=CP.marks?JSON.parse(JSON.stringify(CP.marks)):[];
+  const c=$('#mkCanvas');c.width=MK.img.naturalWidth;c.height=MK.img.naturalHeight;
+  $('#dPhoto').close();$('#markup').classList.remove('hidden');mkDraw();
+};
+function mkDraw(){
+  const c=$('#mkCanvas'),x=c.getContext('2d'),lw=Math.max(4,c.width/160);
+  x.drawImage(MK.img,0,0);x.lineCap='round';x.lineJoin='round';
+  for(const s of [...MK.shapes,MK.cur].filter(Boolean)){
+    x.strokeStyle=s.color;x.fillStyle=s.color;x.lineWidth=lw;x.shadowColor='rgba(0,0,0,.45)';x.shadowBlur=lw;
+    x.beginPath();
+    if(s.t==='pen'){s.pts.forEach((p,i)=>i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]));x.stroke()}
+    else if(s.t==='circle'){const [a,b]=s.pts;x.ellipse((a[0]+b[0])/2,(a[1]+b[1])/2,Math.abs(b[0]-a[0])/2+1,Math.abs(b[1]-a[1])/2+1,0,0,Math.PI*2);x.stroke()}
+    else if(s.t==='arrow'){const [a,b]=s.pts,ang=Math.atan2(b[1]-a[1],b[0]-a[0]),hl=lw*4.5;x.moveTo(a[0],a[1]);x.lineTo(b[0],b[1]);x.stroke();x.beginPath();x.moveTo(b[0],b[1]);x.lineTo(b[0]-hl*Math.cos(ang-.45),b[1]-hl*Math.sin(ang-.45));x.lineTo(b[0]-hl*Math.cos(ang+.45),b[1]-hl*Math.sin(ang+.45));x.closePath();x.fill()}
+  }
+  x.shadowBlur=0;
+}
+(function(){
+  const c=$('#mkCanvas');
+  const pt=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
+  c.addEventListener('pointerdown',e=>{c.setPointerCapture(e.pointerId);const p=pt(e);MK.cur={t:MK.tool,color:MK.color,pts:MK.tool==='pen'?[p]:[p,p]};mkDraw()});
+  c.addEventListener('pointermove',e=>{if(!MK.cur)return;const p=pt(e);if(MK.cur.t==='pen')MK.cur.pts.push(p);else MK.cur.pts[1]=p;mkDraw()});
+  const end=()=>{if(MK.cur){MK.shapes.push(MK.cur);MK.cur=null;mkDraw()}};
+  c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);
+  $$('#markup [data-tool]').forEach(b=>b.onclick=()=>{MK.tool=b.dataset.tool;$$('#markup [data-tool]').forEach(o=>o.classList.toggle('on',o===b))});
+  $$('#markup [data-color]').forEach(b=>b.onclick=()=>{MK.color=b.dataset.color;$$('#markup [data-color]').forEach(o=>o.classList.toggle('on',o===b))});
+  $('#mkUndo').onclick=()=>{MK.shapes.pop();mkDraw()};
+  const closeMk=()=>{$('#markup').classList.add('hidden');openPhoto(CP.id)};
+  $('#mkCancel').onclick=closeMk;
+  $('#mkSave').onclick=async()=>{
+    if(!MK.shapes.length){if(CP.orig){CP.blob=CP.orig;delete CP.orig;delete CP.marks;await put('photos',CP)}return closeMk()}
+    const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.86));
+    if(!CP.orig)CP.orig=CP.blob;CP.blob=blob;CP.marks=MK.shapes;await put('photos',CP);toast('Marcações salvas',1400);closeMk();
+  };
+})();
+
+/* ---------------- Anexos I e J da IN 1 (formulários oficiais do CBMSC) ---------------- */
+// situação de uma linha da tabela do Anexo I
+function anexoRow(s){
+  const r=R(V,s.k);
+  if(r.st==='c')return{ppci:'s',nsci:'s',just:s.outros?(V.outNome||'').trim():''};
+  if(r.st==='nc')return{ppci:'n',nsci:'n',just:(s.outros&&(V.outNome||'').trim()?V.outNome.trim()+': ':'')+(r.just||'').trim()};
+  return s.outros?{ppci:'',nsci:'',just:'NÃO SE APLICA'}:{ppci:'n',nsci:'n',just:'NÃO SE APLICA'};
+}
+async function buildAnexo(kind,opt){
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',format:'a4',compress:true});
+  const W=210,H=297,M=18,CW=W-2*M,BOT=H-16;let y=0;
+  const font=(st='normal',sz=9,col=[0,0,0])=>{doc.setFont('helvetica',st);doc.setFontSize(sz);doc.setTextColor(...col)};
+  const newPage=()=>{doc.addPage();y=20};
+  const ensure=h=>{if(y+h>BOT)newPage()};
+  const val=v=>{v=String(v??'').trim();return v||'____________'};
+  const title=t=>{font('bold',11);doc.text(t,W/2,y,{align:'center'});y+=9};
+  const sec=t=>{ensure(14);y+=2;font('bold',9.5);doc.text(t,W/2,y,{align:'center'});y+=6};
+  const line=(pairs,gap=2.2)=>{font('normal',9);const t=pairs.map(([k,v])=>k+': '+val(v)).join('     ');for(const l of doc.splitTextToSize(t,CW)){ensure(5);doc.text(l,M,y);y+=4.6}y+=gap};
+  const para=(t,st='normal',sz=9)=>{font(st,sz);for(const l of doc.splitTextToSize(t,CW)){ensure(5);doc.text(l,M,y);y+=sz*.47}y+=2};
+  if(BRASAO){try{doc.addImage(BRASAO.src,'PNG',M+1,13,11.5,11.5*BRASAO.h/BRASAO.w,'brasao','FAST')}catch(e){}}
+  font('normal',9.5);['ESTADO DE SANTA CATARINA','SECRETARIA DE ESTADO DA SEGURANÇA PÚBLICA','CORPO DE BOMBEIROS MILITAR DE SANTA CATARINA'].forEach((t,i)=>doc.text(t,M+17,17.5+i*4.3));
+  y=36;
+  const sign=async(cx,rt)=>{
+    if(rt&&opt.sig&&ST.assinatura){try{const im=await loadImg(ST.assinatura);const k=Math.min(60/im.naturalWidth,18/im.naturalHeight);const w=im.naturalWidth*k,h=im.naturalHeight*k;doc.addImage(ST.assinatura,'PNG',cx-w/2,y-1-h,w,h)}catch(e){}}
+    doc.setDrawColor(0);doc.setLineWidth(.25);doc.line(cx-42,y,cx+42,y)};
+
+  if(kind==='I'){
+    title('Relatório de conformidade e termo de responsabilidade - ATESTADO PARA HABITE-SE');
+    sec('1. Responsável técnico pela execução da obra ou responsável pelo imóvel');
+    line([['Nome',ST.nome],['Telefone(s)',ST.telefone],['CPF/CNPJ',ST.cpf],['RG',ST.rg],['Nº de registro no conselho de classe (se RT)',ST.crea]]);
+    line([['E-mail',ST.email],['Logradouro',ST.rtLogradouro],['Nº',ST.rtNumero],['Bairro',ST.rtBairro],['Cidade',ST.rtCidade],['CEP',ST.rtCep]]);
+    sec('2. Descrição do imóvel');
+    line([['RE',V.re],['CNPJ',V.cnpj],['Protocolo',V.processo],['Ocupação',V.ocupacao],['Logradouro',V.endereco],['Bairro',V.bairro],['Cidade',V.cidade],['CEP',V.cep]]);
+    line([['Nome da edificação',V.empreendimento]]);
+    line([['Nome da empresa',V.rNome||ST.empresa]]);
+    sec('3. Relatório dos Sistemas e Medidas de Segurança Contra Incêndio e Pânico');
+    const c0=58,cs=10,xs=[M,M+c0,M+c0+cs,M+c0+2*cs,M+c0+3*cs,M+c0+4*cs,M+CW],jw=CW-c0-4*cs;
+    doc.setDrawColor(0);doc.setLineWidth(.25);
+    const grid=(y0,h,cols)=>{doc.rect(M,y0,CW,h);cols.forEach(i=>doc.line(xs[i],y0,xs[i],y0+h))};
+    const thead=()=>{const h1=10,h2=5.5;grid(y,h1+h2,[1,3,5]);doc.line(xs[1],y+h1,xs[5],y+h1);doc.line(xs[2],y+h1,xs[2],y+h1+h2);doc.line(xs[4],y+h1,xs[4],y+h1+h2);
+      font('bold',8.5);doc.text('Sistemas',M+2,y+(h1+h2)/2+1.2);font('bold',6.4);doc.text(['Em conformidade','com PPCI'],xs[1]+cs,y+4,{align:'center'});doc.text(['Em conformidade','com NSCI'],xs[3]+cs,y+4,{align:'center'});font('bold',8.5);
+      doc.text(doc.splitTextToSize('Justificativa em caso de desconformidade',jw-4),xs[5]+2,y+(h1+h2)/2+1.2);
+      ['Sim','Não','Sim','Não'].forEach((t,i)=>doc.text(t,xs[1+i]+cs/2,y+h1+3.9,{align:'center'}));y+=h1+h2};
+    ensure(40);thead();
+    for(const r of SISTEMAS){const s=anexoRow(r);font('normal',8.5);
+      const ln=doc.splitTextToSize(r.n,c0-4),lj=doc.splitTextToSize(s.just,jw-4),h=Math.max(ln.length,lj.length)*3.7+1.9;
+      if(y+h>BOT){newPage();thead()}
+      grid(y,h,[1,2,3,4,5]);font('normal',8.5);doc.text(ln,M+2,y+3.8);doc.text(lj,xs[5]+2,y+3.8);
+      font('bold',9.5);const mid=y+h/2+1.3;
+      if(s.ppci)doc.text('X',xs[s.ppci==='s'?1:2]+cs/2,mid,{align:'center'});
+      if(s.nsci)doc.text('X',xs[s.nsci==='s'?3:4]+cs/2,mid,{align:'center'});
+      y+=h}
+    const decl='Na qualidade de responsável técnico pela execução dos SMSCI, declaro que as informações prestadas neste documento são verdadeiras e estou ciente de minha responsabilidade acerca dos SMSCI instalados no imóvel, conforme definido pela Lei Estadual nº 16.157 de 2013. Estou ciente que a concessão do atestado para habite-se está condicionada a existência e a operacionalidade dos SMSCI. O descumprimento ocasiona aplicação das sanções legais cabíveis, além de possível responsabilidade civil e criminal.';
+    font('normal',8.5);const dl=doc.splitTextToSize(decl,CW-4),bh=dl.length*3.9+30;
+    if(y+bh>BOT)newPage();
+    doc.setDrawColor(0);doc.rect(M,y,CW,bh);font('normal',8.5);doc.text(dl,M+2,y+4.4);
+    const y0=y;y=y0+dl.length*3.9+21;await sign(M+55,true);
+    font('normal',8.5);doc.text('Assinatura do Responsável Técnico',M+55,y+4,{align:'center'});
+    const d=new Date();doc.text('Data: '+fmtDate(today())+'     Hora: '+pad(d.getHours())+'h '+pad(d.getMinutes())+'min',M+CW-4,y+4,{align:'right'});
+  }else{
+    title('Termo de entrega do imóvel');
+    sec('1. Responsável pelo imóvel');
+    line([['Nome',V.rNome],['Telefone(s)',V.rTel],['CPF/CNPJ',V.rDoc],['E-mail',V.rEmail],['Logradouro',V.rLogradouro],['Bairro',V.rBairro],['Cidade',V.rCidade],['CEP',V.rCep]]);
+    sec('2. Responsável técnico pela execução da obra');
+    line([['Nome',ST.nome],['Telefone(s)',ST.telefone],['CPF',ST.cpf],['E-mail',ST.email],['Nº de registro no conselho de classe',ST.crea]]);
+    sec('3. Descrição do imóvel');
+    line([['RE',V.re],['CNPJ',V.cnpj],['Logradouro',V.endereco],['Bairro',V.bairro],['Cidade',V.cidade],['CEP',V.cep]]);
+    sec('4. Dados da solicitação');
+    line([['Área total da solicitação (m²)',fmtNum(V.area)],['Protocolo',V.processo],['Área da alteração/ampliação/reforma',V.areaAlt]]);
+    const l4='Ocupação(ões): '+val(V.ocupacao)+'     Risco: '+RISCOS.map(r=>'('+(V.risco===r?'X':'  ')+') '+r).join('  ')+'     Nº de pavimentos: '+val(V.pavimentos)+'     Nº de blocos: '+val(V.blocos);
+    font('normal',9);for(const l of doc.splitTextToSize(l4,CW)){ensure(5);doc.text(l,M,y);y+=4.6}y+=2;
+    sec('5. Descritivo dos sistemas e medidas de segurança contra incêndio instalados');
+    para('Apresentar o descritivo quali-quantitativo dos sistemas e medidas de segurança contra incêndio executados no imóvel, anexando no mínimo uma foto ilustrativa de cada sistema previsto.');
+    y+=2;
+    const gap=6,bw=(CW-gap)/2,bh=bw*1.12;
+    const grupos=presentes(V).map(s=>({n:nomeSis(V,s),d:(R(V,s.k).desc||'').trim(),ph:fotosDe(s.k)}));
+    const gerais=fotosDe(null);if(gerais.length)grupos.push({n:'Vistas gerais do imóvel',d:'',ph:gerais});
+    for(const g of grupos){
+      ensure(g.ph.length?bh+22:12);font('bold',9.5);doc.text(g.n.toUpperCase(),M,y);y+=5;
+      if(g.d)para(g.d);
+      const imgs=await Promise.all(g.ph.map(p=>blobToDataURL(p.blob)));
+      for(let i=0;i<g.ph.length;i+=2){
+        const caps=[0,1].map(j=>{const p=g.ph[i+j];if(!p||!p.legenda)return[];font('normal',8.5);let l=doc.splitTextToSize(p.legenda,bw);if(l.length>4){l=l.slice(0,4);l[3]=l[3].replace(/\s*\S*$/,'')+'…'}return l});
+        const rh=bh+2+Math.max(caps[0].length,caps[1].length)*3.7;ensure(rh);
+        [0,1].forEach(j=>{const p=g.ph[i+j];if(!p)return;const x=M+j*(bw+gap),k=Math.min(bw/p.w,bh/p.h),w=p.w*k,h=p.h*k;
+          doc.addImage(imgs[i+j],'JPEG',x+(bw-w)/2,y+(bh-h)/2,w,h,'f'+p.id,'FAST');font('normal',8.5,[40,40,40]);if(caps[j].length)doc.text(caps[j],x+bw/2,y+bh+4.6,{align:'center'})});
+        y+=rh+5;
+      }
+      y+=3;
+    }
+    ensure(86);sec('6. Declaração de entrega e recebimento');
+    para('Declaro que recebi o imóvel conforme o descritivo apresentado, em conformidade com as NSCI, estando ciente de que após o recebimento é minha responsabilidade manter as características do imóvel inalteradas, bem como a operacionalidade e manutenção dos SMSCI previstos.');
+    y+=20;await sign(W/2,false);font('normal',9);doc.text('Assinatura do responsável pelo imóvel',W/2,y+4.5,{align:'center'});y+=14;
+    para('Declaro que realizei a entrega do imóvel em conformidade com o descritivo apresentado.');
+    y+=20;await sign(W/2,true);font('normal',9);doc.text('Assinatura do responsável técnico',W/2,y+4.5,{align:'center'});
+  }
+  return doc.output('blob');
+}
+
+// passo 4: conferência e geração
+let lastOut=null;
+function pendencias(){
+  const w=[],falta=(l,v)=>{if(!String(v??'').trim())w.push({t:'Falta '+l,go:0})};
+  falta('o logradouro do imóvel',V.endereco);falta('a cidade',V.cidade);falta('o RE',V.re);falta('o protocolo',V.processo);falta('a ocupação',V.ocupacao);falta('o risco',V.risco);falta('a área total',V.area);falta('o responsável pelo imóvel',V.rNome);
+  const sr=SISTEMAS.filter(s=>!R(V,s.k).st);if(sr.length)w.push({t:sr.length+' sistema(s) sem resposta (sairão como “não se aplica”): '+sr.map(s=>s.n).join(', '),go:1});
+  SISTEMAS.forEach(s=>{const r=R(V,s.k);if(r.st==='nc'&&!(r.just||'').trim())w.push({t:nomeSis(V,s)+': não conforme sem justificativa',go:1})});
+  if(tem(V,'out')&&!(V.outNome||'').trim())w.push({t:'“Outros”: informe qual é o sistema',go:1});
+  presentes(V).forEach(s=>{const ph=fotosDe(s.k);if(!ph.length)w.push({t:nomeSis(V,s)+': sem foto (o Anexo J pede ao menos uma)',go:2});if(!(R(V,s.k).desc||'').trim())w.push({t:nomeSis(V,s)+': sem descritivo',go:2})});
+  const sl=P.filter(p=>!p.legenda).length;if(sl)w.push({t:sl+' foto(s) sem legenda',go:2});
+  if(!(ST.cpf&&ST.telefone&&ST.email))w.push({t:'Complete CPF, telefone e e-mail do responsável técnico na engrenagem da tela inicial',go:-1});
+  return w;
+}
+function renderResumo(){
+  const ps=presentes(V),w=pendencias(),nc=ps.filter(s=>R(V,s.k).st==='nc').length;
+  const el=$('#resumo');el.innerHTML=`<b>${ps.length} sistema${ps.length===1?'':'s'} instalado${ps.length===1?'':'s'}</b>${nc?` · <b style="color:var(--crit)">${nc} não conforme${nc===1?'':'s'}</b>`:''} · <b>${P.length}</b> foto${P.length===1?'':'s'}<div class="note" style="margin-top:4px">${esc(ps.map(s=>nomeSis(V,s)).join(' · ')||'Nenhum sistema marcado.')}</div>`+
+    (w.length?`<div class="warnbox"><b>Antes de gerar, confira:</b><ul style="margin:6px 0 0;padding-left:18px">${w.map((x,i)=>`<li>${esc(x.t)}${x.go>=0?` <a href="#" data-w="${i}">corrigir</a>`:''}</li>`).join('')}</ul></div>`:'<div class="okbox">Tudo preenchido. Pode gerar.</div>');
+  el.querySelectorAll('[data-w]').forEach(a=>a.onclick=e=>{e.preventDefault();go(w[+a.dataset.w].go)});
+  renderOut();
+}
+function renderOut(){
+  const box=$('#out');box.innerHTML='';if(!lastOut)return;
+  const canShare=f=>navigator.canShare&&navigator.canShare({files:f});
+  lastOut.forEach(f=>{const d=document.createElement('div');d.className='card';d.style.cssText='background:#fff6f5;border-color:#f3c9c9';
+    d.innerHTML=`<b style="word-break:break-all">${esc(f.name)}</b><p class="note" style="margin:4px 0 10px">${(f.size/1048576).toFixed(1).replace('.',',')} MB</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary ${canShare([f])?'':'hidden'}" data-a="share" style="flex:1">Compartilhar</button><button class="btn" data-a="open" style="flex:1">Abrir</button><button class="btn" data-a="dl" style="flex:1">Baixar</button></div>`;
+    d.querySelector('[data-a=share]').onclick=async()=>{try{await navigator.share({files:[f],title:f.name})}catch(e){if(e.name!=='AbortError')toast('Não foi possível compartilhar')}};
+    d.querySelector('[data-a=open]').onclick=()=>{const u=URL.createObjectURL(f);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),120000)};
+    d.querySelector('[data-a=dl]').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000)};
+    box.appendChild(d)});
+  if(canShare(lastOut)){const b=document.createElement('button');b.className='btn dark';b.style.width='100%';b.textContent='Compartilhar os dois PDFs';b.onclick=async()=>{try{await navigator.share({files:lastOut,title:'Habite-se CBMSC'})}catch(e){if(e.name!=='AbortError')toast('Não foi possível compartilhar')}};box.appendChild(b)}
+}
+$('#btnGerar').onclick=async()=>{
+  const done=busy('Gerando os PDFs…');
+  try{clearTimeout(saveT);await put('visits',V);const opt={sig:$('#rpSig').checked};
+    const safe=s=>(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w]+/g,'_').replace(/^_|_$/g,'').slice(0,40);
+    const id=safe(V.processo)||V.numero.replace('/','-'),nm=safe(V.empreendimento||V.endereco),suf=id+(nm?'_'+nm:'')+'.pdf';
+    lastOut=[new File([await buildAnexo('I',opt)],'IN1_Anexo_I_Relatorio_de_conformidade_'+suf,{type:'application/pdf'}),new File([await buildAnexo('J',opt)],'IN1_Anexo_J_Termo_de_entrega_'+suf,{type:'application/pdf'})];
+    renderOut();$('#out').scrollIntoView({behavior:'smooth'});
+  }catch(e){console.error(e);alert('Erro ao gerar os PDFs: '+e.message)}finally{done()}
+};
+
+/* ---------------- configurações ---------------- */
+let DEF_LOGO=null, BRASAO=null;
+async function loadSettings(){ST={...DEFAULTS,...((await kvGet('settings'))||{})};
+  try{const b=await (await fetch('./assets/lang-logo.png')).blob(),src=await blobToDataURL(b),im=await loadImg(src);DEF_LOGO={src,w:im.naturalWidth,h:im.naturalHeight}}catch(e){DEF_LOGO=null}
+  try{const b=await (await fetch('./assets/brasao-sc.png')).blob(),src=await blobToDataURL(b),im=await loadImg(src);BRASAO={src,w:im.naturalWidth,h:im.naturalHeight}}catch(e){BRASAO=null}}
+const curLogo=()=>ST.logo==='default'?DEF_LOGO:(ST.logo?{src:ST.logo,w:ST.logoW,h:ST.logoH}:null);
+const saveSettings=()=>kvSet('settings',ST);
+function renderLogo(){const lg=curLogo();$('#appLogo').innerHTML=lg?`<img src="${lg.src}" alt="${esc(ST.empresa)}">`:esc(ST.empresa||'');const pv=$('#logoPrev');pv.src=lg?lg.src:'';pv.classList.toggle('hidden',!lg);$('#logoDel').classList.toggle('hidden',!lg);$('#logoDef').classList.toggle('hidden',ST.logo==='default')}
+$('#logoPick').onclick=()=>$('#logoFile').click();
+$('#logoFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const u=URL.createObjectURL(f);try{const im=await loadImg(u);const k=Math.min(1,700/Math.max(im.naturalWidth,im.naturalHeight));const c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ST.logo=c.toDataURL('image/png');ST.logoW=c.width;ST.logoH=c.height;await saveSettings();renderLogo()}catch(err){toast('Imagem inválida')}finally{URL.revokeObjectURL(u)}};
+$('#logoDel').onclick=async()=>{ST.logo=null;await saveSettings();renderLogo()};
+$('#logoDef').onclick=async()=>{ST.logo='default';await saveSettings();renderLogo()};
+$('#btnSettings').onclick=()=>{$$('[data-s]').forEach(i=>i.value=ST[i.dataset.s]||'');renderLogo();$('#dSettings').showModal();sigInit()};
+$$('[data-s]').forEach(i=>i.addEventListener('input',()=>{ST[i.dataset.s]=i.value;saveSettings()}));
+$('#dSettings').addEventListener('close',renderHome);
+let sigDirty=false;
+function sigInit(){
+  const c=$('#sigPad'),r=c.getBoundingClientRect(),dpr=window.devicePixelRatio||1;c.width=r.width*dpr;c.height=r.height*dpr;
+  const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);sigDirty=false;
+  if(ST.assinatura)loadImg(ST.assinatura).then(im=>{const k=Math.min(c.width/im.naturalWidth,c.height/im.naturalHeight);x.drawImage(im,(c.width-im.naturalWidth*k)/2,(c.height-im.naturalHeight*k)/2,im.naturalWidth*k,im.naturalHeight*k)});
+  $('#sigState').textContent=ST.assinatura?'Assinatura salva.':'Sem assinatura (o relatório terá só a linha).';
+}
+(function(){
+  const c=$('#sigPad'),x=c.getContext('2d');let drawing=false;
+  const pt=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
+  c.addEventListener('pointerdown',e=>{if(ST.assinatura&&!sigDirty){x.clearRect(0,0,c.width,c.height)}drawing=true;sigDirty=true;c.setPointerCapture(e.pointerId);const p=pt(e);x.beginPath();x.moveTo(...p);x.lineWidth=2.4*(window.devicePixelRatio||1);x.lineCap='round';x.lineJoin='round';x.strokeStyle='#0d2a6b'});
+  c.addEventListener('pointermove',e=>{if(!drawing)return;x.lineTo(...pt(e));x.stroke()});
+  const end=()=>{if(!drawing)return;drawing=false;ST.assinatura=trimSig(c);saveSettings();$('#sigState').textContent='Assinatura salva.'};
+  c.addEventListener('pointerup',end);c.addEventListener('pointercancel',end);
+  $('#sigClear').onclick=()=>{x.clearRect(0,0,c.width,c.height);ST.assinatura=null;sigDirty=false;saveSettings();$('#sigState').textContent='Assinatura removida.'};
+})();
+function trimSig(c){const x=c.getContext('2d'),d=x.getImageData(0,0,c.width,c.height).data;let a=c.width,b=c.height,e=0,f=0;
+  for(let yy=0;yy<c.height;yy++)for(let xx=0;xx<c.width;xx++)if(d[(yy*c.width+xx)*4+3]>10){if(xx<a)a=xx;if(xx>e)e=xx;if(yy<b)b=yy;if(yy>f)f=yy}
+  if(e<=a||f<=b)return null;const o=document.createElement('canvas');o.width=e-a+8;o.height=f-b+8;o.getContext('2d').drawImage(c,a-4,b-4,o.width,o.height,0,0,o.width,o.height);return o.toDataURL('image/png')}
+
+// backup
+$('#bkExport').onclick=async()=>{const done=busy('Preparando backup…');try{
+  const vs=await getAll('visits'),ps=await getAll('photos');
+  const photos=[];for(const p of ps){const o={...p,blob:await blobToDataURL(p.blob)};if(p.orig)o.orig=await blobToDataURL(p.orig);photos.push(o)}
+  const blob=new Blob([JSON.stringify({app:'lang-habitese',v:1,exportedAt:new Date().toISOString(),settings:ST,visits:vs,photos})],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup_habite-se_'+today()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000);
+}finally{done()}};
+$('#bkImport').onclick=()=>$('#bkFile').click();
+$('#bkFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const done=busy('Importando…');
+  try{const d=JSON.parse(await f.text());if(d.app!=='lang-habitese')throw new Error('Arquivo não é um backup deste app');
+    for(const v of d.visits||[])await put('visits',v);
+    for(const p of d.photos||[]){p.blob=await dataURLToBlob(p.blob);if(p.orig)p.orig=await dataURLToBlob(p.orig);await put('photos',p)}
+    toast((d.visits||[]).length+' vistoria(s) importada(s)');}
+  catch(err){alert('Falha ao importar: '+err.message)}finally{done();renderHome()}};
+
+/* ---------------- navegação ---------------- */
+function show(id){['vHome','vVisit'].forEach(s=>$('#'+s).classList.toggle('hidden',s!==id))}
+$('#btnNew').onclick=newVisit;
+$('#btnBack').onclick=async()=>{clearTimeout(saveT);if(V)await put('visits',V);V=null;history.replaceState(null,'','./');show('vHome');renderHome()};
+$('#btnDelVisit').onclick=async()=>{if(!confirm('Excluir esta vistoria e todas as suas fotos? Esta ação não pode ser desfeita.'))return;clearTimeout(saveT);for(const p of P)await del('photos',p.id);await del('visits',V.id);V=null;P=[];history.replaceState(null,'','./');show('vHome');renderHome()};
+$('#search').oninput=renderHome;
+$$('dialog [data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
+window.addEventListener('pagehide',()=>{if(V)put('visits',V)});
+
+(async()=>{
+  await loadSettings();
+  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+  const id=location.hash.slice(1);
+  if(id&&await get('visits',id))openVisit(id);else renderHome();
+  if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>

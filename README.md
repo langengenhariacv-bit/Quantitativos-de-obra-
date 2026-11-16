@@ -85,3 +85,21 @@ App de celular (PWA, funciona offline) para registrar visitas técnicas com foto
 5. **Relatório** → escolha o layout (foto ao lado do texto, foto grande ou grade 2×2) e gere o PDF para compartilhar ou baixar.
 
 Na engrenagem da tela inicial ficam a empresa, o logo do cabeçalho, os dados do vistoriador, o objetivo padrão, a cidade, o texto de ressalva, a assinatura desenhada com o dedo e o backup. As fotos ficam salvas só no aparelho: exporte o backup periodicamente.
+
+## Lang PPCI — vistoria de habite-se CBMSC (`/habite-se/`)
+
+App de celular (PWA, funciona offline) para a vistoria de habite-se do Corpo de Bombeiros Militar de Santa Catarina. Você responde um questionário de 4 passos e o app entrega prontos, em PDF, os dois formulários da IN 1:
+
+- **Anexo I — Relatório de conformidade e termo de responsabilidade (atestado para habite-se)**, com a tabela dos 15 sistemas já marcada.
+- **Anexo J — Termo de entrega do imóvel**, com o descritivo de cada sistema instalado e as fotos legendadas.
+
+Antes da primeira vistoria, abra a engrenagem e preencha uma vez os dados do responsável técnico (CPF, RG, endereço, telefone, e-mail) e o responsável pelo imóvel padrão. Esses dados ficam só no aparelho.
+
+1. **Imóvel** — endereço, RE, protocolo, ocupação, risco, área, pavimentos e blocos.
+2. **Sistemas** — para cada sistema, um toque: *Não tem*, *Conforme* ou *Não conforme* (com a justificativa). Um botão marca todos os não respondidos como "Não tem".
+3. **Fotos** — para cada sistema instalado, o descritivo e o botão **Tirar foto**, que abre a câmera; a legenda é pedida logo após cada foto e **Outra foto** volta direto para a câmera.
+4. **PDF** — o app lista o que falta (com atalho para corrigir) e gera os dois PDFs para compartilhar, abrir ou baixar.
+
+Regra da tabela do Anexo I: *Conforme* sai Sim/Sim; *Não conforme* sai Não/Não com a justificativa digitada; *Não tem* sai Não/Não com "NÃO SE APLICA".
+
+**Importante:** os PDFs reproduzem o texto dos Anexos I e J da IN 1 a partir dos modelos de 2025; confira se o CBMSC não publicou versão nova do formulário. A lista de sistemas fica em `habite-se/catalogo.js` (ao editar, aumente a versão do cache em `habite-se/service-worker.js`).
