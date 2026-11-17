@@ -113,6 +113,8 @@ App de celular e computador (PWA, funciona offline) para controlar o estoque de 
 - **Obras**: cada obra tem uma cor. A página da obra mostra o valor em material, a divisão por tipo, a tabela de material enviado − devolvido e o histórico, além do **Relatório** para imprimir/PDF.
 - **Movimentações**: histórico com filtros por tipo, obra e período, e exportação para planilha (CSV).
 
+**Movimentar (entrada, saída ou devolução)** é uma tela de ícones pensada para celular e tablet: todos os materiais aparecem em grade, com busca e filtro por categoria, e os mais usados primeiro. Toque no material, digite a quantidade no teclado numérico grande, escolha a obra e toque em **Dar saída**. Para lançar vários materiais de uma vez, use **＋ Mais itens**; cada material escolhido fica marcado com a quantidade. Na devolução aparecem só os materiais que a obra recebeu. Cada material pode ter um ícone (escolhido automaticamente pelo nome) ou uma foto tirada no celular.
+
 Uma movimentação pode ter vários materiais. A saída não deixa enviar mais do que há no depósito, e a devolução não deixa devolver mais do que a obra recebeu. A **entrada direto na obra** (compra entregue no canteiro) conta para a obra sem passar pelo saldo do depósito. Depois de cada saída o app oferece a **guia de remessa** para imprimir e colher a assinatura de quem recebeu.
 
 Os dados ficam salvos só no aparelho: use a engrenagem para fazer **backup** (e restaurar em outro aparelho) e exportar as planilhas. O botão *Ver com dados de exemplo* mostra o app preenchido.
