@@ -1,4 +1,4 @@
-name: Site (Controle TV + Visita Técnica + Habite-se)
+name: Site (Controle TV + Visita Técnica + Habite-se + Estoque)
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
       - 'controle-tv/**'
       - 'vistoria/**'
       - 'habite-se/**'
+      - 'estoque/**'
       - '.github/workflows/controle-tv-web.yml'
   workflow_dispatch:
 
@@ -38,6 +39,8 @@ jobs:
           cp -r vistoria _site/vistoria
           # App de vistoria para habite-se do CBMSC em /habite-se/
           cp -r habite-se _site/habite-se
+          # Controle de estoque de materiais por obra em /estoque/
+          cp -r estoque _site/estoque
 
       - uses: actions/configure-pages@v5
 

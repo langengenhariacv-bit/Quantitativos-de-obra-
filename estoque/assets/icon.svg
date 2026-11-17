@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#171717"/>
+ <g transform="translate(256 210)">
+  <path d="M0-120 112-62V62L0 120-112 62V-62Z" fill="#ff5a00"/>
+  <path d="M0-120 112-62 0-4-112-62Z" fill="#ff8a4a"/>
+  <path d="M0-4V120L-112 62V-62Z" fill="#d94a00"/>
+  <path d="M-56-91 56-33V10" fill="none" stroke="#171717" stroke-width="16" stroke-linejoin="round"/>
+ </g>
+ <text x="256" y="430" text-anchor="middle" font-family="Inter,Arial Black,Arial,sans-serif" font-size="74" font-weight="900" letter-spacing="-3"><tspan fill="#fff">L</tspan><tspan fill="#ff5a00">ANG</tspan></text>
+ <text x="256" y="474" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="800" letter-spacing="10" fill="#bdb6b0">ESTOQUE</text>
+</svg>

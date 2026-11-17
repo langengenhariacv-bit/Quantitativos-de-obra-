@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#171717" />
+<meta name="color-scheme" content="light" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="assets/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Lang Estoque" />
+<title>Lang Estoque</title>
+<style>
+:root{--bg:#f4f3f1;--card:#fff;--ink:#181818;--muted:#736e69;--line:#e7e2dc;--brand:#171717;--accent:#ff5a00;
+  --in:#16855f;--in-bg:#e8f6f0;--out:#e2560f;--out-bg:#fff0e7;--back:#2d6bd6;--back-bg:#eaf1fd;--adj:#7a5bd1;--adj-bg:#f1edfc;
+  --warn:#b8730d;--warn-bg:#fff6e3;--danger:#c23b3b;--danger-bg:#fdeeee;--shadow:0 8px 26px rgba(25,25,25,.07);--r:18px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}.hidden{display:none!important}
+h1,h2,h3{margin:0;letter-spacing:-.02em}
+/* topo */
+.top{position:sticky;top:0;z-index:20;background:var(--brand);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:12px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:19px;letter-spacing:-.03em;text-decoration:none;color:#fff}
+.logo .mk{width:34px;height:34px;border-radius:10px;background:var(--accent);display:grid;place-items:center;font-size:18px}
+.logo small{display:block;font-size:11px;font-weight:600;color:#bdb6b0;letter-spacing:0}
+.top .sp{flex:1}
+.icon-btn{border:0;background:rgba(255,255,255,.1);color:#fff;width:40px;height:40px;border-radius:12px;font-size:19px;display:grid;place-items:center}
+.tabs{display:none}
+/* navegação inferior */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+.nav a{display:grid;justify-items:center;gap:2px;text-decoration:none;color:var(--muted);font-size:11px;font-weight:700;padding:4px 0;border-radius:12px}
+.nav a .i{font-size:21px;line-height:1.1;filter:grayscale(1);opacity:.7}
+.nav a.on{color:var(--ink)}.nav a.on .i{filter:none;opacity:1}
+.nav .fab{align-self:center;justify-self:center;width:56px;height:56px;margin-top:-26px;border-radius:50%;border:4px solid var(--bg);background:var(--accent);color:#fff;font-size:30px;font-weight:400;display:grid;place-items:center;box-shadow:0 8px 20px rgba(255,90,0,.35)}
+main{max-width:1120px;margin:0 auto;padding:16px 16px calc(100px + env(safe-area-inset-bottom))}
+@media(min-width:900px){
+  .nav{display:none}
+  .tabs{display:flex;gap:4px;margin-left:18px}
+  .tabs a{color:#cfc9c3;text-decoration:none;font-weight:750;padding:9px 14px;border-radius:11px;font-size:14px}
+  .tabs a.on{background:rgba(255,255,255,.12);color:#fff}
+  .tabs .new{background:var(--accent);color:#fff;margin-left:8px}
+  main{padding-bottom:40px}
+}
+/* blocos */
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;border:1px solid rgba(0,0,0,.03)}
+.sec{margin:22px 0 10px;display:flex;align-items:center;gap:10px}
+.sec h2{font-size:17px}.sec .sp{flex:1}.sec a,.link{color:var(--accent);font-weight:800;font-size:13px;text-decoration:none;background:none;border:0;padding:0}
+.muted{color:var(--muted)}.small{font-size:12.5px}.b{font-weight:800}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+@media(min-width:700px){.g4{grid-template-columns:repeat(4,1fr)}}
+.g4{grid-template-columns:repeat(2,1fr)}
+/* ações rápidas */
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.qa{border:0;border-radius:18px;padding:16px 10px;display:grid;justify-items:center;gap:6px;font-weight:850;font-size:14px;color:#fff;box-shadow:var(--shadow);transition:transform .1s}
+.qa:active{transform:scale(.97)}.qa .i{font-size:28px;width:52px;height:52px;border-radius:16px;background:rgba(255,255,255,.2);display:grid;place-items:center}
+.qa small{font-weight:600;opacity:.85;font-size:11.5px}
+.qa.in{background:linear-gradient(150deg,#1b9a6e,#127252)}.qa.out{background:linear-gradient(150deg,#ff6f1f,#e04d08)}.qa.back{background:linear-gradient(150deg,#3b7be6,#2459b8)}
+/* kpi */
+.kpi{padding:14px 15px}.kpi .v{font-size:25px;font-weight:900;letter-spacing:-.03em;margin-top:4px}.kpi .l{font-size:12px;color:var(--muted);font-weight:700}
+.kpi .e{font-size:20px;float:right}
+.kpi.alert{background:var(--danger-bg);border-color:#f6d2d2}.kpi.alert .v{color:var(--danger)}
+/* gráfico barras */
+.bars{display:grid;gap:11px}
+.bar-row{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;align-items:center;gap:10px;font-size:13px}
+.bar-row .n{font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:7px}
+.bar-track{height:14px;background:#f1eeea;border-radius:8px;overflow:hidden}.bar-fill{height:100%;border-radius:8px;min-width:3px}
+.bar-row .val{font-weight:800;font-size:12.5px;text-align:right;min-width:60px}
+.dot{width:11px;height:11px;border-radius:50%;flex:none;display:inline-block}
+.cols{display:flex;align-items:flex-end;gap:5px;height:120px;padding-top:6px}
+.cols .c{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%;position:relative}
+.cols .c i{display:block;border-radius:4px 4px 2px 2px;min-height:0}
+.cols-x{display:flex;gap:5px;margin-top:6px}.cols-x span{flex:1;text-align:center;font-size:10px;color:var(--muted)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);font-weight:700;margin-top:10px}.legend span{display:flex;align-items:center;gap:6px}
+/* listas */
+.list{display:grid;gap:8px;grid-template-columns:minmax(0,1fr)}.grid>*,.list>*{min-width:0}
+.row{display:flex;align-items:center;gap:12px;background:#fff;border-radius:15px;padding:12px 13px;box-shadow:var(--shadow);border:1px solid rgba(0,0,0,.03);text-decoration:none;color:inherit;width:100%;text-align:left}
+button.row{border:1px solid rgba(0,0,0,.03)}
+.row .ic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:22px;flex:none;background:#f3f0ec}
+.row .tx{flex:1;min-width:0}.row .t{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row .s{font-size:12.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .r{text-align:right;flex:none}.row .r .q{font-weight:900;font-size:16px}.row .r .u{font-size:11.5px;color:var(--muted);font-weight:700}
+.ic.in{background:var(--in-bg)}.ic.out{background:var(--out-bg)}.ic.back{background:var(--back-bg)}.ic.adj{background:var(--adj-bg)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:850;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.pill.ok{background:var(--in-bg);color:var(--in)}.pill.low{background:var(--warn-bg);color:var(--warn)}.pill.zero{background:var(--danger-bg);color:var(--danger)}
+.pill.in{background:var(--in-bg);color:var(--in)}.pill.out{background:var(--out-bg);color:var(--out)}.pill.back{background:var(--back-bg);color:var(--back)}.pill.adj{background:var(--adj-bg);color:var(--adj)}
+.pill.gray{background:#efebe7;color:#615b56}
+.lvl{height:6px;background:#f1eeea;border-radius:5px;overflow:hidden;margin-top:7px}.lvl i{display:block;height:100%;border-radius:5px}
+/* obras */
+.obra{position:relative;overflow:hidden;text-decoration:none;color:inherit;display:block;padding:16px 16px 14px 20px}
+.obra:before{content:"";position:absolute;left:0;top:0;bottom:0;width:7px;background:var(--c)}
+.obra h3{font-size:16.5px}.obra .meta{display:flex;gap:16px;margin-top:12px}.obra .meta div{font-size:12px;color:var(--muted);font-weight:700}.obra .meta b{display:block;font-size:17px;color:var(--ink);font-weight:900}
+.hero{border-radius:22px;padding:18px;color:#fff;background:var(--c,#171717);position:relative;overflow:hidden}
+.hero:after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)}
+.hero h1{font-size:23px}.hero .sub{opacity:.85;font-size:13px;margin-top:4px}
+.hero .meta{display:flex;flex-wrap:wrap;gap:20px;margin-top:16px}.hero .meta div{font-size:12px;opacity:.9;font-weight:700}.hero .meta b{display:block;font-size:20px;font-weight:900}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+/* filtros */
+.search{display:flex;gap:8px;margin-bottom:10px}
+.search input,.search select{flex:1;border:1px solid var(--line);background:#fff;border-radius:13px;padding:12px 14px;outline:none;min-width:0}
+.search select{flex:0 1 auto}
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:750;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.obra-chip.on{background:var(--c);border-color:var(--c)}
+/* botões */
+.btn{border:0;border-radius:13px;padding:11px 16px;font-weight:850;display:inline-flex;align-items:center;justify-content:center;gap:7px;text-decoration:none;font-size:14px}
+.btn.primary{background:var(--accent);color:#fff}.btn.dark{background:var(--ink);color:#fff}.btn.soft{background:#f1eeea;color:var(--ink)}
+.btn.white{background:rgba(255,255,255,.95);color:var(--ink)}.btn.ghost{background:rgba(255,255,255,.18);color:#fff}
+.btn.danger{background:var(--danger-bg);color:var(--danger)}.btn.full{width:100%}.btn.lg{padding:15px 18px;font-size:16px;border-radius:15px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+/* vazio */
+.empty{text-align:center;padding:34px 18px}.empty .i{font-size:46px}.empty h3{margin:10px 0 6px}.empty p{color:var(--muted);margin:0 0 16px;line-height:1.5}
+/* folha (modal) */
+.sheet-bg{position:fixed;inset:0;background:rgba(15,15,15,.48);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+.sheet{background:var(--bg);width:100%;max-width:620px;max-height:94vh;border-radius:24px 24px 0 0;display:flex;flex-direction:column;animation:up .2s ease-out}
+@media(min-width:700px){.sheet-bg{align-items:center}.sheet{border-radius:24px;max-height:90vh}}
+.sheet-h{display:flex;align-items:center;gap:10px;padding:16px 16px 10px}.sheet-h h2{flex:1;font-size:19px}
+.sheet-h .x{border:0;background:#e9e5e0;width:36px;height:36px;border-radius:50%;font-size:17px}
+.sheet-b{overflow-y:auto;padding:4px 16px 16px;flex:1}
+.sheet-f{padding:12px 16px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#fff;border-radius:0 0 0 0}
+@media(min-width:700px){.sheet-f{border-radius:0 0 24px 24px}}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}@keyframes fade{from{opacity:0}}
+/* formulário */
+.f{display:grid;gap:6px;margin-bottom:13px}.f label{font-size:12.5px;font-weight:800;color:#4d4843}
+.f input,.f select,.f textarea{width:100%;border:1px solid #dcd6d0;border-radius:12px;padding:12px 13px;background:#fff;outline:none}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:#ff9a5f;box-shadow:0 0 0 3px rgba(255,90,0,.12)}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.seg button{border:2px solid var(--line);background:#fff;border-radius:15px;padding:11px 4px;font-weight:850;font-size:13px;display:grid;justify-items:center;gap:3px}
+.seg button .i{font-size:22px}
+.seg .in.on{border-color:var(--in);background:var(--in-bg);color:var(--in)}.seg .out.on{border-color:var(--out);background:var(--out-bg);color:var(--out)}.seg .back.on{border-color:var(--back);background:var(--back-bg);color:var(--back)}
+.item{background:#fff;border-radius:15px;padding:11px 12px;margin-bottom:8px;border:1px solid var(--line)}
+.item .top2{display:flex;align-items:center;gap:10px}.item .nm{flex:1;min-width:0;font-weight:800}.item .nm small{display:block;font-weight:600;color:var(--muted);font-size:12px}
+.item .rm{border:0;background:none;font-size:18px;color:#a8a19b;padding:4px}
+.qty{display:flex;align-items:center;gap:6px;margin-top:9px}
+.qty button{width:42px;height:42px;border-radius:12px;border:0;background:#f1eeea;font-size:22px;font-weight:700;flex:none}
+.qty input{flex:1;min-width:0;text-align:center;font-size:19px;font-weight:900;border:1px solid #dcd6d0;border-radius:12px;padding:8px 6px;outline:none}
+.qty .un{font-weight:800;color:var(--muted);font-size:13px;min-width:44px}
+.price{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12.5px;color:var(--muted);font-weight:700}.price input{flex:1;border:1px solid #dcd6d0;border-radius:10px;padding:8px 10px;outline:none;min-width:0}
+.warnbox{background:var(--warn-bg);color:#8a560a;border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:700;margin-top:8px}
+.errbox{background:var(--danger-bg);color:var(--danger);border-radius:12px;padding:9px 11px;font-size:12.5px;font-weight:700;margin-top:8px}
+.add-item{width:100%;border:2px dashed #d3ccc5;background:transparent;border-radius:15px;padding:13px;font-weight:850;color:#5a544f}
+.picker{display:grid;gap:7px;max-height:46vh;overflow-y:auto;margin-top:8px}
+.colors{display:flex;flex-wrap:wrap;gap:9px}.colors button{width:38px;height:38px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1.5px var(--line)}.colors button.on{box-shadow:0 0 0 3px var(--ink)}
+.stepper-label{font-size:12.5px;font-weight:800;color:#4d4843;margin:4px 0 8px;display:flex;align-items:center;gap:8px}
+.stepper-label .n{width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:12px}
+/* tabela */
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}.tbl th{text-align:left;font-size:11.5px;color:var(--muted);font-weight:800;padding:8px 6px;border-bottom:1px solid var(--line)}
+.tbl td{padding:10px 6px;border-bottom:1px solid #f1ede9;vertical-align:middle}.tbl td.n,.tbl th.n{text-align:right;white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#171717;color:#fff;padding:12px 18px;border-radius:14px;font-weight:750;font-size:14px;z-index:90;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:92vw;animation:up .2s}
+.big-saldo{font-size:44px;font-weight:950;letter-spacing:-.04em;line-height:1}
+.mt{margin-top:12px}.mt2{margin-top:20px}
+/* impressão */
+#print{display:none}
+@media print{
+  body>*:not(#print){display:none!important}#print{display:block!important;color:#000;font-size:12px}
+  @page{margin:14mm}
+  #print h1{font-size:20px}#print table{width:100%;border-collapse:collapse;margin-top:10px}#print th,#print td{border:1px solid #999;padding:6px;text-align:left}#print td.n,#print th.n{text-align:right}
+  #print .ph{display:flex;justify-content:space-between;border-bottom:3px solid #ff5a00;padding-bottom:8px;margin-bottom:10px}
+  #print .sig{display:flex;gap:40px;margin-top:60px}#print .sig div{flex:1;border-top:1px solid #000;text-align:center;padding-top:5px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="logo" href="#inicio"><span class="mk">📦</span><span><span id="brandName">Lang Estoque</span><small>Almoxarifado de obras</small></span></a>
+  <nav class="tabs" id="tabs">
+    <a href="#inicio" data-r="inicio">Início</a><a href="#estoque" data-r="estoque">Estoque</a><a href="#obras" data-r="obras">Obras</a><a href="#movs" data-r="movs">Movimentações</a>
+    <a href="#" class="new" id="tabNew">＋ Movimentar</a>
+  </nav>
+  <span class="sp"></span>
+  <button class="icon-btn" id="btnCfg" title="Configurações">⚙️</button>
+</header>
+<main id="app"></main>
+<nav class="nav" id="nav">
+  <a href="#inicio" data-r="inicio"><span class="i">🏠</span>Início</a>
+  <a href="#estoque" data-r="estoque"><span class="i">📦</span>Estoque</a>
+  <button class="fab" id="fab" aria-label="Nova movimentação">＋</button>
+  <a href="#obras" data-r="obras"><span class="i">🏗️</span>Obras</a>
+  <a href="#movs" data-r="movs"><span class="i">🔄</span>Histórico</a>
+</nav>
+<div id="sheetRoot"></div>
+<div id="print"></div>
+<input type="file" id="fileImport" accept="application/json,.json" class="hidden" />
+<script>
+'use strict';
+/* ============ Dados ============ */
+const KEY='lang-estoque-v1';
+const CATS=[
+  ['Cimento e argamassa','🪣'],['Agregados','⛰️'],['Aço e ferragens','🔩'],['Alvenaria','🧱'],['Hidráulica','🚰'],
+  ['Elétrica','⚡'],['Madeira e fôrmas','🪵'],['Revestimento','🔲'],['Pintura','🎨'],['Ferramentas','🧰'],['EPI','🦺'],['Outros','📦']];
+const CAT_ICON=Object.fromEntries(CATS);
+const UNITS=['un','saco','kg','t','m','m²','m³','barra','pç','cx','lata','galão','L','rolo','milheiro','par','jogo'];
+const COLORS=['#ff5a00','#2d6bd6','#16855f','#7a5bd1','#d6336c','#0f9aa8','#c9890a','#5b6470','#8d5524','#3d9b2f'];
+const TIPOS={entrada:{nome:'Entrada',ic:'📥',cls:'in'},saida:{nome:'Saída',ic:'🚚',cls:'out'},devolucao:{nome:'Devolução',ic:'↩️',cls:'back'},ajuste:{nome:'Ajuste',ic:'⚖️',cls:'adj'}};
+
+function blank(){return {empresa:'LANG Engenharia',seq:0,materiais:[],obras:[],movs:[],ultimoResp:''}}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&Array.isArray(d.materiais)&&Array.isArray(d.obras)&&Array.isArray(d.movs))return Object.assign(blank(),d)}catch(e){}return blank()}
+let db=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){toast('⚠️ Não foi possível salvar no aparelho. Exporte um backup.');return false}}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+/* ============ Utilidades ============ */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nf=new Intl.NumberFormat('pt-BR',{maximumFractionDigits:2});
+const brl=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+const brl0=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+const fq=v=>nf.format(Math.round((+v||0)*100)/100);
+const money=v=>Math.abs(v)>=10000?brl0.format(v):brl.format(v);
+const today=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
+const fdate=s=>s?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'';
+const fdateS=s=>s?s.slice(8,10)+'/'+s.slice(5,7):'';
+const daysAgo=n=>{const d=new Date();d.setDate(d.getDate()-n);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
+const num=v=>{if(typeof v==='number')return v;const s=String(v||'').trim().replace(/\s/g,'');if(!s)return 0;const n=s.includes(',')?s.replace(/\./g,'').replace(',','.'):s;const x=parseFloat(n);return isFinite(x)?x:0};
+const matById=id=>db.materiais.find(m=>m.id===id);
+const obraById=id=>db.obras.find(o=>o.id===id);
+const catIcon=c=>CAT_ICON[c]||'📦';
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+function sortedMovs(){return db.movs.slice().sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.criado||0)-(a.criado||0))}
+
+/* ============ Cálculos ============ */
+// Saldo no depósito: entradas (sem obra) + devoluções − saídas ± ajustes.
+// Entrada com obra = compra entregue direto na obra: conta para a obra, não passa pelo depósito.
+function calc(){
+  const saldo={},custoTot={},custoQtd={},obraQ={},obraV={},ult={};
+  db.materiais.forEach(m=>{saldo[m.id]=0});
+  const sorted=db.movs.slice().sort((a,b)=>(a.data||'').localeCompare(b.data||'')||(a.criado||0)-(b.criado||0));
+  for(const mv of sorted)for(const it of mv.itens||[]){
+    const q=+it.q||0,m=it.m;
+    if(mv.tipo==='entrada'){if(!mv.obra)saldo[m]=(saldo[m]||0)+q;if(+it.v>0){custoTot[m]=(custoTot[m]||0)+q*it.v;custoQtd[m]=(custoQtd[m]||0)+q}}
+    else if(mv.tipo==='saida')saldo[m]=(saldo[m]||0)-q;
+    else if(mv.tipo==='devolucao')saldo[m]=(saldo[m]||0)+q;
+    else if(mv.tipo==='ajuste')saldo[m]=(saldo[m]||0)+q;
+    ult[m]=mv.data;
+  }
+  const custo={};db.materiais.forEach(m=>{custo[m.id]=custoQtd[m.id]?custoTot[m.id]/custoQtd[m.id]:(+m.preco||0)});
+  for(const mv of db.movs){
+    if(!mv.obra)continue;let sg=0;
+    if(mv.tipo==='saida'||mv.tipo==='entrada')sg=1;else if(mv.tipo==='devolucao')sg=-1;else continue;
+    const oq=obraQ[mv.obra]||(obraQ[mv.obra]={});
+    for(const it of mv.itens||[]){const q=sg*(+it.q||0);oq[it.m]=(oq[it.m]||0)+q;
+      const v=(mv.tipo==='entrada'&&+it.v>0?+it.v:custo[it.m]||0);obraV[mv.obra]=(obraV[mv.obra]||0)+q*v}
+  }
+  return {saldo,custo,obraQ,obraV,ult};
+}
+function status(m,s){if(s<=0)return{k:'zero',t:'Sem estoque',c:'var(--danger)'};if(+m.min>0&&s<=+m.min)return{k:'low',t:'Estoque baixo',c:'var(--warn)'};return{k:'ok',t:'Em estoque',c:'var(--in)'}}
+function movValor(mv,C){return (mv.itens||[]).reduce((a,it)=>a+(+it.q||0)*((mv.tipo==='entrada'&&+it.v>0)?+it.v:(C.custo[it.m]||0)),0)}
+
+/* ============ Rotas ============ */
+function route(){const h=(location.hash||'#inicio').slice(1).split('/');return{p:h[0]||'inicio',id:h[1]?decodeURIComponent(h[1]):null}}
+const state={fEst:'',fCat:'',fStatus:'',fMovTipo:'',fMovObra:'',fMovPer:'30',fObraSt:'ativa'};
+function render(){
+  const r=route();
+  document.querySelectorAll('[data-r]').forEach(a=>a.classList.toggle('on',a.dataset.r===r.p||(r.p==='obra'&&a.dataset.r==='obras')||(r.p==='mat'&&a.dataset.r==='estoque')));
+  $('#brandName').textContent=db.empresa?db.empresa.split(' ')[0]+' Estoque':'Estoque';
+  const C=calc(),app=$('#app');
+  const views={inicio:vInicio,estoque:vEstoque,obras:vObras,movs:vMovs,obra:vObra,mat:vMat};
+  app.innerHTML=(views[r.p]||vInicio)(C,r.id);
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',()=>{closeSheet();render()});
+
+/* ============ Telas ============ */
+function vInicio(C){
+  if(!db.materiais.length&&!db.obras.length)return `
+    <div class="card empty"><div class="i">📦🏗️</div><h3>Bem-vindo ao controle de estoque</h3>
+    <p>Cadastre seus materiais e obras e registre cada entrada e saída.<br>Tudo fica salvo neste aparelho e funciona sem internet.</p>
+    <div class="grid" style="max-width:340px;margin:0 auto">
+      <button class="btn primary lg" onclick="formObra()">🏗️ Cadastrar primeira obra</button>
+      <button class="btn dark lg" onclick="formMaterial()">📦 Cadastrar primeiro material</button>
+      <button class="btn soft" onclick="loadDemo()">Ver com dados de exemplo</button>
+    </div></div>`;
+  const mats=db.materiais,obrasAt=db.obras.filter(o=>o.status!=='concluida');
+  const low=mats.filter(m=>status(m,C.saldo[m.id]).k!=='ok').sort((a,b)=>C.saldo[a.id]-C.saldo[b.id]);
+  const valorEst=mats.reduce((a,m)=>a+Math.max(0,C.saldo[m.id])*(C.custo[m.id]||0),0);
+  const d30=daysAgo(30),m30=db.movs.filter(m=>m.data>=d30);
+  // saídas por obra (30 dias)
+  const por={};let temValor=false;
+  for(const mv of m30){if(!mv.obra||!(mv.tipo==='saida'||mv.tipo==='entrada'))continue;const v=movValor(mv,C);if(v>0)temValor=true;
+    const p=por[mv.obra]||(por[mv.obra]={v:0,n:0});p.v+=v;p.n+=(mv.itens||[]).length}
+  const porArr=Object.entries(por).map(([id,x])=>({o:obraById(id),...x})).filter(x=>x.o).sort((a,b)=>temValor?b.v-a.v:b.n-a.n);
+  const mx=Math.max(1,...porArr.map(x=>temValor?x.v:x.n));
+  // movimento diário 14 dias
+  const days=[];for(let i=13;i>=0;i--)days.push(daysAgo(i));
+  const cnt=days.map(d=>({d,e:0,s:0}));
+  for(const mv of db.movs){const k=days.indexOf(mv.data);if(k<0)continue;const n=(mv.itens||[]).length;if(mv.tipo==='entrada')cnt[k].e+=n;else if(mv.tipo==='saida')cnt[k].s+=n}
+  const mxc=Math.max(1,...cnt.map(c=>Math.max(c.e,c.s)));
+  const ult=sortedMovs().slice(0,6);
+  return `
+  <div class="quick">
+    <button class="qa in" onclick="formMov('entrada')"><span class="i">📥</span>Entrada<small>chegou material</small></button>
+    <button class="qa out" onclick="formMov('saida')"><span class="i">🚚</span>Saída<small>enviar p/ obra</small></button>
+    <button class="qa back" onclick="formMov('devolucao')"><span class="i">↩️</span>Devolução<small>voltou da obra</small></button>
+  </div>
+  <div class="grid g4 mt">
+    <a class="card kpi" href="#estoque" style="text-decoration:none;color:inherit"><span class="e">📦</span><div class="l">Materiais</div><div class="v">${mats.length}</div></a>
+    <a class="card kpi ${low.length?'alert':''}" href="#estoque" onclick="state.fStatus='baixo'" style="text-decoration:none;color:inherit"><span class="e">${low.length?'⚠️':'✅'}</span><div class="l">Abaixo do mínimo</div><div class="v">${low.length}</div></a>
+    <a class="card kpi" href="#obras" style="text-decoration:none;color:inherit"><span class="e">🏗️</span><div class="l">Obras ativas</div><div class="v">${obrasAt.length}</div></a>
+    <div class="card kpi"><span class="e">💰</span><div class="l">Valor no depósito</div><div class="v" style="font-size:${valorEst>=1e5?21:25}px">${valorEst?money(valorEst):'—'}</div></div>
+  </div>
+  ${low.length?`<div class="sec"><h2>⚠️ Precisa comprar</h2><span class="sp"></span><a href="#estoque" onclick="state.fStatus='baixo'">ver todos</a></div>
+   <div class="list">${low.slice(0,4).map(m=>matRow(m,C)).join('')}</div>`:''}
+  <div class="grid mt2" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+    <div class="card"><h3 style="font-size:15px">Para onde foi o material <span class="muted small">· 30 dias</span></h3>
+      <div class="bars mt">${porArr.length?porArr.slice(0,7).map(x=>`<a href="#obra/${x.o.id}" class="bar-row" style="text-decoration:none;color:inherit"><span class="n"><span class="dot" style="background:${x.o.cor}"></span>${esc(x.o.nome)}</span>
+        <span class="bar-track"><span class="bar-fill" style="display:block;width:${Math.round((temValor?x.v:x.n)/mx*100)}%;background:${x.o.cor}"></span></span>
+        <span class="val">${temValor?money(x.v):x.n+' itens'}</span></a>`).join(''):'<p class="muted small">Nenhuma saída para obra nos últimos 30 dias.</p>'}</div></div>
+    <div class="card"><h3 style="font-size:15px">Itens movimentados <span class="muted small">· 14 dias</span></h3>
+      <div class="cols">${cnt.map(c=>`<div class="c" title="${fdate(c.d)}: ${c.e} item(ns) de entrada, ${c.s} de saída"><div style="display:flex;gap:2px;align-items:flex-end;height:100%"><i style="flex:1;height:${c.e/mxc*100}%;background:var(--in)"></i><i style="flex:1;height:${c.s/mxc*100}%;background:var(--out)"></i></div></div>`).join('')}</div>
+      <div class="cols-x">${cnt.map((c,i)=>`<span>${i%2?'':c.d.slice(8,10)}</span>`).join('')}</div>
+      <div class="legend"><span><i class="dot" style="background:var(--in)"></i>Entradas</span><span><i class="dot" style="background:var(--out)"></i>Saídas</span></div></div>
+  </div>
+  <div class="sec"><h2>Últimas movimentações</h2><span class="sp"></span><a href="#movs">ver todas</a></div>
+  <div class="list">${ult.length?ult.map(mv=>movRow(mv,C)).join(''):'<div class="card muted small">Nenhuma movimentação ainda. Use os botões acima.</div>'}</div>`;
+}
+
+function matRow(m,C){
+  const s=C.saldo[m.id]||0,st=status(m,s),ref=Math.max(+m.min*3||0,s,1);
+  return `<a class="row" href="#mat/${m.id}"><span class="ic">${catIcon(m.cat)}</span>
+   <span class="tx"><div class="t">${esc(m.nome)}</div><div class="s"><span class="pill ${st.k}">${st.t}</span> ${+m.min?'· mín. '+fq(m.min):''}${m.local?' · '+esc(m.local):''}</div>
+   <div class="lvl"><i style="width:${Math.max(0,Math.min(100,s/ref*100))}%;background:${st.c}"></i></div></span>
+   <span class="r"><div class="q" style="color:${s<=0?'var(--danger)':'inherit'}">${fq(s)}</div><div class="u">${esc(m.un)}</div></span></a>`;
+}
+function movRow(mv,C){
+  const t=TIPOS[mv.tipo]||TIPOS.ajuste,o=obraById(mv.obra),its=mv.itens||[];
+  const nomes=its.map(it=>{const m=matById(it.m);return (m?m.nome:'(excluído)')}).join(', ');
+  const dest=mv.tipo==='saida'?'→ '+(o?o.nome:'?'):mv.tipo==='devolucao'?'← '+(o?o.nome:'?'):mv.tipo==='entrada'?(o?'direto na '+o.nome:(mv.forn||'Depósito')):(mv.obs||'Correção de saldo');
+  const q1=its.length===1?(()=>{const m=matById(its[0].m);return `<div class="q">${its[0].q>0&&mv.tipo!=='saida'?'+':mv.tipo==='saida'?'−':''}${fq(Math.abs(its[0].q))}</div><div class="u">${m?esc(m.un):''}</div>`})():`<div class="q">${its.length}</div><div class="u">itens</div>`;
+  return `<button class="row" onclick="verMov('${mv.id}')"><span class="ic ${t.cls}">${t.ic}</span>
+   <span class="tx"><div class="t">${esc(nomes)||'—'}</div><div class="s">${o?`<span class="dot" style="background:${o.cor};width:8px;height:8px"></span> `:''}${esc(dest)} · ${fdateS(mv.data)}</div></span>
+   <span class="r">${q1}</span></button>`;
+}
+
+function vEstoque(C){
+  if(!db.materiais.length)return `<div class="card empty"><div class="i">📦</div><h3>Nenhum material cadastrado</h3><p>Cadastre cimento, areia, aço, tijolos… com unidade e estoque mínimo.</p><button class="btn primary lg" onclick="formMaterial()">＋ Novo material</button></div>`;
+  const q=state.fEst.toLowerCase();
+  let ms=db.materiais.filter(m=>(!q||(m.nome+' '+(m.local||'')+' '+m.cat).toLowerCase().includes(q))&&(!state.fCat||m.cat===state.fCat));
+  if(state.fStatus==='baixo')ms=ms.filter(m=>status(m,C.saldo[m.id]).k!=='ok');
+  ms.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const cats=[...new Set(db.materiais.map(m=>m.cat))];
+  const nLow=db.materiais.filter(m=>status(m,C.saldo[m.id]).k!=='ok').length;
+  return `<div class="sec" style="margin-top:4px"><h2 style="font-size:22px">Estoque</h2><span class="sp"></span><button class="btn primary" onclick="formMaterial()">＋ Material</button></div>
+  <div class="search"><input id="qEst" placeholder="🔎 Buscar material…" value="${esc(state.fEst)}" oninput="state.fEst=this.value;clearTimeout(window._t);window._t=setTimeout(()=>{render();const i=$('#qEst');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)"></div>
+  <div class="chips">
+    <button class="chip ${!state.fCat&&!state.fStatus?'on':''}" onclick="state.fCat='';state.fStatus='';render()">Todos</button>
+    <button class="chip ${state.fStatus==='baixo'?'on':''}" onclick="state.fStatus=state.fStatus==='baixo'?'':'baixo';render()">⚠️ Comprar (${nLow})</button>
+    ${cats.map(c=>`<button class="chip ${state.fCat===c?'on':''}" data-c="${esc(c)}" onclick="state.fCat=state.fCat===this.dataset.c?'':this.dataset.c;render()">${catIcon(c)} ${esc(c)}</button>`).join('')}
+  </div>
+  <div class="list">${ms.length?ms.map(m=>matRow(m,C)).join(''):'<div class="card muted small">Nada encontrado.</div>'}</div>`;
+}
+
+function vMat(C,id){
+  const m=matById(id);if(!m)return notFound();
+  const s=C.saldo[m.id]||0,st=status(m,s),c=C.custo[m.id]||0;
+  const usos=db.obras.map(o=>({o,q:(C.obraQ[o.id]||{})[m.id]||0})).filter(x=>x.q>0).sort((a,b)=>b.q-a.q);
+  const mx=Math.max(1,...usos.map(x=>x.q));
+  const movs=sortedMovs().filter(mv=>(mv.itens||[]).some(it=>it.m===m.id));
+  return `<a class="link" href="#estoque">‹ Estoque</a>
+  <div class="card mt" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+    <div class="ic" style="width:64px;height:64px;border-radius:18px;background:#f3f0ec;display:grid;place-items:center;font-size:34px">${catIcon(m.cat)}</div>
+    <div style="flex:1;min-width:180px"><h1 style="font-size:21px">${esc(m.nome)}</h1><div class="muted small" style="margin-top:4px">${esc(m.cat)}${m.local?' · 📍 '+esc(m.local):''}</div>
+      <div style="margin-top:8px"><span class="pill ${st.k}">${st.t}</span></div></div>
+    <div style="text-align:right"><div class="muted small b">No depósito</div><div class="big-saldo" style="color:${st.c}">${fq(s)}</div><div class="muted b">${esc(m.un)}</div></div>
+  </div>
+  <div class="grid g4 mt">
+    <div class="card kpi"><div class="l">Estoque mínimo</div><div class="v">${+m.min?fq(m.min):'—'}</div></div>
+    <div class="card kpi"><div class="l">Custo médio</div><div class="v" style="font-size:20px">${c?brl.format(c):'—'}</div></div>
+    <div class="card kpi"><div class="l">Valor em estoque</div><div class="v" style="font-size:20px">${c&&s>0?money(s*c):'—'}</div></div>
+    <div class="card kpi"><div class="l">Última movimentação</div><div class="v" style="font-size:20px">${C.ult[m.id]?fdate(C.ult[m.id]):'—'}</div></div>
+  </div>
+  <div class="actions">
+    <button class="btn primary" onclick="formMov('entrada',{m:'${m.id}'})">📥 Entrada</button>
+    <button class="btn dark" onclick="formMov('saida',{m:'${m.id}'})">🚚 Enviar p/ obra</button>
+    <button class="btn soft" onclick="formAjuste('${m.id}')">⚖️ Corrigir saldo</button>
+    <button class="btn soft" onclick="formMaterial('${m.id}')">✏️ Editar</button>
+  </div>
+  <div class="sec"><h2>Usado nas obras</h2></div>
+  <div class="card">${usos.length?`<div class="bars">${usos.map(x=>`<a href="#obra/${x.o.id}" class="bar-row" style="text-decoration:none;color:inherit"><span class="n"><span class="dot" style="background:${x.o.cor}"></span>${esc(x.o.nome)}</span><span class="bar-track"><span class="bar-fill" style="display:block;width:${x.q/mx*100}%;background:${x.o.cor}"></span></span><span class="val">${fq(x.q)} ${esc(m.un)}</span></a>`).join('')}</div>`:'<p class="muted small" style="margin:0">Ainda não foi enviado para nenhuma obra.</p>'}</div>
+  <div class="sec"><h2>Histórico</h2></div>
+  <div class="list">${movs.length?movs.slice(0,60).map(mv=>movRowMat(mv,m)).join(''):'<div class="card muted small">Sem movimentações.</div>'}</div>`;
+}
+function movRowMat(mv,m){
+  const t=TIPOS[mv.tipo],o=obraById(mv.obra),q=(mv.itens||[]).filter(it=>it.m===m.id).reduce((a,it)=>a+(+it.q||0),0);
+  const sinal=mv.tipo==='saida'?-1:(mv.tipo==='entrada'&&mv.obra)?0:1,val=sinal*q;
+  const desc=mv.tipo==='saida'?'Enviado para '+(o?o.nome:'?'):mv.tipo==='devolucao'?'Devolvido por '+(o?o.nome:'?'):mv.tipo==='entrada'?(o?'Entregue direto na '+o.nome:'Entrada'+(mv.forn?' · '+mv.forn:'')):(mv.obs||'Ajuste de saldo');
+  return `<button class="row" onclick="verMov('${mv.id}')"><span class="ic ${t.cls}">${t.ic}</span><span class="tx"><div class="t">${esc(desc)}</div><div class="s">${fdate(mv.data)}${mv.resp?' · '+esc(mv.resp):''}${mv.doc?' · '+esc(mv.doc):''}</div></span>
+  <span class="r"><div class="q" style="color:${val<0?'var(--out)':val>0?'var(--in)':'inherit'}">${val>0?'+':val<0?'−':''}${fq(Math.abs(sinal?val:q))}</div><div class="u">${esc(m.un)}</div></span></button>`;
+}
+
+function vObras(C){
+  if(!db.obras.length)return `<div class="card empty"><div class="i">🏗️</div><h3>Nenhuma obra cadastrada</h3><p>Cadastre as obras para onde o material é enviado. Cada uma ganha uma cor para ficar fácil de identificar.</p><button class="btn primary lg" onclick="formObra()">＋ Nova obra</button></div>`;
+  const os=db.obras.filter(o=>state.fObraSt==='todas'||(state.fObraSt==='ativa'?o.status!=='concluida':o.status==='concluida'));
+  return `<div class="sec" style="margin-top:4px"><h2 style="font-size:22px">Obras</h2><span class="sp"></span><button class="btn primary" onclick="formObra()">＋ Obra</button></div>
+  <div class="chips">${[['ativa','Em andamento'],['concluida','Concluídas'],['todas','Todas']].map(([k,l])=>`<button class="chip ${state.fObraSt===k?'on':''}" onclick="state.fObraSt='${k}';render()">${l}</button>`).join('')}</div>
+  <div class="grid g3">${os.map(o=>{
+    const rem=db.movs.filter(mv=>mv.obra===o.id&&(mv.tipo==='saida'||mv.tipo==='entrada'));
+    const last=rem.reduce((a,mv)=>mv.data>a?mv.data:a,'');
+    const nIt=Object.values(C.obraQ[o.id]||{}).filter(q=>q>0).length;
+    return `<a class="card obra" href="#obra/${o.id}" style="--c:${o.cor}">
+      <div style="display:flex;gap:8px;align-items:flex-start"><h3 style="flex:1">${esc(o.nome)}</h3>${o.status==='concluida'?'<span class="pill gray">Concluída</span>':''}</div>
+      <div class="muted small" style="margin-top:3px">${esc(o.end||'')}${o.resp?(o.end?' · ':'')+'👷 '+esc(o.resp):''}</div>
+      <div class="meta"><div><b>${C.obraV[o.id]?money(C.obraV[o.id]):'—'}</b>enviado</div><div><b>${nIt}</b>materiais</div><div><b>${last?fdateS(last):'—'}</b>última</div></div></a>`}).join('')||'<div class="card muted small">Nenhuma obra nesta lista.</div>'}</div>`;
+}
+
+function vObra(C,id){
+  const o=obraById(id);if(!o)return notFound();
+  const oq=C.obraQ[o.id]||{};
+  const linhas=Object.entries(oq).map(([mid,q])=>({m:matById(mid),q})).filter(x=>x.m&&Math.abs(x.q)>1e-9).map(x=>({...x,v:x.q*(C.custo[x.m.id]||0)})).sort((a,b)=>b.v-a.v||b.q-a.q);
+  const movs=sortedMovs().filter(mv=>mv.obra===o.id);
+  const rem=movs.filter(mv=>mv.tipo==='saida'||mv.tipo==='entrada');
+  const mxv=Math.max(1,...linhas.map(x=>x.v));const temV=linhas.some(x=>x.v>0);
+  // por categoria
+  const porCat={};linhas.forEach(x=>{porCat[x.m.cat]=(porCat[x.m.cat]||0)+(temV?x.v:1)});
+  const catArr=Object.entries(porCat).sort((a,b)=>b[1]-a[1]),totCat=catArr.reduce((a,x)=>a+x[1],0)||1;
+  return `<a class="link" href="#obras">‹ Obras</a>
+  <div class="hero mt" style="--c:${o.cor}">
+    <h1>${esc(o.nome)}</h1><div class="sub">${esc(o.end||'')}${o.resp?' · 👷 '+esc(o.resp):''}${o.status==='concluida'?' · ✔ Concluída':''}</div>
+    <div class="meta"><div><b>${C.obraV[o.id]?money(C.obraV[o.id]):'—'}</b>em material</div><div><b>${rem.length}</b>remessas</div><div><b>${linhas.length}</b>materiais</div><div><b>${rem[0]?fdate(rem[0].data):'—'}</b>última remessa</div></div>
+    <div class="actions" style="position:relative;z-index:1">
+      <button class="btn white" onclick="formMov('saida',{obra:'${o.id}'})">🚚 Enviar material</button>
+      <button class="btn ghost" onclick="formMov('devolucao',{obra:'${o.id}'})">↩️ Devolução</button>
+      <button class="btn ghost" onclick="printObra('${o.id}')">🖨️ Relatório</button>
+      <button class="btn ghost" onclick="formObra('${o.id}')">✏️</button>
+    </div>
+  </div>
+  ${catArr.length>1?`<div class="card mt"><div class="muted small b" style="margin-bottom:8px">Divisão por tipo ${temV?'(valor)':''}</div>
+    <div style="display:flex;height:16px;border-radius:9px;overflow:hidden">${catArr.map(([c,v],i)=>`<span title="${esc(c)}" style="width:${v/totCat*100}%;background:${COLORS[i%COLORS.length]}"></span>`).join('')}</div>
+    <div class="legend" style="flex-wrap:wrap;gap:6px 14px">${catArr.map(([c,v],i)=>`<span><i class="dot" style="background:${COLORS[i%COLORS.length]}"></i>${catIcon(c)} ${esc(c)} ${Math.round(v/totCat*100)}%</span>`).join('')}</div></div>`:''}
+  <div class="sec"><h2>Material na obra</h2><span class="muted small">enviado − devolvido</span></div>
+  <div class="card" style="padding:6px 12px">${linhas.length?`<table class="tbl"><thead><tr><th>Material</th><th class="n">Qtd.</th>${temV?'<th class="n">Valor</th>':''}</tr></thead><tbody>
+    ${linhas.map(x=>`<tr onclick="location.hash='#mat/${x.m.id}'" style="cursor:pointer"><td><div style="display:flex;align-items:center;gap:8px"><span>${catIcon(x.m.cat)}</span><div style="flex:1;min-width:0"><div class="b">${esc(x.m.nome)}</div>${temV?`<div class="lvl" style="margin-top:4px"><i style="width:${Math.max(0,x.v/mxv*100)}%;background:${o.cor}"></i></div>`:''}</div></div></td>
+      <td class="n b">${fq(x.q)} <span class="muted small">${esc(x.m.un)}</span></td>${temV?`<td class="n">${x.v?money(x.v):'—'}</td>`:''}</tr>`).join('')}</tbody></table>`:'<p class="muted small">Nenhum material enviado ainda. Toque em <b>Enviar material</b>.</p>'}</div>
+  <div class="sec"><h2>Histórico da obra</h2></div>
+  <div class="list">${movs.length?movs.map(mv=>movRow(mv,C)).join(''):'<div class="card muted small">Sem movimentações.</div>'}</div>`;
+}
+
+function vMovs(C){
+  const per=state.fMovPer,lim=per==='todos'?'':daysAgo(+per);
+  const ms=sortedMovs().filter(mv=>(!lim||mv.data>=lim)&&(!state.fMovTipo||mv.tipo===state.fMovTipo)&&(!state.fMovObra||mv.obra===state.fMovObra));
+  const tot={entrada:0,saida:0,devolucao:0};ms.forEach(mv=>{if(tot[mv.tipo]!=null)tot[mv.tipo]+=movValor(mv,C)});
+  // agrupar por data
+  let html='',cur='';
+  for(const mv of ms.slice(0,300)){if(mv.data!==cur){cur=mv.data;html+=`<div class="muted small b" style="margin:12px 2px 2px">${diaLabel(cur)}</div>`}html+=movRow(mv,C)}
+  return `<div class="sec" style="margin-top:4px"><h2 style="font-size:22px">Movimentações</h2><span class="sp"></span><button class="btn soft" onclick="exportCSV()">⬇️ Planilha</button></div>
+  <div class="chips">${[['','Todas'],['entrada','📥 Entradas'],['saida','🚚 Saídas'],['devolucao','↩️ Devoluções'],['ajuste','⚖️ Ajustes']].map(([k,l])=>`<button class="chip ${state.fMovTipo===k?'on':''}" onclick="state.fMovTipo='${k}';render()">${l}</button>`).join('')}</div>
+  <div class="search">
+    <select onchange="state.fMovObra=this.value;render()" style="flex:1"><option value="">Todas as obras</option>${db.obras.map(o=>`<option value="${o.id}" ${state.fMovObra===o.id?'selected':''}>${esc(o.nome)}</option>`).join('')}</select>
+    <select onchange="state.fMovPer=this.value;render()">${[['7','7 dias'],['30','30 dias'],['90','90 dias'],['365','12 meses'],['todos','Tudo']].map(([k,l])=>`<option value="${k}" ${per===k?'selected':''}>${l}</option>`).join('')}</select>
+  </div>
+  ${(tot.entrada||tot.saida)?`<div class="grid g2" style="grid-template-columns:repeat(3,1fr)">
+    <div class="card kpi" style="padding:11px"><div class="l">📥 Entradas</div><div class="v" style="font-size:17px;color:var(--in)">${money(tot.entrada)}</div></div>
+    <div class="card kpi" style="padding:11px"><div class="l">🚚 Saídas</div><div class="v" style="font-size:17px;color:var(--out)">${money(tot.saida)}</div></div>
+    <div class="card kpi" style="padding:11px"><div class="l">↩️ Devoluções</div><div class="v" style="font-size:17px;color:var(--back)">${money(tot.devolucao)}</div></div></div>`:''}
+  <div class="list">${html||'<div class="card muted small mt">Nenhuma movimentação neste filtro.</div>'}</div>`;
+}
+function diaLabel(d){if(d===today())return 'Hoje';if(d===daysAgo(1))return 'Ontem';const dt=new Date(d+'T12:00');return dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'})}
+function notFound(){return `<div class="card empty"><div class="i">🤷</div><h3>Não encontrado</h3><a class="btn soft" href="#inicio">Voltar ao início</a></div>`}
+
+/* ============ Folha (modal) ============ */
+function sheet(title,body,foot){
+  closeSheet();
+  const bg=document.createElement('div');bg.className='sheet-bg';bg.id='sheetBg';
+  bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true"><div class="sheet-h"><h2>${title}</h2><button class="x" onclick="closeSheet()" aria-label="Fechar">✕</button></div><div class="sheet-b" id="sheetBody">${body}</div>${foot?`<div class="sheet-f" id="sheetFoot">${foot}</div>`:''}</div>`;
+  bg.addEventListener('click',e=>{if(e.target===bg)closeSheet()});
+  $('#sheetRoot').appendChild(bg);document.body.style.overflow='hidden';
+}
+function closeSheet(){const b=$('#sheetBg');if(b)b.remove();document.body.style.overflow=''}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+
+/* ============ Movimentação ============ */
+let F=null;
+function formMov(tipo='saida',pre={}){
+  if(!db.materiais.length){toast('Cadastre um material primeiro');formMaterial();return}
+  F={tipo,obra:pre.obra||'',data:today(),resp:db.ultimoResp||'',doc:'',forn:'',obs:'',itens:[],picking:false,q:''};
+  if(pre.m)F.itens.push({m:pre.m,q:'',v:''});
+  if(!pre.m)F.picking=true;
+  sheet('Nova movimentação','','');drawMov();
+}
+function drawMov(){
+  const C=calc(),t=F.tipo;
+  const precisaObra=t!=='entrada';
+  const obrasAt=db.obras.filter(o=>o.status!=='concluida'||o.id===F.obra);
+  let h=`<div class="seg">${['entrada','saida','devolucao'].map(k=>`<button class="${TIPOS[k].cls} ${t===k?'on':''}" onclick="F.tipo='${k}';drawMov()"><span class="i">${TIPOS[k].ic}</span>${TIPOS[k].nome}</button>`).join('')}</div>`;
+  // obra
+  h+=`<div class="stepper-label"><span class="n">1</span>${t==='saida'?'Para qual obra vai?':t==='devolucao'?'De qual obra voltou?':'Onde o material foi entregue?'}</div>
+  <div class="chips" style="flex-wrap:wrap">${t==='entrada'?`<button class="chip ${!F.obra?'on':''}" onclick="F.obra='';drawMov()">🏬 Depósito</button>`:''}
+   ${obrasAt.map(o=>`<button class="chip obra-chip ${F.obra===o.id?'on':''}" style="--c:${o.cor}" onclick="F.obra='${o.id}';drawMov()"><span class="dot" style="background:${F.obra===o.id?'#fff':o.cor}"></span>${esc(o.nome)}</button>`).join('')}
+   <button class="chip" onclick="formObra(null,id=>{F.obra=id;reopenMov()})">＋ Nova obra</button></div>
+  ${t==='entrada'&&F.obra?'<div class="small muted" style="margin:-4px 0 10px">Compra entregue direto na obra: entra na conta da obra e não altera o saldo do depósito.</div>':''}`;
+  // itens
+  h+=`<div class="stepper-label" style="margin-top:8px"><span class="n">2</span>Materiais e quantidades</div>`;
+  F.itens.forEach((it,i)=>{const m=matById(it.m);if(!m)return;const s=C.saldo[m.id]||0,q=num(it.q);
+    const falta=t==='saida'&&q>s+1e-9;
+    h+=`<div class="item"><div class="top2"><span style="font-size:24px">${catIcon(m.cat)}</span><div class="nm">${esc(m.nome)}<small>No depósito: ${fq(s)} ${esc(m.un)}</small></div><button class="rm" onclick="F.itens.splice(${i},1);drawMov()" aria-label="Remover">✕</button></div>
+      <div class="qty"><button onclick="stepQ(${i},-1)">−</button><input inputmode="decimal" placeholder="0" value="${esc(it.q)}" oninput="F.itens[${i}].q=this.value;updItem(${i})" id="q${i}"><button onclick="stepQ(${i},1)">＋</button><span class="un">${esc(m.un)}</span></div>
+      ${t==='entrada'?`<div class="price">R$ por ${esc(m.un)} <input inputmode="decimal" placeholder="${C.custo[m.id]?nf.format(C.custo[m.id]):'opcional'}" value="${esc(it.v)}" oninput="F.itens[${i}].v=this.value;updMovFoot()"></div>`:''}
+      <div id="err${i}">${falta?`<div class="errbox">Só há ${fq(s)} ${esc(m.un)} no depósito.</div>`:''}</div></div>`});
+  if(F.picking){
+    const q=F.q.toLowerCase(),usados=new Set(F.itens.map(i=>i.m));
+    const ms=db.materiais.filter(m=>!usados.has(m.id)&&(!q||m.nome.toLowerCase().includes(q))).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+    h+=`<div class="card" style="padding:12px"><input id="pickQ" placeholder="🔎 Buscar material…" value="${esc(F.q)}" oninput="F.q=this.value;drawPick()" style="width:100%;border:1px solid #dcd6d0;border-radius:12px;padding:11px 12px;outline:none">
+      <div class="picker" id="pickList">${pickList(ms,C)}</div>
+      <div style="display:flex;gap:8px;margin-top:10px"><button class="btn soft" style="flex:1" onclick="formMaterial(null,id=>{F.itens.push({m:id,q:'',v:''});F.picking=false;reopenMov()})">＋ Cadastrar novo</button>${F.itens.length?`<button class="btn soft" onclick="F.picking=false;drawMov()">Fechar</button>`:''}</div></div>`;
+  }else h+=`<button class="add-item" onclick="F.picking=true;F.q='';drawMov();setTimeout(()=>$('#pickQ')&&$('#pickQ').focus(),50)">＋ Adicionar material</button>`;
+  // detalhes
+  h+=`<div class="stepper-label" style="margin-top:16px"><span class="n">3</span>Detalhes</div>
+  <div class="f2"><div class="f"><label>Data</label><input type="date" value="${F.data}" onchange="F.data=this.value"></div>
+  <div class="f"><label>${t==='saida'?'Quem levou / recebeu':'Responsável'}</label><input value="${esc(F.resp)}" oninput="F.resp=this.value" placeholder="Nome" list="dlResp"></div></div>
+  ${t==='entrada'?`<div class="f2"><div class="f"><label>Fornecedor</label><input value="${esc(F.forn)}" oninput="F.forn=this.value" list="dlForn" placeholder="Loja / distribuidora"></div><div class="f"><label>Nota fiscal</label><input value="${esc(F.doc)}" oninput="F.doc=this.value" placeholder="Nº da NF"></div></div>`:
+  `<div class="f"><label>Veículo / documento <span class="muted">(opcional)</span></label><input value="${esc(F.doc)}" oninput="F.doc=this.value" placeholder="Ex.: caminhão ABC-1234"></div>`}
+  <div class="f"><label>Observação <span class="muted">(opcional)</span></label><input value="${esc(F.obs)}" oninput="F.obs=this.value"></div>
+  <datalist id="dlResp">${[...new Set(db.movs.map(m=>m.resp).filter(Boolean))].slice(0,30).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
+  <datalist id="dlForn">${[...new Set(db.movs.map(m=>m.forn).filter(Boolean))].slice(0,30).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`;
+  $('#sheetBody').innerHTML=h;
+  let f=$('#sheetFoot');if(!f){f=document.createElement('div');f.className='sheet-f';f.id='sheetFoot';$('.sheet').appendChild(f)}
+  updMovFoot();
+}
+function reopenMov(){sheet('Nova movimentação','','');drawMov()}
+function pickList(ms,C){return ms.length?ms.map(m=>{const s=C.saldo[m.id]||0,st=status(m,s);return `<button class="row" style="box-shadow:none;border:1px solid var(--line);padding:9px 11px" onclick="pickAdd('${m.id}')"><span class="ic" style="width:36px;height:36px;font-size:19px">${catIcon(m.cat)}</span><span class="tx"><div class="t">${esc(m.nome)}</div></span><span class="r"><span class="pill ${st.k}">${fq(s)} ${esc(m.un)}</span></span></button>`}).join(''):'<p class="muted small" style="text-align:center">Nenhum material encontrado.</p>'}
+function pickAdd(id){F.itens.push({m:id,q:'',v:''});F.picking=false;drawMov();const k=F.itens.length-1;setTimeout(()=>{const i=$('#q'+k);if(i)i.focus()},50)}
+function drawPick(){const C=calc(),q=F.q.toLowerCase(),usados=new Set(F.itens.map(i=>i.m));$('#pickList').innerHTML=pickList(db.materiais.filter(m=>!usados.has(m.id)&&(!q||m.nome.toLowerCase().includes(q))).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')),C)}
+function stepQ(i,d){const it=F.itens[i];it.q=String(Math.max(0,Math.round((num(it.q)+d)*100)/100)).replace('.',',');const el=$('#q'+i);if(el)el.value=it.q;updItem(i)}
+function updItem(i){const it=F.itens[i],m=matById(it.m),s=calc().saldo[it.m]||0,e=$('#err'+i);
+  if(e)e.innerHTML=F.tipo==='saida'&&num(it.q)>s+1e-9?`<div class="errbox">Só há ${fq(s)} ${esc(m.un)} no depósito.</div>`:'';updMovFoot()}
+function movErros(){
+  const C=calc(),e=[];
+  if(F.tipo!=='entrada'&&!F.obra)e.push(F.tipo==='saida'?'Escolha a obra de destino':'Escolha a obra de origem');
+  const its=F.itens.filter(it=>num(it.q)>0);
+  if(!its.length)e.push('Informe a quantidade de pelo menos um material');
+  if(F.tipo==='saida')for(const it of its){if(num(it.q)>(C.saldo[it.m]||0)+1e-9){e.push('Quantidade maior que o saldo do depósito');break}}
+  if(F.tipo==='devolucao'&&F.obra){const oq=C.obraQ[F.obra]||{};for(const it of its){if(num(it.q)>(oq[it.m]||0)+1e-9){const m=matById(it.m);e.push(`A obra só recebeu ${fq(oq[it.m]||0)} ${m?m.un:''} de ${m?m.nome:'material'}`);break}}}
+  if(!F.data)e.push('Informe a data');
+  return e;
+}
+function updMovFoot(){
+  const e=movErros(),o=obraById(F.obra),n=F.itens.filter(it=>num(it.q)>0).length,t=TIPOS[F.tipo];
+  const label=e.length?e[0]:`${t.ic} Registrar ${t.nome.toLowerCase()} · ${n} ${n===1?'item':'itens'}${o?(F.tipo==='saida'?' → ':F.tipo==='devolucao'?' ← ':' em ')+o.nome:''}`;
+  const color=F.tipo==='entrada'?'var(--in)':F.tipo==='devolucao'?'var(--back)':'var(--out)';
+  $('#sheetFoot').innerHTML=`<button class="btn lg full" style="background:${e.length?'#d8d2cc':color};color:#fff" ${e.length?'disabled':''} onclick="salvarMov()">${esc(label)}</button>`;
+}
+function salvarMov(){
+  if(movErros().length)return;
+  const itens=F.itens.filter(it=>num(it.q)>0).map(it=>{const x={m:it.m,q:num(it.q)};if(F.tipo==='entrada'&&num(it.v)>0)x.v=num(it.v);return x});
+  db.seq=(db.seq||0)+1;
+  const mv={id:uid(),n:db.seq,tipo:F.tipo,obra:F.obra||'',data:F.data,resp:F.resp.trim(),doc:F.doc.trim(),forn:F.tipo==='entrada'?F.forn.trim():'',obs:F.obs.trim(),itens,criado:Date.now()};
+  db.movs.push(mv);if(mv.resp)db.ultimoResp=mv.resp;
+  if(!save()){db.movs.pop();return}
+  closeSheet();render();
+  const t=TIPOS[mv.tipo];
+  sheet(`${t.ic} ${t.nome} registrada`,`<div style="text-align:center;padding:10px 0 4px"><div style="font-size:54px">✅</div><p class="muted">Movimentação nº <b>${mv.n}</b> salva.${mv.tipo==='saida'?'<br>Imprima a guia para o motorista e peça a assinatura de quem recebeu.':''}</p></div>`,
+    `<div style="display:flex;gap:8px">${mv.tipo!=='ajuste'?`<button class="btn soft lg" style="flex:1" onclick="printGuia('${mv.id}')">🖨️ ${mv.tipo==='saida'?'Guia de remessa':'Comprovante'}</button>`:''}<button class="btn dark lg" style="flex:1" onclick="closeSheet()">Concluir</button></div>`);
+}
+function verMov(id){
+  const mv=db.movs.find(x=>x.id===id);if(!mv)return;
+  const C=calc(),t=TIPOS[mv.tipo],o=obraById(mv.obra),total=movValor(mv,C);
+  sheet(`${t.ic} ${t.nome} nº ${mv.n||''}`,`
+   <div class="card" style="padding:12px 14px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="pill ${t.cls}">${t.nome}</span><span class="b">${fdate(mv.data)}</span></div>
+    ${o?`<div class="mt" style="display:flex;align-items:center;gap:8px"><span class="dot" style="background:${o.cor}"></span><a href="#obra/${o.id}" onclick="closeSheet()" class="b" style="color:inherit">${esc(o.nome)}</a></div>`:mv.tipo==='entrada'?'<div class="mt b">🏬 Depósito</div>':''}
+    <div class="small muted mt">${[mv.resp&&'👤 '+esc(mv.resp),mv.forn&&'🏪 '+esc(mv.forn),mv.doc&&'📄 '+esc(mv.doc)].filter(Boolean).join(' · ')}</div>
+    ${mv.obs?`<div class="small mt">📝 ${esc(mv.obs)}</div>`:''}
+   </div>
+   <div class="card mt" style="padding:6px 12px"><table class="tbl"><thead><tr><th>Material</th><th class="n">Qtd.</th>${total?'<th class="n">Valor</th>':''}</tr></thead><tbody>
+    ${(mv.itens||[]).map(it=>{const m=matById(it.m),pu=(mv.tipo==='entrada'&&it.v)?it.v:(C.custo[it.m]||0);return `<tr><td>${m?catIcon(m.cat)+' '+esc(m.nome):'<i>material excluído</i>'}</td><td class="n b">${fq(it.q)} ${m?esc(m.un):''}</td>${total?`<td class="n">${pu?brl.format(it.q*pu):'—'}</td>`:''}</tr>`}).join('')}
+    ${total?`<tr><td class="b">Total</td><td></td><td class="n b">${brl.format(total)}</td></tr>`:''}</tbody></table></div>`,
+   `<div style="display:flex;gap:8px"><button class="btn danger" onclick="delMov('${mv.id}')">🗑️ Excluir</button><span style="flex:1"></span>${mv.tipo!=='ajuste'?`<button class="btn dark" onclick="printGuia('${mv.id}')">🖨️ Imprimir</button>`:''}</div>`);
+}
+function delMov(id){
+  if(!confirm('Excluir esta movimentação? O saldo do estoque será recalculado.'))return;
+  db.movs=db.movs.filter(m=>m.id!==id);save();closeSheet();render();toast('Movimentação excluída');
+}
+function formAjuste(mid){
+  const m=matById(mid),s=calc().saldo[mid]||0;
+  sheet('⚖️ Corrigir saldo',`<p class="muted small" style="margin-top:0">Use depois de contar o material no depósito. A diferença fica registrada no histórico como ajuste.</p>
+   <div class="card" style="padding:12px 14px;margin-bottom:12px"><div class="b">${catIcon(m.cat)} ${esc(m.nome)}</div><div class="muted small">Saldo no app: <b>${fq(s)} ${esc(m.un)}</b></div></div>
+   <div class="f"><label>Quantidade contada (${esc(m.un)})</label><input id="ajQ" inputmode="decimal" value="${String(Math.round(s*100)/100).replace('.',',')}" style="font-size:20px;font-weight:900"></div>
+   <div class="f"><label>Motivo</label><input id="ajO" placeholder="Ex.: inventário, perda, quebra" value="Inventário"></div>`,
+   `<button class="btn dark lg full" onclick="salvarAjuste('${mid}',${s})">Salvar contagem</button>`);
+}
+function salvarAjuste(mid,s){
+  const v=$('#ajQ').value.trim();if(v===''){toast('Informe a quantidade contada');return}
+  const d=Math.round((num(v)-s)*1000)/1000;if(!d){closeSheet();toast('Saldo já está correto');return}
+  db.seq=(db.seq||0)+1;db.movs.push({id:uid(),n:db.seq,tipo:'ajuste',obra:'',data:today(),resp:db.ultimoResp||'',doc:'',forn:'',obs:$('#ajO').value.trim()||'Ajuste de saldo',itens:[{m:mid,q:d}],criado:Date.now()});
+  save();closeSheet();render();toast(`Saldo corrigido (${d>0?'+':''}${fq(d)})`);
+}
+
+/* ============ Cadastros ============ */
+function formMaterial(id,cb){
+  const m=id?matById(id):{nome:'',cat:'Cimento e argamassa',un:'saco',min:'',preco:'',local:''};
+  const used=id&&db.movs.some(mv=>(mv.itens||[]).some(it=>it.m===id));
+  sheet(id?'✏️ Editar material':'📦 Novo material',`
+   <div class="f"><label>Nome do material</label><input id="mNome" value="${esc(m.nome)}" placeholder="Ex.: Cimento CP-II 50 kg" autocomplete="off"></div>
+   <div class="f"><label>Categoria</label><div class="chips" style="flex-wrap:wrap" id="mCat">${CATS.map(([c,i])=>`<button type="button" class="chip ${m.cat===c?'on':''}" data-v="${esc(c)}" onclick="this.parentNode.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));this.classList.add('on')">${i} ${esc(c)}</button>`).join('')}</div></div>
+   <div class="f2"><div class="f"><label>Unidade</label><select id="mUn">${UNITS.map(u=>`<option ${m.un===u?'selected':''}>${u}</option>`).join('')}${!UNITS.includes(m.un)?`<option selected>${esc(m.un)}</option>`:''}</select></div>
+   <div class="f"><label>Estoque mínimo</label><input id="mMin" inputmode="decimal" value="${m.min!==''&&m.min!=null?String(m.min).replace('.',','):''}" placeholder="Avisa quando baixar"></div></div>
+   <div class="f2"><div class="f"><label>Preço de referência (R$)</label><input id="mPreco" inputmode="decimal" value="${m.preco?String(m.preco).replace('.',','):''}" placeholder="opcional"></div>
+   <div class="f"><label>Local no depósito</label><input id="mLocal" value="${esc(m.local||'')}" placeholder="Ex.: Prateleira A"></div></div>
+   ${id?'':`<div class="f"><label>Quantidade que já tem no depósito</label><input id="mIni" inputmode="decimal" placeholder="0"></div>`}
+   ${id?`<button class="btn danger full" onclick="delMaterial('${id}')">🗑️ Excluir material</button>${used?'<div class="small muted mt">Este material tem movimentações; ao excluir, elas também serão apagadas.</div>':''}`:''}`,
+   `<button class="btn primary lg full" id="mSave">Salvar</button>`);
+  setTimeout(()=>{if(!id)$('#mNome').focus()},60);
+  $('#mSave').onclick=()=>{
+    const nome=$('#mNome').value.trim();if(!nome){toast('Informe o nome do material');$('#mNome').focus();return}
+    if(db.materiais.some(x=>x.id!==id&&x.nome.toLowerCase()===nome.toLowerCase())){toast('Já existe um material com esse nome');return}
+    const cat=($('#mCat .chip.on')||{}).dataset?.v||'Outros';
+    const data={nome,cat,un:$('#mUn').value,min:num($('#mMin').value),preco:num($('#mPreco').value),local:$('#mLocal').value.trim()};
+    let mid=id;
+    if(id)Object.assign(matById(id),data);
+    else{mid=uid();db.materiais.push({id:mid,...data,criado:Date.now()});const ini=num($('#mIni').value);
+      if(ini>0){db.seq=(db.seq||0)+1;db.movs.push({id:uid(),n:db.seq,tipo:'ajuste',obra:'',data:today(),resp:'',doc:'',forn:'',obs:'Saldo inicial',itens:[{m:mid,q:ini}],criado:Date.now()})}}
+    save();closeSheet();
+    if(cb)cb(mid);else{render();toast(id?'Material atualizado':'Material cadastrado')}
+  };
+}
+function delMaterial(id){
+  const m=matById(id);if(!confirm(`Excluir "${m.nome}"? As movimentações deste material também serão apagadas.`))return;
+  db.materiais=db.materiais.filter(x=>x.id!==id);
+  db.movs=db.movs.map(mv=>({...mv,itens:(mv.itens||[]).filter(it=>it.m!==id)})).filter(mv=>mv.itens.length);
+  save();closeSheet();location.hash='#estoque';render();toast('Material excluído');
+}
+function formObra(id,cb){
+  const o=id?obraById(id):{nome:'',end:'',resp:'',cor:COLORS[db.obras.length%COLORS.length],status:'ativa'};
+  sheet(id?'✏️ Editar obra':'🏗️ Nova obra',`
+   <div class="f"><label>Nome da obra</label><input id="oNome" value="${esc(o.nome)}" placeholder="Ex.: Residencial Jardins" autocomplete="off"></div>
+   <div class="f"><label>Endereço</label><input id="oEnd" value="${esc(o.end||'')}" placeholder="Rua, nº, bairro, cidade"></div>
+   <div class="f"><label>Mestre / responsável</label><input id="oResp" value="${esc(o.resp||'')}" placeholder="Nome"></div>
+   <div class="f"><label>Cor de identificação</label><div class="colors" id="oCor">${COLORS.map(c=>`<button type="button" class="${o.cor===c?'on':''}" data-v="${c}" style="background:${c}" onclick="this.parentNode.querySelectorAll('button').forEach(x=>x.classList.remove('on'));this.classList.add('on')"></button>`).join('')}</div></div>
+   ${id?`<div class="f"><label>Situação</label><select id="oSt"><option value="ativa" ${o.status!=='concluida'?'selected':''}>Em andamento</option><option value="concluida" ${o.status==='concluida'?'selected':''}>Concluída</option></select></div>
+   <button class="btn danger full" onclick="delObra('${id}')">🗑️ Excluir obra</button>`:''}`,
+   `<button class="btn primary lg full" id="oSave">Salvar</button>`);
+  setTimeout(()=>{if(!id)$('#oNome').focus()},60);
+  $('#oSave').onclick=()=>{
+    const nome=$('#oNome').value.trim();if(!nome){toast('Informe o nome da obra');return}
+    const data={nome,end:$('#oEnd').value.trim(),resp:$('#oResp').value.trim(),cor:($('#oCor .on')||{}).dataset?.v||COLORS[0]};
+    if(id){data.status=$('#oSt').value;Object.assign(obraById(id),data)}
+    let oid=id;if(!id){oid=uid();db.obras.push({id:oid,...data,status:'ativa',criado:Date.now()})}
+    save();closeSheet();
+    if(cb)cb(oid);else{render();toast(id?'Obra atualizada':'Obra cadastrada')}
+  };
+}
+function delObra(id){
+  const n=db.movs.filter(m=>m.obra===id).length;
+  if(n){alert(`Esta obra tem ${n} movimentação(ões). Para manter o histórico, marque-a como "Concluída" em vez de excluir.`);return}
+  if(!confirm('Excluir esta obra?'))return;
+  db.obras=db.obras.filter(o=>o.id!==id);save();closeSheet();location.hash='#obras';render();
+}
+
+/* ============ Impressão ============ */
+function printHTML(html){$('#print').innerHTML=html;closeSheet();setTimeout(()=>window.print(),80)}
+function phead(t){return `<div class="ph"><div><b style="font-size:16px">${esc(db.empresa||'')}</b><div>Controle de estoque</div></div><div style="text-align:right"><b>${t}</b><div>Emitido em ${fdate(today())}</div></div></div>`}
+function printGuia(id){
+  const mv=db.movs.find(x=>x.id===id);if(!mv)return;const C=calc(),o=obraById(mv.obra),t=TIPOS[mv.tipo];
+  const tit=mv.tipo==='saida'?'GUIA DE REMESSA DE MATERIAL':mv.tipo==='devolucao'?'COMPROVANTE DE DEVOLUÇÃO':'COMPROVANTE DE ENTRADA';
+  printHTML(`${phead(tit+' nº '+(mv.n||''))}
+   <p><b>Data:</b> ${fdate(mv.data)} &nbsp; <b>Tipo:</b> ${t.nome}${o?` &nbsp; <b>Obra:</b> ${esc(o.nome)}${o.end?' — '+esc(o.end):''}`:''}</p>
+   <p>${mv.forn?`<b>Fornecedor:</b> ${esc(mv.forn)} &nbsp; `:''}${mv.doc?`<b>Documento:</b> ${esc(mv.doc)} &nbsp; `:''}${mv.resp?`<b>Responsável:</b> ${esc(mv.resp)}`:''}</p>
+   ${mv.obs?`<p><b>Obs.:</b> ${esc(mv.obs)}</p>`:''}
+   <table><thead><tr><th>#</th><th>Material</th><th class="n">Quantidade</th><th>Un.</th><th>Conferido</th></tr></thead><tbody>
+   ${(mv.itens||[]).map((it,i)=>{const m=matById(it.m);return `<tr><td>${i+1}</td><td>${m?esc(m.nome):'—'}</td><td class="n">${fq(it.q)}</td><td>${m?esc(m.un):''}</td><td style="width:80px"></td></tr>`}).join('')}</tbody></table>
+   <div class="sig"><div>${mv.tipo==='saida'?'Expedido por (depósito)':'Entregue por'}</div><div>${mv.tipo==='saida'?'Recebido por (obra)':'Recebido por'}</div></div>`);
+}
+function printObra(id){
+  const o=obraById(id),C=calc(),oq=C.obraQ[id]||{};
+  const linhas=Object.entries(oq).map(([mid,q])=>({m:matById(mid),q})).filter(x=>x.m&&Math.abs(x.q)>1e-9).sort((a,b)=>a.m.nome.localeCompare(b.m.nome,'pt-BR'));
+  const movs=sortedMovs().filter(mv=>mv.obra===id).reverse();let tot=0;
+  printHTML(`${phead('RELATÓRIO DE MATERIAL POR OBRA')}<h1>${esc(o.nome)}</h1><p>${esc(o.end||'')}${o.resp?' · Responsável: '+esc(o.resp):''}</p>
+   <h3>Resumo (enviado − devolvido)</h3><table><thead><tr><th>Material</th><th class="n">Qtd.</th><th>Un.</th><th class="n">Custo médio</th><th class="n">Valor</th></tr></thead><tbody>
+   ${linhas.map(x=>{const v=x.q*(C.custo[x.m.id]||0);tot+=v;return `<tr><td>${esc(x.m.nome)}</td><td class="n">${fq(x.q)}</td><td>${esc(x.m.un)}</td><td class="n">${C.custo[x.m.id]?brl.format(C.custo[x.m.id]):'—'}</td><td class="n">${v?brl.format(v):'—'}</td></tr>`}).join('')}
+   <tr><td colspan="4"><b>Total</b></td><td class="n"><b>${brl.format(tot)}</b></td></tr></tbody></table>
+   <h3 style="margin-top:18px">Movimentações</h3><table><thead><tr><th>Data</th><th>Nº</th><th>Tipo</th><th>Material</th><th class="n">Qtd.</th><th>Responsável</th></tr></thead><tbody>
+   ${movs.flatMap(mv=>(mv.itens||[]).map(it=>{const m=matById(it.m);return `<tr><td>${fdate(mv.data)}</td><td>${mv.n||''}</td><td>${TIPOS[mv.tipo].nome}</td><td>${m?esc(m.nome):'—'}</td><td class="n">${fq(it.q)} ${m?esc(m.un):''}</td><td>${esc(mv.resp||'')}</td></tr>`})).join('')}</tbody></table>`);
+}
+
+/* ============ Exportar / backup ============ */
+function download(name,content,type){const b=new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function exportCSV(){
+  const C=calc(),q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const rows=[['Data','Nº','Tipo','Obra','Material','Categoria','Quantidade','Unidade','Valor unitário','Valor total','Fornecedor','Documento','Responsável','Observação']];
+  for(const mv of sortedMovs().reverse())for(const it of mv.itens||[]){const m=matById(it.m)||{},o=obraById(mv.obra),pu=(mv.tipo==='entrada'&&it.v)?it.v:(C.custo[it.m]||0);
+    rows.push([fdate(mv.data),mv.n||'',TIPOS[mv.tipo].nome,o?o.nome:(mv.tipo==='entrada'?'Depósito':''),m.nome||'',m.cat||'',nf.format(it.q),m.un||'',pu?nf.format(pu):'',pu?nf.format(pu*it.q):'',mv.forn||'',mv.doc||'',mv.resp||'',mv.obs||''])}
+  download(`movimentacoes-estoque-${today()}.csv`,'﻿'+rows.map(r=>r.map(q).join(';')).join('\r\n'),'text/csv;charset=utf-8');
+}
+function exportEstoqueCSV(){
+  const C=calc(),q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const rows=[['Material','Categoria','Unidade','Saldo no depósito','Estoque mínimo','Situação','Custo médio','Valor em estoque','Local'],...db.materiais.map(m=>{const s=C.saldo[m.id]||0;return [m.nome,m.cat,m.un,nf.format(s),m.min?nf.format(m.min):'',status(m,s).t,C.custo[m.id]?nf.format(C.custo[m.id]):'',C.custo[m.id]&&s>0?nf.format(s*C.custo[m.id]):'',m.local||'']})];
+  download(`estoque-${today()}.csv`,'﻿'+rows.map(r=>r.map(q).join(';')).join('\r\n'),'text/csv;charset=utf-8');
+}
+function config(){
+  sheet('⚙️ Configurações',`
+   <div class="f"><label>Nome da empresa (sai nas guias e relatórios)</label><input id="cEmp" value="${esc(db.empresa||'')}"></div>
+   <button class="btn dark full" onclick="db.empresa=$('#cEmp').value.trim();save();render();toast('Salvo')">Salvar nome</button>
+   <div class="sec"><h2>Planilhas</h2></div>
+   <div class="grid g2"><button class="btn soft" onclick="exportEstoqueCSV()">📦 Estoque atual</button><button class="btn soft" onclick="exportCSV()">🔄 Movimentações</button></div>
+   <div class="sec"><h2>Backup</h2></div>
+   <p class="muted small" style="margin-top:0">Os dados ficam salvos só neste aparelho. Faça backup com frequência e use-o para passar os dados para outro celular ou computador.</p>
+   <div class="grid g2"><button class="btn primary" onclick="download('backup-estoque-${today()}.json',JSON.stringify(db,null,1),'application/json')">⬇️ Fazer backup</button><button class="btn soft" onclick="$('#fileImport').click()">⬆️ Restaurar backup</button></div>
+   <div class="sec"><h2>Outros</h2></div>
+   <div class="grid g2"><button class="btn soft" onclick="if(confirm('Substituir os dados atuais pelos dados de exemplo?'))loadDemo()">Dados de exemplo</button><button class="btn danger" onclick="if(confirm('Apagar TODOS os dados deste aparelho? Faça backup antes.')){db=blank();save();closeSheet();location.hash='#inicio';render()}">Apagar tudo</button></div>
+   <p class="muted small mt2">${db.materiais.length} materiais · ${db.obras.length} obras · ${db.movs.length} movimentações</p>`);
+}
+$('#fileImport').addEventListener('change',async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const d=JSON.parse(await f.text());if(!d||!Array.isArray(d.materiais)||!Array.isArray(d.obras)||!Array.isArray(d.movs))throw new Error('formato');
+    if(!confirm(`Restaurar backup com ${d.materiais.length} materiais, ${d.obras.length} obras e ${d.movs.length} movimentações? Os dados atuais serão substituídos.`))return;
+    db=Object.assign(blank(),d);save();closeSheet();location.hash='#inicio';render();toast('Backup restaurado')}
+  catch(err){alert('Arquivo de backup inválido.')}
+});
+
+/* ============ Exemplo ============ */
+function loadDemo(){
+  const d=blank();d.empresa='LANG Engenharia';
+  const M=(nome,cat,un,min,preco,local)=>{const m={id:uid(),nome,cat,un,min,preco,local,criado:Date.now()};d.materiais.push(m);return m.id};
+  const cim=M('Cimento CP-II 50 kg','Cimento e argamassa','saco',15,38.9,'Galpão'),arg=M('Argamassa AC-II 20 kg','Cimento e argamassa','saco',10,24.5,'Galpão'),
+    are=M('Areia média','Agregados','m³',4,145,'Pátio'),bri=M('Brita 1','Agregados','m³',4,160,'Pátio'),
+    a10=M('Vergalhão CA-50 10 mm','Aço e ferragens','barra',10,62,'Baia de aço'),a8=M('Vergalhão CA-50 8 mm','Aço e ferragens','barra',30,41,'Baia de aço'),
+    ara=M('Arame recozido 18','Aço e ferragens','kg',10,19.9,'Prateleira B'),blo=M('Bloco cerâmico 14x19x29','Alvenaria','milheiro',3,1350,'Pátio'),
+    tub=M('Tubo PVC esgoto 100 mm','Hidráulica','barra',5,58,'Prateleira C'),cab=M('Cabo flexível 2,5 mm','Elétrica','rolo',5,189,'Prateleira D'),
+    tab=M('Tábua de pinus 30 cm','Madeira e fôrmas','pç',40,28,'Pátio'),tin=M('Tinta acrílica fosca 18 L','Pintura','lata',4,320,'Prateleira E'),
+    cap=M('Capacete de segurança','EPI','un',10,22,'Armário EPI'),luv=M('Luva de raspa','EPI','par',8,12.5,'Armário EPI');
+  const O=(nome,end,resp,cor)=>{const o={id:uid(),nome,end,resp,cor,status:'ativa',criado:Date.now()};d.obras.push(o);return o.id};
+  const o1=O('Residencial Jardins','Rua das Flores, 120 — Centro','Carlos','#ff5a00'),o2=O('Casa Família Souza','Av. Brasil, 845 — Itaum','Marcos','#2d6bd6'),o3=O('Galpão Industrial Norte','Rod. BR-101, km 32','Paulo','#16855f');
+  let n=0,t=Date.now()-60*864e5;
+  const V=(dd,tipo,obra,itens,x={})=>{d.movs.push({id:uid(),n:++n,tipo,obra:obra||'',data:daysAgo(dd),resp:x.resp||'',doc:x.doc||'',forn:x.forn||'',obs:x.obs||'',itens:itens.map(([m,q,v])=>v?{m,q,v}:{m,q}),criado:(t+=36e5)})};
+  V(40,'entrada','',[[cim,200,37.5],[arg,80,24],[ara,40,19.5]],{forn:'Casa do Construtor',doc:'NF 10231',resp:'Geovane'});
+  V(39,'entrada','',[[a10,150,61],[a8,150,40]],{forn:'Aço Sul',doc:'NF 5512',resp:'Geovane'});
+  V(38,'entrada','',[[are,30,140],[bri,20,158]],{forn:'Areial Itajaí',doc:'NF 889',resp:'Geovane'});
+  V(37,'entrada','',[[blo,12,1320],[tub,40,57],[cab,15,185],[tab,120,27],[tin,12,315],[cap,30,21],[luv,60,12]],{forn:'Depósito Central',doc:'NF 7781',resp:'Geovane'});
+  V(35,'saida',o1,[[cim,60],[are,8],[bri,6],[a10,50],[a8,40],[ara,12]],{resp:'Carlos',doc:'Caminhão QHT-2B41'});
+  V(33,'saida',o2,[[cim,30],[are,5],[blo,4],[cap,6],[luv,12]],{resp:'Marcos'});
+  V(30,'saida',o3,[[cim,40],[bri,8],[a10,60],[a8,50],[tab,60]],{resp:'Paulo',doc:'Caminhão QHT-2B41'});
+  V(26,'saida',o1,[[blo,5],[arg,30],[tub,15]],{resp:'Carlos'});
+  V(22,'devolucao',o3,[[tab,12],[a8,6]],{resp:'Paulo',obs:'Sobra da fôrma do bloco B'});
+  V(20,'entrada',o2,[[tin,6,309]],{forn:'Tintas Joinville',doc:'NF 3301',resp:'Marcos',obs:'Entregue direto na obra'});
+  V(16,'saida',o2,[[cab,6],[tub,10],[arg,20]],{resp:'Marcos'});
+  V(12,'saida',o1,[[cim,45],[are,9],[a10,25],[cab,5]],{resp:'Carlos'});
+  V(9,'entrada','',[[cim,100,38.9],[are,10,145]],{forn:'Casa do Construtor',doc:'NF 10598',resp:'Geovane'});
+  V(7,'saida',o3,[[cim,50],[are,10],[bri,4],[ara,15],[luv,20]],{resp:'Paulo'});
+  V(5,'saida',o2,[[tin,4],[arg,15],[cap,4]],{resp:'Marcos'});
+  V(3,'saida',o1,[[cim,40],[tab,30],[a8,20],[cap,8]],{resp:'Carlos',doc:'Caminhão QHT-2B41'});
+  V(2,'devolucao',o1,[[cim,5]],{resp:'Carlos',obs:'Sacos fechados que sobraram'});
+  V(1,'saida',o3,[[tub,8],[cab,3],[luv,18]],{resp:'Paulo'});
+  V(0,'saida',o2,[[cim,20],[are,3]],{resp:'Marcos'});
+  d.seq=n;d.ultimoResp='Geovane';db=d;save();closeSheet();location.hash='#inicio';render();toast('Dados de exemplo carregados');
+}
+
+/* ============ Início ============ */
+$('#fab').onclick=()=>formMov('saida');
+$('#tabNew').onclick=e=>{e.preventDefault();formMov('saida')};
+$('#btnCfg').onclick=config;
+render();
+if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+</script>
+</body>
+</html>
