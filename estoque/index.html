@@ -152,6 +152,37 @@ button.row{border:1px solid rgba(0,0,0,.03)}
 .toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#171717;color:#fff;padding:12px 18px;border-radius:14px;font-weight:750;font-size:14px;z-index:90;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:92vw;animation:up .2s}
 .big-saldo{font-size:44px;font-weight:950;letter-spacing:-.04em;line-height:1}
 .mt{margin-top:12px}.mt2{margin-top:20px}
+.mi{width:1.4em;height:1.4em;border-radius:6px;object-fit:cover;vertical-align:middle}
+.ic,.ti,.kic{overflow:hidden}.ic .mi,.ti .mi,.kic .mi{width:100%;height:100%;border-radius:0}
+body.movmode .nav{display:none}body.movmode main{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
+.seg.big button{padding:14px 4px;font-size:15px}.seg.big .i{font-size:28px}
+.obras-strip{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 10px;margin-bottom:6px;scrollbar-width:none}.obras-strip::-webkit-scrollbar{display:none}
+.oc{flex:none;min-width:132px;max-width:190px;border:2px solid var(--line);border-left:8px solid var(--c);background:#fff;border-radius:16px;padding:12px 26px 12px 12px;text-align:left;font-weight:850;font-size:14px;position:relative;line-height:1.2}
+.oc small{display:block;font-weight:600;color:var(--muted);font-size:11.5px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.oc.on{background:var(--c);color:#fff;border-color:var(--c);box-shadow:0 6px 16px rgba(0,0,0,.18)}.oc.on small{color:rgba(255,255,255,.85)}
+.oc.on:after{content:"✓";position:absolute;top:9px;right:10px;font-size:16px;font-weight:900}
+.oc.new{border-style:dashed;border-left-width:2px;color:var(--muted);background:transparent}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(min-width:560px){.tiles{grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:12px}}
+.tile{position:relative;border:2.5px solid transparent;background:#fff;border-radius:18px;padding:12px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:var(--shadow);min-height:136px;transition:transform .08s}
+.tile:active{transform:scale(.95)}
+.tile .ti{width:60px;height:60px;border-radius:17px;background:#f5f2ee;display:grid;place-items:center;font-size:35px}
+.tile .tn{font-weight:800;font-size:12.5px;line-height:1.25;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tile .ts{font-size:11px;font-weight:800;color:var(--muted);margin-top:auto}.tile .ts.low{color:var(--warn)}.tile .ts.zero{color:var(--danger)}
+.tile.sel{border-color:var(--tc);background:#fffaf6}.tile.dim{opacity:.45}
+.tile .badge{position:absolute;top:-8px;right:-4px;background:var(--tc);color:#fff;font-weight:900;font-size:12px;border-radius:999px;padding:4px 9px;box-shadow:0 3px 8px rgba(0,0,0,.22);max-width:95%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv-bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.08);padding:10px 14px calc(12px + env(safe-area-inset-bottom))}
+.mv-bar-in{max-width:1120px;margin:0 auto}
+.sel-strip{display:flex;gap:6px;overflow-x:auto;margin-bottom:9px;scrollbar-width:none}.sel-strip::-webkit-scrollbar{display:none}
+.sel-chip{flex:none;display:flex;align-items:center;gap:6px;border:0;background:#f1eeea;border-radius:999px;padding:4px 11px 4px 4px;font-size:13px;font-weight:800}
+.kic{width:40px;height:40px;border-radius:12px;background:#f5f2ee;display:grid;place-items:center;font-size:25px;flex:none}
+.kinfo{text-align:center;color:var(--muted);font-size:13.5px}
+.kdisp{text-align:center;font-size:54px;font-weight:950;letter-spacing:-.03em;line-height:1.1;padding:4px 0 2px}.kun{font-size:20px;color:var(--muted);font-weight:800;letter-spacing:0}
+.kquick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.kquick button{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:10px 0;font-weight:850;font-size:15px}
+.kpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpad button{border:0;background:#fff;border-radius:14px;padding:13px 0;font-size:25px;font-weight:800;box-shadow:0 2px 0 #e1dbd4}.kpad button:active{background:#ece7e2}
+.icons{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.icons button{width:42px;height:42px;border-radius:11px;border:1.5px solid var(--line);background:#fff;font-size:22px;padding:0}.icons button.on{border-color:var(--accent);background:var(--out-bg);box-shadow:0 0 0 2px var(--accent)}
 /* impressão */
 #print{display:none}
 @media print{
@@ -192,6 +223,7 @@ const CATS=[
   ['Cimento e argamassa','🪣'],['Agregados','⛰️'],['Aço e ferragens','🔩'],['Alvenaria','🧱'],['Hidráulica','🚰'],
   ['Elétrica','⚡'],['Madeira e fôrmas','🪵'],['Revestimento','🔲'],['Pintura','🎨'],['Ferramentas','🧰'],['EPI','🦺'],['Outros','📦']];
 const CAT_ICON=Object.fromEntries(CATS);
+const ICONS=[['🪣','cimento argamassa rejunte cal balde graute'],['🧱','bloco tijolo telha'],['⛰️','areia'],['🪨','brita pedra pedrisco seixo'],['🔩','vergalhao ferro aco parafuso tela trelica prego'],['➰','arame'],['🪵','tabua madeira pinus caibro sarrafo compensado ripa pontalete'],['🚰','tubo cano pvc conexao joelho registro'],['🚿','chuveiro ducha'],['🚽','vaso sanitario louca'],['🔌','cabo fio tomada interruptor disjuntor eletroduto'],['💡','lampada luminaria refletor'],['🎨','tinta selador textura'],['🖌️','pincel rolo trincha'],['⛑️','capacete'],['🧤','luva'],['🦺','colete'],['🥾','bota botina'],['🥽','oculos'],['🔨','martelo marreta'],['🪚','serra serrote disco'],['🪛','chave fenda broca'],['🔧','chave inglesa'],['🧰','ferramenta caixa'],['📏','trena nivel regua prumo'],['🪜','escada andaime'],['🧪','aditivo impermeabilizante manta'],['🛢️','tambor oleo desmoldante'],['🔲','piso ceramica porcelanato azulejo revestimento'],['🚪','porta'],['🪟','janela vidro'],['🔗','corrente'],['🧵','fita lona'],['🧹','vassoura'],['🛒','carrinho'],['💧','agua'],['⚙️','peca'],['📦','']];
 const UNITS=['un','saco','kg','t','m','m²','m³','barra','pç','cx','lata','galão','L','rolo','milheiro','par','jogo'];
 const COLORS=['#ff5a00','#2d6bd6','#16855f','#7a5bd1','#d6336c','#0f9aa8','#c9890a','#5b6470','#8d5524','#3d9b2f'];
 const TIPOS={entrada:{nome:'Entrada',ic:'📥',cls:'in'},saida:{nome:'Saída',ic:'🚚',cls:'out'},devolucao:{nome:'Devolução',ic:'↩️',cls:'back'},ajuste:{nome:'Ajuste',ic:'⚖️',cls:'adj'}};
@@ -218,6 +250,8 @@ const num=v=>{if(typeof v==='number')return v;const s=String(v||'').trim().repla
 const matById=id=>db.materiais.find(m=>m.id===id);
 const obraById=id=>db.obras.find(o=>o.id===id);
 const catIcon=c=>CAT_ICON[c]||'📦';
+function guessIcon(nome,cat){const n=norm(nome);for(const [e,k] of ICONS)if(k&&k.split(' ').some(w=>n.includes(w)))return e;return catIcon(cat)}
+function matIcon(m){if(!m)return '📦';if(m.foto)return `<img class="mi" src="${esc(m.foto)}" alt="">`;return m.ic||guessIcon(m.nome,m.cat)}
 function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 function sortedMovs(){return db.movs.slice().sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.criado||0)-(a.criado||0))}
 
@@ -257,11 +291,12 @@ function render(){
   document.querySelectorAll('[data-r]').forEach(a=>a.classList.toggle('on',a.dataset.r===r.p||(r.p==='obra'&&a.dataset.r==='obras')||(r.p==='mat'&&a.dataset.r==='estoque')));
   $('#brandName').textContent=db.empresa?db.empresa.split(' ')[0]+' Estoque':'Estoque';
   const C=calc(),app=$('#app');
-  const views={inicio:vInicio,estoque:vEstoque,obras:vObras,movs:vMovs,obra:vObra,mat:vMat};
+  const views={inicio:vInicio,estoque:vEstoque,obras:vObras,movs:vMovs,obra:vObra,mat:vMat,mov:vMov};
+  document.body.classList.toggle('movmode',r.p==='mov');
   app.innerHTML=(views[r.p]||vInicio)(C,r.id);
   window.scrollTo(0,0);
 }
-window.addEventListener('hashchange',()=>{closeSheet();render()});
+window.addEventListener('hashchange',()=>{window._onClose=null;closeSheet();render()});
 
 /* ============ Telas ============ */
 function vInicio(C){
@@ -319,7 +354,7 @@ function vInicio(C){
 
 function matRow(m,C){
   const s=C.saldo[m.id]||0,st=status(m,s),ref=Math.max(+m.min*3||0,s,1);
-  return `<a class="row" href="#mat/${m.id}"><span class="ic">${catIcon(m.cat)}</span>
+  return `<a class="row" href="#mat/${m.id}"><span class="ic">${matIcon(m)}</span>
    <span class="tx"><div class="t">${esc(m.nome)}</div><div class="s"><span class="pill ${st.k}">${st.t}</span> ${+m.min?'· mín. '+fq(m.min):''}${m.local?' · '+esc(m.local):''}</div>
    <div class="lvl"><i style="width:${Math.max(0,Math.min(100,s/ref*100))}%;background:${st.c}"></i></div></span>
    <span class="r"><div class="q" style="color:${s<=0?'var(--danger)':'inherit'}">${fq(s)}</div><div class="u">${esc(m.un)}</div></span></a>`;
@@ -360,7 +395,7 @@ function vMat(C,id){
   const movs=sortedMovs().filter(mv=>(mv.itens||[]).some(it=>it.m===m.id));
   return `<a class="link" href="#estoque">‹ Estoque</a>
   <div class="card mt" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-    <div class="ic" style="width:64px;height:64px;border-radius:18px;background:#f3f0ec;display:grid;place-items:center;font-size:34px">${catIcon(m.cat)}</div>
+    <div class="ic" style="width:64px;height:64px;border-radius:18px;background:#f3f0ec;display:grid;place-items:center;font-size:34px">${matIcon(m)}</div>
     <div style="flex:1;min-width:180px"><h1 style="font-size:21px">${esc(m.nome)}</h1><div class="muted small" style="margin-top:4px">${esc(m.cat)}${m.local?' · 📍 '+esc(m.local):''}</div>
       <div style="margin-top:8px"><span class="pill ${st.k}">${st.t}</span></div></div>
     <div style="text-align:right"><div class="muted small b">No depósito</div><div class="big-saldo" style="color:${st.c}">${fq(s)}</div><div class="muted b">${esc(m.un)}</div></div>
@@ -431,7 +466,7 @@ function vObra(C,id){
     <div class="legend" style="flex-wrap:wrap;gap:6px 14px">${catArr.map(([c,v],i)=>`<span><i class="dot" style="background:${COLORS[i%COLORS.length]}"></i>${catIcon(c)} ${esc(c)} ${Math.round(v/totCat*100)}%</span>`).join('')}</div></div>`:''}
   <div class="sec"><h2>Material na obra</h2><span class="muted small">enviado − devolvido</span></div>
   <div class="card" style="padding:6px 12px">${linhas.length?`<table class="tbl"><thead><tr><th>Material</th><th class="n">Qtd.</th>${temV?'<th class="n">Valor</th>':''}</tr></thead><tbody>
-    ${linhas.map(x=>`<tr onclick="location.hash='#mat/${x.m.id}'" style="cursor:pointer"><td><div style="display:flex;align-items:center;gap:8px"><span>${catIcon(x.m.cat)}</span><div style="flex:1;min-width:0"><div class="b">${esc(x.m.nome)}</div>${temV?`<div class="lvl" style="margin-top:4px"><i style="width:${Math.max(0,x.v/mxv*100)}%;background:${o.cor}"></i></div>`:''}</div></div></td>
+    ${linhas.map(x=>`<tr onclick="location.hash='#mat/${x.m.id}'" style="cursor:pointer"><td><div style="display:flex;align-items:center;gap:8px"><span>${matIcon(x.m)}</span><div style="flex:1;min-width:0"><div class="b">${esc(x.m.nome)}</div>${temV?`<div class="lvl" style="margin-top:4px"><i style="width:${Math.max(0,x.v/mxv*100)}%;background:${o.cor}"></i></div>`:''}</div></div></td>
       <td class="n b">${fq(x.q)} <span class="muted small">${esc(x.m.un)}</span></td>${temV?`<td class="n">${x.v?money(x.v):'—'}</td>`:''}</tr>`).join('')}</tbody></table>`:'<p class="muted small">Nenhum material enviado ainda. Toque em <b>Enviar material</b>.</p>'}</div>
   <div class="sec"><h2>Histórico da obra</h2></div>
   <div class="list">${movs.length?movs.map(mv=>movRow(mv,C)).join(''):'<div class="card muted small">Sem movimentações.</div>'}</div>`;
@@ -467,91 +502,159 @@ function sheet(title,body,foot){
   bg.addEventListener('click',e=>{if(e.target===bg)closeSheet()});
   $('#sheetRoot').appendChild(bg);document.body.style.overflow='hidden';
 }
-function closeSheet(){const b=$('#sheetBg');if(b)b.remove();document.body.style.overflow=''}
+function closeSheet(){const b=$('#sheetBg');if(b)b.remove();document.body.style.overflow='';const cb=window._onClose;window._onClose=null;if(b&&cb)cb()}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 
-/* ============ Movimentação ============ */
-let F=null;
+/* ============ Movimentação (tela de ícones) ============ */
+let F=null,K=null;
+function newF(tipo,obra){return {tipo,obra:obra||'',data:today(),resp:db.ultimoResp||'',doc:'',forn:'',obs:'',itens:{},q:'',cat:'',from:'#inicio'}}
 function formMov(tipo='saida',pre={}){
   if(!db.materiais.length){toast('Cadastre um material primeiro');formMaterial();return}
-  F={tipo,obra:pre.obra||'',data:today(),resp:db.ultimoResp||'',doc:'',forn:'',obs:'',itens:[],picking:false,q:''};
-  if(pre.m)F.itens.push({m:pre.m,q:'',v:''});
-  if(!pre.m)F.picking=true;
-  sheet('Nova movimentação','','');drawMov();
+  const from=route().p==='mov'?(F&&F.from)||'#inicio':(location.hash||'#inicio');
+  F=newF(tipo,pre.obra);F.from=from;
+  if(route().p==='mov'){closeSheet();drawMovPage(true)}else location.hash='#mov';
+  if(pre.m)setTimeout(()=>openKey(pre.m),60);
 }
-function drawMov(){
-  const C=calc(),t=F.tipo;
-  const precisaObra=t!=='entrada';
-  const obrasAt=db.obras.filter(o=>o.status!=='concluida'||o.id===F.obra);
-  let h=`<div class="seg">${['entrada','saida','devolucao'].map(k=>`<button class="${TIPOS[k].cls} ${t===k?'on':''}" onclick="F.tipo='${k}';drawMov()"><span class="i">${TIPOS[k].ic}</span>${TIPOS[k].nome}</button>`).join('')}</div>`;
-  // obra
-  h+=`<div class="stepper-label"><span class="n">1</span>${t==='saida'?'Para qual obra vai?':t==='devolucao'?'De qual obra voltou?':'Onde o material foi entregue?'}</div>
-  <div class="chips" style="flex-wrap:wrap">${t==='entrada'?`<button class="chip ${!F.obra?'on':''}" onclick="F.obra='';drawMov()">🏬 Depósito</button>`:''}
-   ${obrasAt.map(o=>`<button class="chip obra-chip ${F.obra===o.id?'on':''}" style="--c:${o.cor}" onclick="F.obra='${o.id}';drawMov()"><span class="dot" style="background:${F.obra===o.id?'#fff':o.cor}"></span>${esc(o.nome)}</button>`).join('')}
-   <button class="chip" onclick="formObra(null,id=>{F.obra=id;reopenMov()})">＋ Nova obra</button></div>
-  ${t==='entrada'&&F.obra?'<div class="small muted" style="margin:-4px 0 10px">Compra entregue direto na obra: entra na conta da obra e não altera o saldo do depósito.</div>':''}`;
-  // itens
-  h+=`<div class="stepper-label" style="margin-top:8px"><span class="n">2</span>Materiais e quantidades</div>`;
-  F.itens.forEach((it,i)=>{const m=matById(it.m);if(!m)return;const s=C.saldo[m.id]||0,q=num(it.q);
-    const falta=t==='saida'&&q>s+1e-9;
-    h+=`<div class="item"><div class="top2"><span style="font-size:24px">${catIcon(m.cat)}</span><div class="nm">${esc(m.nome)}<small>No depósito: ${fq(s)} ${esc(m.un)}</small></div><button class="rm" onclick="F.itens.splice(${i},1);drawMov()" aria-label="Remover">✕</button></div>
-      <div class="qty"><button onclick="stepQ(${i},-1)">−</button><input inputmode="decimal" placeholder="0" value="${esc(it.q)}" oninput="F.itens[${i}].q=this.value;updItem(${i})" id="q${i}"><button onclick="stepQ(${i},1)">＋</button><span class="un">${esc(m.un)}</span></div>
-      ${t==='entrada'?`<div class="price">R$ por ${esc(m.un)} <input inputmode="decimal" placeholder="${C.custo[m.id]?nf.format(C.custo[m.id]):'opcional'}" value="${esc(it.v)}" oninput="F.itens[${i}].v=this.value;updMovFoot()"></div>`:''}
-      <div id="err${i}">${falta?`<div class="errbox">Só há ${fq(s)} ${esc(m.un)} no depósito.</div>`:''}</div></div>`});
-  if(F.picking){
-    const q=F.q.toLowerCase(),usados=new Set(F.itens.map(i=>i.m));
-    const ms=db.materiais.filter(m=>!usados.has(m.id)&&(!q||m.nome.toLowerCase().includes(q))).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
-    h+=`<div class="card" style="padding:12px"><input id="pickQ" placeholder="🔎 Buscar material…" value="${esc(F.q)}" oninput="F.q=this.value;drawPick()" style="width:100%;border:1px solid #dcd6d0;border-radius:12px;padding:11px 12px;outline:none">
-      <div class="picker" id="pickList">${pickList(ms,C)}</div>
-      <div style="display:flex;gap:8px;margin-top:10px"><button class="btn soft" style="flex:1" onclick="formMaterial(null,id=>{F.itens.push({m:id,q:'',v:''});F.picking=false;reopenMov()})">＋ Cadastrar novo</button>${F.itens.length?`<button class="btn soft" onclick="F.picking=false;drawMov()">Fechar</button>`:''}</div></div>`;
-  }else h+=`<button class="add-item" onclick="F.picking=true;F.q='';drawMov();setTimeout(()=>$('#pickQ')&&$('#pickQ').focus(),50)">＋ Adicionar material</button>`;
-  // detalhes
-  h+=`<div class="stepper-label" style="margin-top:16px"><span class="n">3</span>Detalhes</div>
+function itensArr(){return Object.entries(F.itens).map(([m,x])=>({m,q:num(x.q),v:num(x.v)})).filter(x=>x.q>0&&matById(x.m))}
+function drawMovPage(top){if(route().p!=='mov')return;const y=scrollY;$('#app').innerHTML=vMov(calc());window.scrollTo(0,top?0:y)}
+function drawTiles(){const el=$('#tiles');if(el)el.innerHTML=tilesHTML(calc())}
+function drawBar(){const el=$('#mvBar');if(el)el.innerHTML=barHTML()}
+function corTipo(t){return t==='entrada'?'var(--in)':t==='devolucao'?'var(--back)':'var(--out)'}
+function sairMov(){if(F&&itensArr().length&&!confirm('Descartar os materiais escolhidos?'))return;const to=(F&&F.from)||'#inicio';F=null;location.hash=to==='#mov'?'#inicio':to}
+function vMov(C){
+  if(!F)F=newF('saida');
+  const t=F.tipo,cats=[...new Set(db.materiais.map(m=>m.cat))];
+  return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button class="link" style="font-size:15px" onclick="sairMov()">‹ Voltar</button><span class="sp" style="flex:1"></span><span class="muted small b">${fdate(F.data)}</span></div>
+  <div class="seg big">${['entrada','saida','devolucao'].map(k=>`<button class="${TIPOS[k].cls} ${t===k?'on':''}" onclick="trocaTipo('${k}')"><span class="i">${TIPOS[k].ic}</span>${TIPOS[k].nome}</button>`).join('')}</div>
+  <div class="stepper-label"><span class="n">1</span>${t==='saida'?'Para qual obra vai?':t==='devolucao'?'De qual obra voltou?':'Onde o material foi entregue?'}</div>
+  <div class="obras-strip">${obraCards()}</div>
+  ${t==='entrada'&&F.obra?'<div class="small muted" style="margin:-2px 0 10px">Compra entregue direto na obra: conta para a obra e não muda o saldo do depósito.</div>':''}
+  <div class="stepper-label"><span class="n">2</span>Toque no material e digite a quantidade</div>
+  <div class="search"><input id="mvQ" type="search" placeholder="🔎 Buscar material…" value="${esc(F.q)}" oninput="F.q=this.value;drawTiles()"></div>
+  ${cats.length>1?`<div class="chips"><button class="chip ${!F.cat?'on':''}" onclick="F.cat='';drawMovPage()">Todos</button>${cats.map(c=>`<button class="chip ${F.cat===c?'on':''}" data-c="${esc(c)}" onclick="F.cat=F.cat===this.dataset.c?'':this.dataset.c;drawMovPage()">${catIcon(c)} ${esc(c)}</button>`).join('')}</div>`:''}
+  <div class="tiles" id="tiles">${tilesHTML(C)}</div>
+  <button class="add-item mt" onclick="formMaterial(null,id=>{drawMovPage();openKey(id)})">＋ Cadastrar material novo</button>
+  <div class="mv-bar" id="mvBar">${barHTML()}</div>`;
+}
+function trocaTipo(k){F.tipo=k;if(k==='devolucao'){const oq=calc().obraQ[F.obra]||{};for(const id in F.itens)if(!((oq[id]||0)>0))delete F.itens[id]}drawMovPage()}
+function obraCards(compact){
+  const t=F.tipo,obrasAt=db.obras.filter(o=>o.status!=='concluida'||o.id===F.obra);
+  const fn=compact?'kObra':'escolheObra';
+  let h=t==='entrada'?`<button class="oc ${!F.obra?'on':''}" style="--c:#171717" onclick="${fn}('')">🏬 Depósito<small>estoque central</small></button>`:'';
+  h+=obrasAt.map(o=>`<button class="oc ${F.obra===o.id?'on':''}" style="--c:${o.cor}" onclick="${fn}('${o.id}')">${esc(o.nome)}<small>${esc(o.resp?'👷 '+o.resp:o.end||'')}</small></button>`).join('');
+  if(!compact)h+=`<button class="oc new" onclick="formObra(null,id=>{F.obra=id;drawMovPage()})">＋ Nova obra<small>cadastrar</small></button>`;
+  return h;
+}
+function escolheObra(id){F.obra=id;if(F.tipo==='devolucao')F.itens={};drawMovPage()}
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+function tilesHTML(C){
+  const t=F.tipo,q=norm(F.q),oq=F.obra?(C.obraQ[F.obra]||{}):{};
+  let ms=db.materiais.filter(m=>(!q||norm(m.nome+' '+m.cat+' '+(m.local||'')).includes(q))&&(!F.cat||m.cat===F.cat));
+  if(t==='devolucao'){
+    if(!F.obra)return '<div class="card muted small" style="grid-column:1/-1">Escolha acima a obra de onde o material voltou.</div>';
+    ms=ms.filter(m=>(oq[m.id]||0)>0);
+    if(!ms.length)return '<div class="card muted small" style="grid-column:1/-1">Esta obra não tem material para devolver.</div>';
+  }
+  const freq={};db.movs.forEach(mv=>(mv.itens||[]).forEach(it=>{freq[it.m]=(freq[it.m]||0)+1}));
+  ms.sort((a,b)=>(freq[b.id]||0)-(freq[a.id]||0)||a.nome.localeCompare(b.nome,'pt-BR'));
+  if(!ms.length)return '<div class="card muted small" style="grid-column:1/-1">Nenhum material encontrado.</div>';
+  return ms.map(m=>{const s=C.saldo[m.id]||0,st=status(m,s),sel=F.itens[m.id],dim=t==='saida'&&s<=0&&!sel;
+    const info=t==='devolucao'?`na obra: ${fq(oq[m.id])} ${esc(m.un)}`:`${fq(s)} ${esc(m.un)}`;
+    return `<button class="tile ${sel?'sel':''} ${dim?'dim':''}" style="--tc:${corTipo(t)}" onclick="openKey('${m.id}')">${sel?`<span class="badge">${fq(num(sel.q))} ${esc(m.un)}</span>`:''}
+      <span class="ti">${matIcon(m)}</span><span class="tn">${esc(m.nome)}</span><span class="ts ${t==='devolucao'?'':st.k}">${info}</span></button>`}).join('');
+}
+function movErros(){
+  const C=calc(),e=[],its=itensArr();
+  if(F.tipo!=='entrada'&&!F.obra)e.push(F.tipo==='saida'?'Escolha a obra de destino':'Escolha a obra de origem');
+  if(!its.length)e.push('Toque em um material');
+  if(F.tipo==='saida')for(const it of its){if(it.q>(C.saldo[it.m]||0)+1e-9){const m=matById(it.m);e.push(`Só há ${fq(C.saldo[it.m]||0)} ${m.un} de ${m.nome}`);break}}
+  if(F.tipo==='devolucao'&&F.obra){const oq=C.obraQ[F.obra]||{};for(const it of its){if(it.q>(oq[it.m]||0)+1e-9){const m=matById(it.m);e.push(`A obra só recebeu ${fq(oq[it.m]||0)} ${m.un} de ${m.nome}`);break}}}
+  if(!F.data)e.push('Informe a data');
+  return e;
+}
+function goLabel(){
+  const e=movErros(),o=obraById(F.obra),n=itensArr().length,t=F.tipo;
+  if(e.length)return {ok:false,txt:e[0]};
+  const verbo=t==='saida'?'🚚 Dar saída':t==='entrada'?'📥 Dar entrada':'↩️ Devolver';
+  return {ok:true,txt:`${verbo} · ${n} ${n===1?'item':'itens'}${o?(t==='saida'?' → ':t==='devolucao'?' ← ':' em ')+o.nome:''}`};
+}
+function barHTML(){
+  const its=itensArr(),g=goLabel();
+  return `<div class="mv-bar-in">
+    ${its.length?`<div class="sel-strip">${its.map(it=>{const m=matById(it.m);return `<button class="sel-chip" onclick="openKey('${m.id}')"><span class="kic" style="width:24px;height:24px;font-size:15px;border-radius:7px">${matIcon(m)}</span>${fq(it.q)} ${esc(m.un)}</button>`}).join('')}</div>`:''}
+    <div style="display:flex;gap:8px"><button class="btn soft lg" style="padding:15px 14px" onclick="formDetalhes()" title="Data, responsável, documento">📝</button>
+    <button class="btn lg" style="flex:1;background:${g.ok?corTipo(F.tipo):'#d8d2cc'};color:#fff" ${g.ok?'':'disabled'} onclick="salvarMov()">${esc(g.txt)}</button></div></div>`;
+}
+/* teclado numérico */
+function openKey(mid){
+  const m=matById(mid);if(!m)return;const C=calc(),cur=F.itens[mid],t=F.tipo;
+  K={m:mid,s:cur?String(cur.q).replace('.',','):'',fresh:!!cur};
+  const s=C.saldo[mid]||0,oq=F.obra?((C.obraQ[F.obra]||{})[mid]||0):0;
+  const info=t==='devolucao'?`A obra recebeu <b>${fq(oq)} ${esc(m.un)}</b>`:`No depósito: <b>${fq(s)} ${esc(m.un)}</b>`;
+  sheet(`<span style="display:flex;align-items:center;gap:10px"><span class="kic">${matIcon(m)}</span><span>${esc(m.nome)}</span></span>`,`
+    <div class="kinfo">${info}</div>
+    <div class="kdisp"><span id="kVal">0</span> <span class="kun">${esc(m.un)}</span></div>
+    <div id="kErr" style="min-height:8px"></div>
+    <div class="kquick">${[1,5,10,50].map(n=>`<button onclick="kAdd(${n})">+${n}</button>`).join('')}</div>
+    <div class="kpad">${['1','2','3','4','5','6','7','8','9',',','0','⌫'].map(k=>`<button onclick="kKey('${k}')">${k}</button>`).join('')}</div>
+    ${t==='entrada'?`<div class="price" style="margin-top:12px">R$ por ${esc(m.un)} <input id="kPreco" inputmode="decimal" placeholder="${C.custo[mid]?nf.format(C.custo[mid]):'opcional'}" value="${cur&&cur.v?esc(String(cur.v).replace('.',',')):''}" oninput="if(F.itens[K.m])F.itens[K.m].v=this.value"></div>`:''}
+    ${t!=='devolucao'?`<div class="stepper-label" style="margin-top:14px">${t==='saida'?'Para qual obra:':'Entregue em:'}</div><div class="obras-strip" id="kObras" style="margin-bottom:0">${obraCards(true)}</div>`:''}`,
+   `<div style="display:flex;gap:8px">${cur?'<button class="btn danger lg" style="padding:15px 14px" onclick="kRemove()" title="Tirar da lista">🗑️</button>':''}
+     <button class="btn soft lg" style="flex:1" onclick="closeSheet()">＋ Mais itens</button>
+     <button class="btn lg" id="kGo" style="flex:1.4;color:#fff" onclick="kGo()"></button></div>`);
+  window._onClose=()=>{K=null;drawMovPage()};
+  kUpd();
+}
+function kKey(k){
+  let s=K.fresh?'':K.s;K.fresh=false;
+  if(k==='⌫')s=s.slice(0,-1);
+  else if(k===','){if(!s.includes(','))s=(s||'0')+','}
+  else{if(s==='0')s='';if(s.replace(',','').length<8&&!(s.includes(',')&&s.split(',')[1].length>=2))s+=k}
+  K.s=s;kUpd();
+}
+function kAdd(n){K.s=String(Math.round((num(K.fresh?K.s:K.s)+n)*100)/100).replace('.',',');K.fresh=false;kUpd()}
+function kObra(id){F.obra=id;$('#kObras').innerHTML=obraCards(true);kUpd()}
+function kUpd(){
+  const m=matById(K.m),q=num(K.s);
+  if(q>0)F.itens[K.m]=Object.assign(F.itens[K.m]||{},{q:K.s,v:F.itens[K.m]?F.itens[K.m].v:($('#kPreco')?$('#kPreco').value:'')});else delete F.itens[K.m];
+  $('#kVal').textContent=K.s||'0';
+  const C=calc(),lim=F.tipo==='saida'?C.saldo[K.m]||0:F.tipo==='devolucao'?((C.obraQ[F.obra]||{})[K.m]||0):Infinity;
+  $('#kErr').innerHTML=q>lim+1e-9?`<div class="errbox" style="text-align:center">${F.tipo==='saida'?`Só há ${fq(lim)} ${esc(m.un)} no depósito`:`A obra só recebeu ${fq(lim)} ${esc(m.un)}`}</div>`:'';
+  const g=goLabel(),b=$('#kGo');b.textContent=g.ok?(F.tipo==='saida'?'🚚 Dar saída':F.tipo==='entrada'?'📥 Dar entrada':'↩️ Devolver'):g.txt;
+  b.disabled=!g.ok;b.style.background=g.ok?corTipo(F.tipo):'#d8d2cc';b.style.fontSize=g.ok?'':'13px';
+  drawBar();
+}
+function kRemove(){delete F.itens[K.m];closeSheet()}
+function kGo(){if(goLabel().ok){window._onClose=null;closeSheet();salvarMov()}}
+function formDetalhes(){
+  const t=F.tipo;
+  sheet('📝 Detalhes',`
   <div class="f2"><div class="f"><label>Data</label><input type="date" value="${F.data}" onchange="F.data=this.value"></div>
   <div class="f"><label>${t==='saida'?'Quem levou / recebeu':'Responsável'}</label><input value="${esc(F.resp)}" oninput="F.resp=this.value" placeholder="Nome" list="dlResp"></div></div>
   ${t==='entrada'?`<div class="f2"><div class="f"><label>Fornecedor</label><input value="${esc(F.forn)}" oninput="F.forn=this.value" list="dlForn" placeholder="Loja / distribuidora"></div><div class="f"><label>Nota fiscal</label><input value="${esc(F.doc)}" oninput="F.doc=this.value" placeholder="Nº da NF"></div></div>`:
   `<div class="f"><label>Veículo / documento <span class="muted">(opcional)</span></label><input value="${esc(F.doc)}" oninput="F.doc=this.value" placeholder="Ex.: caminhão ABC-1234"></div>`}
   <div class="f"><label>Observação <span class="muted">(opcional)</span></label><input value="${esc(F.obs)}" oninput="F.obs=this.value"></div>
   <datalist id="dlResp">${[...new Set(db.movs.map(m=>m.resp).filter(Boolean))].slice(0,30).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
-  <datalist id="dlForn">${[...new Set(db.movs.map(m=>m.forn).filter(Boolean))].slice(0,30).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`;
-  $('#sheetBody').innerHTML=h;
-  let f=$('#sheetFoot');if(!f){f=document.createElement('div');f.className='sheet-f';f.id='sheetFoot';$('.sheet').appendChild(f)}
-  updMovFoot();
-}
-function reopenMov(){sheet('Nova movimentação','','');drawMov()}
-function pickList(ms,C){return ms.length?ms.map(m=>{const s=C.saldo[m.id]||0,st=status(m,s);return `<button class="row" style="box-shadow:none;border:1px solid var(--line);padding:9px 11px" onclick="pickAdd('${m.id}')"><span class="ic" style="width:36px;height:36px;font-size:19px">${catIcon(m.cat)}</span><span class="tx"><div class="t">${esc(m.nome)}</div></span><span class="r"><span class="pill ${st.k}">${fq(s)} ${esc(m.un)}</span></span></button>`}).join(''):'<p class="muted small" style="text-align:center">Nenhum material encontrado.</p>'}
-function pickAdd(id){F.itens.push({m:id,q:'',v:''});F.picking=false;drawMov();const k=F.itens.length-1;setTimeout(()=>{const i=$('#q'+k);if(i)i.focus()},50)}
-function drawPick(){const C=calc(),q=F.q.toLowerCase(),usados=new Set(F.itens.map(i=>i.m));$('#pickList').innerHTML=pickList(db.materiais.filter(m=>!usados.has(m.id)&&(!q||m.nome.toLowerCase().includes(q))).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')),C)}
-function stepQ(i,d){const it=F.itens[i];it.q=String(Math.max(0,Math.round((num(it.q)+d)*100)/100)).replace('.',',');const el=$('#q'+i);if(el)el.value=it.q;updItem(i)}
-function updItem(i){const it=F.itens[i],m=matById(it.m),s=calc().saldo[it.m]||0,e=$('#err'+i);
-  if(e)e.innerHTML=F.tipo==='saida'&&num(it.q)>s+1e-9?`<div class="errbox">Só há ${fq(s)} ${esc(m.un)} no depósito.</div>`:'';updMovFoot()}
-function movErros(){
-  const C=calc(),e=[];
-  if(F.tipo!=='entrada'&&!F.obra)e.push(F.tipo==='saida'?'Escolha a obra de destino':'Escolha a obra de origem');
-  const its=F.itens.filter(it=>num(it.q)>0);
-  if(!its.length)e.push('Informe a quantidade de pelo menos um material');
-  if(F.tipo==='saida')for(const it of its){if(num(it.q)>(C.saldo[it.m]||0)+1e-9){e.push('Quantidade maior que o saldo do depósito');break}}
-  if(F.tipo==='devolucao'&&F.obra){const oq=C.obraQ[F.obra]||{};for(const it of its){if(num(it.q)>(oq[it.m]||0)+1e-9){const m=matById(it.m);e.push(`A obra só recebeu ${fq(oq[it.m]||0)} ${m?m.un:''} de ${m?m.nome:'material'}`);break}}}
-  if(!F.data)e.push('Informe a data');
-  return e;
-}
-function updMovFoot(){
-  const e=movErros(),o=obraById(F.obra),n=F.itens.filter(it=>num(it.q)>0).length,t=TIPOS[F.tipo];
-  const label=e.length?e[0]:`${t.ic} Registrar ${t.nome.toLowerCase()} · ${n} ${n===1?'item':'itens'}${o?(F.tipo==='saida'?' → ':F.tipo==='devolucao'?' ← ':' em ')+o.nome:''}`;
-  const color=F.tipo==='entrada'?'var(--in)':F.tipo==='devolucao'?'var(--back)':'var(--out)';
-  $('#sheetFoot').innerHTML=`<button class="btn lg full" style="background:${e.length?'#d8d2cc':color};color:#fff" ${e.length?'disabled':''} onclick="salvarMov()">${esc(label)}</button>`;
+  <datalist id="dlForn">${[...new Set(db.movs.map(m=>m.forn).filter(Boolean))].slice(0,30).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`,
+  `<button class="btn dark lg full" onclick="closeSheet()">OK</button>`);
+  window._onClose=()=>drawMovPage();
 }
 function salvarMov(){
   if(movErros().length)return;
-  const itens=F.itens.filter(it=>num(it.q)>0).map(it=>{const x={m:it.m,q:num(it.q)};if(F.tipo==='entrada'&&num(it.v)>0)x.v=num(it.v);return x});
+  const itens=itensArr().map(it=>{const x={m:it.m,q:it.q};if(F.tipo==='entrada'&&it.v>0)x.v=it.v;return x});
   db.seq=(db.seq||0)+1;
   const mv={id:uid(),n:db.seq,tipo:F.tipo,obra:F.obra||'',data:F.data,resp:F.resp.trim(),doc:F.doc.trim(),forn:F.tipo==='entrada'?F.forn.trim():'',obs:F.obs.trim(),itens,criado:Date.now()};
   db.movs.push(mv);if(mv.resp)db.ultimoResp=mv.resp;
   if(!save()){db.movs.pop();return}
-  closeSheet();render();
-  const t=TIPOS[mv.tipo];
-  sheet(`${t.ic} ${t.nome} registrada`,`<div style="text-align:center;padding:10px 0 4px"><div style="font-size:54px">✅</div><p class="muted">Movimentação nº <b>${mv.n}</b> salva.${mv.tipo==='saida'?'<br>Imprima a guia para o motorista e peça a assinatura de quem recebeu.':''}</p></div>`,
-    `<div style="display:flex;gap:8px">${mv.tipo!=='ajuste'?`<button class="btn soft lg" style="flex:1" onclick="printGuia('${mv.id}')">🖨️ ${mv.tipo==='saida'?'Guia de remessa':'Comprovante'}</button>`:''}<button class="btn dark lg" style="flex:1" onclick="closeSheet()">Concluir</button></div>`);
+  F.itens={};F.doc='';F.forn='';F.obs='';F.q='';
+  closeSheet();drawMovPage(true);
+  const t=TIPOS[mv.tipo],o=obraById(mv.obra);
+  sheet(`${t.ic} ${t.nome} registrada`,`<div style="text-align:center;padding:6px 0 4px"><div style="font-size:58px">✅</div>
+    <p style="font-size:16px;margin:8px 0 4px" class="b">${itens.length} ${itens.length===1?'item':'itens'}${o?(mv.tipo==='saida'?' para ':mv.tipo==='devolucao'?' de ':' em ')+esc(o.nome):''}</p>
+    <p class="muted" style="margin:0">Movimentação nº <b>${mv.n}</b> salva.${mv.tipo==='saida'?'<br>Imprima a guia e peça a assinatura de quem recebeu.':''}</p></div>`,
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn soft lg" style="flex:1" onclick="printGuia('${mv.id}')">🖨️ ${mv.tipo==='saida'?'Guia':'Comprovante'}</button>
+     <button class="btn soft lg" style="flex:1" onclick="closeSheet()">＋ Nova</button>
+     <button class="btn dark lg" style="flex:1" onclick="closeSheet();F=null;location.hash='#inicio'">Concluir</button></div>`);
 }
 function verMov(id){
   const mv=db.movs.find(x=>x.id===id);if(!mv)return;
@@ -564,7 +667,7 @@ function verMov(id){
     ${mv.obs?`<div class="small mt">📝 ${esc(mv.obs)}</div>`:''}
    </div>
    <div class="card mt" style="padding:6px 12px"><table class="tbl"><thead><tr><th>Material</th><th class="n">Qtd.</th>${total?'<th class="n">Valor</th>':''}</tr></thead><tbody>
-    ${(mv.itens||[]).map(it=>{const m=matById(it.m),pu=(mv.tipo==='entrada'&&it.v)?it.v:(C.custo[it.m]||0);return `<tr><td>${m?catIcon(m.cat)+' '+esc(m.nome):'<i>material excluído</i>'}</td><td class="n b">${fq(it.q)} ${m?esc(m.un):''}</td>${total?`<td class="n">${pu?brl.format(it.q*pu):'—'}</td>`:''}</tr>`}).join('')}
+    ${(mv.itens||[]).map(it=>{const m=matById(it.m),pu=(mv.tipo==='entrada'&&it.v)?it.v:(C.custo[it.m]||0);return `<tr><td>${m?matIcon(m)+' '+esc(m.nome):'<i>material excluído</i>'}</td><td class="n b">${fq(it.q)} ${m?esc(m.un):''}</td>${total?`<td class="n">${pu?brl.format(it.q*pu):'—'}</td>`:''}</tr>`}).join('')}
     ${total?`<tr><td class="b">Total</td><td></td><td class="n b">${brl.format(total)}</td></tr>`:''}</tbody></table></div>`,
    `<div style="display:flex;gap:8px"><button class="btn danger" onclick="delMov('${mv.id}')">🗑️ Excluir</button><span style="flex:1"></span>${mv.tipo!=='ajuste'?`<button class="btn dark" onclick="printGuia('${mv.id}')">🖨️ Imprimir</button>`:''}</div>`);
 }
@@ -575,7 +678,7 @@ function delMov(id){
 function formAjuste(mid){
   const m=matById(mid),s=calc().saldo[mid]||0;
   sheet('⚖️ Corrigir saldo',`<p class="muted small" style="margin-top:0">Use depois de contar o material no depósito. A diferença fica registrada no histórico como ajuste.</p>
-   <div class="card" style="padding:12px 14px;margin-bottom:12px"><div class="b">${catIcon(m.cat)} ${esc(m.nome)}</div><div class="muted small">Saldo no app: <b>${fq(s)} ${esc(m.un)}</b></div></div>
+   <div class="card" style="padding:12px 14px;margin-bottom:12px"><div class="b">${matIcon(m)} ${esc(m.nome)}</div><div class="muted small">Saldo no app: <b>${fq(s)} ${esc(m.un)}</b></div></div>
    <div class="f"><label>Quantidade contada (${esc(m.un)})</label><input id="ajQ" inputmode="decimal" value="${String(Math.round(s*100)/100).replace('.',',')}" style="font-size:20px;font-weight:900"></div>
    <div class="f"><label>Motivo</label><input id="ajO" placeholder="Ex.: inventário, perda, quebra" value="Inventário"></div>`,
    `<button class="btn dark lg full" onclick="salvarAjuste('${mid}',${s})">Salvar contagem</button>`);
@@ -593,6 +696,11 @@ function formMaterial(id,cb){
   const used=id&&db.movs.some(mv=>(mv.itens||[]).some(it=>it.m===id));
   sheet(id?'✏️ Editar material':'📦 Novo material',`
    <div class="f"><label>Nome do material</label><input id="mNome" value="${esc(m.nome)}" placeholder="Ex.: Cimento CP-II 50 kg" autocomplete="off"></div>
+   <div class="f"><label>Ícone ou foto <span class="muted">(aparece na tela de saída)</span></label>
+    <div style="display:flex;gap:10px;align-items:center"><span class="kic" id="mPrev" style="width:60px;height:60px;font-size:36px;border-radius:16px">${matIcon(m)}</span>
+    <label class="btn soft" style="cursor:pointer">📷 Tirar/escolher foto<input type="file" accept="image/*" id="mFoto" class="hidden"></label>
+    <button type="button" class="btn soft ${m.foto?'':'hidden'}" id="mFotoDel">✕ Foto</button></div>
+    <div class="icons" id="mIcons">${ICONS.map(([e])=>`<button type="button" data-v="${e}" class="${(m.ic||guessIcon(m.nome,m.cat))===e&&!m.foto?'on':''}">${e}</button>`).join('')}</div></div>
    <div class="f"><label>Categoria</label><div class="chips" style="flex-wrap:wrap" id="mCat">${CATS.map(([c,i])=>`<button type="button" class="chip ${m.cat===c?'on':''}" data-v="${esc(c)}" onclick="this.parentNode.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));this.classList.add('on')">${i} ${esc(c)}</button>`).join('')}</div></div>
    <div class="f2"><div class="f"><label>Unidade</label><select id="mUn">${UNITS.map(u=>`<option ${m.un===u?'selected':''}>${u}</option>`).join('')}${!UNITS.includes(m.un)?`<option selected>${esc(m.un)}</option>`:''}</select></div>
    <div class="f"><label>Estoque mínimo</label><input id="mMin" inputmode="decimal" value="${m.min!==''&&m.min!=null?String(m.min).replace('.',','):''}" placeholder="Avisa quando baixar"></div></div>
@@ -602,11 +710,18 @@ function formMaterial(id,cb){
    ${id?`<button class="btn danger full" onclick="delMaterial('${id}')">🗑️ Excluir material</button>${used?'<div class="small muted mt">Este material tem movimentações; ao excluir, elas também serão apagadas.</div>':''}`:''}`,
    `<button class="btn primary lg full" id="mSave">Salvar</button>`);
   setTimeout(()=>{if(!id)$('#mNome').focus()},60);
+  const mf={ic:m.ic||'',foto:m.foto||''};
+  const prev=()=>{const cur=mf.ic||guessIcon($('#mNome').value,($('#mCat .chip.on')||{}).dataset?.v);$('#mPrev').innerHTML=mf.foto?`<img class="mi" src="${mf.foto}" alt="">`:cur;
+    document.querySelectorAll('#mIcons button').forEach(b=>b.classList.toggle('on',!mf.foto&&b.dataset.v===cur));$('#mFotoDel').classList.toggle('hidden',!mf.foto)};
+  $('#mNome').addEventListener('input',prev);$('#mCat').addEventListener('click',()=>setTimeout(prev));
+  $('#mIcons').onclick=e=>{const b=e.target.closest('button');if(!b)return;mf.ic=b.dataset.v;mf.foto='';prev()};
+  $('#mFotoDel').onclick=()=>{mf.foto='';prev()};
+  $('#mFoto').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{mf.foto=await fotoReduzida(f);prev()}catch(err){toast('Não foi possível ler a foto')}};
   $('#mSave').onclick=()=>{
     const nome=$('#mNome').value.trim();if(!nome){toast('Informe o nome do material');$('#mNome').focus();return}
     if(db.materiais.some(x=>x.id!==id&&x.nome.toLowerCase()===nome.toLowerCase())){toast('Já existe um material com esse nome');return}
     const cat=($('#mCat .chip.on')||{}).dataset?.v||'Outros';
-    const data={nome,cat,un:$('#mUn').value,min:num($('#mMin').value),preco:num($('#mPreco').value),local:$('#mLocal').value.trim()};
+    const data={nome,cat,un:$('#mUn').value,min:num($('#mMin').value),preco:num($('#mPreco').value),local:$('#mLocal').value.trim(),ic:mf.ic||guessIcon(nome,cat),foto:mf.foto};
     let mid=id;
     if(id)Object.assign(matById(id),data);
     else{mid=uid();db.materiais.push({id:mid,...data,criado:Date.now()});const ini=num($('#mIni').value);
@@ -615,6 +730,7 @@ function formMaterial(id,cb){
     if(cb)cb(mid);else{render();toast(id?'Material atualizado':'Material cadastrado')}
   };
 }
+function fotoReduzida(file){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const S=240,c=document.createElement('canvas');c.width=c.height=S;const k=Math.min(img.width,img.height);c.getContext('2d').drawImage(img,(img.width-k)/2,(img.height-k)/2,k,k,0,0,S,S);URL.revokeObjectURL(img.src);res(c.toDataURL('image/jpeg',.75))};img.onerror=rej;img.src=URL.createObjectURL(file)})}
 function delMaterial(id){
   const m=matById(id);if(!confirm(`Excluir "${m.nome}"? As movimentações deste material também serão apagadas.`))return;
   db.materiais=db.materiais.filter(x=>x.id!==id);
