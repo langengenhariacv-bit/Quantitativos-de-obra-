@@ -103,3 +103,16 @@ Antes da primeira vistoria, abra a engrenagem e preencha uma vez os dados do res
 Regra da tabela do Anexo I: *Conforme* sai Sim/Sim; *Não conforme* sai Não/Não com a justificativa digitada; *Não tem* sai Não/Não com "NÃO SE APLICA".
 
 **Importante:** os PDFs reproduzem o texto dos Anexos I e J da IN 1 a partir dos modelos de 2025; confira se o CBMSC não publicou versão nova do formulário. A lista de sistemas fica em `habite-se/catalogo.js` (ao editar, aumente a versão do cache em `habite-se/service-worker.js`).
+
+## Lang Estoque — almoxarifado de obras (`/estoque/`)
+
+App de celular e computador (PWA, funciona offline) para controlar o estoque de materiais da construtora e para qual obra cada material foi.
+
+- **Início**: três botões grandes — **Entrada** (chegou material), **Saída** (enviar para obra) e **Devolução** (voltou da obra) —, os materiais que precisam ser comprados, o gráfico de quanto foi para cada obra nos últimos 30 dias e as últimas movimentações.
+- **Estoque**: saldo de cada material no depósito, com barra de nível e aviso de *Estoque baixo* / *Sem estoque* conforme o estoque mínimo. Ao tocar no material: custo médio, valor em estoque, em quais obras foi usado, histórico e **Corrigir saldo** (inventário).
+- **Obras**: cada obra tem uma cor. A página da obra mostra o valor em material, a divisão por tipo, a tabela de material enviado − devolvido e o histórico, além do **Relatório** para imprimir/PDF.
+- **Movimentações**: histórico com filtros por tipo, obra e período, e exportação para planilha (CSV).
+
+Uma movimentação pode ter vários materiais. A saída não deixa enviar mais do que há no depósito, e a devolução não deixa devolver mais do que a obra recebeu. A **entrada direto na obra** (compra entregue no canteiro) conta para a obra sem passar pelo saldo do depósito. Depois de cada saída o app oferece a **guia de remessa** para imprimir e colher a assinatura de quem recebeu.
+
+Os dados ficam salvos só no aparelho: use a engrenagem para fazer **backup** (e restaurar em outro aparelho) e exportar as planilhas. O botão *Ver com dados de exemplo* mostra o app preenchido.

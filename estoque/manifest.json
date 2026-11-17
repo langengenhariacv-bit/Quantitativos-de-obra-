@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "Lang Estoque",
+  "short_name": "Lang Estoque",
+  "description": "Controle de estoque da construtora: entrada, saída e devolução de materiais vinculadas às obras.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f3f1",
+  "theme_color": "#171717",
+  "icons": [
+    {"src":"./assets/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"./assets/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}
