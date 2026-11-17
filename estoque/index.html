@@ -85,6 +85,7 @@ button.row{border:1px solid rgba(0,0,0,.03)}
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:850;padding:3px 8px;border-radius:999px;white-space:nowrap}
 .pill.ok{background:var(--in-bg);color:var(--in)}.pill.low{background:var(--warn-bg);color:var(--warn)}.pill.zero{background:var(--danger-bg);color:var(--danger)}
 .pill.in{background:var(--in-bg);color:var(--in)}.pill.out{background:var(--out-bg);color:var(--out)}.pill.back{background:var(--back-bg);color:var(--back)}.pill.adj{background:var(--adj-bg);color:var(--adj)}
+.pill.none{background:#efebe7;color:#8a837d}.tile .ts.none{color:#a39c96}
 .pill.gray{background:#efebe7;color:#615b56}
 .lvl{height:6px;background:#f1eeea;border-radius:5px;overflow:hidden;margin-top:7px}.lvl i{display:block;height:100%;border-radius:5px}
 /* obras */
@@ -215,6 +216,7 @@ body.movmode .nav{display:none}body.movmode main{padding-bottom:calc(170px + env
 <div id="sheetRoot"></div>
 <div id="print"></div>
 <input type="file" id="fileImport" accept="application/json,.json" class="hidden" />
+<script src="catalogo.js"></script>
 <script>
 'use strict';
 /* ============ Dados ============ */
@@ -223,8 +225,8 @@ const CATS=[
   ['Cimento e argamassa','🪣'],['Agregados','⛰️'],['Aço e ferragens','🔩'],['Alvenaria','🧱'],['Hidráulica','🚰'],
   ['Elétrica','⚡'],['Madeira e fôrmas','🪵'],['Revestimento','🔲'],['Pintura','🎨'],['Ferramentas','🧰'],['EPI','🦺'],['Outros','📦']];
 const CAT_ICON=Object.fromEntries(CATS);
-const ICONS=[['🪣','cimento argamassa rejunte cal balde graute'],['🧱','bloco tijolo telha'],['⛰️','areia'],['🪨','brita pedra pedrisco seixo'],['🔩','vergalhao ferro aco parafuso tela trelica prego'],['➰','arame'],['🪵','tabua madeira pinus caibro sarrafo compensado ripa pontalete'],['🚰','tubo cano pvc conexao joelho registro'],['🚿','chuveiro ducha'],['🚽','vaso sanitario louca'],['🔌','cabo fio tomada interruptor disjuntor eletroduto'],['💡','lampada luminaria refletor'],['🎨','tinta selador textura'],['🖌️','pincel rolo trincha'],['⛑️','capacete'],['🧤','luva'],['🦺','colete'],['🥾','bota botina'],['🥽','oculos'],['🔨','martelo marreta'],['🪚','serra serrote disco'],['🪛','chave fenda broca'],['🔧','chave inglesa'],['🧰','ferramenta caixa'],['📏','trena nivel regua prumo'],['🪜','escada andaime'],['🧪','aditivo impermeabilizante manta'],['🛢️','tambor oleo desmoldante'],['🔲','piso ceramica porcelanato azulejo revestimento'],['🚪','porta'],['🪟','janela vidro'],['🔗','corrente'],['🧵','fita lona'],['🧹','vassoura'],['🛒','carrinho'],['💧','agua'],['⚙️','peca'],['📦','']];
-const UNITS=['un','saco','kg','t','m','m²','m³','barra','pç','cx','lata','galão','L','rolo','milheiro','par','jogo'];
+const ICONS=[['🪣','cimento argamassa rejunte cal balde graute'],['🧱','bloco tijolo telha'],['⛰️','areia'],['🪨','brita pedra pedrisco seixo'],['🔩','vergalhao ferro aco parafuso tela trelica prego'],['➰','arame'],['🪵','tabua madeira pinus caibro sarrafo compensado ripa pontalete'],['🚰','tubo cano pvc conexao joelho registro'],['🚿','chuveiro ducha'],['🚽','vaso sanitario louca'],['🔌','cabo fio tomada interruptor disjuntor eletroduto'],['💡','lampada luminaria refletor'],['🎨','tinta selador textura'],['🖌️','pincel rolo trincha'],['⛑️','capacete'],['🧤','luva'],['🦺','colete'],['🥾','bota botina'],['🥽','oculos'],['🔨','martelo marreta'],['🪚','serra serrote disco'],['🪛','chave fenda broca'],['🔧','chave inglesa'],['🧰','ferramenta caixa'],['📏','trena nivel regua prumo'],['🪜','escada andaime'],['🧪','aditivo impermeabilizante manta'],['🛢️','tambor oleo desmoldante'],['🔲','piso ceramica porcelanato azulejo revestimento'],['🚪','porta'],['🪟','janela vidro'],['🔗','corrente'],['🧵','fita lona'],['🧹','vassoura'],['🛒','carrinho'],['💧','agua'],['🧴','adesivo selante cola espuma'],['😷','mascara'],['🛞','pneu'],['🔥','macarico botijao gas'],['🌿','rocadeira mato'],['✏️','lapis'],['🔦','refletor'],['🧽','escova desempenadeira'],['🎛️','quadro disjuntor barramento'],['🔘','botao interruptor'],['📄','lixa'],['🧷','abracadeira cinta'],['📌','prego'],['💿','disco'],['⬜','placa'],['📡','sensor fotocelula'],['🌀','aspirador'],['⚫','carvao'],['⚙️','peca'],['📦','']];
+const UNITS=['un','saco','kg','t','m','m²','m³','barra','pç','cx','lata','galão','L','rolo','milheiro','par','jogo','pct','folha'];
 const COLORS=['#ff5a00','#2d6bd6','#16855f','#7a5bd1','#d6336c','#0f9aa8','#c9890a','#5b6470','#8d5524','#3d9b2f'];
 const TIPOS={entrada:{nome:'Entrada',ic:'📥',cls:'in'},saida:{nome:'Saída',ic:'🚚',cls:'out'},devolucao:{nome:'Devolução',ic:'↩️',cls:'back'},ajuste:{nome:'Ajuste',ic:'⚖️',cls:'adj'}};
 
@@ -280,9 +282,19 @@ function calc(){
   }
   return {saldo,custo,obraQ,obraV,ult};
 }
-function status(m,s){if(s<=0)return{k:'zero',t:'Sem estoque',c:'var(--danger)'};if(+m.min>0&&s<=+m.min)return{k:'low',t:'Estoque baixo',c:'var(--warn)'};return{k:'ok',t:'Em estoque',c:'var(--in)'}}
+function status(m,s){if(s<=0)return +m.min>0?{k:'zero',t:'Sem estoque',c:'var(--danger)'}:{k:'none',t:'Sem saldo',c:'#b7b0aa'};if(+m.min>0&&s<=+m.min)return{k:'low',t:'Estoque baixo',c:'var(--warn)'};return{k:'ok',t:'Em estoque',c:'var(--in)'}}
+const alerta=k=>k==='zero'||k==='low';
 function movValor(mv,C){return (mv.itens||[]).reduce((a,it)=>a+(+it.q||0)*((mv.tipo==='entrada'&&+it.v>0)?+it.v:(C.custo[it.m]||0)),0)}
 
+/* ============ Catálogo padrão ============ */
+function aplicaCatalogo(forcar){
+  if(typeof CATALOGO==='undefined')return 0;
+  if(!forcar&&(db.catalogo||0)>=CATALOGO_VERSAO)return 0;
+  const nomes=new Set(db.materiais.map(m=>norm(m.nome)));let n=0;
+  for(const [nome,cat,un,ic] of CATALOGO){if(nomes.has(norm(nome)))continue;nomes.add(norm(nome));
+    db.materiais.push({id:uid(),nome,cat,un,min:0,preco:0,local:'',ic,foto:'',criado:Date.now()});n++}
+  db.catalogo=CATALOGO_VERSAO;save();return n;
+}
 /* ============ Rotas ============ */
 function route(){const h=(location.hash||'#inicio').slice(1).split('/');return{p:h[0]||'inicio',id:h[1]?decodeURIComponent(h[1]):null}}
 const state={fEst:'',fCat:'',fStatus:'',fMovTipo:'',fMovObra:'',fMovPer:'30',fObraSt:'ativa'};
@@ -309,7 +321,7 @@ function vInicio(C){
       <button class="btn soft" onclick="loadDemo()">Ver com dados de exemplo</button>
     </div></div>`;
   const mats=db.materiais,obrasAt=db.obras.filter(o=>o.status!=='concluida');
-  const low=mats.filter(m=>status(m,C.saldo[m.id]).k!=='ok').sort((a,b)=>C.saldo[a.id]-C.saldo[b.id]);
+  const low=mats.filter(m=>alerta(status(m,C.saldo[m.id]).k)).sort((a,b)=>C.saldo[a.id]-C.saldo[b.id]);
   const valorEst=mats.reduce((a,m)=>a+Math.max(0,C.saldo[m.id])*(C.custo[m.id]||0),0);
   const d30=daysAgo(30),m30=db.movs.filter(m=>m.data>=d30);
   // saídas por obra (30 dias)
@@ -324,7 +336,7 @@ function vInicio(C){
   for(const mv of db.movs){const k=days.indexOf(mv.data);if(k<0)continue;const n=(mv.itens||[]).length;if(mv.tipo==='entrada')cnt[k].e+=n;else if(mv.tipo==='saida')cnt[k].s+=n}
   const mxc=Math.max(1,...cnt.map(c=>Math.max(c.e,c.s)));
   const ult=sortedMovs().slice(0,6);
-  return `
+  return `${!db.obras.length?`<div class="card" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;border:2px dashed #f0c7ad;background:#fff8f3"><span style="font-size:30px">🏗️</span><div style="flex:1"><b>Cadastre suas obras</b><div class="muted small">Para poder enviar material para elas.</div></div><button class="btn primary" onclick="formObra()">＋ Obra</button></div>`:''}
   <div class="quick">
     <button class="qa in" onclick="formMov('entrada')"><span class="i">📥</span>Entrada<small>chegou material</small></button>
     <button class="qa out" onclick="formMov('saida')"><span class="i">🚚</span>Saída<small>enviar p/ obra</small></button>
@@ -371,12 +383,12 @@ function movRow(mv,C){
 
 function vEstoque(C){
   if(!db.materiais.length)return `<div class="card empty"><div class="i">📦</div><h3>Nenhum material cadastrado</h3><p>Cadastre cimento, areia, aço, tijolos… com unidade e estoque mínimo.</p><button class="btn primary lg" onclick="formMaterial()">＋ Novo material</button></div>`;
-  const q=state.fEst.toLowerCase();
-  let ms=db.materiais.filter(m=>(!q||(m.nome+' '+(m.local||'')+' '+m.cat).toLowerCase().includes(q))&&(!state.fCat||m.cat===state.fCat));
-  if(state.fStatus==='baixo')ms=ms.filter(m=>status(m,C.saldo[m.id]).k!=='ok');
+  const ws=norm(state.fEst).split(/\s+/).filter(Boolean);
+  let ms=db.materiais.filter(m=>(ws.every(w=>norm(m.nome+' '+(m.local||'')+' '+m.cat).includes(w)))&&(!state.fCat||m.cat===state.fCat));
+  if(state.fStatus==='baixo')ms=ms.filter(m=>alerta(status(m,C.saldo[m.id]).k));
   ms.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   const cats=[...new Set(db.materiais.map(m=>m.cat))];
-  const nLow=db.materiais.filter(m=>status(m,C.saldo[m.id]).k!=='ok').length;
+  const nLow=db.materiais.filter(m=>alerta(status(m,C.saldo[m.id]).k)).length;
   return `<div class="sec" style="margin-top:4px"><h2 style="font-size:22px">Estoque</h2><span class="sp"></span><button class="btn primary" onclick="formMaterial()">＋ Material</button></div>
   <div class="search"><input id="qEst" placeholder="🔎 Buscar material…" value="${esc(state.fEst)}" oninput="state.fEst=this.value;clearTimeout(window._t);window._t=setTimeout(()=>{render();const i=$('#qEst');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)"></div>
   <div class="chips">
@@ -549,14 +561,15 @@ function escolheObra(id){F.obra=id;if(F.tipo==='devolucao')F.itens={};drawMovPag
 const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 function tilesHTML(C){
   const t=F.tipo,q=norm(F.q),oq=F.obra?(C.obraQ[F.obra]||{}):{};
-  let ms=db.materiais.filter(m=>(!q||norm(m.nome+' '+m.cat+' '+(m.local||'')).includes(q))&&(!F.cat||m.cat===F.cat));
+  const ws=q.split(/\s+/).filter(Boolean);let ms=db.materiais.filter(m=>{const h=norm(m.nome+' '+m.cat+' '+(m.local||''));return ws.every(w=>h.includes(w))&&(!F.cat||m.cat===F.cat)});
   if(t==='devolucao'){
     if(!F.obra)return '<div class="card muted small" style="grid-column:1/-1">Escolha acima a obra de onde o material voltou.</div>';
     ms=ms.filter(m=>(oq[m.id]||0)>0);
     if(!ms.length)return '<div class="card muted small" style="grid-column:1/-1">Esta obra não tem material para devolver.</div>';
   }
   const freq={};db.movs.forEach(mv=>(mv.itens||[]).forEach(it=>{freq[it.m]=(freq[it.m]||0)+1}));
-  ms.sort((a,b)=>(freq[b.id]||0)-(freq[a.id]||0)||a.nome.localeCompare(b.nome,'pt-BR'));
+  const tem=m=>t==='saida'&&(C.saldo[m.id]||0)>0?1:0;
+  ms.sort((a,b)=>tem(b)-tem(a)||(freq[b.id]||0)-(freq[a.id]||0)||a.nome.localeCompare(b.nome,'pt-BR'));
   if(!ms.length)return '<div class="card muted small" style="grid-column:1/-1">Nenhum material encontrado.</div>';
   return ms.map(m=>{const s=C.saldo[m.id]||0,st=status(m,s),sel=F.itens[m.id],dim=t==='saida'&&s<=0&&!sel;
     const info=t==='devolucao'?`na obra: ${fq(oq[m.id])} ${esc(m.un)}`:`${fq(s)} ${esc(m.un)}`;
@@ -814,7 +827,8 @@ function config(){
    <p class="muted small" style="margin-top:0">Os dados ficam salvos só neste aparelho. Faça backup com frequência e use-o para passar os dados para outro celular ou computador.</p>
    <div class="grid g2"><button class="btn primary" onclick="download('backup-estoque-${today()}.json',JSON.stringify(db,null,1),'application/json')">⬇️ Fazer backup</button><button class="btn soft" onclick="$('#fileImport').click()">⬆️ Restaurar backup</button></div>
    <div class="sec"><h2>Outros</h2></div>
-   <div class="grid g2"><button class="btn soft" onclick="if(confirm('Substituir os dados atuais pelos dados de exemplo?'))loadDemo()">Dados de exemplo</button><button class="btn danger" onclick="if(confirm('Apagar TODOS os dados deste aparelho? Faça backup antes.')){db=blank();save();closeSheet();location.hash='#inicio';render()}">Apagar tudo</button></div>
+   <div class="grid g2"><button class="btn soft" onclick="if(confirm('Substituir os dados atuais pelos dados de exemplo?'))loadDemo()">Dados de exemplo</button><button class="btn danger" onclick="if(confirm('Apagar TODOS os dados deste aparelho? Faça backup antes.')){db=blank();aplicaCatalogo();closeSheet();location.hash='#inicio';render()}">Apagar tudo</button></div>
+   <button class="btn soft full mt" onclick="const n=aplicaCatalogo(true);render();toast(n?n+' materiais adicionados':'A lista padrão já está completa')">📋 Recolocar materiais da lista padrão</button>
    <p class="muted small mt2">${db.materiais.length} materiais · ${db.obras.length} obras · ${db.movs.length} movimentações</p>`);
 }
 $('#fileImport').addEventListener('change',async e=>{
@@ -859,13 +873,14 @@ function loadDemo(){
   V(2,'devolucao',o1,[[cim,5]],{resp:'Carlos',obs:'Sacos fechados que sobraram'});
   V(1,'saida',o3,[[tub,8],[cab,3],[luv,18]],{resp:'Paulo'});
   V(0,'saida',o2,[[cim,20],[are,3]],{resp:'Marcos'});
-  d.seq=n;d.ultimoResp='Geovane';db=d;save();closeSheet();location.hash='#inicio';render();toast('Dados de exemplo carregados');
+  d.seq=n;d.ultimoResp='Geovane';db=d;aplicaCatalogo();save();closeSheet();location.hash='#inicio';render();toast('Dados de exemplo carregados');
 }
 
 /* ============ Início ============ */
 $('#fab').onclick=()=>formMov('saida');
 $('#tabNew').onclick=e=>{e.preventDefault();formMov('saida')};
 $('#btnCfg').onclick=config;
+{const n=aplicaCatalogo();if(n)setTimeout(()=>toast(`📦 ${n} materiais da lista padrão adicionados`),400)}
 render();
 if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('service-worker.js').catch(()=>{});
 </script>

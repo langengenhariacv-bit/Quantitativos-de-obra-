@@ -117,4 +117,6 @@ App de celular e computador (PWA, funciona offline) para controlar o estoque de 
 
 Uma movimentação pode ter vários materiais. A saída não deixa enviar mais do que há no depósito, e a devolução não deixa devolver mais do que a obra recebeu. A **entrada direto na obra** (compra entregue no canteiro) conta para a obra sem passar pelo saldo do depósito. Depois de cada saída o app oferece a **guia de remessa** para imprimir e colher a assinatura de quem recebeu.
 
+A **lista padrão de materiais** da LANG (conexões, fios, elétrica, ferramentas, máquinas, pintura, EPI…) fica em `estoque/catalogo.js` e entra sozinha no app de cada aparelho, com saldo zero e sem duplicar nomes já cadastrados. Para lançar o que já existe no depósito, use **Entrada** → Depósito. Ao alterar a lista, aumente `CATALOGO_VERSAO` e a versão do cache em `estoque/service-worker.js`.
+
 Os dados ficam salvos só no aparelho: use a engrenagem para fazer **backup** (e restaurar em outro aparelho) e exportar as planilhas. O botão *Ver com dados de exemplo* mostra o app preenchido.
