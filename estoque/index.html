@@ -114,7 +114,7 @@ button.row{border:1px solid rgba(0,0,0,.03)}
 /* vazio */
 .empty{text-align:center;padding:34px 18px}.empty .i{font-size:46px}.empty h3{margin:10px 0 6px}.empty p{color:var(--muted);margin:0 0 16px;line-height:1.5}
 /* folha (modal) */
-.sheet-bg{position:fixed;inset:0;background:rgba(15,15,15,.48);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+.sheet-bg{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(15,15,15,.48);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
 .sheet{background:var(--bg);width:100%;max-width:620px;max-height:94vh;border-radius:24px 24px 0 0;display:flex;flex-direction:column;animation:up .2s ease-out}
 @media(min-width:700px){.sheet-bg{align-items:center}.sheet{border-radius:24px;max-height:90vh}}
 .sheet-h{display:flex;align-items:center;gap:10px;padding:16px 16px 10px}.sheet-h h2{flex:1;font-size:19px}
@@ -724,7 +724,7 @@ function formMaterial(id,cb){
    `<button class="btn primary lg full" id="mSave">Salvar</button>`);
   setTimeout(()=>{if(!id)$('#mNome').focus()},60);
   const mf={ic:m.ic||'',foto:m.foto||''};
-  const prev=()=>{const cur=mf.ic||guessIcon($('#mNome').value,($('#mCat .chip.on')||{}).dataset?.v);$('#mPrev').innerHTML=mf.foto?`<img class="mi" src="${mf.foto}" alt="">`:cur;
+  const prev=()=>{const cur=mf.ic||guessIcon($('#mNome').value,(($('#mCat .chip.on')||{dataset:{}}).dataset.v));$('#mPrev').innerHTML=mf.foto?`<img class="mi" src="${mf.foto}" alt="">`:cur;
     document.querySelectorAll('#mIcons button').forEach(b=>b.classList.toggle('on',!mf.foto&&b.dataset.v===cur));$('#mFotoDel').classList.toggle('hidden',!mf.foto)};
   $('#mNome').addEventListener('input',prev);$('#mCat').addEventListener('click',()=>setTimeout(prev));
   $('#mIcons').onclick=e=>{const b=e.target.closest('button');if(!b)return;mf.ic=b.dataset.v;mf.foto='';prev()};
@@ -733,7 +733,7 @@ function formMaterial(id,cb){
   $('#mSave').onclick=()=>{
     const nome=$('#mNome').value.trim();if(!nome){toast('Informe o nome do material');$('#mNome').focus();return}
     if(db.materiais.some(x=>x.id!==id&&x.nome.toLowerCase()===nome.toLowerCase())){toast('Já existe um material com esse nome');return}
-    const cat=($('#mCat .chip.on')||{}).dataset?.v||'Outros';
+    const cat=(($('#mCat .chip.on')||{dataset:{}}).dataset.v)||'Outros';
     const data={nome,cat,un:$('#mUn').value,min:num($('#mMin').value),preco:num($('#mPreco').value),local:$('#mLocal').value.trim(),ic:mf.ic||guessIcon(nome,cat),foto:mf.foto};
     let mid=id;
     if(id)Object.assign(matById(id),data);
@@ -763,7 +763,7 @@ function formObra(id,cb){
   setTimeout(()=>{if(!id)$('#oNome').focus()},60);
   $('#oSave').onclick=()=>{
     const nome=$('#oNome').value.trim();if(!nome){toast('Informe o nome da obra');return}
-    const data={nome,end:$('#oEnd').value.trim(),resp:$('#oResp').value.trim(),cor:($('#oCor .on')||{}).dataset?.v||COLORS[0]};
+    const data={nome,end:$('#oEnd').value.trim(),resp:$('#oResp').value.trim(),cor:(($('#oCor .on')||{dataset:{}}).dataset.v)||COLORS[0]};
     if(id){data.status=$('#oSt').value;Object.assign(obraById(id),data)}
     let oid=id;if(!id){oid=uid();db.obras.push({id:oid,...data,status:'ativa',criado:Date.now()})}
     save();closeSheet();
