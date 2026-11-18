@@ -184,6 +184,23 @@ body.movmode .nav{display:none}body.movmode main{padding-bottom:calc(170px + env
 .kpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .kpad button{border:0;background:#fff;border-radius:14px;padding:13px 0;font-size:25px;font-weight:800;box-shadow:0 2px 0 #e1dbd4}.kpad button:active{background:#ece7e2}
 .icons{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.icons button{width:42px;height:42px;border-radius:11px;border:1.5px solid var(--line);background:#fff;font-size:22px;padding:0}.icons button.on{border-color:var(--accent);background:var(--out-bg);box-shadow:0 0 0 2px var(--accent)}
+body.locked .top,body.locked main,body.locked .nav{display:none!important}#lock{display:none}body.locked #lock{display:block}
+.lock{min-height:100vh;background:radial-gradient(circle at 85% 8%,rgba(255,90,0,.28),transparent 36%),linear-gradient(160deg,#121212,#272727);color:#fff;padding:calc(30px + env(safe-area-inset-top)) 18px 40px}
+.lock-h{display:flex;align-items:center;gap:13px;max-width:760px;margin:0 auto 26px}.lock-h .mk{width:50px;height:50px;border-radius:15px;background:var(--accent);display:grid;place-items:center;font-size:26px;flex:none}
+.lock-h b{font-size:23px;display:block}.lock-h small{color:#c9c2bc;font-size:14px}
+.people{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px}
+.person{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:18px 8px 15px;color:#fff;display:flex;flex-direction:column;align-items:center;font-weight:800;font-size:15px}
+.person>*+*{margin-top:9px}.person small{color:#ff9a5f;font-size:11.5px;font-weight:800;margin-top:2px}.person:active{background:rgba(255,255,255,.16)}
+.av{border-radius:50%;object-fit:cover;display:inline-grid;place-items:center;color:#fff;font-weight:900;flex:none;overflow:hidden;vertical-align:middle}
+.pinbox{max-width:340px;margin:0 auto;text-align:center}.pinbox h2{font-size:22px}
+.pdots{display:flex;justify-content:center;margin:20px 0 8px}.pdots i{width:18px;height:18px;border-radius:50%;border:2px solid #fff;margin:0 8px}.pdots i.on{background:#fff}
+.pinbox .kpad button{background:rgba(255,255,255,.1);color:#fff;box-shadow:none;font-size:28px;padding:16px 0}.pinbox .kpad button:active{background:rgba(255,255,255,.25)}
+.shake{animation:shake .35s}@keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.user-chip{display:flex;align-items:center;border:0;background:rgba(255,255,255,.1);color:#fff;border-radius:999px;padding:4px 12px 4px 4px;font-weight:800;font-size:13px;margin-right:8px}.user-chip span{margin-left:8px}
+.cam{position:relative;width:280px;height:280px;margin:0 auto;border-radius:26px;overflow:hidden;background:#111}.cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.cd{position:absolute;top:0;left:0;right:0;bottom:0;display:grid;place-items:center;font-size:84px;font-weight:950;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.55)}
+.chk{display:flex;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;cursor:pointer}.chk input{width:22px;height:22px;margin:2px 12px 0 0;flex:none;accent-color:var(--accent)}
+.selfie{width:84px;height:84px;border-radius:16px;object-fit:cover;flex:none}
 /* impressão */
 #print{display:none}
 @media print{
@@ -203,6 +220,7 @@ body.movmode .nav{display:none}body.movmode main{padding-bottom:calc(170px + env
     <a href="#" class="new" id="tabNew">＋ Movimentar</a>
   </nav>
   <span class="sp"></span>
+  <button class="user-chip" id="btnUser" title="Sair"></button>
   <button class="icon-btn" id="btnCfg" title="Configurações">⚙️</button>
 </header>
 <main id="app"></main>
@@ -213,6 +231,7 @@ body.movmode .nav{display:none}body.movmode main{padding-bottom:calc(170px + env
   <a href="#obras" data-r="obras"><span class="i">🏗️</span>Obras</a>
   <a href="#movs" data-r="movs"><span class="i">🔄</span>Histórico</a>
 </nav>
+<div id="lock"></div>
 <div id="sheetRoot"></div>
 <div id="print"></div>
 <input type="file" id="fileImport" accept="application/json,.json" class="hidden" />
@@ -230,7 +249,7 @@ const UNITS=['un','saco','kg','t','m','m²','m³','barra','pç','cx','lata','gal
 const COLORS=['#ff5a00','#2d6bd6','#16855f','#7a5bd1','#d6336c','#0f9aa8','#c9890a','#5b6470','#8d5524','#3d9b2f'];
 const TIPOS={entrada:{nome:'Entrada',ic:'📥',cls:'in'},saida:{nome:'Saída',ic:'🚚',cls:'out'},devolucao:{nome:'Devolução',ic:'↩️',cls:'back'},ajuste:{nome:'Ajuste',ic:'⚖️',cls:'adj'}};
 
-function blank(){return {empresa:'LANG Engenharia',seq:0,materiais:[],obras:[],movs:[],ultimoResp:''}}
+function blank(){return {empresa:'LANG Engenharia',seq:0,materiais:[],obras:[],movs:[],ultimoResp:'',pessoas:[]}}
 function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&Array.isArray(d.materiais)&&Array.isArray(d.obras)&&Array.isArray(d.movs))return Object.assign(blank(),d)}catch(e){}return blank()}
 let db=load();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){toast('⚠️ Não foi possível salvar no aparelho. Exporte um backup.');return false}}
@@ -254,7 +273,7 @@ const obraById=id=>db.obras.find(o=>o.id===id);
 const catIcon=c=>CAT_ICON[c]||'📦';
 function guessIcon(nome,cat){const n=norm(nome);for(const [e,k] of ICONS)if(k&&k.split(' ').some(w=>n.includes(w)))return e;return catIcon(cat)}
 function matIcon(m){if(!m)return '📦';if(m.foto)return `<img class="mi" src="${esc(m.foto)}" alt="">`;return m.ic||guessIcon(m.nome,m.cat)}
-function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+function toast(msg){document.querySelectorAll('.toast').forEach(x=>x.remove());const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 function sortedMovs(){return db.movs.slice().sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.criado||0)-(a.criado||0))}
 
 /* ============ Cálculos ============ */
@@ -295,10 +314,142 @@ function aplicaCatalogo(forcar){
     db.materiais.push({id:uid(),nome,cat,un,min:0,preco:0,local:'',ic,foto:'',criado:Date.now()});n++}
   db.catalogo=CATALOGO_VERSAO;save();return n;
 }
+/* ============ Pessoas, login (foto + PIN) e permissões ============ */
+let U=null,lockSel=null,pinBuf='',falhas=0,bloqAte=0,lastAct=Date.now(),camAtiva=false;
+const INATIVO_MS=3*60*1000;
+const isAdmin=()=>!!(U&&U.admin);
+function hpin(id,pin){let h=2166136261;const s='lang-estoque|'+id+'|'+pin;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
+const pessoaById=id=>(db.pessoas||[]).find(p=>p.id===id);
+const AVCOR=['#ff5a00','#2d6bd6','#16855f','#7a5bd1','#d6336c','#0f9aa8','#c9890a','#5b6470'];
+function avatar(p,size){size=size||40;const st=`width:${size}px;height:${size}px;font-size:${Math.round(size*.4)}px`;
+  if(p&&p.foto)return `<img class="av" src="${esc(p.foto)}" style="${st}" alt="">`;
+  const nm=(p&&p.nome)||'?',ini=nm.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  let h=0;for(let i=0;i<nm.length;i++)h=(h*31+nm.charCodeAt(i))>>>0;
+  return `<span class="av" style="${st};background:${AVCOR[h%AVCOR.length]}">${esc(ini)}</span>`}
+function soAdmin(){if(isAdmin())return true;toast('🔒 Só o administrador pode fazer isso');return false}
+function logout(msg){U=null;lockSel=null;pinBuf='';F=null;window._onClose=null;closeSheet();if(location.hash&&location.hash!=='#inicio')location.hash='#inicio';render();if(msg)toast(msg)}
+['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
+setInterval(()=>{if(U&&!camAtiva&&Date.now()-lastAct>INATIVO_MS)logout('Sessão encerrada por inatividade')},15000);
+
+function renderLock(){
+  const el=$('#lock'),ps=(db.pessoas||[]).filter(p=>p.ativo!==false);
+  if(!ps.some(p=>p.admin)){el.innerHTML=setupHTML();return}
+  if(lockSel&&pessoaById(lockSel)){const p=pessoaById(lockSel);
+    el.innerHTML=`<div class="lock"><div class="pinbox">
+      <button class="link" style="color:#ff9a5f" onclick="lockSel=null;pinBuf='';renderLock()">‹ Trocar pessoa</button>
+      <div style="margin-top:22px">${avatar(p,96)}</div><h2 style="margin-top:12px">${esc(p.nome)}</h2>
+      <div class="pdots" id="pdots">${[0,1,2,3].map(i=>`<i class="${i<pinBuf.length?'on':''}"></i>`).join('')}</div>
+      <div id="pmsg" style="min-height:22px;color:#ffb38a;font-weight:700;font-size:14px">${Date.now()<bloqAte?'Muitas tentativas. Aguarde 30 segundos.':'Digite seu PIN'}</div>
+      <div class="kpad" style="margin-top:14px">${['1','2','3','4','5','6','7','8','9','','0','⌫'].map(k=>k?`<button onclick="pinKey('${k}')">${k}</button>`:'<span></span>').join('')}</div>
+    </div></div>`;return}
+  el.innerHTML=`<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>${esc((db.empresa||'Lang').split(' ')[0])} Estoque</b><small>Quem está usando? Toque na sua foto.</small></div></div>
+    <div class="people">${ps.map(p=>`<button class="person" onclick="lockSel='${p.id}';pinBuf='';renderLock()">${avatar(p,88)}<span>${esc(p.nome)}</span>${p.admin?'<small>Administrador</small>':''}</button>`).join('')}</div></div>`;
+}
+function pinKey(k){
+  if(Date.now()<bloqAte)return;
+  if(k==='⌫')pinBuf=pinBuf.slice(0,-1);else if(pinBuf.length<4)pinBuf+=k;
+  const d=$('#pdots');d.innerHTML=[0,1,2,3].map(i=>`<i class="${i<pinBuf.length?'on':''}"></i>`).join('');
+  if(pinBuf.length<4)return;
+  const p=pessoaById(lockSel);
+  if(p&&hpin(p.id,pinBuf)===p.pin){falhas=0;U=p;lockSel=null;pinBuf='';lastAct=Date.now();if(!location.hash)location.hash='#inicio';render();toast('Olá, '+p.nome.split(' ')[0]+'!');return}
+  falhas++;pinBuf='';d.classList.remove('shake');void d.offsetWidth;d.classList.add('shake');
+  setTimeout(()=>{d.innerHTML=[0,1,2,3].map(()=>'<i></i>').join('')},350);
+  if(falhas>=5){bloqAte=Date.now()+30000;falhas=0;$('#pmsg').textContent='Muitas tentativas. Aguarde 30 segundos.';setTimeout(()=>{if($('#pmsg'))$('#pmsg').textContent='Digite seu PIN'},30000)}
+  else $('#pmsg').textContent='PIN errado. Tente de novo.';
+}
+function setupHTML(){
+  return `<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>Primeiro acesso</b><small>Cadastre o administrador do estoque.</small></div></div>
+  <div class="card" style="max-width:460px;margin:0 auto;color:var(--ink)">
+    <p class="muted small" style="margin-top:0">O administrador cadastra as pessoas, corrige saldos e exclui lançamentos. Os outros só lançam entradas, saídas e devoluções.</p>
+    <div class="f"><label>Seu nome</label><input id="sNome" autocomplete="off" placeholder="Ex.: Geovane Lang"></div>
+    <div class="f"><label>Sua foto <span class="muted">(aparece na tela de login)</span></label>
+      <div style="display:flex;gap:12px;align-items:center"><span id="sPrev">${avatar({nome:'?'},64)}</span>
+      <label class="btn soft" style="cursor:pointer">📷 Tirar foto<input type="file" accept="image/*" capture="user" class="hidden" onchange="pFotoSel(this,'sPrev')"></label></div></div>
+    <div class="f2"><div class="f"><label>PIN (4 números)</label><input id="sPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"></div>
+    <div class="f"><label>Repita o PIN</label><input id="sPin2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"></div></div>
+    <button class="btn primary lg full" onclick="criarAdmin()">Criar administrador e entrar</button>
+    <p class="muted small" style="margin-bottom:0">Guarde bem o PIN: sem ele não dá para entrar como administrador.</p>
+  </div></div>`;
+}
+let pFotoTmp='';
+async function pFotoSel(inp,prev){const f=inp.files[0];inp.value='';if(!f)return;try{pFotoTmp=await fotoReduzida(f);$('#'+prev).innerHTML=`<img class="av" src="${pFotoTmp}" style="width:64px;height:64px">`}catch(e){toast('Não foi possível ler a foto')}}
+const pinOk=p=>/^\d{4}$/.test(p);
+function criarAdmin(){
+  const nome=$('#sNome').value.trim(),a=$('#sPin').value,b=$('#sPin2').value;
+  if(!nome)return toast('Informe seu nome');if(!pinOk(a))return toast('O PIN precisa ter 4 números');if(a!==b)return toast('Os dois PINs não são iguais');
+  const id=uid(),p={id,nome,foto:pFotoTmp,pin:hpin(id,a),admin:true,ativo:true,criado:Date.now()};
+  db.pessoas=(db.pessoas||[]).concat(p);pFotoTmp='';save();U=p;lastAct=Date.now();location.hash='#inicio';render();toast('Administrador criado');
+}
+function pessoasSec(){
+  const ps=db.pessoas||[];
+  return `<div class="sec"><h2>👥 Pessoas</h2><span class="sp"></span><button class="btn primary" style="padding:8px 12px" onclick="formPessoa()">＋ Pessoa</button></div>
+  <div class="list">${ps.map(p=>`<button class="row" onclick="formPessoa('${p.id}')" style="${p.ativo===false?'opacity:.5':''}">${avatar(p,44)}<span class="tx"><div class="t">${esc(p.nome)}</div><div class="s">${p.admin?'⭐ Administrador':'Lança entradas, saídas e devoluções'}${p.ativo===false?' · desativado':''}</div></span><span class="muted">›</span></button>`).join('')}</div>`;
+}
+function formPessoa(id){
+  if(!soAdmin())return;
+  const p=id?pessoaById(id):{nome:'',foto:'',admin:false,ativo:true};pFotoTmp=p.foto||'';
+  sheet(id?'✏️ Editar pessoa':'👤 Nova pessoa',`
+   <div class="f"><label>Nome</label><input id="pNome" value="${esc(p.nome)}" autocomplete="off" placeholder="Ex.: Carlos (mestre de obras)"></div>
+   <div class="f"><label>Foto</label><div style="display:flex;gap:12px;align-items:center"><span id="pPrev">${avatar(p,64)}</span>
+     <label class="btn soft" style="cursor:pointer">📷 Tirar foto<input type="file" accept="image/*" capture="user" class="hidden" onchange="pFotoSel(this,'pPrev')"></label></div></div>
+   <div class="f"><label>${id?'Novo PIN (deixe em branco para manter)':'PIN (4 números)'}</label><input id="pPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"></div>
+   <label class="chk"><input type="checkbox" id="pAdm" ${p.admin?'checked':''}> <span><b>Administrador</b><br><span class="muted small">Pode excluir lançamentos, corrigir saldo, cadastrar pessoas e mexer nas configurações.</span></span></label>
+   ${id?`<label class="chk"><input type="checkbox" id="pAtv" ${p.ativo!==false?'checked':''}> <span><b>Ativo</b><br><span class="muted small">Desative quem saiu da empresa: some da tela de login, mas o histórico continua.</span></span></label>`:''}`,
+   `<button class="btn primary lg full" onclick="salvarPessoa('${id||''}')">Salvar</button>`);
+}
+function salvarPessoa(id){
+  const nome=$('#pNome').value.trim(),pin=$('#pPin').value,adm=$('#pAdm').checked,atv=id?$('#pAtv').checked:true;
+  if(!nome)return toast('Informe o nome');
+  if((!id||pin)&&!pinOk(pin))return toast('O PIN precisa ter 4 números');
+  const outrosAdm=(db.pessoas||[]).filter(x=>x.id!==id&&x.admin&&x.ativo!==false).length;
+  if(id&&(!adm||!atv)&&!outrosAdm)return toast('Precisa existir pelo menos um administrador ativo');
+  if(id){const p=pessoaById(id);Object.assign(p,{nome,foto:pFotoTmp,admin:adm,ativo:atv});if(pin)p.pin=hpin(id,pin);if(U&&U.id===id)U=p}
+  else{const nid=uid();db.pessoas.push({id:nid,nome,foto:pFotoTmp,pin:hpin(nid,pin),admin:adm,ativo:true,criado:Date.now()})}
+  pFotoTmp='';save();config();toast('Pessoa salva');
+  if(U&&!U.admin)logout();
+}
+
+/* ============ Selfie no lançamento ============ */
+let idbP=null;
+function idb(){return idbP||(idbP=new Promise((res,rej)=>{const r=indexedDB.open('lang-estoque',1);r.onupgradeneeded=()=>r.result.createObjectStore('fotos');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))}
+function idbOp(mode,fn){return idb().then(d=>new Promise((res,rej)=>{const t=d.transaction('fotos',mode),q=fn(t.objectStore('fotos'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)}))}
+const fotoPut=(k,v)=>idbOp('readwrite',s=>s.put(v,k));
+const fotoGet=k=>idbOp('readonly',s=>s.get(k));
+const fotoDel=k=>idbOp('readwrite',s=>s.delete(k));
+function fotoTodas(){return idb().then(d=>new Promise((res,rej)=>{const out={},t=d.transaction('fotos','readonly'),c=t.objectStore('fotos').openCursor();c.onsuccess=()=>{const x=c.result;if(x){out[x.key]=x.value;x.continue()}};t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error)}))}
+// Abre a câmera frontal, conta 3-2-1 e tira a foto. Resolve: dataURL, '' (sem foto) ou undefined (cancelado).
+function selfie(){return new Promise(resolve=>{
+  sheet('📸 Foto de quem está lançando',`<div class="cam"><video id="camV" playsinline autoplay muted></video><div class="cd" id="camCd">⏳</div></div>
+    <p class="muted small" style="text-align:center" id="camMsg">Olhe para a câmera…</p>`,
+   `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn soft" id="camSkip">Lançar sem foto</button>
+    <label class="btn dark" style="flex:1;cursor:pointer">📷 Abrir câmera do aparelho<input type="file" accept="image/*" capture="user" id="camFile" class="hidden"></label></div>`);
+  let stream=null,done=false,timer=null;camAtiva=true;
+  const parar=()=>{camAtiva=false;lastAct=Date.now();clearInterval(timer);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null};
+  const fim=v=>{if(done)return;done=true;parar();window._onClose=null;closeSheet();resolve(v)};
+  window._onClose=()=>{if(!done){done=true;parar();resolve(undefined)}};
+  $('#camSkip').onclick=()=>fim('');
+  $('#camFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{fim(await fotoReduzida(f))}catch(err){toast('Não foi possível ler a foto')}};
+  const falhou=()=>{$('#camCd').textContent='📷';$('#camMsg').textContent='Câmera indisponível aqui. Toque em "Abrir câmera do aparelho".'};
+  if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){falhou();return}
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:640}},audio:false}).then(s=>{
+    if(done){s.getTracks().forEach(t=>t.stop());return}
+    stream=s;const v=$('#camV');v.srcObject=s;const p=v.play();if(p&&p.catch)p.catch(()=>{});
+    let n=3;$('#camCd').textContent=n;
+    timer=setInterval(()=>{n--;if(n>0){$('#camCd').textContent=n;return}clearInterval(timer);
+      const S=240,c=document.createElement('canvas'),w=v.videoWidth,h=v.videoHeight;if(!w||!h){falhou();return}
+      const k=Math.min(w,h);c.width=c.height=S;const g=c.getContext('2d');g.translate(S,0);g.scale(-1,1);g.drawImage(v,(w-k)/2,(h-k)/2,k,k,0,0,S,S);
+      fim(c.toDataURL('image/jpeg',.6))},900);
+  }).catch(falhou);
+})}
+
 /* ============ Rotas ============ */
 function route(){const h=(location.hash||'#inicio').slice(1).split('/');return{p:h[0]||'inicio',id:h[1]?decodeURIComponent(h[1]):null}}
 const state={fEst:'',fCat:'',fStatus:'',fMovTipo:'',fMovObra:'',fMovPer:'30',fObraSt:'ativa'};
 function render(){
+  if(!U||!pessoaById(U.id)||pessoaById(U.id).ativo===false){U=null;document.body.classList.add('locked');renderLock();return}
+  U=pessoaById(U.id);document.body.classList.remove('locked');$('#lock').innerHTML='';
+  $('#btnCfg').classList.toggle('hidden',!isAdmin());
+  $('#btnUser').innerHTML=avatar(U,30)+'<span>'+esc(U.nome.split(' ')[0])+' · Sair</span>';
   const r=route();
   document.querySelectorAll('[data-r]').forEach(a=>a.classList.toggle('on',a.dataset.r===r.p||(r.p==='obra'&&a.dataset.r==='obras')||(r.p==='mat'&&a.dataset.r==='estoque')));
   $('#brandName').textContent=db.empresa?db.empresa.split(' ')[0]+' Estoque':'Estoque';
@@ -377,7 +528,7 @@ function movRow(mv,C){
   const dest=mv.tipo==='saida'?'→ '+(o?o.nome:'?'):mv.tipo==='devolucao'?'← '+(o?o.nome:'?'):mv.tipo==='entrada'?(o?'direto na '+o.nome:(mv.forn||'Depósito')):(mv.obs||'Correção de saldo');
   const q1=its.length===1?(()=>{const m=matById(its[0].m);return `<div class="q">${its[0].q>0&&mv.tipo!=='saida'?'+':mv.tipo==='saida'?'−':''}${fq(Math.abs(its[0].q))}</div><div class="u">${m?esc(m.un):''}</div>`})():`<div class="q">${its.length}</div><div class="u">itens</div>`;
   return `<button class="row" onclick="verMov('${mv.id}')"><span class="ic ${t.cls}">${t.ic}</span>
-   <span class="tx"><div class="t">${esc(nomes)||'—'}</div><div class="s">${o?`<span class="dot" style="background:${o.cor};width:8px;height:8px"></span> `:''}${esc(dest)} · ${fdateS(mv.data)}</div></span>
+   <span class="tx"><div class="t">${esc(nomes)||'—'}</div><div class="s">${o?`<span class="dot" style="background:${o.cor};width:8px;height:8px"></span> `:''}${esc(dest)} · ${fdateS(mv.data)}${mv.porNome?' · 👤 '+esc(mv.porNome.split(' ')[0]):''}</div></span>
    <span class="r">${q1}</span></button>`;
 }
 
@@ -421,7 +572,7 @@ function vMat(C,id){
   <div class="actions">
     <button class="btn primary" onclick="formMov('entrada',{m:'${m.id}'})">📥 Entrada</button>
     <button class="btn dark" onclick="formMov('saida',{m:'${m.id}'})">🚚 Enviar p/ obra</button>
-    <button class="btn soft" onclick="formAjuste('${m.id}')">⚖️ Corrigir saldo</button>
+    ${isAdmin()?`<button class="btn soft" onclick="formAjuste('${m.id}')">⚖️ Corrigir saldo</button>`:''}
     <button class="btn soft" onclick="formMaterial('${m.id}')">✏️ Editar</button>
   </div>
   <div class="sec"><h2>Usado nas obras</h2></div>
@@ -519,7 +670,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 
 /* ============ Movimentação (tela de ícones) ============ */
 let F=null,K=null;
-function newF(tipo,obra){return {tipo,obra:obra||'',data:today(),resp:db.ultimoResp||'',doc:'',forn:'',obs:'',itens:{},q:'',cat:'',from:'#inicio'}}
+function newF(tipo,obra){return {tipo,obra:obra||'',data:today(),resp:U?U.nome:'',doc:'',forn:'',obs:'',itens:{},q:'',cat:'',from:'#inicio'}}
 function formMov(tipo='saida',pre={}){
   if(!db.materiais.length){toast('Cadastre um material primeiro');formMaterial();return}
   const from=route().p==='mov'?(F&&F.from)||'#inicio':(location.hash||'#inicio');
@@ -652,13 +803,16 @@ function formDetalhes(){
   `<button class="btn dark lg full" onclick="closeSheet()">OK</button>`);
   window._onClose=()=>drawMovPage();
 }
-function salvarMov(){
+async function salvarMov(){
   if(movErros().length)return;
+  const foto=await selfie();if(foto===undefined){drawMovPage();toast('Lançamento cancelado');return}
+  if(!F||movErros().length)return;
   const itens=itensArr().map(it=>{const x={m:it.m,q:it.q};if(F.tipo==='entrada'&&it.v>0)x.v=it.v;return x});
   db.seq=(db.seq||0)+1;
-  const mv={id:uid(),n:db.seq,tipo:F.tipo,obra:F.obra||'',data:F.data,resp:F.resp.trim(),doc:F.doc.trim(),forn:F.tipo==='entrada'?F.forn.trim():'',obs:F.obs.trim(),itens,criado:Date.now()};
+  const mv={id:uid(),n:db.seq,tipo:F.tipo,obra:F.obra||'',data:F.data,resp:F.resp.trim(),doc:F.doc.trim(),forn:F.tipo==='entrada'?F.forn.trim():'',obs:F.obs.trim(),itens,criado:Date.now(),por:U.id,porNome:U.nome,foto:!!foto};
   db.movs.push(mv);if(mv.resp)db.ultimoResp=mv.resp;
   if(!save()){db.movs.pop();return}
+  if(foto)fotoPut(mv.id,foto).catch(()=>toast('⚠️ A foto não pôde ser salva'));
   F.itens={};F.doc='';F.forn='';F.obs='';F.q='';
   closeSheet();drawMovPage(true);
   const t=TIPOS[mv.tipo],o=obraById(mv.obra);
@@ -667,7 +821,7 @@ function salvarMov(){
     <p class="muted" style="margin:0">Movimentação nº <b>${mv.n}</b> salva.${mv.tipo==='saida'?'<br>Imprima a guia e peça a assinatura de quem recebeu.':''}</p></div>`,
     `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn soft lg" style="flex:1" onclick="printGuia('${mv.id}')">🖨️ ${mv.tipo==='saida'?'Guia':'Comprovante'}</button>
      <button class="btn soft lg" style="flex:1" onclick="closeSheet()">＋ Nova</button>
-     <button class="btn dark lg" style="flex:1" onclick="closeSheet();F=null;location.hash='#inicio'">Concluir</button></div>`);
+     <button class="btn dark lg" style="flex:1" onclick="logout('Até logo!')">✓ Concluir e sair</button></div>`);
 }
 function verMov(id){
   const mv=db.movs.find(x=>x.id===id);if(!mv)return;
@@ -679,16 +833,21 @@ function verMov(id){
     <div class="small muted mt">${[mv.resp&&'👤 '+esc(mv.resp),mv.forn&&'🏪 '+esc(mv.forn),mv.doc&&'📄 '+esc(mv.doc)].filter(Boolean).join(' · ')}</div>
     ${mv.obs?`<div class="small mt">📝 ${esc(mv.obs)}</div>`:''}
    </div>
+   ${mv.por||mv.porNome?`<div class="card mt" style="padding:12px 14px;display:flex;align-items:center"><div id="selfieBox" style="margin-right:12px">${mv.foto?'<div class="selfie" style="background:#eee"></div>':avatar(pessoaById(mv.por)||{nome:mv.porNome},56)}</div>
+     <div><div class="muted small b">Lançado por</div><div class="b" style="font-size:16px">${esc((pessoaById(mv.por)||{}).nome||mv.porNome||'')}</div><div class="muted small">${mv.foto?'📸 com foto no momento do lançamento':'sem foto'}</div></div></div>`:''}
    <div class="card mt" style="padding:6px 12px"><table class="tbl"><thead><tr><th>Material</th><th class="n">Qtd.</th>${total?'<th class="n">Valor</th>':''}</tr></thead><tbody>
     ${(mv.itens||[]).map(it=>{const m=matById(it.m),pu=(mv.tipo==='entrada'&&it.v)?it.v:(C.custo[it.m]||0);return `<tr><td>${m?matIcon(m)+' '+esc(m.nome):'<i>material excluído</i>'}</td><td class="n b">${fq(it.q)} ${m?esc(m.un):''}</td>${total?`<td class="n">${pu?brl.format(it.q*pu):'—'}</td>`:''}</tr>`}).join('')}
     ${total?`<tr><td class="b">Total</td><td></td><td class="n b">${brl.format(total)}</td></tr>`:''}</tbody></table></div>`,
-   `<div style="display:flex;gap:8px"><button class="btn danger" onclick="delMov('${mv.id}')">🗑️ Excluir</button><span style="flex:1"></span>${mv.tipo!=='ajuste'?`<button class="btn dark" onclick="printGuia('${mv.id}')">🖨️ Imprimir</button>`:''}</div>`);
+   `<div style="display:flex;gap:8px">${isAdmin()?`<button class="btn danger" onclick="delMov('${mv.id}')">🗑️ Excluir</button>`:''}<span style="flex:1"></span>${mv.tipo!=='ajuste'?`<button class="btn dark" onclick="printGuia('${mv.id}')">🖨️ Imprimir</button>`:''}</div>`);
+  if(mv.foto)fotoGet(mv.id).then(d=>{const b=$('#selfieBox');if(b&&d)b.innerHTML=`<img class="selfie" src="${d}" alt="">`}).catch(()=>{});
 }
 function delMov(id){
+  if(!soAdmin())return;
   if(!confirm('Excluir esta movimentação? O saldo do estoque será recalculado.'))return;
-  db.movs=db.movs.filter(m=>m.id!==id);save();closeSheet();render();toast('Movimentação excluída');
+  db.movs=db.movs.filter(m=>m.id!==id);save();fotoDel(id).catch(()=>{});closeSheet();render();toast('Movimentação excluída');
 }
 function formAjuste(mid){
+  if(!soAdmin())return;
   const m=matById(mid),s=calc().saldo[mid]||0;
   sheet('⚖️ Corrigir saldo',`<p class="muted small" style="margin-top:0">Use depois de contar o material no depósito. A diferença fica registrada no histórico como ajuste.</p>
    <div class="card" style="padding:12px 14px;margin-bottom:12px"><div class="b">${matIcon(m)} ${esc(m.nome)}</div><div class="muted small">Saldo no app: <b>${fq(s)} ${esc(m.un)}</b></div></div>
@@ -697,9 +856,10 @@ function formAjuste(mid){
    `<button class="btn dark lg full" onclick="salvarAjuste('${mid}',${s})">Salvar contagem</button>`);
 }
 function salvarAjuste(mid,s){
+  if(!soAdmin())return;
   const v=$('#ajQ').value.trim();if(v===''){toast('Informe a quantidade contada');return}
   const d=Math.round((num(v)-s)*1000)/1000;if(!d){closeSheet();toast('Saldo já está correto');return}
-  db.seq=(db.seq||0)+1;db.movs.push({id:uid(),n:db.seq,tipo:'ajuste',obra:'',data:today(),resp:db.ultimoResp||'',doc:'',forn:'',obs:$('#ajO').value.trim()||'Ajuste de saldo',itens:[{m:mid,q:d}],criado:Date.now()});
+  db.seq=(db.seq||0)+1;db.movs.push({id:uid(),n:db.seq,tipo:'ajuste',obra:'',data:today(),resp:U.nome,doc:'',forn:'',obs:$('#ajO').value.trim()||'Ajuste de saldo',itens:[{m:mid,q:d}],criado:Date.now(),por:U.id,porNome:U.nome});
   save();closeSheet();render();toast(`Saldo corrigido (${d>0?'+':''}${fq(d)})`);
 }
 
@@ -719,8 +879,8 @@ function formMaterial(id,cb){
    <div class="f"><label>Estoque mínimo</label><input id="mMin" inputmode="decimal" value="${m.min!==''&&m.min!=null?String(m.min).replace('.',','):''}" placeholder="Avisa quando baixar"></div></div>
    <div class="f2"><div class="f"><label>Preço de referência (R$)</label><input id="mPreco" inputmode="decimal" value="${m.preco?String(m.preco).replace('.',','):''}" placeholder="opcional"></div>
    <div class="f"><label>Local no depósito</label><input id="mLocal" value="${esc(m.local||'')}" placeholder="Ex.: Prateleira A"></div></div>
-   ${id?'':`<div class="f"><label>Quantidade que já tem no depósito</label><input id="mIni" inputmode="decimal" placeholder="0"></div>`}
-   ${id?`<button class="btn danger full" onclick="delMaterial('${id}')">🗑️ Excluir material</button>${used?'<div class="small muted mt">Este material tem movimentações; ao excluir, elas também serão apagadas.</div>':''}`:''}`,
+   ${id||!isAdmin()?'':`<div class="f"><label>Quantidade que já tem no depósito</label><input id="mIni" inputmode="decimal" placeholder="0"></div>`}
+   ${id&&isAdmin()?`<button class="btn danger full" onclick="delMaterial('${id}')">🗑️ Excluir material</button>${used?'<div class="small muted mt">Este material tem movimentações; ao excluir, elas também serão apagadas.</div>':''}`:''}`,
    `<button class="btn primary lg full" id="mSave">Salvar</button>`);
   setTimeout(()=>{if(!id)$('#mNome').focus()},60);
   const mf={ic:m.ic||'',foto:m.foto||''};
@@ -737,14 +897,15 @@ function formMaterial(id,cb){
     const data={nome,cat,un:$('#mUn').value,min:num($('#mMin').value),preco:num($('#mPreco').value),local:$('#mLocal').value.trim(),ic:mf.ic||guessIcon(nome,cat),foto:mf.foto};
     let mid=id;
     if(id)Object.assign(matById(id),data);
-    else{mid=uid();db.materiais.push({id:mid,...data,criado:Date.now()});const ini=num($('#mIni').value);
-      if(ini>0){db.seq=(db.seq||0)+1;db.movs.push({id:uid(),n:db.seq,tipo:'ajuste',obra:'',data:today(),resp:'',doc:'',forn:'',obs:'Saldo inicial',itens:[{m:mid,q:ini}],criado:Date.now()})}}
+    else{mid=uid();db.materiais.push({id:mid,...data,criado:Date.now()});const ini=$('#mIni')?num($('#mIni').value):0;
+      if(ini>0){db.seq=(db.seq||0)+1;db.movs.push({id:uid(),n:db.seq,tipo:'ajuste',obra:'',data:today(),resp:'',doc:'',forn:'',obs:'Saldo inicial',itens:[{m:mid,q:ini}],criado:Date.now(),por:U.id,porNome:U.nome})}}
     save();closeSheet();
     if(cb)cb(mid);else{render();toast(id?'Material atualizado':'Material cadastrado')}
   };
 }
 function fotoReduzida(file){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const S=240,c=document.createElement('canvas');c.width=c.height=S;const k=Math.min(img.width,img.height);c.getContext('2d').drawImage(img,(img.width-k)/2,(img.height-k)/2,k,k,0,0,S,S);URL.revokeObjectURL(img.src);res(c.toDataURL('image/jpeg',.75))};img.onerror=rej;img.src=URL.createObjectURL(file)})}
 function delMaterial(id){
+  if(!soAdmin())return;
   const m=matById(id);if(!confirm(`Excluir "${m.nome}"? As movimentações deste material também serão apagadas.`))return;
   db.materiais=db.materiais.filter(x=>x.id!==id);
   db.movs=db.movs.map(mv=>({...mv,itens:(mv.itens||[]).filter(it=>it.m!==id)})).filter(mv=>mv.itens.length);
@@ -758,7 +919,7 @@ function formObra(id,cb){
    <div class="f"><label>Mestre / responsável</label><input id="oResp" value="${esc(o.resp||'')}" placeholder="Nome"></div>
    <div class="f"><label>Cor de identificação</label><div class="colors" id="oCor">${COLORS.map(c=>`<button type="button" class="${o.cor===c?'on':''}" data-v="${c}" style="background:${c}" onclick="this.parentNode.querySelectorAll('button').forEach(x=>x.classList.remove('on'));this.classList.add('on')"></button>`).join('')}</div></div>
    ${id?`<div class="f"><label>Situação</label><select id="oSt"><option value="ativa" ${o.status!=='concluida'?'selected':''}>Em andamento</option><option value="concluida" ${o.status==='concluida'?'selected':''}>Concluída</option></select></div>
-   <button class="btn danger full" onclick="delObra('${id}')">🗑️ Excluir obra</button>`:''}`,
+   ${isAdmin()?`<button class="btn danger full" onclick="delObra('${id}')">🗑️ Excluir obra</button>`:''}`:''}`,
    `<button class="btn primary lg full" id="oSave">Salvar</button>`);
   setTimeout(()=>{if(!id)$('#oNome').focus()},60);
   $('#oSave').onclick=()=>{
@@ -771,6 +932,7 @@ function formObra(id,cb){
   };
 }
 function delObra(id){
+  if(!soAdmin())return;
   const n=db.movs.filter(m=>m.obra===id).length;
   if(n){alert(`Esta obra tem ${n} movimentação(ões). Para manter o histórico, marque-a como "Concluída" em vez de excluir.`);return}
   if(!confirm('Excluir esta obra?'))return;
@@ -786,7 +948,7 @@ function printGuia(id){
   printHTML(`${phead(tit+' nº '+(mv.n||''))}
    <p><b>Data:</b> ${fdate(mv.data)} &nbsp; <b>Tipo:</b> ${t.nome}${o?` &nbsp; <b>Obra:</b> ${esc(o.nome)}${o.end?' — '+esc(o.end):''}`:''}</p>
    <p>${mv.forn?`<b>Fornecedor:</b> ${esc(mv.forn)} &nbsp; `:''}${mv.doc?`<b>Documento:</b> ${esc(mv.doc)} &nbsp; `:''}${mv.resp?`<b>Responsável:</b> ${esc(mv.resp)}`:''}</p>
-   ${mv.obs?`<p><b>Obs.:</b> ${esc(mv.obs)}</p>`:''}
+   ${mv.obs?`<p><b>Obs.:</b> ${esc(mv.obs)}</p>`:''}${mv.porNome?`<p><b>Lançado por:</b> ${esc(mv.porNome)}</p>`:''}
    <table><thead><tr><th>#</th><th>Material</th><th class="n">Quantidade</th><th>Un.</th><th>Conferido</th></tr></thead><tbody>
    ${(mv.itens||[]).map((it,i)=>{const m=matById(it.m);return `<tr><td>${i+1}</td><td>${m?esc(m.nome):'—'}</td><td class="n">${fq(it.q)}</td><td>${m?esc(m.un):''}</td><td style="width:80px"></td></tr>`}).join('')}</tbody></table>
    <div class="sig"><div>${mv.tipo==='saida'?'Expedido por (depósito)':'Entregue por'}</div><div>${mv.tipo==='saida'?'Recebido por (obra)':'Recebido por'}</div></div>`);
@@ -807,9 +969,9 @@ function printObra(id){
 function download(name,content,type){const b=new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 function exportCSV(){
   const C=calc(),q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
-  const rows=[['Data','Nº','Tipo','Obra','Material','Categoria','Quantidade','Unidade','Valor unitário','Valor total','Fornecedor','Documento','Responsável','Observação']];
+  const rows=[['Data','Nº','Tipo','Obra','Material','Categoria','Quantidade','Unidade','Valor unitário','Valor total','Fornecedor','Documento','Responsável','Observação','Lançado por']];
   for(const mv of sortedMovs().reverse())for(const it of mv.itens||[]){const m=matById(it.m)||{},o=obraById(mv.obra),pu=(mv.tipo==='entrada'&&it.v)?it.v:(C.custo[it.m]||0);
-    rows.push([fdate(mv.data),mv.n||'',TIPOS[mv.tipo].nome,o?o.nome:(mv.tipo==='entrada'?'Depósito':''),m.nome||'',m.cat||'',nf.format(it.q),m.un||'',pu?nf.format(pu):'',pu?nf.format(pu*it.q):'',mv.forn||'',mv.doc||'',mv.resp||'',mv.obs||''])}
+    rows.push([fdate(mv.data),mv.n||'',TIPOS[mv.tipo].nome,o?o.nome:(mv.tipo==='entrada'?'Depósito':''),m.nome||'',m.cat||'',nf.format(it.q),m.un||'',pu?nf.format(pu):'',pu?nf.format(pu*it.q):'',mv.forn||'',mv.doc||'',mv.resp||'',mv.obs||'',mv.porNome||''])}
   download(`movimentacoes-estoque-${today()}.csv`,'﻿'+rows.map(r=>r.map(q).join(';')).join('\r\n'),'text/csv;charset=utf-8');
 }
 function exportEstoqueCSV(){
@@ -818,24 +980,32 @@ function exportEstoqueCSV(){
   download(`estoque-${today()}.csv`,'﻿'+rows.map(r=>r.map(q).join(';')).join('\r\n'),'text/csv;charset=utf-8');
 }
 function config(){
+  if(!soAdmin())return;
   sheet('⚙️ Configurações',`
+   ${pessoasSec()}
+   <div class="sec"><h2>Empresa</h2></div>
    <div class="f"><label>Nome da empresa (sai nas guias e relatórios)</label><input id="cEmp" value="${esc(db.empresa||'')}"></div>
    <button class="btn dark full" onclick="db.empresa=$('#cEmp').value.trim();save();render();toast('Salvo')">Salvar nome</button>
    <div class="sec"><h2>Planilhas</h2></div>
    <div class="grid g2"><button class="btn soft" onclick="exportEstoqueCSV()">📦 Estoque atual</button><button class="btn soft" onclick="exportCSV()">🔄 Movimentações</button></div>
    <div class="sec"><h2>Backup</h2></div>
    <p class="muted small" style="margin-top:0">Os dados ficam salvos só neste aparelho. Faça backup com frequência e use-o para passar os dados para outro celular ou computador.</p>
-   <div class="grid g2"><button class="btn primary" onclick="download('backup-estoque-${today()}.json',JSON.stringify(db,null,1),'application/json')">⬇️ Fazer backup</button><button class="btn soft" onclick="$('#fileImport').click()">⬆️ Restaurar backup</button></div>
+   <div class="grid g2"><button class="btn primary" onclick="fazerBackup()">⬇️ Fazer backup</button><button class="btn soft" onclick="$('#fileImport').click()">⬆️ Restaurar backup</button></div>
    <div class="sec"><h2>Outros</h2></div>
-   <div class="grid g2"><button class="btn soft" onclick="if(confirm('Substituir os dados atuais pelos dados de exemplo?'))loadDemo()">Dados de exemplo</button><button class="btn danger" onclick="if(confirm('Apagar TODOS os dados deste aparelho? Faça backup antes.')){db=blank();aplicaCatalogo();closeSheet();location.hash='#inicio';render()}">Apagar tudo</button></div>
+   <div class="grid g2"><button class="btn soft" onclick="if(confirm('Substituir os dados atuais pelos dados de exemplo?'))loadDemo()">Dados de exemplo</button><button class="btn danger" onclick="if(confirm('Apagar TODOS os dados deste aparelho? Faça backup antes.')){const ps=db.pessoas,em=db.empresa;db=blank();db.pessoas=ps;db.empresa=em;aplicaCatalogo();closeSheet();location.hash='#inicio';render()}">Apagar tudo</button></div>
    <button class="btn soft full mt" onclick="const n=aplicaCatalogo(true);render();toast(n?n+' materiais adicionados':'A lista padrão já está completa')">📋 Recolocar materiais da lista padrão</button>
    <p class="muted small mt2">${db.materiais.length} materiais · ${db.obras.length} obras · ${db.movs.length} movimentações</p>`);
 }
+function fazerBackup(){fotoTodas().catch(()=>({})).then(fotos=>download(`backup-estoque-${today()}.json`,JSON.stringify(Object.assign({},db,{_fotos:fotos})),'application/json'))}
+const lerTexto=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsText(f)});
 $('#fileImport').addEventListener('change',async e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
-  try{const d=JSON.parse(await f.text());if(!d||!Array.isArray(d.materiais)||!Array.isArray(d.obras)||!Array.isArray(d.movs))throw new Error('formato');
+  if(!isAdmin())return;
+  try{const d=JSON.parse(await lerTexto(f));if(!d||!Array.isArray(d.materiais)||!Array.isArray(d.obras)||!Array.isArray(d.movs))throw new Error('formato');
     if(!confirm(`Restaurar backup com ${d.materiais.length} materiais, ${d.obras.length} obras e ${d.movs.length} movimentações? Os dados atuais serão substituídos.`))return;
-    db=Object.assign(blank(),d);save();closeSheet();location.hash='#inicio';render();toast('Backup restaurado')}
+    const fotos=d._fotos||{};delete d._fotos;
+    if(!(d.pessoas||[]).some(p=>p.admin&&p.ativo!==false))d.pessoas=(db.pessoas||[]).concat((d.pessoas||[]).filter(p=>!pessoaById(p.id)));
+    db=Object.assign(blank(),d);save();Object.keys(fotos).forEach(k=>fotoPut(k,fotos[k]).catch(()=>{}));closeSheet();location.hash='#inicio';render();toast('Backup restaurado')}
   catch(err){alert('Arquivo de backup inválido.')}
 });
 
@@ -873,13 +1043,14 @@ function loadDemo(){
   V(2,'devolucao',o1,[[cim,5]],{resp:'Carlos',obs:'Sacos fechados que sobraram'});
   V(1,'saida',o3,[[tub,8],[cab,3],[luv,18]],{resp:'Paulo'});
   V(0,'saida',o2,[[cim,20],[are,3]],{resp:'Marcos'});
-  d.seq=n;d.ultimoResp='Geovane';db=d;aplicaCatalogo();save();closeSheet();location.hash='#inicio';render();toast('Dados de exemplo carregados');
+  d.seq=n;d.ultimoResp='Geovane';d.pessoas=db.pessoas||[];d.empresa=db.empresa||d.empresa;db=d;aplicaCatalogo();save();closeSheet();location.hash='#inicio';render();toast('Dados de exemplo carregados');
 }
 
 /* ============ Início ============ */
 $('#fab').onclick=()=>formMov('saida');
 $('#tabNew').onclick=e=>{e.preventDefault();formMov('saida')};
 $('#btnCfg').onclick=config;
+$('#btnUser').onclick=()=>logout('Até logo!');
 {const n=aplicaCatalogo();if(n)setTimeout(()=>toast(`📦 ${n} materiais da lista padrão adicionados`),400)}
 render();
 if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('service-worker.js').catch(()=>{});
