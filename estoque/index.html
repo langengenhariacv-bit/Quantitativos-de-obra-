@@ -394,7 +394,8 @@ function formPessoa(id){
      <label class="btn soft" style="cursor:pointer">📷 Tirar foto<input type="file" accept="image/*" capture="user" class="hidden" onchange="pFotoSel(this,'pPrev')"></label></div></div>
    <div class="f"><label>${id?'Novo PIN (deixe em branco para manter)':'PIN (4 números)'}</label><input id="pPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"></div>
    <label class="chk"><input type="checkbox" id="pAdm" ${p.admin?'checked':''}> <span><b>Administrador</b><br><span class="muted small">Pode excluir lançamentos, corrigir saldo, cadastrar pessoas e mexer nas configurações.</span></span></label>
-   ${id?`<label class="chk"><input type="checkbox" id="pAtv" ${p.ativo!==false?'checked':''}> <span><b>Ativo</b><br><span class="muted small">Desative quem saiu da empresa: some da tela de login, mas o histórico continua.</span></span></label>`:''}`,
+   ${id?`<label class="chk"><input type="checkbox" id="pAtv" ${p.ativo!==false?'checked':''}> <span><b>Ativo</b><br><span class="muted small">Desative quem saiu da empresa: some da tela de login, mas o histórico continua.</span></span></label>
+   ${U&&U.id!==id?`<button class="btn danger full" onclick="delPessoa('${id}')">🗑️ Excluir pessoa</button><div class="small muted mt">Os lançamentos que ela fez continuam no histórico com o nome dela.</div>`:'<div class="small muted">Você não pode excluir a si mesmo.</div>'}`:''}`,
    `<button class="btn primary lg full" onclick="salvarPessoa('${id||''}')">Salvar</button>`);
 }
 function salvarPessoa(id){
@@ -409,6 +410,14 @@ function salvarPessoa(id){
   if(U&&!U.admin)logout();
 }
 
+function delPessoa(id){
+  if(!soAdmin())return;const p=pessoaById(id);if(!p)return;
+  if(U&&U.id===id)return toast('Você não pode excluir a si mesmo');
+  if(p.admin&&!(db.pessoas||[]).some(x=>x.id!==id&&x.admin&&x.ativo!==false))return toast('Precisa existir pelo menos um administrador ativo');
+  if(!confirm(`Excluir ${p.nome}? Ela não poderá mais entrar no app. Os lançamentos dela continuam no histórico.`))return;
+  db.movs.forEach(mv=>{if(mv.por===id&&!mv.porNome)mv.porNome=p.nome});
+  db.pessoas=db.pessoas.filter(x=>x.id!==id);save();config();toast('Pessoa excluída');
+}
 /* ============ Selfie no lançamento ============ */
 let idbP=null;
 function idb(){return idbP||(idbP=new Promise((res,rej)=>{const r=indexedDB.open('lang-estoque',1);r.onupgradeneeded=()=>r.result.createObjectStore('fotos');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))}
