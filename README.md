@@ -122,3 +122,18 @@ A **lista padrão de materiais** da LANG (conexões, fios, elétrica, ferramenta
 **Login e permissões.** No primeiro acesso o app pede para cadastrar o **administrador** (nome, foto e PIN de 4 números). Depois, cada pessoa entra tocando na **própria foto** e digitando o **PIN**. Todo lançamento fica no nome de quem entrou e, ao confirmar, o app tira uma **selfie** pela câmera frontal (contagem 3‑2‑1), guardada no histórico da movimentação. Todos podem lançar entradas, saídas e devoluções e cadastrar materiais e obras. Só o administrador pode **excluir lançamentos**, **corrigir saldo**, excluir materiais e obras, cadastrar e excluir pessoas e mexer nas configurações (backup, restaurar, apagar). O app sai sozinho após 3 minutos sem uso e no botão **Concluir e sair**. As selfies ficam no aparelho (IndexedDB) e vão junto no backup. O PIN protege o uso do dia a dia no tablet, mas não é uma senha de segurança forte: quem tiver acesso ao aparelho e conhecimento técnico consegue ler os dados.
 
 Os dados ficam salvos só no aparelho: use a engrenagem para fazer **backup** (e restaurar em outro aparelho) e exportar as planilhas. O botão *Ver com dados de exemplo* mostra o app preenchido.
+
+## Lang Casa — quantitativo de insumos por etapa (`/casa/`)
+
+App (PWA) que gera o quantitativo completo de **insumos** de uma casa térrea a partir da planta baixa, separado por etapa da obra e com a tabela total consolidada. Ferramentas, equipamentos e mão de obra não entram.
+
+1. **Planta**: importe a planta baixa (PDF, JPG, PNG ou WebP) ou use *Desenhar sem planta* (grade de 1 m). Calibre a escala clicando nas pontas de uma cota conhecida e trace por cima: paredes externas (contorno), paredes internas, ambientes (retângulo ou polígono, com o tipo), portas e janelas (clique sobre a parede). O ímã prende nos pontos e paredes, e o modo ortogonal trava em 0°/90°. Opcional: **Ler planta com IA**, que envia a página ao servidor e devolve ambientes, paredes, contorno e vãos lidos das cotas.
+2. **Levantamento**: confira e corrija áreas, perímetros, comprimentos de parede e a lista de portas e janelas.
+3. **Perguntas**: pé-direito, tipo de parede, fundação, laje, teto, telhado, piso e esgoto, já com respostas comuns. Acabamentos e coeficientes ficam em seções opcionais.
+4. **Quantitativos**: 16 etapas (preliminares, fundação, estrutura, alvenaria, cobertura, água fria, esgoto, elétrica, impermeabilização, revestimentos, pisos, forro, esquadrias, louças e metais, pintura, limpeza), cada insumo com quantidade, unidade de compra (sacos, barras de 12 m, latas, rolos…) e memória de cálculo, além do **total consolidado**. Exporta CSV, imprime/gera PDF e faz backup em JSON.
+
+Concretos e argamassas são decompostos em cimento, cal, areia e brita (ou concreto usinado e argamassa industrializada, se escolhidos). O aço sai por bitola em kg e em barras. Estrutura e fundação seguem critérios paramétricos de pré-dimensionamento, como sapata 0,80×0,80 m, pilares 14×30 cm com 4Ø10 e baldrame e cinta com 4 barras: confira com o projeto estrutural. Os consumos e perdas ficam editáveis em *Coeficientes*.
+
+- Motor de cálculo: `casa/engine.js` (teste: `node tests/casa-engine.cjs`).
+- Leitura por IA: rota `api/casa-planta.js` com Claude. Para ativar, cadastre a variável de ambiente `ANTHROPIC_API_KEY` no projeto Vercel. Sem a chave, o app funciona normalmente pelo desenho.
+- Os dados ficam no aparelho (localStorage e IndexedDB para a imagem da planta). Use o backup.
