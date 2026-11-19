@@ -174,6 +174,20 @@
   // sequência de >= 4 linhas paralelas, de mesmo comprimento (0,5 a 1,8 m), espaçadas de 22 a 34 cm e alinhadas
   function acharEscadas(paredes, S) {
     const remover = new Set(), caixas = [];
+    // face de parede: tem outra linha paralela a 7–25 cm, sobreposta
+    const temPar = (s, exceto) => {
+      const L = s.L || Math.hypot(s.x2 - s.x1, s.y2 - s.y1), dx = (s.x2 - s.x1) / L, dy = (s.y2 - s.y1) / L;
+      const u1 = s.x1 * dx + s.y1 * dy, u2 = s.x2 * dx + s.y2 * dy, a0 = Math.min(u1, u2), a1 = Math.max(u1, u2);
+      return paredes.some((o) => {
+        if (o === s || remover.has(o) || (exceto && exceto.includes(o))) return false;
+        const Lo = o.L || Math.hypot(o.x2 - o.x1, o.y2 - o.y1); if (!Lo) return false;
+        if (Math.abs(dx * (o.y2 - o.y1) / Lo - dy * (o.x2 - o.x1) / Lo) > 0.02) return false;
+        const perp = Math.abs((o.x1 - s.x1) * dy - (o.y1 - s.y1) * dx) * S;
+        if (perp < 0.07 || perp > 0.25) return false;
+        const v1 = o.x1 * dx + o.y1 * dy, v2 = o.x2 * dx + o.y2 * dy;
+        return Math.min(a1, Math.max(v1, v2)) - Math.max(a0, Math.min(v1, v2)) > 0.1 / S;
+      });
+    };
     const cand = paredes.filter((s) => !s.curva && s.L * S > 0.5 && s.L * S < 1.8);
     const grupos = {};
     for (const s of cand) {
@@ -182,10 +196,17 @@
       (grupos[k] = grupos[k] || []).push({ s, ang });
     }
     for (const k in grupos) {
-      const g = grupos[k]; if (g.length < 4) continue;
+      const g = grupos[k]; if (g.length < 2) continue;
       const ux = Math.cos(g[0].ang), uy = Math.sin(g[0].ang), nx = -uy, ny = ux;
       for (const o of g) { const mx = (o.s.x1 + o.s.x2) / 2, my = (o.s.y1 + o.s.y2) / 2; o.v = (mx * nx + my * ny) * S; o.u = (mx * ux + my * uy) * S; }
       g.sort((a, b) => a.v - b.v);
+      grupos[k].prep = { ux, uy, nx, ny };
+    }
+    // 1ª passagem: lances com 4+ degraus; 2ª: lances curtos (2-3 degraus) colados a um lance já achado (escada em L ou U)
+    const longe = (c, x0, y0, x1, y1) => Math.max(c.x0 - x1, x0 - c.x1, c.y0 - y1, y0 - c.y1, 0) * S;
+    for (const passo of [1, 2]) {
+    for (const k in grupos) {
+      const g = grupos[k]; if (!g.prep || g.length < (passo === 1 ? 4 : 2)) continue;
       // agrupa por posição ao longo (degraus alinhados)
       const usados = new Set();
       for (let i = 0; i < g.length; i++) {
@@ -198,30 +219,55 @@
           if (d > 0.34) break;
           if (d >= 0.22) run.push(j);
         }
-        if (run.length < 4) continue;
+        if (run.length < (passo === 1 ? 4 : 2)) continue;
         // espaçamento constante (piso do degrau)
         const esp = []; for (let q = 1; q < run.length; q++) esp.push(g[run[q]].v - g[run[q - 1]].v);
         const med = esp.reduce((a, b) => a + b, 0) / esp.length;
         if (esp.some((x) => Math.abs(x - med) > 0.03)) continue;
-        run.forEach((q) => { usados.add(q); remover.add(g[q].s); });
+        if (run.some((q) => remover.has(g[q].s))) continue;
         let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
         for (const q of run) { const t = g[q].s; x0 = Math.min(x0, t.x1, t.x2); x1 = Math.max(x1, t.x1, t.x2); y0 = Math.min(y0, t.y1, t.y2); y1 = Math.max(y1, t.y1, t.y2); }
+        if (passo === 2 && !caixas.some((c) => longe(c, x0, y0, x1, y1) < 0.5)) continue;
+        run.forEach((q, n) => {
+          usados.add(q);
+          // a primeira ou a última linha do lance pode ser também a face de uma parede (ex.: parede do depósito sob a escada)
+          if ((n === 0 || n === run.length - 1) && temPar(g[q].s, run.map((r) => g[r].s))) return;
+          remover.add(g[q].s);
+        });
         caixas.push({ x0, y0, x1, y1, degraus: run.length + 1, piso: med });
       }
     }
+    }
     // dentro da caixa da escada: remove linhas internas (corte diagonal, numeração), mas mantém as que ficam
     // sobre a borda (faces das paredes que contornam a escada)
-    const tol = 0.03 / S;
+    const tol = 0.03 / S, ext = 1.0 / S;
     for (const c of caixas) {
       for (const s of paredes) {
         if (remover.has(s)) continue;
+        const ortogonal = Math.abs(s.x1 - s.x2) < tol || Math.abs(s.y1 - s.y2) < tol;
+        // diagonais (linha de corte da escada): caixa ampliada em 1 m
+        if (!ortogonal) {
+          const perto = Math.min(s.x1, s.x2) >= c.x0 - ext && Math.max(s.x1, s.x2) <= c.x1 + ext && Math.min(s.y1, s.y2) >= c.y0 - ext && Math.max(s.y1, s.y2) <= c.y1 + ext;
+          const toca = Math.max(s.x1, s.x2) >= c.x0 - tol && Math.min(s.x1, s.x2) <= c.x1 + tol && Math.max(s.y1, s.y2) >= c.y0 - tol && Math.min(s.y1, s.y2) <= c.y1 + tol;
+          if (perto && toca && s.L * S < 2.5) remover.add(s);
+          continue;
+        }
         const dentro = Math.min(s.x1, s.x2) >= c.x0 - tol && Math.max(s.x1, s.x2) <= c.x1 + tol && Math.min(s.y1, s.y2) >= c.y0 - tol && Math.max(s.y1, s.y2) <= c.y1 + tol;
         if (!dentro) continue;
         const naBorda = (Math.abs(s.x1 - s.x2) < tol && (Math.abs(s.x1 - c.x0) < tol || Math.abs(s.x1 - c.x1) < tol)) || (Math.abs(s.y1 - s.y2) < tol && (Math.abs(s.y1 - c.y0) < tol || Math.abs(s.y1 - c.y1) < tol));
-        if (!naBorda) remover.add(s);
+        // na borda só fica se for face de parede (tem a outra face ao lado); borda solta da escada sai
+        if (!naBorda || !temPar(s)) remover.add(s);
       }
     }
-    return { remover, caixas };
+    // agrupa lances encostados (escada em L/U) para contar escadas
+    const grupo = caixas.map((_, i) => i);
+    const raizC = (i) => { while (grupo[i] !== i) i = grupo[i]; return i; };
+    for (let i = 0; i < caixas.length; i++) for (let j = i + 1; j < caixas.length; j++) {
+      const a = caixas[i], b = caixas[j];
+      if (Math.max(a.x0 - b.x1, b.x0 - a.x1, a.y0 - b.y1, b.y0 - a.y1, 0) * S < 0.5) grupo[raizC(i)] = raizC(j);
+    }
+    const nEscadas = new Set(caixas.map((_, i) => raizC(i))).size;
+    return { remover, caixas, nEscadas };
   }
 
   // ------------------------------------------------------------------ análise
@@ -278,7 +324,7 @@
     const esc0 = acharEscadas(camadaParede0.segs, S);
     const camadaParede = Object.assign({}, camadaParede0, { segs: camadaParede0.segs.filter((s) => !esc0.remover.has(s)) });
     const paredes = camadaParede.segs.filter((s) => !s.curva);
-    if (esc0.caixas.length) avisos.push(esc0.caixas.length + ' lance(s) de escada reconhecido(s) (' + esc0.caixas.map((c) => c.degraus + ' degraus').join(', ') + '): os degraus não foram contados como parede.');
+    if (esc0.caixas.length) avisos.push(esc0.nEscadas + ' escada(s) reconhecida(s) (' + esc0.caixas.length + ' lance(s), ' + esc0.caixas.reduce((t, c) => t + c.degraus, 0) + ' degraus no total): os degraus não foram contados como parede.');
 
     // ---- espessura das paredes: distância entre faces paralelas
     const dists = [];
@@ -418,7 +464,7 @@
     for (const R of regioes) {
       if (externas.has(R.id) || usadosReg.has(R.id)) continue;
       const esp = R.per > 0 ? R.area / (R.per / 2) : 1;
-      if (esp < Math.max(t * 1.3, 0.32) && esp > t * 0.25) { finas.add(R.id); celParede += R.n; }
+      if (esp < Math.max(t * 1.3, 0.24) && esp > t * 0.25) { finas.add(R.id); celParede += R.n; }
     }
     // contorno externo
     let bordaExt = 0;
@@ -678,9 +724,9 @@
         ambientes: ambientes.map((a) => ({ nome: a.nome, tipo: a.tipo, area: a.area, perimetro: a.perimetro })),
         aberturas: aberturas.map((a) => ({ tipo: a.tipo, largura: a.largura, altura: a.altura, peitoril: a.peitoril, externa: a.externa, qtd: 1 })),
         paredes: { externas: +Lext.toFixed(2), internas: +Lint.toFixed(2) },
-        envelope, nos: 0, escadas: esc0.caixas.length
+        envelope, nos: 0, escadas: esc0.nEscadas
       },
-      detalhe: { ambientes, aberturas, vaos, fonteArea, fonteParedes, Lpares: +Lpares.toFixed(2), quadro, escadas: esc0.caixas.length, totalRotulos: rotPJ.length, camadaParede: { cor: [camadaParede.r, camadaParede.g, camadaParede.b], w: camadaParede.w } },
+      detalhe: { ambientes, aberturas, vaos, fonteArea, fonteParedes, Lpares: +Lpares.toFixed(2), quadro, escadas: esc0.nEscadas, totalRotulos: rotPJ.length, camadaParede: { cor: [camadaParede.r, camadaParede.g, camadaParede.b], w: camadaParede.w } },
       camada: { w: W, h: H, data: camada, x0: minx, y0: miny, k },
       avisos
     };
