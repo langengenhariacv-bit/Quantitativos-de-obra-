@@ -313,7 +313,8 @@
 
     // ---- vãos de portas e janelas
     const portasCam = lista.filter((g2) => sat(g2) > 60 && !(g2.r > 170 && g2.g < 110 && g2.b < 110)).flatMap((g2) => g2.segs);
-    const rotPJ = D.textos.filter((x) => /^[PJ]\d+$/i.test(x.s));
+    const rotPJ = [];
+    for (const x of D.textos) if (/^[PJ]\d+$/i.test(x.s) && !rotPJ.some((y) => y.s === x.s && Math.hypot(y.x - x.x, y.y - x.y) * S < 0.3)) rotPJ.push(x);
     // caixilho desenhado dentro da espessura da parede: linha paralela entre as duas faces
     const caixilhos = [];
     for (const c of paredes) {
@@ -362,7 +363,14 @@
         const caix = caixilhos.some((q) => Math.hypot(q.x - cx, q.y - cy) * S < t && Math.abs(q.L - L) < 0.08);
         if (!vazado && !caix) continue;
         const ang = Math.atan2(oy, ox);
-        const arco = portasCam.filter((s2) => Math.hypot((s2.x1 + s2.x2) / 2 - cx, (s2.y1 + s2.y2) / 2 - cy) < bd * 0.9).length >= 3;
+        // arco de porta: pontos da camada de portas a uma distância ≈ largura de um dos batentes (dobradiça)
+        const dob = [[c.x1, c.y1], [c.x2, c.y2], [c.x1 + ox * bd, c.y1 + oy * bd], [c.x2 + ox * bd, c.y2 + oy * bd]];
+        let arco = false;
+        for (const [hx, hy] of dob) {
+          let n = 0;
+          for (const s2 of portasCam) for (const [px, py] of [[s2.x1, s2.y1], [s2.x2, s2.y2]]) { const d = Math.hypot(px - hx, py - hy); if (d > bd * 0.85 && d < bd * 1.15) n++; }
+          if (n >= 6) { arco = true; break; }
+        }
         vaos.push({ x: cx, y: cy, largura: +L.toFixed(2), ang, externa: externoPerto(cx, cy, ang), janela: caix, porta: vazado && !caix, arco });
       }
     });
@@ -391,7 +399,10 @@
         const ls = grupo[k2].filter((a) => a.largura).map((a) => a.largura);
         const larg = ls.length ? +modaTol(ls, 0.04).toFixed(2) : (/^P/.test(k2) ? 0.80 : 1.20);
         const nExt = grupo[k2].filter((a) => a.externa).length, nInt = grupo[k2].filter((a) => a.externa === false).length;
-        for (const a of grupo[k2]) { a.larguraMedida = a.largura; a.largura = larg; if (a.externa === null) a.externa = /^J/.test(k2) ? true : nExt > nInt; }
+        const distintas = [...new Set(ls.map((x) => x.toFixed(2)))];
+        const varias = distintas.length > 1 && ls.every((x) => ls.filter((y) => Math.abs(y - x) < 0.04).length >= 2);
+        if (varias) avisos.push('O rótulo ' + k2 + ' aparece com larguras diferentes no desenho (' + distintas.map((x) => x.replace('.', ',')).join(' e ') + ' m): mantida a medida de cada vão.');
+        for (const a of grupo[k2]) { a.larguraMedida = a.largura; a.largura = varias && a.largura ? a.largura : larg; if (a.externa === null) a.externa = /^J/.test(k2) ? true : nExt > nInt; }
       }
       const semVao = rotPJ.length - Object.keys(alvo).length;
       if (semVao) avisos.push(semVao + ' rótulo(s) de esquadria sem vão próximo: largura adotada pela do mesmo rótulo.');
@@ -400,10 +411,17 @@
     vaos.forEach((v, vi) => {
       if (vUsado.has(vi)) return;
       if (aberturas.some((a) => Math.hypot(a.x - v.x, a.y - v.y) * S < 0.4)) return;
-      if (porRotulo && !(v.porta && v.arco && v.externa && v.largura <= 1.4)) return;
+      if (porRotulo && !(v.porta && v.arco && v.largura <= 1.4)) return;
       if (!porRotulo && !(v.janela || (v.porta && v.arco))) return;
-      aberturas.push({ porta: !v.janela, largura: v.largura, externa: v.externa, rotulo: '', x: v.x, y: v.y, ang: v.ang });
+      // adota o rótulo de mesmo tipo e largura (ex.: balão desenhado como linhas, não como texto)
+      let rotulo = '', larg = v.largura;
+      const pref = v.janela ? 'J' : 'P';
+      const mesmo = aberturas.filter((a) => a.rotulo && a.rotulo[0] === pref && a.externa === v.externa && Math.abs((a.larguraMedida || a.largura) - v.largura) < 0.05);
+      if (mesmo.length) { rotulo = mesmo[0].rotulo + '*'; larg = v.largura; }
+      aberturas.push({ porta: !v.janela, largura: larg, larguraMedida: v.largura, externa: v.externa, rotulo, x: v.x, y: v.y, ang: v.ang });
     });
+    const semRot = aberturas.filter((a) => !a.rotulo || a.rotulo.endsWith('*')).length;
+    if (porRotulo && semRot) avisos.push(semRot + ' esquadria(s) sem rótulo em texto foram reconhecidas pelo desenho (vão com arco de porta ou caixilho).');
     for (const a of aberturas) {
       const L = a.largura;
       a.tipo = a.porta ? (a.externa ? (L >= 1.6 ? 'porta_correr' : 'porta_ext') : 'porta_int') : (L < 0.8 ? 'basculante' : 'janela');
