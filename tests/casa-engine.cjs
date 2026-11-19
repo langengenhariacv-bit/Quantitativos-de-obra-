@@ -183,3 +183,15 @@ console.log('OK —', r.consolidado.length, 'insumos consolidados');
   assert(Math.abs(total(f4, /^Revestimento de parede/) - total(f2, /^Revestimento de parede/) - 2 * 0.6 * 1.1) < 0.01, 'faixa 0,60 × comprimento');
   console.log('OK — paredes com cerâmica por cômodo');
 }
+
+// ---- piso da escada
+{
+  const lev = JSON.parse(JSON.stringify(casa.lev)); lev.escadaLargura = 0.9;
+  const pav = [{ nome: 'T', lev }, { nome: 'S', lev: casa.lev }];
+  const gr = E.calcular({ pavimentos: pav, resp: { pisoEscada: 'granito' } });
+  assert(total(gr, /^Piso de degrau em granito 0,9/) > 0 && total(gr, /^Espelho de degrau/) > 0, 'granito por peça, largura lida');
+  const ce = E.calcular({ pavimentos: pav, resp: { pisoEscada: 'retificado59' } });
+  assert(total(ce, /^Revestimento da escada/) > 0 && total(ce, /^Rodapé da escada/) > 0 && total(ce, /^Perfil de alumínio/) > 0, 'cerâmico com rodapé e perfil');
+  assert(total(E.calcular({ lev: casa.lev, resp: {} }), /escada/i) === 0, 'térrea sem escada');
+  console.log('OK — piso da escada');
+}

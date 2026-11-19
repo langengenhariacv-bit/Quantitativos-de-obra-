@@ -234,7 +234,7 @@
           if ((n === 0 || n === run.length - 1) && temPar(g[q].s, run.map((r) => g[r].s))) return;
           remover.add(g[q].s);
         });
-        caixas.push({ x0, y0, x1, y1, degraus: run.length + 1, piso: med });
+        caixas.push({ x0, y0, x1, y1, degraus: run.length + 1, piso: med, largura: g[run[0]].s.L * S });
       }
     }
     }
@@ -267,7 +267,9 @@
       if (Math.max(a.x0 - b.x1, b.x0 - a.x1, a.y0 - b.y1, b.y0 - a.y1, 0) * S < 0.5) grupo[raizC(i)] = raizC(j);
     }
     const nEscadas = new Set(caixas.map((_, i) => raizC(i))).size;
-    return { remover, caixas, nEscadas };
+    const largs = caixas.filter((c) => c.degraus >= 4).map((c) => c.largura).sort((a, b) => a - b);
+    const largura = largs.length ? +largs[Math.floor(largs.length / 2)].toFixed(2) : 0;
+    return { remover, caixas, nEscadas, largura };
   }
 
   // ------------------------------------------------------------------ análise
@@ -724,7 +726,7 @@
         ambientes: ambientes.map((a) => ({ nome: a.nome, tipo: a.tipo, area: a.area, perimetro: a.perimetro })),
         aberturas: aberturas.map((a) => ({ tipo: a.tipo, largura: a.largura, altura: a.altura, peitoril: a.peitoril, externa: a.externa, qtd: 1 })),
         paredes: { externas: +Lext.toFixed(2), internas: +Lint.toFixed(2) },
-        envelope, nos: 0, escadas: esc0.nEscadas
+        envelope, nos: 0, escadas: esc0.nEscadas, escadaLargura: esc0.largura
       },
       detalhe: { ambientes, aberturas, vaos, fonteArea, fonteParedes, Lpares: +Lpares.toFixed(2), quadro, escadas: esc0.nEscadas, totalRotulos: rotPJ.length, camadaParede: { cor: [camadaParede.r, camadaParede.g, camadaParede.b], w: camadaParede.w } },
       camada: { w: W, h: H, data: camada, x0: minx, y0: miny, k },

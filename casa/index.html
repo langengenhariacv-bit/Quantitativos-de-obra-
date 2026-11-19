@@ -1027,6 +1027,8 @@ const PERG = [
   { k: 'piso', t: 'Piso interno (padrão)', base: 1, d: 'Cada cômodo pode ter outro piso no passo 2.', o: [['retificado59', 'Retificado 59×59'], ['porcelanato', 'Porcelanato 60×60'], ['porcelanato_gg', 'Porcelanato 90×90'], ['ceramica', 'Cerâmica 45×45'], ['laminado', 'Laminado'], ['vinilico', 'Vinílico'], ['cimentado', 'Cimentado']] },
   { k: 'argPiso', t: 'Argamassa do piso interno', d: 'Automática: AC-II para cerâmica e retificado, AC-III para porcelanato. Piso externo usa sempre AC-III.', o: [['auto', 'Automática'], ['AC-I', 'AC-I'], ['AC-II', 'AC-II'], ['AC-III', 'AC-III']] },
   { k: 'pisoQuartos', t: 'Piso dos quartos', o: [['', 'Igual ao piso padrão'], ['laminado', 'Laminado'], ['vinilico', 'Vinílico'], ['porcelanato', 'Porcelanato'], ['ceramica', 'Cerâmica']] },
+  { k: 'pisoEscada', t: 'Piso da escada', d: 'Só em casas com mais de um pavimento. Cerâmicos com 20% de perda pelos recortes, rodapé recortado e perfil de quina.', o: [['granito', 'Granito (peças sob medida)'], ['retificado59', 'Retificado 59×59'], ['porcelanato', 'Porcelanato 60×60'], ['ceramica', 'Cerâmica 45×45']] },
+  { k: 'escadaLargura', t: 'Largura da escada (m)', d: '0 = lida da planta (ou 1,20 m).', num: true },
   { k: 'esgoto', t: 'Esgoto', base: 1, o: [['rede', 'Rede pública'], ['fossa', 'Fossa, filtro e sumidouro']] },
   { k: 'revParede', t: 'Revestimento de parede (cozinha e banheiro)', d: 'Peça usada onde a parede leva cerâmica.', o: [['retificado30x58', 'Retificado 30×58'], ['ceramica32x57', 'Cerâmica 32×57']] },
   { k: 'revBanheiro', t: 'Azulejo do banheiro', o: [['teto', 'Até o teto'], ['1.50', 'Até 1,50 m']] },
