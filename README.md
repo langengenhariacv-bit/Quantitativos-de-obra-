@@ -125,7 +125,9 @@ A **lista padrão de materiais** da LANG (conexões, fios, elétrica, ferramenta
 
 Os dados ficam salvos só no aparelho: use a engrenagem para fazer **backup** (e restaurar em outro aparelho) e exportar as planilhas. O botão *Ver com dados de exemplo* mostra o app preenchido.
 
-## Lang Casa — quantitativo de insumos por etapa (`/casa/`)
+## Lang Quantitativos — quantitativo de insumos por etapa (`/casa/`)
+
+Ícone e marca seguem a identidade da Lang Engenharia: esquadro em “L” com régua, blocos laranja (#ff5a00) e linha de cota sobre fundo escuro (`casa/assets/icon.svg`, com PNGs 180/192/512 e versão maskable para Android).
 
 App (PWA) que gera o quantitativo completo de **insumos** de uma casa térrea a partir da planta baixa, separado por etapa da obra e com a tabela total consolidada. Ferramentas, equipamentos e mão de obra não entram.
 

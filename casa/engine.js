@@ -1,4 +1,4 @@
-/* Lang Casa — motor de quantitativos de insumos por etapa.
+/* Lang Quantitativos — motor de quantitativos de insumos por etapa.
  * Entrada: pavimentos (cada um com levantamento: ambientes, paredes, aberturas, contorno e nº de repetições),
  *          respostas, coeficientes.
  * Saída: etapas com itens (insumos), tabela consolidada, compras por fase e indicadores de conferência.

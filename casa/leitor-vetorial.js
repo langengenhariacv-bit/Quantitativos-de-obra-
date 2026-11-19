@@ -1,4 +1,4 @@
-/* Lang Casa — leitura automática de planta baixa em PDF vetorial (exportado do CAD), sem IA.
+/* Lang Quantitativos — leitura automática de planta baixa em PDF vetorial (exportado do CAD), sem IA.
  *
  * 1. extrair(pdfjs, page): traços (com cor e espessura) e textos da página, em pontos (y para baixo).
  * 2. analisar(dados): escala pelas cotas, paredes pela camada mais forte, cômodos por preenchimento

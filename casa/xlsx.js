@@ -1,4 +1,4 @@
-/* Lang Casa — gerador mínimo de planilha .xlsx (Office Open XML) sem dependências.
+/* Lang Quantitativos — gerador mínimo de planilha .xlsx (Office Open XML) sem dependências.
  * gerarXlsx([{ nome, colunas:[larguras], linhas:[[celula,...]], congelar:1, filtro:true }]) -> Uint8Array
  * celula: string | number | null | { v, f (fórmula sem '='), s ('cab'|'num'|'int'|'txt'|'neg'|'pct') }
  */
