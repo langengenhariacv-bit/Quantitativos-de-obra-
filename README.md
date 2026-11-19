@@ -138,6 +138,9 @@ App (PWA) que gera o quantitativo completo de **insumos** de uma casa térrea a 
    - Os cômodos saem do preenchimento entre paredes: nome e área vêm dos textos ("Quarto · Área: 9,40 m²") e o perímetro vem do contorno.
    - As portas e janelas saem dos rótulos P/J e dos vãos entre arremates (face interrompida = porta; caixilho dentro da parede = janela).
    - A área construída vem do quadro de áreas, quando existir.
+   - Folha com mais de uma planta (ex.: pavimento inferior e superior lado a lado): cada planta vira um pavimento, com o nome tirado do título.
+   - Escadas: degraus desenhados na camada de paredes são reconhecidos (linhas paralelas iguais, espaçadas de 22 a 34 cm) e não contam como parede; o número de escadas por pavimento vai para o cálculo (uma por casa em geminados).
+   - Quadro de esquadrias com cabeçalho (LARGURA, ALTURA, PEITORIL em qualquer ordem, em m ou cm) é lido pelas colunas.
    - O resultado aparece colorido sobre a planta (laranja = paredes externas, azul = internas, verde = vãos) e vai para o levantamento, onde pode ser corrigido.
    Para imagem ou PDF escaneado, trace por cima: Calibre a escala clicando nas pontas de uma cota conhecida e trace por cima: paredes externas (contorno), paredes internas, ambientes (retângulo ou polígono, com o tipo), portas e janelas (clique sobre a parede). O ímã prende nos pontos e paredes, e o modo ortogonal trava em 0°/90°. Opcional: **Ler planta com IA**, que envia a página ao servidor e devolve ambientes, paredes, contorno e vãos lidos das cotas.
 2. **Levantamento**: confira e corrija áreas, perímetros, comprimentos de parede e a lista de portas e janelas.

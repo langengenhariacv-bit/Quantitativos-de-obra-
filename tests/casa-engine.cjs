@@ -157,3 +157,12 @@ console.log('OK —', r.consolidado.length, 'insumos consolidados');
   assert(r.consolidado.some((i) => /^Argamassa colante/.test(i.desc)), 'colante no piso');
   console.log('OK — reboco de cimento e areia fina');
 }
+
+// ---- escadas: uma por casa geminada
+{
+  const lev = JSON.parse(JSON.stringify(casa.lev)); lev.escadas = 6;
+  const um = E.calcular({ pavimentos: [{ nome: 'T', lev: casa.lev }, { nome: 'S', lev: casa.lev }], resp: {} });
+  const seis = E.calcular({ pavimentos: [{ nome: 'T', lev }, { nome: 'S', lev: casa.lev }], resp: {} });
+  assert(Math.abs(total(seis, /^Corrimão/) - 6 * total(um, /^Corrimão/)) < 1e-6, '6 escadas = 6 corrimãos');
+  console.log('OK — escadas por pavimento');
+}
