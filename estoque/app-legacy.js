@@ -16,11 +16,11 @@
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 function _regenerator() { var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? (c > 1 && (G.n = c < 3 ? -1 : u), d(c, u)) : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i.return) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
-function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
-function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 function _createForOfIteratorHelperLoose(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (t) return (t = t.call(r)).next.bind(t); if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var o = 0; return function () { return o >= r.length ? { done: !0 } : { done: !1, value: r[o++] }; }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 var KEY = 'lang-estoque-v1';
 var CATS = [['Cimento e argamassa', '🪣'], ['Agregados', '⛰️'], ['Aço e ferragens', '🔩'], ['Alvenaria', '🧱'], ['Hidráulica', '🚰'], ['Elétrica', '⚡'], ['Madeira e fôrmas', '🪵'], ['Revestimento', '🔲'], ['Pintura', '🎨'], ['Ferramentas', '🧰'], ['EPI', '🦺'], ['Outros', '📦']];
 var CAT_ICON = Object.fromEntries(CATS);
@@ -80,6 +80,343 @@ function save() {
 var uid = function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 };
+var modo = 'consultando',
+  versao = 0,
+  confirmado = '',
+  ocupada = false,
+  ativando = false;
+var nuvem = function nuvem() {
+  return modo === 'online';
+};
+var senhaOk = function senhaOk(senha) {
+  return senha.length >= 10 && senha.length <= 128;
+};
+function bloquearRede(bloquear) {
+  ocupada = bloquear;
+  var anterior = document.getElementById('redeOcupada');
+  if (anterior) anterior.remove();
+  if (!bloquear) return;
+  var aviso = document.createElement('div');
+  aviso.id = 'redeOcupada';
+  aviso.setAttribute('role', 'status');
+  aviso.textContent = 'Aguarde…';
+  aviso.style.cssText = 'position:fixed;z-index:9999;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,.6);color:white;text-align:center;padding-top:25vh;font-size:22px';
+  if (document.activeElement) document.activeElement.blur();
+  document.body.appendChild(aviso);
+}
+document.addEventListener('keydown', function (e) {
+  if (ocupada) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }
+}, true);
+function usarEstoque(resposta) {
+  if (resposta.token) EstoqueCompartilhado.sessao(resposta.token);
+  db = Object.assign(blank(), resposta.dados);
+  versao = resposta.versao;
+  confirmado = JSON.stringify(db);
+  U = resposta.pessoa;
+}
+function persistir(_x) {
+  return _persistir.apply(this, arguments);
+}
+function _persistir() {
+  _persistir = _asyncToGenerator(_regenerator().m(function _callee6(opcoes) {
+    var resultado, _t6;
+    return _regenerator().w(function (_context6) {
+      while (1) switch (_context6.p = _context6.n) {
+        case 0:
+          if (opcoes === void 0) {
+            opcoes = {};
+          }
+          if (nuvem()) {
+            _context6.n = 1;
+            break;
+          }
+          return _context6.a(2, save());
+        case 1:
+          if (!(ocupada || !U)) {
+            _context6.n = 2;
+            break;
+          }
+          return _context6.a(2, false);
+        case 2:
+          bloquearRede(true);
+          _context6.p = 3;
+          _context6.n = 4;
+          return EstoqueCompartilhado.enviar('salvar', _extends({
+            dados: db,
+            versao: versao
+          }, opcoes));
+        case 4:
+          resultado = _context6.v;
+          versao = resultado.versao;
+          U = resultado.pessoa;
+          confirmado = JSON.stringify(db);
+          return _context6.a(2, true);
+        case 5:
+          _context6.p = 5;
+          _t6 = _context6.v;
+          db = JSON.parse(confirmado);
+          if (!(_t6.status === 401)) {
+            _context6.n = 6;
+            break;
+          }
+          logout(_t6.message);
+          _context6.n = 8;
+          break;
+        case 6:
+          if (!(_t6.status === 409)) {
+            _context6.n = 7;
+            break;
+          }
+          _context6.n = 7;
+          return atualizarEstoque(true);
+        case 7:
+          toast(_t6.message);
+        case 8:
+          return _context6.a(2, false);
+        case 9:
+          _context6.p = 9;
+          bloquearRede(false);
+          return _context6.f(9);
+        case 10:
+          return _context6.a(2);
+      }
+    }, _callee6, null, [[3, 5, 9, 10]]);
+  }));
+  return _persistir.apply(this, arguments);
+}
+function atualizarEstoque(_x2) {
+  return _atualizarEstoque.apply(this, arguments);
+}
+function _atualizarEstoque() {
+  _atualizarEstoque = _asyncToGenerator(_regenerator().m(function _callee7(conflito) {
+    var atual, revisao, resposta, _t7;
+    return _regenerator().w(function (_context7) {
+      while (1) switch (_context7.p = _context7.n) {
+        case 0:
+          atual = U, revisao = versao;
+          if (!(!nuvem() || !atual || !conflito && (ocupada || F || $('#sheetBg') || document.hidden))) {
+            _context7.n = 1;
+            break;
+          }
+          return _context7.a(2);
+        case 1:
+          _context7.p = 1;
+          _context7.n = 2;
+          return EstoqueCompartilhado.enviar('ler', {
+            versao: revisao
+          });
+        case 2:
+          resposta = _context7.v;
+          if (!(!U || U.id !== atual.id || versao !== revisao || !conflito && (ocupada || F || $('#sheetBg')) || !resposta.dados)) {
+            _context7.n = 3;
+            break;
+          }
+          return _context7.a(2);
+        case 3:
+          usarEstoque(resposta);
+          if (conflito) {
+            F = null;
+            closeSheet();
+            location.hash = '#inicio';
+          }
+          render();
+          _context7.n = 5;
+          break;
+        case 4:
+          _context7.p = 4;
+          _t7 = _context7.v;
+          if (_t7.status === 401 && U && U.id === atual.id) logout(_t7.message);
+        case 5:
+          return _context7.a(2);
+      }
+    }, _callee7, null, [[1, 4]]);
+  }));
+  return _atualizarEstoque.apply(this, arguments);
+}
+function abrirEstoque() {
+  return _abrirEstoque.apply(this, arguments);
+}
+function _abrirEstoque() {
+  _abrirEstoque = _asyncToGenerator(_regenerator().m(function _callee8() {
+    var resposta, _t8;
+    return _regenerator().w(function (_context8) {
+      while (1) switch (_context8.p = _context8.n) {
+        case 0:
+          _context8.p = 0;
+          _context8.n = 1;
+          return EstoqueCompartilhado.enviar('estado');
+        case 1:
+          resposta = _context8.v;
+          modo = resposta.ativo ? 'online' : 'local';
+          db = nuvem() ? blank() : load();
+          if (!nuvem() && (db.catalogo || 0) < CATALOGO_VERSAO) {
+            aplicaCatalogo();
+            save();
+          }
+          _context8.n = 3;
+          break;
+        case 2:
+          _context8.p = 2;
+          _t8 = _context8.v;
+          modo = 'indisponivel';
+        case 3:
+          render();
+        case 4:
+          return _context8.a(2);
+      }
+    }, _callee8, null, [[0, 2]]);
+  }));
+  return _abrirEstoque.apply(this, arguments);
+}
+function telaCompartilhada() {
+  if (modo === 'consultando' || modo === 'indisponivel') {
+    return '<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>Lang Estoque</b><small>' + (modo === 'consultando' ? 'Conectando ao estoque…' : 'O estoque está indisponível. Confira sua conexão.') + '</small></div></div>' + (modo === 'indisponivel' ? '<button class="btn primary" onclick="abrirEstoque()">Tentar novamente</button>' : '') + '</div>';
+  }
+  return '<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>Lang Estoque</b><small>Entre com seu nome e sua senha.</small></div></div>' + '<form class="card" style="max-width:460px;margin:0 auto;color:var(--ink)" onsubmit="return entrarCompartilhado(event)">' + '<div class="f"><label for="cLogin">Nome conforme o cadastro</label><input id="cLogin" autocomplete="username" required></div>' + '<div class="f"><label for="cSenha">Senha</label><input id="cSenha" type="password" autocomplete="current-password" required maxlength="128"></div>' + '<button class="btn primary lg full" type="submit">Entrar</button></form></div>';
+}
+function entrarCompartilhado(evento) {
+  evento.preventDefault();
+  if (ocupada) return false;
+  var nome = $('#cLogin').value.trim(),
+    senha = $('#cSenha').value;
+  iniciarSessao('entrar', {
+    nome: nome,
+    senha: senha
+  });
+  return false;
+}
+function iniciarSessao(_x3, _x4) {
+  return _iniciarSessao.apply(this, arguments);
+}
+function _iniciarSessao() {
+  _iniciarSessao = _asyncToGenerator(_regenerator().m(function _callee9(acao, payload) {
+    var fotos, ids, resposta, _t9;
+    return _regenerator().w(function (_context9) {
+      while (1) switch (_context9.p = _context9.n) {
+        case 0:
+          if (!ocupada) {
+            _context9.n = 1;
+            break;
+          }
+          return _context9.a(2);
+        case 1:
+          bloquearRede(true);
+          _context9.p = 2;
+          if (!(acao === 'ativar')) {
+            _context9.n = 4;
+            break;
+          }
+          _context9.n = 3;
+          return fotoTodas();
+        case 3:
+          fotos = _context9.v;
+          ids = new Set(payload.dados.movs.filter(function (mov) {
+            return mov.foto;
+          }).map(function (mov) {
+            return mov.id;
+          }));
+          payload.fotos = {};
+          Object.keys(fotos).filter(function (id) {
+            return ids.has(id);
+          }).forEach(function (id) {
+            payload.fotos[id] = fotos[id];
+          });
+        case 4:
+          _context9.n = 5;
+          return EstoqueCompartilhado.enviar(acao, payload);
+        case 5:
+          resposta = _context9.v;
+          modo = 'online';
+          ativando = false;
+          usarEstoque(resposta);
+          lockSel = null;
+          pinBuf = '';
+          lastAct = Date.now();
+          if (!location.hash) location.hash = '#inicio';
+          closeSheet();
+          render();
+          toast(acao === 'ativar' ? 'Estoque compartilhado ativado' : 'Olá, ' + U.nome.split(' ')[0] + '!');
+          _context9.n = 8;
+          break;
+        case 6:
+          _context9.p = 6;
+          _t9 = _context9.v;
+          if (!(acao === 'ativar' && _t9.status === 409)) {
+            _context9.n = 7;
+            break;
+          }
+          ativando = false;
+          _context9.n = 7;
+          return abrirEstoque();
+        case 7:
+          toast(_t9.message);
+        case 8:
+          _context9.p = 8;
+          bloquearRede(false);
+          return _context9.f(8);
+        case 9:
+          return _context9.a(2);
+      }
+    }, _callee9, null, [[2, 6, 8, 9]]);
+  }));
+  return _iniciarSessao.apply(this, arguments);
+}
+function telaAtivacao() {
+  var admins = db.pessoas.filter(function (p) {
+    return p.admin && p.ativo !== false;
+  });
+  var conta = admins.length ? '<div class="f"><label for="atAdm">Administrador neste aparelho</label><select id="atAdm">' + admins.map(function (p) {
+    return '<option value="' + esc(p.id) + '">' + esc(p.nome) + '</option>';
+  }).join('') + '</select></div>' + '<div class="f"><label for="atPin">PIN usado neste aparelho</label><input id="atPin" type="password" inputmode="numeric" maxlength="4" required></div>' : '<div class="f"><label for="atNome">Nome do administrador</label><input id="atNome" maxlength="120" required></div>';
+  return '<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>Ativar estoque compartilhado</b><small>Faça isso no aparelho onde estão os cadastros.</small></div></div>' + '<form class="card" style="max-width:460px;margin:0 auto;color:var(--ink)" onsubmit="return ativarCompartilhado(event)">' + '<p class="small muted">A ativação copia os dados deste aparelho para o estoque da equipe. Depois, ajuste as senhas dos demais usuários em Configurações → Pessoas.</p>' + conta + '<div class="f"><label for="atCodigo">Código de ativação</label><input id="atCodigo" type="password" autocomplete="off" required></div>' + '<div class="f"><label for="atSenha">Nova senha (mínimo de 10 caracteres)</label><input id="atSenha" type="password" autocomplete="new-password" required maxlength="128"></div>' + '<div class="f"><label for="atSenha2">Repita a senha</label><input id="atSenha2" type="password" autocomplete="new-password" required maxlength="128"></div>' + '<button class="btn primary full" type="submit">Ativar e entrar</button>' + '<button class="btn soft full mt" type="button" onclick="ativando=false;renderLock()">Voltar</button></form></div>';
+}
+function ativarCompartilhado(evento) {
+  evento.preventDefault();
+  if (ocupada) return false;
+  var senha = $('#atSenha').value;
+  if (!senhaOk(senha) || senha !== $('#atSenha2').value) {
+    toast('Digite a mesma senha nos dois campos, com pelo menos 10 caracteres.');
+    return false;
+  }
+  var dados = JSON.parse(JSON.stringify(db));
+  var pessoa;
+  if ($('#atAdm')) {
+    pessoa = dados.pessoas.find(function (p) {
+      return p.id === $('#atAdm').value && p.admin && p.ativo !== false;
+    });
+    if (!pessoa || hpin(pessoa.id, $('#atPin').value) !== pessoa.pin) {
+      toast('PIN incorreto.');
+      return false;
+    }
+  } else {
+    var nome = $('#atNome').value.trim();
+    if (!nome) {
+      toast('Informe o nome do administrador.');
+      return false;
+    }
+    pessoa = {
+      id: uid(),
+      nome: nome,
+      admin: true,
+      ativo: true,
+      criado: Date.now()
+    };
+    dados.pessoas.push(pessoa);
+  }
+  dados.pessoas.forEach(function (p) {
+    delete p.pin;
+  });
+  iniciarSessao('ativar', {
+    codigo: $('#atCodigo').value.trim(),
+    senha: senha,
+    dados: dados,
+    pessoa: pessoa.id
+  });
+  return false;
+}
 var $ = function $(s) {
   return document.querySelector(s);
 };
@@ -329,7 +666,6 @@ function aplicaCatalogo(forcar) {
     n++;
   }
   db.catalogo = CATALOGO_VERSAO;
-  save();
   return n;
 }
 var U = null,
@@ -376,6 +712,12 @@ function soAdmin() {
   return false;
 }
 function logout(msg) {
+  if (nuvem()) {
+    EstoqueCompartilhado.sair();
+    db = blank();
+    confirmado = '';
+    versao = 0;
+  }
   U = null;
   lockSel = null;
   pinBuf = '';
@@ -394,17 +736,26 @@ function logout(msg) {
   });
 });
 setInterval(function () {
-  if (U && !camAtiva && Date.now() - lastAct > INATIVO_MS) logout('Sessão encerrada por inatividade');
+  if (U && !ocupada && !camAtiva && Date.now() - lastAct > INATIVO_MS) logout('Sessão encerrada por inatividade');
 }, 15000);
 function renderLock() {
   var el = $('#lock'),
     ps = (db.pessoas || []).filter(function (p) {
       return p.ativo !== false;
     });
+  if (modo !== 'local') {
+    el.innerHTML = telaCompartilhada();
+    return;
+  }
+  if (ativando) {
+    el.innerHTML = telaAtivacao();
+    return;
+  }
+  var ativar = '<div style="text-align:center;margin:18px"><button class="btn soft" onclick="ativando=true;renderLock()">Ativar estoque compartilhado</button></div>';
   if (!ps.some(function (p) {
     return p.admin;
   })) {
-    el.innerHTML = setupHTML();
+    el.innerHTML = setupHTML() + ativar;
     return;
   }
   if (lockSel && pessoaById(lockSel)) {
@@ -419,6 +770,7 @@ function renderLock() {
   el.innerHTML = "<div class=\"lock\"><div class=\"lock-h\"><span class=\"mk\">\uD83D\uDCE6</span><div><b>" + esc((db.empresa || 'Lang').split(' ')[0]) + " Estoque</b><small>Quem est\xE1 usando? Toque na sua foto.</small></div></div>\n    <div class=\"people\">" + ps.map(function (p) {
     return "<button class=\"person\" onclick=\"lockSel='" + p.id + "';pinBuf='';renderLock()\">" + avatar(p, 88) + "<span>" + esc(p.nome) + "</span>" + (p.admin ? '<small>Administrador</small>' : '') + "</button>";
   }).join('') + "</div></div>";
+  el.insertAdjacentHTML('beforeend', ativar);
 }
 function pinKey(k) {
   if (Date.now() < bloqAte) return;
@@ -465,39 +817,39 @@ function setupHTML() {
   }, 64) + "</span>\n      <label class=\"btn soft\" style=\"cursor:pointer\">\uD83D\uDCF7 Tirar foto<input type=\"file\" accept=\"image/*\" capture=\"user\" class=\"hidden\" onchange=\"pFotoSel(this,'sPrev')\"></label></div></div>\n    <div class=\"f2\"><div class=\"f\"><label>PIN (4 n\xFAmeros)</label><input id=\"sPin\" type=\"password\" inputmode=\"numeric\" pattern=\"[0-9]*\" maxlength=\"4\" autocomplete=\"off\"></div>\n    <div class=\"f\"><label>Repita o PIN</label><input id=\"sPin2\" type=\"password\" inputmode=\"numeric\" pattern=\"[0-9]*\" maxlength=\"4\" autocomplete=\"off\"></div></div>\n    <button class=\"btn primary lg full\" onclick=\"criarAdmin()\">Criar administrador e entrar</button>\n    <p class=\"muted small\" style=\"margin-bottom:0\">Guarde bem o PIN: sem ele n\xE3o d\xE1 para entrar como administrador.</p>\n  </div></div>";
 }
 var pFotoTmp = '';
-function pFotoSel(_x, _x2) {
+function pFotoSel(_x5, _x6) {
   return _pFotoSel.apply(this, arguments);
 }
 function _pFotoSel() {
-  _pFotoSel = _asyncToGenerator(_regenerator().m(function _callee4(inp, prev) {
-    var f, _t6;
-    return _regenerator().w(function (_context4) {
-      while (1) switch (_context4.p = _context4.n) {
+  _pFotoSel = _asyncToGenerator(_regenerator().m(function _callee0(inp, prev) {
+    var f, _t0;
+    return _regenerator().w(function (_context0) {
+      while (1) switch (_context0.p = _context0.n) {
         case 0:
           f = inp.files[0];
           inp.value = '';
           if (f) {
-            _context4.n = 1;
+            _context0.n = 1;
             break;
           }
-          return _context4.a(2);
+          return _context0.a(2);
         case 1:
-          _context4.p = 1;
-          _context4.n = 2;
+          _context0.p = 1;
+          _context0.n = 2;
           return fotoReduzida(f);
         case 2:
-          pFotoTmp = _context4.v;
+          pFotoTmp = _context0.v;
           $('#' + prev).innerHTML = "<img class=\"av\" src=\"" + pFotoTmp + "\" style=\"width:64px;height:64px\">";
-          _context4.n = 4;
+          _context0.n = 4;
           break;
         case 3:
-          _context4.p = 3;
-          _t6 = _context4.v;
+          _context0.p = 3;
+          _t0 = _context0.v;
           toast('Não foi possível ler a foto');
         case 4:
-          return _context4.a(2);
+          return _context0.a(2);
       }
-    }, _callee4, null, [[1, 3]]);
+    }, _callee0, null, [[1, 3]]);
   }));
   return _pFotoSel.apply(this, arguments);
 }
@@ -545,65 +897,144 @@ function formPessoa(id) {
     ativo: true
   };
   pFotoTmp = p.foto || '';
-  sheet(id ? '✏️ Editar pessoa' : '👤 Nova pessoa', "\n   <div class=\"f\"><label>Nome</label><input id=\"pNome\" value=\"" + esc(p.nome) + "\" autocomplete=\"off\" placeholder=\"Ex.: Carlos (mestre de obras)\"></div>\n   <div class=\"f\"><label>Foto</label><div style=\"display:flex;gap:12px;align-items:center\"><span id=\"pPrev\">" + avatar(p, 64) + "</span>\n     <label class=\"btn soft\" style=\"cursor:pointer\">\uD83D\uDCF7 Tirar foto<input type=\"file\" accept=\"image/*\" capture=\"user\" class=\"hidden\" onchange=\"pFotoSel(this,'pPrev')\"></label></div></div>\n   <div class=\"f\"><label>" + (id ? 'Novo PIN (deixe em branco para manter)' : 'PIN (4 números)') + "</label><input id=\"pPin\" type=\"password\" inputmode=\"numeric\" pattern=\"[0-9]*\" maxlength=\"4\" autocomplete=\"off\"></div>\n   <label class=\"chk\"><input type=\"checkbox\" id=\"pAdm\" " + (p.admin ? 'checked' : '') + "> <span><b>Administrador</b><br><span class=\"muted small\">Pode excluir lan\xE7amentos, corrigir saldo, cadastrar pessoas e mexer nas configura\xE7\xF5es.</span></span></label>\n   " + (id ? "<label class=\"chk\"><input type=\"checkbox\" id=\"pAtv\" " + (p.ativo !== false ? 'checked' : '') + "> <span><b>Ativo</b><br><span class=\"muted small\">Desative quem saiu da empresa: some da tela de login, mas o hist\xF3rico continua.</span></span></label>\n   " + (U && U.id !== id ? "<button class=\"btn danger full\" onclick=\"delPessoa('" + id + "')\">\uD83D\uDDD1\uFE0F Excluir pessoa</button><div class=\"small muted mt\">Os lan\xE7amentos que ela fez continuam no hist\xF3rico com o nome dela.</div>" : '<div class="small muted">Você não pode excluir a si mesmo.</div>') : ''), "<button class=\"btn primary lg full\" onclick=\"salvarPessoa('" + (id || '') + "')\">Salvar</button>");
+  var campoSenha = nuvem() ? "<div class=\"f\"><label>" + (id ? 'Nova senha (em branco, mantém a atual)' : 'Senha (mínimo de 10 caracteres)') + "</label><input id=\"pPin\" type=\"password\" maxlength=\"128\" autocomplete=\"new-password\"></div>" : "<div class=\"f\"><label>" + (id ? 'Novo PIN (deixe em branco para manter)' : 'PIN (4 números)') + "</label><input id=\"pPin\" type=\"password\" inputmode=\"numeric\" pattern=\"[0-9]*\" maxlength=\"4\" autocomplete=\"off\"></div>";
+  sheet(id ? '✏️ Editar pessoa' : '👤 Nova pessoa', "\n   <div class=\"f\"><label>Nome</label><input id=\"pNome\" value=\"" + esc(p.nome) + "\" autocomplete=\"off\" placeholder=\"Ex.: Carlos (mestre de obras)\"></div>\n   <div class=\"f\"><label>Foto</label><div style=\"display:flex;gap:12px;align-items:center\"><span id=\"pPrev\">" + avatar(p, 64) + "</span>\n     <label class=\"btn soft\" style=\"cursor:pointer\">\uD83D\uDCF7 Tirar foto<input type=\"file\" accept=\"image/*\" capture=\"user\" class=\"hidden\" onchange=\"pFotoSel(this,'pPrev')\"></label></div></div>\n   " + campoSenha + "\n   <label class=\"chk\"><input type=\"checkbox\" id=\"pAdm\" " + (p.admin ? 'checked' : '') + "> <span><b>Administrador</b><br><span class=\"muted small\">Pode excluir lan\xE7amentos, corrigir saldo, cadastrar pessoas e mexer nas configura\xE7\xF5es.</span></span></label>\n   " + (id ? "<label class=\"chk\"><input type=\"checkbox\" id=\"pAtv\" " + (p.ativo !== false ? 'checked' : '') + "> <span><b>Ativo</b><br><span class=\"muted small\">Desative quem saiu da empresa: some da tela de login, mas o hist\xF3rico continua.</span></span></label>\n   " + (U && U.id !== id ? "<button class=\"btn danger full\" onclick=\"delPessoa('" + id + "')\">\uD83D\uDDD1\uFE0F Excluir pessoa</button><div class=\"small muted mt\">Os lan\xE7amentos que ela fez continuam no hist\xF3rico com o nome dela.</div>" : '<div class="small muted">Você não pode excluir a si mesmo.</div>') : ''), "<button class=\"btn primary lg full\" onclick=\"salvarPessoa('" + (id || '') + "')\">Salvar</button>");
 }
-function salvarPessoa(id) {
-  var nome = $('#pNome').value.trim(),
-    pin = $('#pPin').value,
-    adm = $('#pAdm').checked,
-    atv = id ? $('#pAtv').checked : true;
-  if (!nome) return toast('Informe o nome');
-  if ((!id || pin) && !pinOk(pin)) return toast('O PIN precisa ter 4 números');
-  var outrosAdm = (db.pessoas || []).filter(function (x) {
-    return x.id !== id && x.admin && x.ativo !== false;
-  }).length;
-  if (id && (!adm || !atv) && !outrosAdm) return toast('Precisa existir pelo menos um administrador ativo');
-  if (id) {
-    var p = pessoaById(id);
-    Object.assign(p, {
-      nome: nome,
-      foto: pFotoTmp,
-      admin: adm,
-      ativo: atv
-    });
-    if (pin) p.pin = hpin(id, pin);
-    if (U && U.id === id) U = p;
-  } else {
-    var nid = uid();
-    db.pessoas.push({
-      id: nid,
-      nome: nome,
-      foto: pFotoTmp,
-      pin: hpin(nid, pin),
-      admin: adm,
-      ativo: true,
-      criado: Date.now()
-    });
-  }
-  pFotoTmp = '';
-  save();
-  config();
-  toast('Pessoa salva');
-  if (U && !U.admin) logout();
+function salvarPessoa(_x7) {
+  return _salvarPessoa.apply(this, arguments);
 }
-function delPessoa(id) {
-  if (!soAdmin()) return;
-  var p = pessoaById(id);
-  if (!p) return;
-  if (U && U.id === id) return toast('Você não pode excluir a si mesmo');
-  if (p.admin && !(db.pessoas || []).some(function (x) {
-    return x.id !== id && x.admin && x.ativo !== false;
-  })) return toast('Precisa existir pelo menos um administrador ativo');
-  if (!confirm("Excluir " + p.nome + "? Ela n\xE3o poder\xE1 mais entrar no app. Os lan\xE7amentos dela continuam no hist\xF3rico.")) return;
-  db.movs.forEach(function (mv) {
-    if (mv.por === id && !mv.porNome) mv.porNome = p.nome;
-  });
-  db.pessoas = db.pessoas.filter(function (x) {
-    return x.id !== id;
-  });
-  save();
-  config();
-  toast('Pessoa excluída');
+function _salvarPessoa() {
+  _salvarPessoa = _asyncToGenerator(_regenerator().m(function _callee1(id) {
+    var nome, pin, adm, atv, outrosAdm, pid, p;
+    return _regenerator().w(function (_context1) {
+      while (1) switch (_context1.n) {
+        case 0:
+          nome = $('#pNome').value.trim(), pin = $('#pPin').value, adm = $('#pAdm').checked, atv = id ? $('#pAtv').checked : true;
+          if (nome) {
+            _context1.n = 1;
+            break;
+          }
+          return _context1.a(2, toast('Informe o nome'));
+        case 1:
+          if (!((!id || pin) && !(nuvem() ? senhaOk(pin) : pinOk(pin)))) {
+            _context1.n = 2;
+            break;
+          }
+          return _context1.a(2, toast(nuvem() ? 'A senha precisa ter entre 10 e 128 caracteres.' : 'O PIN precisa ter 4 números'));
+        case 2:
+          outrosAdm = (db.pessoas || []).filter(function (x) {
+            return x.id !== id && x.admin && x.ativo !== false;
+          }).length;
+          if (!(id && (!adm || !atv) && !outrosAdm)) {
+            _context1.n = 3;
+            break;
+          }
+          return _context1.a(2, toast('Precisa existir pelo menos um administrador ativo'));
+        case 3:
+          pid = id || uid();
+          p = id ? pessoaById(id) : {
+            id: pid,
+            criado: Date.now()
+          };
+          Object.assign(p, {
+            nome: nome,
+            foto: pFotoTmp,
+            admin: adm,
+            ativo: atv
+          });
+          if (!nuvem() && pin) p.pin = hpin(pid, pin);
+          if (!id) db.pessoas.push(p);
+          _context1.n = 4;
+          return persistir(nuvem() && pin ? {
+            credencial: {
+              id: pid,
+              senha: pin
+            }
+          } : undefined);
+        case 4:
+          if (_context1.v) {
+            _context1.n = 5;
+            break;
+          }
+          return _context1.a(2);
+        case 5:
+          if (!nuvem() && U && U.id === id) U = p;
+          pFotoTmp = '';
+          config();
+          toast('Pessoa salva');
+          if (U && !U.admin) logout();
+        case 6:
+          return _context1.a(2);
+      }
+    }, _callee1);
+  }));
+  return _salvarPessoa.apply(this, arguments);
+}
+function delPessoa(_x8) {
+  return _delPessoa.apply(this, arguments);
+}
+function _delPessoa() {
+  _delPessoa = _asyncToGenerator(_regenerator().m(function _callee10(id) {
+    var p;
+    return _regenerator().w(function (_context10) {
+      while (1) switch (_context10.n) {
+        case 0:
+          if (soAdmin()) {
+            _context10.n = 1;
+            break;
+          }
+          return _context10.a(2);
+        case 1:
+          p = pessoaById(id);
+          if (p) {
+            _context10.n = 2;
+            break;
+          }
+          return _context10.a(2);
+        case 2:
+          if (!(U && U.id === id)) {
+            _context10.n = 3;
+            break;
+          }
+          return _context10.a(2, toast('Você não pode excluir a si mesmo'));
+        case 3:
+          if (!(p.admin && !(db.pessoas || []).some(function (x) {
+            return x.id !== id && x.admin && x.ativo !== false;
+          }))) {
+            _context10.n = 4;
+            break;
+          }
+          return _context10.a(2, toast('Precisa existir pelo menos um administrador ativo'));
+        case 4:
+          if (confirm("Excluir " + p.nome + "? Ela n\xE3o poder\xE1 mais entrar no app. Os lan\xE7amentos dela continuam no hist\xF3rico.")) {
+            _context10.n = 5;
+            break;
+          }
+          return _context10.a(2);
+        case 5:
+          db.movs.forEach(function (mv) {
+            if (mv.por === id && !mv.porNome) mv.porNome = p.nome;
+          });
+          db.pessoas = db.pessoas.filter(function (x) {
+            return x.id !== id;
+          });
+          _context10.n = 6;
+          return persistir();
+        case 6:
+          if (_context10.v) {
+            _context10.n = 7;
+            break;
+          }
+          return _context10.a(2);
+        case 7:
+          config();
+          toast('Pessoa excluída');
+        case 8:
+          return _context10.a(2);
+      }
+    }, _callee10);
+  }));
+  return _delPessoa.apply(this, arguments);
 }
 var idbP = null;
 function idb() {
@@ -764,7 +1195,7 @@ function selfie() {
           }
         }, _callee, null, [[1, 3]]);
       }));
-      return function (_x3) {
+      return function (_x9) {
         return _ref.apply(this, arguments);
       };
     }();
@@ -1530,34 +1961,35 @@ function salvarMov() {
   return _salvarMov.apply(this, arguments);
 }
 function _salvarMov() {
-  _salvarMov = _asyncToGenerator(_regenerator().m(function _callee5() {
+  _salvarMov = _asyncToGenerator(_regenerator().m(function _callee11() {
+    var _fotos;
     var foto, itens, mv, t, o;
-    return _regenerator().w(function (_context5) {
-      while (1) switch (_context5.n) {
+    return _regenerator().w(function (_context11) {
+      while (1) switch (_context11.n) {
         case 0:
           if (!movErros().length) {
-            _context5.n = 1;
+            _context11.n = 1;
             break;
           }
-          return _context5.a(2);
+          return _context11.a(2);
         case 1:
-          _context5.n = 2;
+          _context11.n = 2;
           return selfie();
         case 2:
-          foto = _context5.v;
+          foto = _context11.v;
           if (!(foto === undefined)) {
-            _context5.n = 3;
+            _context11.n = 3;
             break;
           }
           drawMovPage();
           toast('Lançamento cancelado');
-          return _context5.a(2);
+          return _context11.a(2);
         case 3:
           if (!(!F || movErros().length)) {
-            _context5.n = 4;
+            _context11.n = 4;
             break;
           }
-          return _context5.a(2);
+          return _context11.a(2);
         case 4:
           itens = itensArr().map(function (it) {
             var x = {
@@ -1586,14 +2018,19 @@ function _salvarMov() {
           };
           db.movs.push(mv);
           if (mv.resp) db.ultimoResp = mv.resp;
-          if (save()) {
-            _context5.n = 5;
+          _context11.n = 5;
+          return persistir(nuvem() && foto ? {
+            fotos: (_fotos = {}, _fotos[mv.id] = foto, _fotos)
+          } : undefined);
+        case 5:
+          if (_context11.v) {
+            _context11.n = 6;
             break;
           }
-          db.movs.pop();
-          return _context5.a(2);
-        case 5:
-          if (foto) fotoPut(mv.id, foto).catch(function () {
+          if (!nuvem() && db.movs[db.movs.length - 1] === mv) db.movs.pop();
+          return _context11.a(2);
+        case 6:
+          if (!nuvem() && foto) fotoPut(mv.id, foto).catch(function () {
             return toast('⚠️ A foto não pôde ser salva');
           });
           F.itens = {};
@@ -1605,10 +2042,10 @@ function _salvarMov() {
           drawMovPage(true);
           t = TIPOS[mv.tipo], o = obraById(mv.obra);
           sheet(t.ic + " " + t.nome + " registrada", "<div style=\"text-align:center;padding:6px 0 4px\"><div style=\"font-size:58px\">\u2705</div>\n    <p style=\"font-size:16px;margin:8px 0 4px\" class=\"b\">" + itens.length + " " + (itens.length === 1 ? 'item' : 'itens') + (o ? (mv.tipo === 'saida' ? ' para ' : mv.tipo === 'devolucao' ? ' de ' : ' em ') + esc(o.nome) : '') + "</p>\n    <p class=\"muted\" style=\"margin:0\">Movimenta\xE7\xE3o n\xBA <b>" + mv.n + "</b> salva." + (mv.tipo === 'saida' ? '<br>Imprima a guia e peça a assinatura de quem recebeu.' : '') + "</p></div>", "<div style=\"display:flex;gap:8px;flex-wrap:wrap\"><button class=\"btn soft lg\" style=\"flex:1\" onclick=\"printGuia('" + mv.id + "')\">\uD83D\uDDA8\uFE0F " + (mv.tipo === 'saida' ? 'Guia' : 'Comprovante') + "</button>\n     <button class=\"btn soft lg\" style=\"flex:1\" onclick=\"closeSheet()\">\uFF0B Nova</button>\n     <button class=\"btn dark lg\" style=\"flex:1\" onclick=\"logout('At\xE9 logo!')\">\u2713 Concluir e sair</button></div>");
-        case 6:
-          return _context5.a(2);
+        case 7:
+          return _context11.a(2);
       }
-    }, _callee5);
+    }, _callee11);
   }));
   return _salvarMov.apply(this, arguments);
 }
@@ -1628,22 +2065,60 @@ function verMov(id) {
       pu = mv.tipo === 'entrada' && it.v ? it.v : C.custo[it.m] || 0;
     return "<tr><td>" + (m ? matIcon(m) + ' ' + esc(m.nome) : '<i>material excluído</i>') + "</td><td class=\"n b\">" + fq(it.q) + " " + (m ? esc(m.un) : '') + "</td>" + (total ? "<td class=\"n\">" + (pu ? brl.format(it.q * pu) : '—') + "</td>" : '') + "</tr>";
   }).join('') + "\n    " + (total ? "<tr><td class=\"b\">Total</td><td></td><td class=\"n b\">" + brl.format(total) + "</td></tr>" : '') + "</tbody></table></div>", "<div style=\"display:flex;gap:8px\">" + (isAdmin() ? "<button class=\"btn danger\" onclick=\"delMov('" + mv.id + "')\">\uD83D\uDDD1\uFE0F Excluir</button>" : '') + "<span style=\"flex:1\"></span>" + (mv.tipo !== 'ajuste' ? "<button class=\"btn dark\" onclick=\"printGuia('" + mv.id + "')\">\uD83D\uDDA8\uFE0F Imprimir</button>" : '') + "</div>");
-  if (mv.foto) fotoGet(mv.id).then(function (d) {
-    var b = $('#selfieBox');
-    if (b && d) b.innerHTML = "<img class=\"selfie\" src=\"" + d + "\" alt=\"\">";
-  }).catch(function () {});
+  if (mv.foto) {
+    var foto = nuvem() ? EstoqueCompartilhado.enviar('foto', {
+      id: mv.id
+    }).then(function (r) {
+      return r.imagem;
+    }) : fotoGet(mv.id);
+    var caixa = $('#selfieBox');
+    foto.then(function (d) {
+      if (caixa && d) caixa.innerHTML = "<img class=\"selfie\" src=\"" + esc(d) + "\" alt=\"\">";
+    }).catch(function () {});
+  }
 }
-function delMov(id) {
-  if (!soAdmin()) return;
-  if (!confirm('Excluir esta movimentação? O saldo do estoque será recalculado.')) return;
-  db.movs = db.movs.filter(function (m) {
-    return m.id !== id;
-  });
-  save();
-  fotoDel(id).catch(function () {});
-  closeSheet();
-  render();
-  toast('Movimentação excluída');
+function delMov(_x0) {
+  return _delMov.apply(this, arguments);
+}
+function _delMov() {
+  _delMov = _asyncToGenerator(_regenerator().m(function _callee12(id) {
+    return _regenerator().w(function (_context12) {
+      while (1) switch (_context12.n) {
+        case 0:
+          if (soAdmin()) {
+            _context12.n = 1;
+            break;
+          }
+          return _context12.a(2);
+        case 1:
+          if (confirm('Excluir esta movimentação? O saldo do estoque será recalculado.')) {
+            _context12.n = 2;
+            break;
+          }
+          return _context12.a(2);
+        case 2:
+          db.movs = db.movs.filter(function (m) {
+            return m.id !== id;
+          });
+          _context12.n = 3;
+          return persistir();
+        case 3:
+          if (_context12.v) {
+            _context12.n = 4;
+            break;
+          }
+          return _context12.a(2);
+        case 4:
+          if (!nuvem()) fotoDel(id).catch(function () {});
+          closeSheet();
+          render();
+          toast('Movimentação excluída');
+        case 5:
+          return _context12.a(2);
+      }
+    }, _callee12);
+  }));
+  return _delMov.apply(this, arguments);
 }
 function formAjuste(mid) {
   if (!soAdmin()) return;
@@ -1651,42 +2126,75 @@ function formAjuste(mid) {
     s = calc().saldo[mid] || 0;
   sheet('⚖️ Corrigir saldo', "<p class=\"muted small\" style=\"margin-top:0\">Use depois de contar o material no dep\xF3sito. A diferen\xE7a fica registrada no hist\xF3rico como ajuste.</p>\n   <div class=\"card\" style=\"padding:12px 14px;margin-bottom:12px\"><div class=\"b\">" + matIcon(m) + " " + esc(m.nome) + "</div><div class=\"muted small\">Saldo no app: <b>" + fq(s) + " " + esc(m.un) + "</b></div></div>\n   <div class=\"f\"><label>Quantidade contada (" + esc(m.un) + ")</label><input id=\"ajQ\" inputmode=\"decimal\" value=\"" + String(Math.round(s * 100) / 100).replace('.', ',') + "\" style=\"font-size:20px;font-weight:900\"></div>\n   <div class=\"f\"><label>Motivo</label><input id=\"ajO\" placeholder=\"Ex.: invent\xE1rio, perda, quebra\" value=\"Invent\xE1rio\"></div>", "<button class=\"btn dark lg full\" onclick=\"salvarAjuste('" + mid + "'," + s + ")\">Salvar contagem</button>");
 }
-function salvarAjuste(mid, s) {
-  if (!soAdmin()) return;
-  var v = $('#ajQ').value.trim();
-  if (v === '') {
-    toast('Informe a quantidade contada');
-    return;
-  }
-  var d = Math.round((num(v) - s) * 1000) / 1000;
-  if (!d) {
-    closeSheet();
-    toast('Saldo já está correto');
-    return;
-  }
-  db.seq = (db.seq || 0) + 1;
-  db.movs.push({
-    id: uid(),
-    n: db.seq,
-    tipo: 'ajuste',
-    obra: '',
-    data: today(),
-    resp: U.nome,
-    doc: '',
-    forn: '',
-    obs: $('#ajO').value.trim() || 'Ajuste de saldo',
-    itens: [{
-      m: mid,
-      q: d
-    }],
-    criado: Date.now(),
-    por: U.id,
-    porNome: U.nome
-  });
-  save();
-  closeSheet();
-  render();
-  toast("Saldo corrigido (" + (d > 0 ? '+' : '') + fq(d) + ")");
+function salvarAjuste(_x1, _x10) {
+  return _salvarAjuste.apply(this, arguments);
+}
+function _salvarAjuste() {
+  _salvarAjuste = _asyncToGenerator(_regenerator().m(function _callee13(mid, s) {
+    var v, d;
+    return _regenerator().w(function (_context13) {
+      while (1) switch (_context13.n) {
+        case 0:
+          if (soAdmin()) {
+            _context13.n = 1;
+            break;
+          }
+          return _context13.a(2);
+        case 1:
+          v = $('#ajQ').value.trim();
+          if (!(v === '')) {
+            _context13.n = 2;
+            break;
+          }
+          toast('Informe a quantidade contada');
+          return _context13.a(2);
+        case 2:
+          d = Math.round((num(v) - s) * 1000) / 1000;
+          if (d) {
+            _context13.n = 3;
+            break;
+          }
+          closeSheet();
+          toast('Saldo já está correto');
+          return _context13.a(2);
+        case 3:
+          db.seq = (db.seq || 0) + 1;
+          db.movs.push({
+            id: uid(),
+            n: db.seq,
+            tipo: 'ajuste',
+            obra: '',
+            data: today(),
+            resp: U.nome,
+            doc: '',
+            forn: '',
+            obs: $('#ajO').value.trim() || 'Ajuste de saldo',
+            itens: [{
+              m: mid,
+              q: d
+            }],
+            criado: Date.now(),
+            por: U.id,
+            porNome: U.nome
+          });
+          _context13.n = 4;
+          return persistir();
+        case 4:
+          if (_context13.v) {
+            _context13.n = 5;
+            break;
+          }
+          return _context13.a(2);
+        case 5:
+          closeSheet();
+          render();
+          toast("Saldo corrigido (" + (d > 0 ? '+' : '') + fq(d) + ")");
+        case 6:
+          return _context13.a(2);
+      }
+    }, _callee13);
+  }));
+  return _salvarAjuste.apply(this, arguments);
 }
 function formMaterial(id, cb) {
   var m = id ? matById(id) : {
@@ -1774,74 +2282,96 @@ function formMaterial(id, cb) {
         }
       }, _callee2, null, [[1, 3]]);
     }));
-    return function (_x4) {
+    return function (_x11) {
       return _ref10.apply(this, arguments);
     };
   }();
-  $('#mSave').onclick = function () {
-    var nome = $('#mNome').value.trim();
-    if (!nome) {
-      toast('Informe o nome do material');
-      $('#mNome').focus();
-      return;
-    }
-    if (db.materiais.some(function (x) {
-      return x.id !== id && x.nome.toLowerCase() === nome.toLowerCase();
-    })) {
-      toast('Já existe um material com esse nome');
-      return;
-    }
-    var cat = ($('#mCat .chip.on') || {
-      dataset: {}
-    }).dataset.v || 'Outros';
-    var data = {
-      nome: nome,
-      cat: cat,
-      un: $('#mUn').value,
-      min: num($('#mMin').value),
-      preco: num($('#mPreco').value),
-      local: $('#mLocal').value.trim(),
-      ic: mf.ic || guessIcon(nome, cat),
-      foto: mf.foto
-    };
-    var mid = id;
-    if (id) Object.assign(matById(id), data);else {
-      mid = uid();
-      db.materiais.push(_extends({
-        id: mid
-      }, data, {
-        criado: Date.now()
-      }));
-      var ini = $('#mIni') ? num($('#mIni').value) : 0;
-      if (ini > 0) {
-        db.seq = (db.seq || 0) + 1;
-        db.movs.push({
-          id: uid(),
-          n: db.seq,
-          tipo: 'ajuste',
-          obra: '',
-          data: today(),
-          resp: '',
-          doc: '',
-          forn: '',
-          obs: 'Saldo inicial',
-          itens: [{
-            m: mid,
-            q: ini
-          }],
-          criado: Date.now(),
-          por: U.id,
-          porNome: U.nome
-        });
+  $('#mSave').onclick = _asyncToGenerator(_regenerator().m(function _callee3() {
+    var nome, cat, data, mid, ini;
+    return _regenerator().w(function (_context3) {
+      while (1) switch (_context3.n) {
+        case 0:
+          nome = $('#mNome').value.trim();
+          if (nome) {
+            _context3.n = 1;
+            break;
+          }
+          toast('Informe o nome do material');
+          $('#mNome').focus();
+          return _context3.a(2);
+        case 1:
+          if (!db.materiais.some(function (x) {
+            return x.id !== id && x.nome.toLowerCase() === nome.toLowerCase();
+          })) {
+            _context3.n = 2;
+            break;
+          }
+          toast('Já existe um material com esse nome');
+          return _context3.a(2);
+        case 2:
+          cat = ($('#mCat .chip.on') || {
+            dataset: {}
+          }).dataset.v || 'Outros';
+          data = {
+            nome: nome,
+            cat: cat,
+            un: $('#mUn').value,
+            min: num($('#mMin').value),
+            preco: num($('#mPreco').value),
+            local: $('#mLocal').value.trim(),
+            ic: mf.ic || guessIcon(nome, cat),
+            foto: mf.foto
+          };
+          mid = id;
+          if (id) Object.assign(matById(id), data);else {
+            mid = uid();
+            db.materiais.push(_extends({
+              id: mid
+            }, data, {
+              criado: Date.now()
+            }));
+            ini = $('#mIni') ? num($('#mIni').value) : 0;
+            if (ini > 0) {
+              db.seq = (db.seq || 0) + 1;
+              db.movs.push({
+                id: uid(),
+                n: db.seq,
+                tipo: 'ajuste',
+                obra: '',
+                data: today(),
+                resp: '',
+                doc: '',
+                forn: '',
+                obs: 'Saldo inicial',
+                itens: [{
+                  m: mid,
+                  q: ini
+                }],
+                criado: Date.now(),
+                por: U.id,
+                porNome: U.nome
+              });
+            }
+          }
+          _context3.n = 3;
+          return persistir();
+        case 3:
+          if (_context3.v) {
+            _context3.n = 4;
+            break;
+          }
+          return _context3.a(2);
+        case 4:
+          closeSheet();
+          if (cb) cb(mid);else {
+            render();
+            toast(id ? 'Material atualizado' : 'Material cadastrado');
+          }
+        case 5:
+          return _context3.a(2);
       }
-    }
-    save();
-    closeSheet();
-    if (cb) cb(mid);else {
-      render();
-      toast(id ? 'Material atualizado' : 'Material cadastrado');
-    }
-  };
+    }, _callee3);
+  }));
 }
 function fotoReduzida(file) {
   return new Promise(function (res, rej) {
@@ -1859,27 +2389,59 @@ function fotoReduzida(file) {
     img.src = URL.createObjectURL(file);
   });
 }
-function delMaterial(id) {
-  if (!soAdmin()) return;
-  var m = matById(id);
-  if (!confirm("Excluir \"" + m.nome + "\"? As movimenta\xE7\xF5es deste material tamb\xE9m ser\xE3o apagadas.")) return;
-  db.materiais = db.materiais.filter(function (x) {
-    return x.id !== id;
-  });
-  db.movs = db.movs.map(function (mv) {
-    return _extends({}, mv, {
-      itens: (mv.itens || []).filter(function (it) {
-        return it.m !== id;
-      })
-    });
-  }).filter(function (mv) {
-    return mv.itens.length;
-  });
-  save();
-  closeSheet();
-  location.hash = '#estoque';
-  render();
-  toast('Material excluído');
+function delMaterial(_x12) {
+  return _delMaterial.apply(this, arguments);
+}
+function _delMaterial() {
+  _delMaterial = _asyncToGenerator(_regenerator().m(function _callee14(id) {
+    var m;
+    return _regenerator().w(function (_context14) {
+      while (1) switch (_context14.n) {
+        case 0:
+          if (soAdmin()) {
+            _context14.n = 1;
+            break;
+          }
+          return _context14.a(2);
+        case 1:
+          m = matById(id);
+          if (confirm("Excluir \"" + m.nome + "\"? As movimenta\xE7\xF5es deste material tamb\xE9m ser\xE3o apagadas.")) {
+            _context14.n = 2;
+            break;
+          }
+          return _context14.a(2);
+        case 2:
+          db.materiais = db.materiais.filter(function (x) {
+            return x.id !== id;
+          });
+          db.movs = db.movs.map(function (mv) {
+            return _extends({}, mv, {
+              itens: (mv.itens || []).filter(function (it) {
+                return it.m !== id;
+              })
+            });
+          }).filter(function (mv) {
+            return mv.itens.length;
+          });
+          _context14.n = 3;
+          return persistir();
+        case 3:
+          if (_context14.v) {
+            _context14.n = 4;
+            break;
+          }
+          return _context14.a(2);
+        case 4:
+          closeSheet();
+          location.hash = '#estoque';
+          render();
+          toast('Material excluído');
+        case 5:
+          return _context14.a(2);
+      }
+    }, _callee14);
+  }));
+  return _delMaterial.apply(this, arguments);
 }
 function formObra(id, cb) {
   var o = id ? obraById(id) : {
@@ -1895,59 +2457,113 @@ function formObra(id, cb) {
   setTimeout(function () {
     if (!id) $('#oNome').focus();
   }, 60);
-  $('#oSave').onclick = function () {
-    var nome = $('#oNome').value.trim();
-    if (!nome) {
-      toast('Informe o nome da obra');
-      return;
-    }
-    var data = {
-      nome: nome,
-      end: $('#oEnd').value.trim(),
-      resp: $('#oResp').value.trim(),
-      cor: ($('#oCor .on') || {
-        dataset: {}
-      }).dataset.v || COLORS[0]
-    };
-    if (id) {
-      data.status = $('#oSt').value;
-      Object.assign(obraById(id), data);
-    }
-    var oid = id;
-    if (!id) {
-      oid = uid();
-      db.obras.push(_extends({
-        id: oid
-      }, data, {
-        status: 'ativa',
-        criado: Date.now()
-      }));
-    }
-    save();
-    closeSheet();
-    if (cb) cb(oid);else {
-      render();
-      toast(id ? 'Obra atualizada' : 'Obra cadastrada');
-    }
-  };
+  $('#oSave').onclick = _asyncToGenerator(_regenerator().m(function _callee4() {
+    var nome, data, oid;
+    return _regenerator().w(function (_context4) {
+      while (1) switch (_context4.n) {
+        case 0:
+          nome = $('#oNome').value.trim();
+          if (nome) {
+            _context4.n = 1;
+            break;
+          }
+          toast('Informe o nome da obra');
+          return _context4.a(2);
+        case 1:
+          data = {
+            nome: nome,
+            end: $('#oEnd').value.trim(),
+            resp: $('#oResp').value.trim(),
+            cor: ($('#oCor .on') || {
+              dataset: {}
+            }).dataset.v || COLORS[0]
+          };
+          if (id) {
+            data.status = $('#oSt').value;
+            Object.assign(obraById(id), data);
+          }
+          oid = id;
+          if (!id) {
+            oid = uid();
+            db.obras.push(_extends({
+              id: oid
+            }, data, {
+              status: 'ativa',
+              criado: Date.now()
+            }));
+          }
+          _context4.n = 2;
+          return persistir();
+        case 2:
+          if (_context4.v) {
+            _context4.n = 3;
+            break;
+          }
+          return _context4.a(2);
+        case 3:
+          closeSheet();
+          if (cb) cb(oid);else {
+            render();
+            toast(id ? 'Obra atualizada' : 'Obra cadastrada');
+          }
+        case 4:
+          return _context4.a(2);
+      }
+    }, _callee4);
+  }));
 }
-function delObra(id) {
-  if (!soAdmin()) return;
-  var n = db.movs.filter(function (m) {
-    return m.obra === id;
-  }).length;
-  if (n) {
-    alert("Esta obra tem " + n + " movimenta\xE7\xE3o(\xF5es). Para manter o hist\xF3rico, marque-a como \"Conclu\xEDda\" em vez de excluir.");
-    return;
-  }
-  if (!confirm('Excluir esta obra?')) return;
-  db.obras = db.obras.filter(function (o) {
-    return o.id !== id;
-  });
-  save();
-  closeSheet();
-  location.hash = '#obras';
-  render();
+function delObra(_x13) {
+  return _delObra.apply(this, arguments);
+}
+function _delObra() {
+  _delObra = _asyncToGenerator(_regenerator().m(function _callee15(id) {
+    var n;
+    return _regenerator().w(function (_context15) {
+      while (1) switch (_context15.n) {
+        case 0:
+          if (soAdmin()) {
+            _context15.n = 1;
+            break;
+          }
+          return _context15.a(2);
+        case 1:
+          n = db.movs.filter(function (m) {
+            return m.obra === id;
+          }).length;
+          if (!n) {
+            _context15.n = 2;
+            break;
+          }
+          alert("Esta obra tem " + n + " movimenta\xE7\xE3o(\xF5es). Para manter o hist\xF3rico, marque-a como \"Conclu\xEDda\" em vez de excluir.");
+          return _context15.a(2);
+        case 2:
+          if (confirm('Excluir esta obra?')) {
+            _context15.n = 3;
+            break;
+          }
+          return _context15.a(2);
+        case 3:
+          db.obras = db.obras.filter(function (o) {
+            return o.id !== id;
+          });
+          _context15.n = 4;
+          return persistir();
+        case 4:
+          if (_context15.v) {
+            _context15.n = 5;
+            break;
+          }
+          return _context15.a(2);
+        case 5:
+          closeSheet();
+          location.hash = '#obras';
+          render();
+        case 6:
+          return _context15.a(2);
+      }
+    }, _callee15);
+  }));
+  return _delObra.apply(this, arguments);
 }
 function printHTML(html) {
   $('#print').innerHTML = html;
@@ -1977,9 +2593,9 @@ function printObra(id) {
   var o = obraById(id),
     C = calc(),
     oq = C.obraQ[id] || {};
-  var linhas = Object.entries(oq).map(function (_ref11) {
-    var mid = _ref11[0],
-      q = _ref11[1];
+  var linhas = Object.entries(oq).map(function (_ref13) {
+    var mid = _ref13[0],
+      q = _ref13[1];
     return {
       m: matById(mid),
       q: q
@@ -2053,16 +2669,117 @@ function exportEstoqueCSV() {
 }
 function config() {
   if (!soAdmin()) return;
-  sheet('⚙️ Configurações', "\n   " + pessoasSec() + "\n   <div class=\"sec\"><h2>Empresa</h2></div>\n   <div class=\"f\"><label>Nome da empresa (sai nas guias e relat\xF3rios)</label><input id=\"cEmp\" value=\"" + esc(db.empresa || '') + "\"></div>\n   <button class=\"btn dark full\" onclick=\"db.empresa=$('#cEmp').value.trim();save();render();toast('Salvo')\">Salvar nome</button>\n   <div class=\"sec\"><h2>Planilhas</h2></div>\n   <div class=\"grid g2\"><button class=\"btn soft\" onclick=\"exportEstoqueCSV()\">\uD83D\uDCE6 Estoque atual</button><button class=\"btn soft\" onclick=\"exportCSV()\">\uD83D\uDD04 Movimenta\xE7\xF5es</button></div>\n   <div class=\"sec\"><h2>Backup</h2></div>\n   <p class=\"muted small\" style=\"margin-top:0\">Os dados ficam salvos s\xF3 neste aparelho. Fa\xE7a backup com frequ\xEAncia e use-o para passar os dados para outro celular ou computador.</p>\n   <div class=\"grid g2\"><button class=\"btn primary\" onclick=\"fazerBackup()\">\u2B07\uFE0F Fazer backup</button><button class=\"btn soft\" onclick=\"$('#fileImport').click()\">\u2B06\uFE0F Restaurar backup</button></div>\n   <div class=\"sec\"><h2>Outros</h2></div>\n   <div class=\"grid g2\"><button class=\"btn soft\" onclick=\"if(confirm('Substituir os dados atuais pelos dados de exemplo?'))loadDemo()\">Dados de exemplo</button><button class=\"btn danger\" onclick=\"if(confirm('Apagar TODOS os dados deste aparelho? Fa\xE7a backup antes.')){const ps=db.pessoas,em=db.empresa;db=blank();db.pessoas=ps;db.empresa=em;aplicaCatalogo();closeSheet();location.hash='#inicio';render()}\">Apagar tudo</button></div>\n   <button class=\"btn soft full mt\" onclick=\"const n=aplicaCatalogo(true);render();toast(n?n+' materiais adicionados':'A lista padr\xE3o j\xE1 est\xE1 completa')\">\uD83D\uDCCB Recolocar materiais da lista padr\xE3o</button>\n   <p class=\"muted small mt2\">" + db.materiais.length + " materiais \xB7 " + db.obras.length + " obras \xB7 " + db.movs.length + " movimenta\xE7\xF5es</p>");
+  sheet('⚙️ Configurações', "\n   " + pessoasSec() + "\n   <div class=\"sec\"><h2>Empresa</h2></div>\n   <div class=\"f\"><label>Nome da empresa (sai nas guias e relat\xF3rios)</label><input id=\"cEmp\" value=\"" + esc(db.empresa || '') + "\"></div>\n   <button class=\"btn dark full\" onclick=\"salvarEmpresa()\">Salvar nome</button>\n   <div class=\"sec\"><h2>Planilhas</h2></div>\n   <div class=\"grid g2\"><button class=\"btn soft\" onclick=\"exportEstoqueCSV()\">\uD83D\uDCE6 Estoque atual</button><button class=\"btn soft\" onclick=\"exportCSV()\">\uD83D\uDD04 Movimenta\xE7\xF5es</button></div>\n   <div class=\"sec\"><h2>Backup</h2></div>\n   <p class=\"muted small\" style=\"margin-top:0\">" + (nuvem() ? 'Os dados ficam salvos no estoque compartilhado. O backup guarda uma cópia das informações, sem as senhas.' : 'Os dados ficam salvos neste aparelho. Faça backup antes de trocar de aparelho.') + "</p>\n   <div class=\"grid g2\"><button class=\"btn primary\" onclick=\"fazerBackup()\">\u2B07\uFE0F Fazer backup</button><button class=\"btn soft\" onclick=\"$('#fileImport').click()\">\u2B06\uFE0F Restaurar backup</button></div>\n   <div class=\"sec\"><h2>Outros</h2></div>\n   " + (nuvem() ? '' : '<div class="grid g2"><button class="btn soft" onclick="loadDemoConfirmado()">Dados de exemplo</button><button class="btn danger" onclick="apagarEstoqueLocal()">Apagar tudo</button></div>') + "\n   <button class=\"btn soft full mt\" onclick=\"recolocarCatalogo()\">\uD83D\uDCCB Recolocar materiais da lista padr\xE3o</button>\n   <p class=\"muted small mt2\">" + db.materiais.length + " materiais \xB7 " + db.obras.length + " obras \xB7 " + db.movs.length + " movimenta\xE7\xF5es</p>");
+}
+function salvarEmpresa() {
+  return _salvarEmpresa.apply(this, arguments);
+}
+function _salvarEmpresa() {
+  _salvarEmpresa = _asyncToGenerator(_regenerator().m(function _callee16() {
+    return _regenerator().w(function (_context16) {
+      while (1) switch (_context16.n) {
+        case 0:
+          db.empresa = $('#cEmp').value.trim();
+          _context16.n = 1;
+          return persistir();
+        case 1:
+          if (!_context16.v) {
+            _context16.n = 2;
+            break;
+          }
+          render();
+          toast('Nome salvo');
+        case 2:
+          return _context16.a(2);
+      }
+    }, _callee16);
+  }));
+  return _salvarEmpresa.apply(this, arguments);
+}
+function recolocarCatalogo() {
+  return _recolocarCatalogo.apply(this, arguments);
+}
+function _recolocarCatalogo() {
+  _recolocarCatalogo = _asyncToGenerator(_regenerator().m(function _callee17() {
+    var n;
+    return _regenerator().w(function (_context17) {
+      while (1) switch (_context17.n) {
+        case 0:
+          n = aplicaCatalogo(true);
+          _context17.n = 1;
+          return persistir();
+        case 1:
+          if (!_context17.v) {
+            _context17.n = 2;
+            break;
+          }
+          render();
+          toast(n ? n + ' materiais adicionados' : 'A lista padrão já está completa');
+        case 2:
+          return _context17.a(2);
+      }
+    }, _callee17);
+  }));
+  return _recolocarCatalogo.apply(this, arguments);
+}
+function loadDemoConfirmado() {
+  if (confirm('Substituir os dados atuais pelos dados de exemplo?')) loadDemo();
+}
+function apagarEstoqueLocal() {
+  if (nuvem() || !confirm('Apagar TODOS os dados deste aparelho? Faça backup antes.')) return;
+  var pessoas = db.pessoas,
+    empresa = db.empresa;
+  db = Object.assign(blank(), {
+    pessoas: pessoas,
+    empresa: empresa
+  });
+  aplicaCatalogo();
+  save();
+  closeSheet();
+  location.hash = '#inicio';
+  render();
 }
 function fazerBackup() {
-  fotoTodas().catch(function () {
-    return {};
-  }).then(function (fotos) {
-    return download("backup-estoque-" + today() + ".json", JSON.stringify(Object.assign({}, db, {
-      _fotos: fotos
-    })), 'application/json');
-  });
+  return _fazerBackup.apply(this, arguments);
+}
+function _fazerBackup() {
+  _fazerBackup = _asyncToGenerator(_regenerator().m(function _callee18() {
+    var copia, _t1, _t10;
+    return _regenerator().w(function (_context18) {
+      while (1) switch (_context18.p = _context18.n) {
+        case 0:
+          copia = JSON.parse(JSON.stringify(db));
+          _context18.p = 1;
+          if (!nuvem()) {
+            _context18.n = 3;
+            break;
+          }
+          _context18.n = 2;
+          return EstoqueCompartilhado.enviar('backup');
+        case 2:
+          _t1 = _context18.v;
+          _context18.n = 5;
+          break;
+        case 3:
+          _context18.n = 4;
+          return fotoTodas();
+        case 4:
+          _t1 = _context18.v;
+        case 5:
+          copia._fotos = _t1;
+          download("backup-estoque-" + today() + ".json", JSON.stringify(copia), 'application/json');
+          _context18.n = 7;
+          break;
+        case 6:
+          _context18.p = 6;
+          _t10 = _context18.v;
+          toast(_t10.message);
+        case 7:
+          return _context18.a(2);
+      }
+    }, _callee18, null, [[1, 6]]);
+  }));
+  return _fazerBackup.apply(this, arguments);
 }
 var lerTexto = function lerTexto(f) {
   return new Promise(function (res, rej) {
@@ -2077,75 +2794,97 @@ var lerTexto = function lerTexto(f) {
   });
 };
 $('#fileImport').addEventListener('change', function () {
-  var _ref12 = _asyncToGenerator(_regenerator().m(function _callee3(e) {
-    var f, d, fotos, _t4, _t5;
-    return _regenerator().w(function (_context3) {
-      while (1) switch (_context3.p = _context3.n) {
+  var _ref14 = _asyncToGenerator(_regenerator().m(function _callee5(e) {
+    var f, d, fotos, ids, fotosAtivas, _t4, _t5;
+    return _regenerator().w(function (_context5) {
+      while (1) switch (_context5.p = _context5.n) {
         case 0:
           f = e.target.files[0];
           e.target.value = '';
           if (f) {
-            _context3.n = 1;
+            _context5.n = 1;
             break;
           }
-          return _context3.a(2);
+          return _context5.a(2);
         case 1:
           if (isAdmin()) {
-            _context3.n = 2;
+            _context5.n = 2;
             break;
           }
-          return _context3.a(2);
+          return _context5.a(2);
         case 2:
-          _context3.p = 2;
+          _context5.p = 2;
           _t4 = JSON;
-          _context3.n = 3;
+          _context5.n = 3;
           return lerTexto(f);
         case 3:
-          d = _t4.parse.call(_t4, _context3.v);
+          d = _t4.parse.call(_t4, _context5.v);
           if (!(!d || !Array.isArray(d.materiais) || !Array.isArray(d.obras) || !Array.isArray(d.movs))) {
-            _context3.n = 4;
+            _context5.n = 4;
             break;
           }
           throw new Error('formato');
         case 4:
-          if (confirm("Restaurar backup com " + d.materiais.length + " materiais, " + d.obras.length + " obras e " + d.movs.length + " movimenta\xE7\xF5es? Os dados atuais ser\xE3o substitu\xEDdos.")) {
-            _context3.n = 5;
+          if (confirm("Restaurar backup com " + d.materiais.length + " materiais, " + d.obras.length + " obras e " + d.movs.length + " movimenta\xE7\xF5es? Os dados " + (nuvem() ? 'da equipe' : 'deste aparelho') + " ser\xE3o substitu\xEDdos.")) {
+            _context5.n = 5;
             break;
           }
-          return _context3.a(2);
+          return _context5.a(2);
         case 5:
           fotos = d._fotos || {};
           delete d._fotos;
-          if (!(d.pessoas || []).some(function (p) {
+          if (nuvem()) d.pessoas = db.pessoas;else if (!(d.pessoas || []).some(function (p) {
             return p.admin && p.ativo !== false;
           })) d.pessoas = (db.pessoas || []).concat((d.pessoas || []).filter(function (p) {
             return !pessoaById(p.id);
           }));
           db = Object.assign(blank(), d);
-          save();
-          Object.keys(fotos).forEach(function (k) {
-            return fotoPut(k, fotos[k]).catch(function () {});
+          ids = new Set(db.movs.filter(function (m) {
+            return m.foto;
+          }).map(function (m) {
+            return m.id;
+          })), fotosAtivas = {};
+          Object.keys(fotos).filter(function (id) {
+            return ids.has(id);
+          }).forEach(function (id) {
+            fotosAtivas[id] = fotos[id];
+          });
+          _context5.n = 6;
+          return persistir({
+            restaurar: true,
+            fotos: fotosAtivas
+          });
+        case 6:
+          if (_context5.v) {
+            _context5.n = 7;
+            break;
+          }
+          return _context5.a(2);
+        case 7:
+          if (!nuvem()) Object.keys(fotosAtivas).forEach(function (k) {
+            return fotoPut(k, fotosAtivas[k]).catch(function () {});
           });
           closeSheet();
           location.hash = '#inicio';
           render();
           toast('Backup restaurado');
-          _context3.n = 7;
+          _context5.n = 9;
           break;
-        case 6:
-          _context3.p = 6;
-          _t5 = _context3.v;
+        case 8:
+          _context5.p = 8;
+          _t5 = _context5.v;
           alert('Arquivo de backup inválido.');
-        case 7:
-          return _context3.a(2);
+        case 9:
+          return _context5.a(2);
       }
-    }, _callee3, null, [[2, 6]]);
+    }, _callee5, null, [[2, 8]]);
   }));
-  return function (_x5) {
-    return _ref12.apply(this, arguments);
+  return function (_x14) {
+    return _ref14.apply(this, arguments);
   };
 }());
 function loadDemo() {
+  if (nuvem()) return;
   var d = blank();
   d.empresa = 'LANG Engenharia';
   var M = function M(nome, cat, un, min, preco, local) {
@@ -2208,10 +2947,10 @@ function loadDemo() {
       doc: x.doc || '',
       forn: x.forn || '',
       obs: x.obs || '',
-      itens: itens.map(function (_ref13) {
-        var m = _ref13[0],
-          q = _ref13[1],
-          v = _ref13[2];
+      itens: itens.map(function (_ref15) {
+        var m = _ref15[0],
+          q = _ref15[1],
+          v = _ref15[2];
         return v ? {
           m: m,
           q: q,
@@ -2322,11 +3061,12 @@ $('#btnCfg').onclick = config;
 $('#btnUser').onclick = function () {
   return logout('Até logo!');
 };
-{
-  var n = aplicaCatalogo();
-  if (n) setTimeout(function () {
-    return toast("\uD83D\uDCE6 " + n + " materiais da lista padr\xE3o adicionados");
-  }, 400);
-}
 render();
+abrirEstoque();
+setInterval(function () {
+  return atualizarEstoque(false);
+}, 30000);
+document.addEventListener('visibilitychange', function () {
+  return atualizarEstoque(false);
+});
 if (navigator.serviceWorker && location.protocol !== 'file:') navigator.serviceWorker.register('service-worker.js').catch(function () {});

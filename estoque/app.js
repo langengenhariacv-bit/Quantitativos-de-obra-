@@ -16,6 +16,163 @@ let db=load();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){toast('⚠️ Não foi possível salvar no aparelho. Exporte um backup.');return false}}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
+/* ============ Estoque compartilhado ============ */
+let modo='consultando', versao=0, confirmado='', ocupada=false, ativando=false;
+const nuvem=()=>modo==='online';
+const senhaOk=senha=>senha.length>=10&&senha.length<=128;
+
+function bloquearRede(bloquear){
+  ocupada=bloquear;
+  const anterior=document.getElementById('redeOcupada');
+  if(anterior)anterior.remove();
+  if(!bloquear)return;
+  const aviso=document.createElement('div');
+  aviso.id='redeOcupada';
+  aviso.setAttribute('role','status');
+  aviso.textContent='Aguarde…';
+  aviso.style.cssText='position:fixed;z-index:9999;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,.6);color:white;text-align:center;padding-top:25vh;font-size:22px';
+  if(document.activeElement)document.activeElement.blur();
+  document.body.appendChild(aviso);
+}
+document.addEventListener('keydown',e=>{if(ocupada){e.preventDefault();e.stopImmediatePropagation()}},true);
+
+function usarEstoque(resposta){
+  if(resposta.token)EstoqueCompartilhado.sessao(resposta.token);
+  db=Object.assign(blank(),resposta.dados);
+  versao=resposta.versao;
+  confirmado=JSON.stringify(db);
+  U=resposta.pessoa;
+}
+
+async function persistir(opcoes={}){
+  if(!nuvem())return save();
+  if(ocupada||!U)return false;
+  bloquearRede(true);
+  try{
+    const resultado=await EstoqueCompartilhado.enviar('salvar',{dados:db,versao,...opcoes});
+    versao=resultado.versao;
+    U=resultado.pessoa;
+    confirmado=JSON.stringify(db);
+    return true;
+  }catch(err){
+    db=JSON.parse(confirmado);
+    if(err.status===401)logout(err.message);
+    else{
+      if(err.status===409)await atualizarEstoque(true);
+      toast(err.message);
+    }
+    return false;
+  }finally{bloquearRede(false)}
+}
+
+async function atualizarEstoque(conflito){
+  const atual=U, revisao=versao;
+  if(!nuvem()||!atual||(!conflito&&(ocupada||F||$('#sheetBg')||document.hidden)))return;
+  try{
+    const resposta=await EstoqueCompartilhado.enviar('ler',{versao:revisao});
+    if(!U||U.id!==atual.id||versao!==revisao||(!conflito&&(ocupada||F||$('#sheetBg')))||!resposta.dados)return;
+    usarEstoque(resposta);
+    if(conflito){F=null;closeSheet();location.hash='#inicio'}
+    render();
+  }catch(err){if(err.status===401&&U&&U.id===atual.id)logout(err.message)}
+}
+
+async function abrirEstoque(){
+  // Antes da ativação a cópia original continua disponível para uso e backup.
+  try{
+    const resposta=await EstoqueCompartilhado.enviar('estado');
+    modo=resposta.ativo?'online':'local';
+    db=nuvem()?blank():load();
+    if(!nuvem()&&(db.catalogo||0)<CATALOGO_VERSAO){aplicaCatalogo();save()}
+  }catch(err){modo='indisponivel'}
+  render();
+}
+
+function telaCompartilhada(){
+  if(modo==='consultando'||modo==='indisponivel'){
+    return '<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>Lang Estoque</b><small>'+
+      (modo==='consultando'?'Conectando ao estoque…':'O estoque está indisponível. Confira sua conexão.')+
+      '</small></div></div>'+(modo==='indisponivel'?'<button class="btn primary" onclick="abrirEstoque()">Tentar novamente</button>':'')+'</div>';
+  }
+  return '<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>Lang Estoque</b><small>Entre com seu nome e sua senha.</small></div></div>'+
+    '<form class="card" style="max-width:460px;margin:0 auto;color:var(--ink)" onsubmit="return entrarCompartilhado(event)">'+
+    '<div class="f"><label for="cLogin">Nome conforme o cadastro</label><input id="cLogin" autocomplete="username" required></div>'+
+    '<div class="f"><label for="cSenha">Senha</label><input id="cSenha" type="password" autocomplete="current-password" required maxlength="128"></div>'+
+    '<button class="btn primary lg full" type="submit">Entrar</button></form></div>';
+}
+
+function entrarCompartilhado(evento){
+  evento.preventDefault();
+  if(ocupada)return false;
+  const nome=$('#cLogin').value.trim(),senha=$('#cSenha').value;
+  iniciarSessao('entrar',{nome,senha});
+  return false;
+}
+
+async function iniciarSessao(acao,payload){
+  if(ocupada)return;
+  bloquearRede(true);
+  try{
+    if(acao==='ativar'){
+      const fotos=await fotoTodas();
+      const ids=new Set(payload.dados.movs.filter(mov=>mov.foto).map(mov=>mov.id));
+      payload.fotos={};
+      Object.keys(fotos).filter(id=>ids.has(id)).forEach(id=>{payload.fotos[id]=fotos[id]});
+    }
+    const resposta=await EstoqueCompartilhado.enviar(acao,payload);
+    modo='online';
+    ativando=false;
+    usarEstoque(resposta);
+    lockSel=null;pinBuf='';lastAct=Date.now();
+    if(!location.hash)location.hash='#inicio';
+    closeSheet();render();
+    toast(acao==='ativar'?'Estoque compartilhado ativado':'Olá, '+U.nome.split(' ')[0]+'!');
+  }catch(err){
+    if(acao==='ativar'&&err.status===409){ativando=false;await abrirEstoque()}
+    toast(err.message);
+  }finally{bloquearRede(false)}
+}
+
+function telaAtivacao(){
+  const admins=db.pessoas.filter(p=>p.admin&&p.ativo!==false);
+  const conta=admins.length
+    ? '<div class="f"><label for="atAdm">Administrador neste aparelho</label><select id="atAdm">'+admins.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.nome)+'</option>').join('')+'</select></div>'+
+      '<div class="f"><label for="atPin">PIN usado neste aparelho</label><input id="atPin" type="password" inputmode="numeric" maxlength="4" required></div>'
+    : '<div class="f"><label for="atNome">Nome do administrador</label><input id="atNome" maxlength="120" required></div>';
+  return '<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>Ativar estoque compartilhado</b><small>Faça isso no aparelho onde estão os cadastros.</small></div></div>'+
+    '<form class="card" style="max-width:460px;margin:0 auto;color:var(--ink)" onsubmit="return ativarCompartilhado(event)">'+
+    '<p class="small muted">A ativação copia os dados deste aparelho para o estoque da equipe. Depois, ajuste as senhas dos demais usuários em Configurações → Pessoas.</p>'+
+    conta+'<div class="f"><label for="atCodigo">Código de ativação</label><input id="atCodigo" type="password" autocomplete="off" required></div>'+
+    '<div class="f"><label for="atSenha">Nova senha (mínimo de 10 caracteres)</label><input id="atSenha" type="password" autocomplete="new-password" required maxlength="128"></div>'+
+    '<div class="f"><label for="atSenha2">Repita a senha</label><input id="atSenha2" type="password" autocomplete="new-password" required maxlength="128"></div>'+
+    '<button class="btn primary full" type="submit">Ativar e entrar</button>'+
+    '<button class="btn soft full mt" type="button" onclick="ativando=false;renderLock()">Voltar</button></form></div>';
+}
+
+function ativarCompartilhado(evento){
+  evento.preventDefault();
+  if(ocupada)return false;
+  const senha=$('#atSenha').value;
+  if(!senhaOk(senha)||senha!==$('#atSenha2').value){
+    toast('Digite a mesma senha nos dois campos, com pelo menos 10 caracteres.');
+    return false;
+  }
+  const dados=JSON.parse(JSON.stringify(db));
+  let pessoa;
+  if($('#atAdm')){
+    pessoa=dados.pessoas.find(p=>p.id===$('#atAdm').value&&p.admin&&p.ativo!==false);
+    if(!pessoa||hpin(pessoa.id,$('#atPin').value)!==pessoa.pin){toast('PIN incorreto.');return false}
+  }else{
+    const nome=$('#atNome').value.trim();
+    if(!nome){toast('Informe o nome do administrador.');return false}
+    pessoa={id:uid(),nome,admin:true,ativo:true,criado:Date.now()};
+    dados.pessoas.push(pessoa);
+  }
+  dados.pessoas.forEach(p=>{delete p.pin});
+  iniciarSessao('ativar',{codigo:$('#atCodigo').value.trim(),senha,dados,pessoa:pessoa.id});
+  return false;
+}
+
 /* ============ Utilidades ============ */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -77,7 +234,7 @@ function aplicaCatalogo(forcar){
   const nomes=new Set(db.materiais.map(m=>norm(m.nome)));let n=0;
   for(const [nome,cat,un,ic] of CATALOGO){if(nomes.has(norm(nome)))continue;nomes.add(norm(nome));
     db.materiais.push({id:uid(),nome,cat,un,min:0,preco:0,local:'',ic,foto:'',criado:Date.now()});n++}
-  db.catalogo=CATALOGO_VERSAO;save();return n;
+  db.catalogo=CATALOGO_VERSAO;return n;
 }
 /* ============ Pessoas, login (foto + PIN) e permissões ============ */
 let U=null,lockSel=null,pinBuf='',falhas=0,bloqAte=0,lastAct=Date.now(),camAtiva=false;
@@ -92,13 +249,16 @@ function avatar(p,size){size=size||40;const st=`width:${size}px;height:${size}px
   let h=0;for(let i=0;i<nm.length;i++)h=(h*31+nm.charCodeAt(i))>>>0;
   return `<span class="av" style="${st};background:${AVCOR[h%AVCOR.length]}">${esc(ini)}</span>`}
 function soAdmin(){if(isAdmin())return true;toast('🔒 Só o administrador pode fazer isso');return false}
-function logout(msg){U=null;lockSel=null;pinBuf='';F=null;window._onClose=null;closeSheet();if(location.hash&&location.hash!=='#inicio')location.hash='#inicio';render();if(msg)toast(msg)}
+function logout(msg){if(nuvem()){EstoqueCompartilhado.sair();db=blank();confirmado='';versao=0}U=null;lockSel=null;pinBuf='';F=null;window._onClose=null;closeSheet();if(location.hash&&location.hash!=='#inicio')location.hash='#inicio';render();if(msg)toast(msg)}
 ['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
-setInterval(()=>{if(U&&!camAtiva&&Date.now()-lastAct>INATIVO_MS)logout('Sessão encerrada por inatividade')},15000);
+setInterval(()=>{if(U&&!ocupada&&!camAtiva&&Date.now()-lastAct>INATIVO_MS)logout('Sessão encerrada por inatividade')},15000);
 
 function renderLock(){
   const el=$('#lock'),ps=(db.pessoas||[]).filter(p=>p.ativo!==false);
-  if(!ps.some(p=>p.admin)){el.innerHTML=setupHTML();return}
+  if(modo!=='local'){el.innerHTML=telaCompartilhada();return}
+  if(ativando){el.innerHTML=telaAtivacao();return}
+  const ativar='<div style="text-align:center;margin:18px"><button class="btn soft" onclick="ativando=true;renderLock()">Ativar estoque compartilhado</button></div>';
+  if(!ps.some(p=>p.admin)){el.innerHTML=setupHTML()+ativar;return}
   if(lockSel&&pessoaById(lockSel)){const p=pessoaById(lockSel);
     el.innerHTML=`<div class="lock"><div class="pinbox">
       <button class="link" style="color:#ff9a5f" onclick="lockSel=null;pinBuf='';renderLock()">‹ Trocar pessoa</button>
@@ -109,6 +269,7 @@ function renderLock(){
     </div></div>`;return}
   el.innerHTML=`<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>${esc((db.empresa||'Lang').split(' ')[0])} Estoque</b><small>Quem está usando? Toque na sua foto.</small></div></div>
     <div class="people">${ps.map(p=>`<button class="person" onclick="lockSel='${p.id}';pinBuf='';renderLock()">${avatar(p,88)}<span>${esc(p.nome)}</span>${p.admin?'<small>Administrador</small>':''}</button>`).join('')}</div></div>`;
+  el.insertAdjacentHTML('beforeend',ativar);
 }
 function pinKey(k){
   if(Date.now()<bloqAte)return;
@@ -153,35 +314,43 @@ function pessoasSec(){
 function formPessoa(id){
   if(!soAdmin())return;
   const p=id?pessoaById(id):{nome:'',foto:'',admin:false,ativo:true};pFotoTmp=p.foto||'';
+  const campoSenha=nuvem()
+    ? `<div class="f"><label>${id?'Nova senha (em branco, mantém a atual)':'Senha (mínimo de 10 caracteres)'}</label><input id="pPin" type="password" maxlength="128" autocomplete="new-password"></div>`
+    : `<div class="f"><label>${id?'Novo PIN (deixe em branco para manter)':'PIN (4 números)'}</label><input id="pPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"></div>`;
   sheet(id?'✏️ Editar pessoa':'👤 Nova pessoa',`
    <div class="f"><label>Nome</label><input id="pNome" value="${esc(p.nome)}" autocomplete="off" placeholder="Ex.: Carlos (mestre de obras)"></div>
    <div class="f"><label>Foto</label><div style="display:flex;gap:12px;align-items:center"><span id="pPrev">${avatar(p,64)}</span>
      <label class="btn soft" style="cursor:pointer">📷 Tirar foto<input type="file" accept="image/*" capture="user" class="hidden" onchange="pFotoSel(this,'pPrev')"></label></div></div>
-   <div class="f"><label>${id?'Novo PIN (deixe em branco para manter)':'PIN (4 números)'}</label><input id="pPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"></div>
+   ${campoSenha}
    <label class="chk"><input type="checkbox" id="pAdm" ${p.admin?'checked':''}> <span><b>Administrador</b><br><span class="muted small">Pode excluir lançamentos, corrigir saldo, cadastrar pessoas e mexer nas configurações.</span></span></label>
    ${id?`<label class="chk"><input type="checkbox" id="pAtv" ${p.ativo!==false?'checked':''}> <span><b>Ativo</b><br><span class="muted small">Desative quem saiu da empresa: some da tela de login, mas o histórico continua.</span></span></label>
    ${U&&U.id!==id?`<button class="btn danger full" onclick="delPessoa('${id}')">🗑️ Excluir pessoa</button><div class="small muted mt">Os lançamentos que ela fez continuam no histórico com o nome dela.</div>`:'<div class="small muted">Você não pode excluir a si mesmo.</div>'}`:''}`,
    `<button class="btn primary lg full" onclick="salvarPessoa('${id||''}')">Salvar</button>`);
 }
-function salvarPessoa(id){
+async function salvarPessoa(id){
   const nome=$('#pNome').value.trim(),pin=$('#pPin').value,adm=$('#pAdm').checked,atv=id?$('#pAtv').checked:true;
   if(!nome)return toast('Informe o nome');
-  if((!id||pin)&&!pinOk(pin))return toast('O PIN precisa ter 4 números');
+  if((!id||pin)&&!(nuvem()?senhaOk(pin):pinOk(pin)))return toast(nuvem()?'A senha precisa ter entre 10 e 128 caracteres.':'O PIN precisa ter 4 números');
   const outrosAdm=(db.pessoas||[]).filter(x=>x.id!==id&&x.admin&&x.ativo!==false).length;
   if(id&&(!adm||!atv)&&!outrosAdm)return toast('Precisa existir pelo menos um administrador ativo');
-  if(id){const p=pessoaById(id);Object.assign(p,{nome,foto:pFotoTmp,admin:adm,ativo:atv});if(pin)p.pin=hpin(id,pin);if(U&&U.id===id)U=p}
-  else{const nid=uid();db.pessoas.push({id:nid,nome,foto:pFotoTmp,pin:hpin(nid,pin),admin:adm,ativo:true,criado:Date.now()})}
-  pFotoTmp='';save();config();toast('Pessoa salva');
+  const pid=id||uid();
+  const p=id?pessoaById(id):{id:pid,criado:Date.now()};
+  Object.assign(p,{nome,foto:pFotoTmp,admin:adm,ativo:atv});
+  if(!nuvem()&&pin)p.pin=hpin(pid,pin);
+  if(!id)db.pessoas.push(p);
+  if(!await persistir(nuvem()&&pin?{credencial:{id:pid,senha:pin}}:undefined))return;
+  if(!nuvem()&&U&&U.id===id)U=p;
+  pFotoTmp='';config();toast('Pessoa salva');
   if(U&&!U.admin)logout();
 }
 
-function delPessoa(id){
+async function delPessoa(id){
   if(!soAdmin())return;const p=pessoaById(id);if(!p)return;
   if(U&&U.id===id)return toast('Você não pode excluir a si mesmo');
   if(p.admin&&!(db.pessoas||[]).some(x=>x.id!==id&&x.admin&&x.ativo!==false))return toast('Precisa existir pelo menos um administrador ativo');
   if(!confirm(`Excluir ${p.nome}? Ela não poderá mais entrar no app. Os lançamentos dela continuam no histórico.`))return;
   db.movs.forEach(mv=>{if(mv.por===id&&!mv.porNome)mv.porNome=p.nome});
-  db.pessoas=db.pessoas.filter(x=>x.id!==id);save();config();toast('Pessoa excluída');
+  db.pessoas=db.pessoas.filter(x=>x.id!==id);if(!await persistir())return;config();toast('Pessoa excluída');
 }
 /* ============ Selfie no lançamento ============ */
 let idbP=null;
@@ -590,8 +759,8 @@ async function salvarMov(){
   db.seq=(db.seq||0)+1;
   const mv={id:uid(),n:db.seq,tipo:F.tipo,obra:F.obra||'',data:F.data,resp:F.resp.trim(),doc:F.doc.trim(),forn:F.tipo==='entrada'?F.forn.trim():'',obs:F.obs.trim(),itens,criado:Date.now(),por:U.id,porNome:U.nome,foto:!!foto};
   db.movs.push(mv);if(mv.resp)db.ultimoResp=mv.resp;
-  if(!save()){db.movs.pop();return}
-  if(foto)fotoPut(mv.id,foto).catch(()=>toast('⚠️ A foto não pôde ser salva'));
+  if(!await persistir(nuvem()&&foto?{fotos:{[mv.id]:foto}}:undefined)){if(!nuvem()&&db.movs[db.movs.length-1]===mv)db.movs.pop();return}
+  if(!nuvem()&&foto)fotoPut(mv.id,foto).catch(()=>toast('⚠️ A foto não pôde ser salva'));
   F.itens={};F.doc='';F.forn='';F.obs='';F.q='';
   closeSheet();drawMovPage(true);
   const t=TIPOS[mv.tipo],o=obraById(mv.obra);
@@ -618,12 +787,18 @@ function verMov(id){
     ${(mv.itens||[]).map(it=>{const m=matById(it.m),pu=(mv.tipo==='entrada'&&it.v)?it.v:(C.custo[it.m]||0);return `<tr><td>${m?matIcon(m)+' '+esc(m.nome):'<i>material excluído</i>'}</td><td class="n b">${fq(it.q)} ${m?esc(m.un):''}</td>${total?`<td class="n">${pu?brl.format(it.q*pu):'—'}</td>`:''}</tr>`}).join('')}
     ${total?`<tr><td class="b">Total</td><td></td><td class="n b">${brl.format(total)}</td></tr>`:''}</tbody></table></div>`,
    `<div style="display:flex;gap:8px">${isAdmin()?`<button class="btn danger" onclick="delMov('${mv.id}')">🗑️ Excluir</button>`:''}<span style="flex:1"></span>${mv.tipo!=='ajuste'?`<button class="btn dark" onclick="printGuia('${mv.id}')">🖨️ Imprimir</button>`:''}</div>`);
-  if(mv.foto)fotoGet(mv.id).then(d=>{const b=$('#selfieBox');if(b&&d)b.innerHTML=`<img class="selfie" src="${d}" alt="">`}).catch(()=>{});
+  if(mv.foto){
+    const foto=nuvem()?EstoqueCompartilhado.enviar('foto',{id:mv.id}).then(r=>r.imagem):fotoGet(mv.id);
+    const caixa=$('#selfieBox');
+    foto.then(d=>{if(caixa&&d)caixa.innerHTML=`<img class="selfie" src="${esc(d)}" alt="">`}).catch(()=>{});
+  }
 }
-function delMov(id){
+async function delMov(id){
   if(!soAdmin())return;
   if(!confirm('Excluir esta movimentação? O saldo do estoque será recalculado.'))return;
-  db.movs=db.movs.filter(m=>m.id!==id);save();fotoDel(id).catch(()=>{});closeSheet();render();toast('Movimentação excluída');
+  db.movs=db.movs.filter(m=>m.id!==id);if(!await persistir())return;
+  if(!nuvem())fotoDel(id).catch(()=>{});
+  closeSheet();render();toast('Movimentação excluída');
 }
 function formAjuste(mid){
   if(!soAdmin())return;
@@ -634,12 +809,12 @@ function formAjuste(mid){
    <div class="f"><label>Motivo</label><input id="ajO" placeholder="Ex.: inventário, perda, quebra" value="Inventário"></div>`,
    `<button class="btn dark lg full" onclick="salvarAjuste('${mid}',${s})">Salvar contagem</button>`);
 }
-function salvarAjuste(mid,s){
+async function salvarAjuste(mid,s){
   if(!soAdmin())return;
   const v=$('#ajQ').value.trim();if(v===''){toast('Informe a quantidade contada');return}
   const d=Math.round((num(v)-s)*1000)/1000;if(!d){closeSheet();toast('Saldo já está correto');return}
   db.seq=(db.seq||0)+1;db.movs.push({id:uid(),n:db.seq,tipo:'ajuste',obra:'',data:today(),resp:U.nome,doc:'',forn:'',obs:$('#ajO').value.trim()||'Ajuste de saldo',itens:[{m:mid,q:d}],criado:Date.now(),por:U.id,porNome:U.nome});
-  save();closeSheet();render();toast(`Saldo corrigido (${d>0?'+':''}${fq(d)})`);
+  if(!await persistir())return;closeSheet();render();toast(`Saldo corrigido (${d>0?'+':''}${fq(d)})`);
 }
 
 /* ============ Cadastros ============ */
@@ -669,7 +844,7 @@ function formMaterial(id,cb){
   $('#mIcons').onclick=e=>{const b=e.target.closest('button');if(!b)return;mf.ic=b.dataset.v;mf.foto='';prev()};
   $('#mFotoDel').onclick=()=>{mf.foto='';prev()};
   $('#mFoto').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{mf.foto=await fotoReduzida(f);prev()}catch(err){toast('Não foi possível ler a foto')}};
-  $('#mSave').onclick=()=>{
+  $('#mSave').onclick=async()=>{
     const nome=$('#mNome').value.trim();if(!nome){toast('Informe o nome do material');$('#mNome').focus();return}
     if(db.materiais.some(x=>x.id!==id&&x.nome.toLowerCase()===nome.toLowerCase())){toast('Já existe um material com esse nome');return}
     const cat=(($('#mCat .chip.on')||{dataset:{}}).dataset.v)||'Outros';
@@ -678,17 +853,17 @@ function formMaterial(id,cb){
     if(id)Object.assign(matById(id),data);
     else{mid=uid();db.materiais.push({id:mid,...data,criado:Date.now()});const ini=$('#mIni')?num($('#mIni').value):0;
       if(ini>0){db.seq=(db.seq||0)+1;db.movs.push({id:uid(),n:db.seq,tipo:'ajuste',obra:'',data:today(),resp:'',doc:'',forn:'',obs:'Saldo inicial',itens:[{m:mid,q:ini}],criado:Date.now(),por:U.id,porNome:U.nome})}}
-    save();closeSheet();
+    if(!await persistir())return;closeSheet();
     if(cb)cb(mid);else{render();toast(id?'Material atualizado':'Material cadastrado')}
   };
 }
 function fotoReduzida(file){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const S=240,c=document.createElement('canvas');c.width=c.height=S;const k=Math.min(img.width,img.height);c.getContext('2d').drawImage(img,(img.width-k)/2,(img.height-k)/2,k,k,0,0,S,S);URL.revokeObjectURL(img.src);res(c.toDataURL('image/jpeg',.75))};img.onerror=rej;img.src=URL.createObjectURL(file)})}
-function delMaterial(id){
+async function delMaterial(id){
   if(!soAdmin())return;
   const m=matById(id);if(!confirm(`Excluir "${m.nome}"? As movimentações deste material também serão apagadas.`))return;
   db.materiais=db.materiais.filter(x=>x.id!==id);
   db.movs=db.movs.map(mv=>({...mv,itens:(mv.itens||[]).filter(it=>it.m!==id)})).filter(mv=>mv.itens.length);
-  save();closeSheet();location.hash='#estoque';render();toast('Material excluído');
+  if(!await persistir())return;closeSheet();location.hash='#estoque';render();toast('Material excluído');
 }
 function formObra(id,cb){
   const o=id?obraById(id):{nome:'',end:'',resp:'',cor:COLORS[db.obras.length%COLORS.length],status:'ativa'};
@@ -701,21 +876,21 @@ function formObra(id,cb){
    ${isAdmin()?`<button class="btn danger full" onclick="delObra('${id}')">🗑️ Excluir obra</button>`:''}`:''}`,
    `<button class="btn primary lg full" id="oSave">Salvar</button>`);
   setTimeout(()=>{if(!id)$('#oNome').focus()},60);
-  $('#oSave').onclick=()=>{
+  $('#oSave').onclick=async()=>{
     const nome=$('#oNome').value.trim();if(!nome){toast('Informe o nome da obra');return}
     const data={nome,end:$('#oEnd').value.trim(),resp:$('#oResp').value.trim(),cor:(($('#oCor .on')||{dataset:{}}).dataset.v)||COLORS[0]};
     if(id){data.status=$('#oSt').value;Object.assign(obraById(id),data)}
     let oid=id;if(!id){oid=uid();db.obras.push({id:oid,...data,status:'ativa',criado:Date.now()})}
-    save();closeSheet();
+    if(!await persistir())return;closeSheet();
     if(cb)cb(oid);else{render();toast(id?'Obra atualizada':'Obra cadastrada')}
   };
 }
-function delObra(id){
+async function delObra(id){
   if(!soAdmin())return;
   const n=db.movs.filter(m=>m.obra===id).length;
   if(n){alert(`Esta obra tem ${n} movimentação(ões). Para manter o histórico, marque-a como "Concluída" em vez de excluir.`);return}
   if(!confirm('Excluir esta obra?'))return;
-  db.obras=db.obras.filter(o=>o.id!==id);save();closeSheet();location.hash='#obras';render();
+  db.obras=db.obras.filter(o=>o.id!==id);if(!await persistir())return;closeSheet();location.hash='#obras';render();
 }
 
 /* ============ Impressão ============ */
@@ -764,32 +939,60 @@ function config(){
    ${pessoasSec()}
    <div class="sec"><h2>Empresa</h2></div>
    <div class="f"><label>Nome da empresa (sai nas guias e relatórios)</label><input id="cEmp" value="${esc(db.empresa||'')}"></div>
-   <button class="btn dark full" onclick="db.empresa=$('#cEmp').value.trim();save();render();toast('Salvo')">Salvar nome</button>
+   <button class="btn dark full" onclick="salvarEmpresa()">Salvar nome</button>
    <div class="sec"><h2>Planilhas</h2></div>
    <div class="grid g2"><button class="btn soft" onclick="exportEstoqueCSV()">📦 Estoque atual</button><button class="btn soft" onclick="exportCSV()">🔄 Movimentações</button></div>
    <div class="sec"><h2>Backup</h2></div>
-   <p class="muted small" style="margin-top:0">Os dados ficam salvos só neste aparelho. Faça backup com frequência e use-o para passar os dados para outro celular ou computador.</p>
+   <p class="muted small" style="margin-top:0">${nuvem()?'Os dados ficam salvos no estoque compartilhado. O backup guarda uma cópia das informações, sem as senhas.':'Os dados ficam salvos neste aparelho. Faça backup antes de trocar de aparelho.'}</p>
    <div class="grid g2"><button class="btn primary" onclick="fazerBackup()">⬇️ Fazer backup</button><button class="btn soft" onclick="$('#fileImport').click()">⬆️ Restaurar backup</button></div>
    <div class="sec"><h2>Outros</h2></div>
-   <div class="grid g2"><button class="btn soft" onclick="if(confirm('Substituir os dados atuais pelos dados de exemplo?'))loadDemo()">Dados de exemplo</button><button class="btn danger" onclick="if(confirm('Apagar TODOS os dados deste aparelho? Faça backup antes.')){const ps=db.pessoas,em=db.empresa;db=blank();db.pessoas=ps;db.empresa=em;aplicaCatalogo();closeSheet();location.hash='#inicio';render()}">Apagar tudo</button></div>
-   <button class="btn soft full mt" onclick="const n=aplicaCatalogo(true);render();toast(n?n+' materiais adicionados':'A lista padrão já está completa')">📋 Recolocar materiais da lista padrão</button>
+   ${nuvem()?'':'<div class="grid g2"><button class="btn soft" onclick="loadDemoConfirmado()">Dados de exemplo</button><button class="btn danger" onclick="apagarEstoqueLocal()">Apagar tudo</button></div>'}
+   <button class="btn soft full mt" onclick="recolocarCatalogo()">📋 Recolocar materiais da lista padrão</button>
    <p class="muted small mt2">${db.materiais.length} materiais · ${db.obras.length} obras · ${db.movs.length} movimentações</p>`);
 }
-function fazerBackup(){fotoTodas().catch(()=>({})).then(fotos=>download(`backup-estoque-${today()}.json`,JSON.stringify(Object.assign({},db,{_fotos:fotos})),'application/json'))}
+async function salvarEmpresa(){
+  db.empresa=$('#cEmp').value.trim();
+  if(await persistir()){render();toast('Nome salvo')}
+}
+async function recolocarCatalogo(){
+  const n=aplicaCatalogo(true);
+  if(await persistir()){render();toast(n?n+' materiais adicionados':'A lista padrão já está completa')}
+}
+function loadDemoConfirmado(){if(confirm('Substituir os dados atuais pelos dados de exemplo?'))loadDemo()}
+function apagarEstoqueLocal(){
+  if(nuvem()||!confirm('Apagar TODOS os dados deste aparelho? Faça backup antes.'))return;
+  const pessoas=db.pessoas,empresa=db.empresa;
+  db=Object.assign(blank(),{pessoas,empresa});aplicaCatalogo();save();
+  closeSheet();location.hash='#inicio';render();
+}
+async function fazerBackup(){
+  const copia=JSON.parse(JSON.stringify(db));
+  try{
+    copia._fotos=nuvem()?await EstoqueCompartilhado.enviar('backup'):await fotoTodas();
+    download(`backup-estoque-${today()}.json`,JSON.stringify(copia),'application/json');
+  }catch(err){toast(err.message)}
+}
 const lerTexto=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(r.error);r.readAsText(f)});
 $('#fileImport').addEventListener('change',async e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
   if(!isAdmin())return;
   try{const d=JSON.parse(await lerTexto(f));if(!d||!Array.isArray(d.materiais)||!Array.isArray(d.obras)||!Array.isArray(d.movs))throw new Error('formato');
-    if(!confirm(`Restaurar backup com ${d.materiais.length} materiais, ${d.obras.length} obras e ${d.movs.length} movimentações? Os dados atuais serão substituídos.`))return;
+    if(!confirm(`Restaurar backup com ${d.materiais.length} materiais, ${d.obras.length} obras e ${d.movs.length} movimentações? Os dados ${nuvem()?'da equipe':'deste aparelho'} serão substituídos.`))return;
     const fotos=d._fotos||{};delete d._fotos;
-    if(!(d.pessoas||[]).some(p=>p.admin&&p.ativo!==false))d.pessoas=(db.pessoas||[]).concat((d.pessoas||[]).filter(p=>!pessoaById(p.id)));
-    db=Object.assign(blank(),d);save();Object.keys(fotos).forEach(k=>fotoPut(k,fotos[k]).catch(()=>{}));closeSheet();location.hash='#inicio';render();toast('Backup restaurado')}
+    if(nuvem())d.pessoas=db.pessoas;
+    else if(!(d.pessoas||[]).some(p=>p.admin&&p.ativo!==false))d.pessoas=(db.pessoas||[]).concat((d.pessoas||[]).filter(p=>!pessoaById(p.id)));
+    db=Object.assign(blank(),d);
+    const ids=new Set(db.movs.filter(m=>m.foto).map(m=>m.id)),fotosAtivas={};
+    Object.keys(fotos).filter(id=>ids.has(id)).forEach(id=>{fotosAtivas[id]=fotos[id]});
+    if(!await persistir({restaurar:true,fotos:fotosAtivas}))return;
+    if(!nuvem())Object.keys(fotosAtivas).forEach(k=>fotoPut(k,fotosAtivas[k]).catch(()=>{}));
+    closeSheet();location.hash='#inicio';render();toast('Backup restaurado')}
   catch(err){alert('Arquivo de backup inválido.')}
 });
 
 /* ============ Exemplo ============ */
 function loadDemo(){
+  if(nuvem())return;
   const d=blank();d.empresa='LANG Engenharia';
   const M=(nome,cat,un,min,preco,local)=>{const m={id:uid(),nome,cat,un,min,preco,local,criado:Date.now()};d.materiais.push(m);return m.id};
   const cim=M('Cimento CP-II 50 kg','Cimento e argamassa','saco',15,38.9,'Galpão'),arg=M('Argamassa AC-II 20 kg','Cimento e argamassa','saco',10,24.5,'Galpão'),
@@ -830,6 +1033,8 @@ $('#fab').onclick=()=>formMov('saida');
 $('#tabNew').onclick=e=>{e.preventDefault();formMov('saida')};
 $('#btnCfg').onclick=config;
 $('#btnUser').onclick=()=>logout('Até logo!');
-{const n=aplicaCatalogo();if(n)setTimeout(()=>toast(`📦 ${n} materiais da lista padrão adicionados`),400)}
 render();
+abrirEstoque();
+setInterval(()=>atualizarEstoque(false),30000);
+document.addEventListener('visibilitychange',()=>atualizarEstoque(false));
 if(navigator.serviceWorker&&location.protocol!=='file:')navigator.serviceWorker.register('service-worker.js').catch(()=>{});
