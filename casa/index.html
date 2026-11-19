@@ -938,7 +938,7 @@ $('#addAb').onclick = () => { S.lev.aberturas.push({ tipo: 'janela', largura: 1.
 // ================================================================== PERGUNTAS
 const PERG = [
   { k: 'peDireito', t: 'Pé-direito', d: 'Altura do piso ao teto (m).', num: true, base: 1 },
-  { k: 'vedacao', t: 'Paredes', base: 1, o: [['ceramico14', 'Bloco cerâmico 14 cm'], ['ceramico9', 'Bloco cerâmico 9 cm'], ['concreto14', 'Bloco de concreto 14 cm']] },
+  { k: 'vedacao', t: 'Paredes', base: 1, d: 'Blocos estruturais dispensam pilares e vigas de concreto: as próprias paredes sustentam a casa.', o: [['ceramico14', 'Bloco cerâmico 14 cm'], ['ceramico9', 'Bloco cerâmico 9 cm'], ['concreto14', 'Bloco de concreto 14 cm'], ['estrutural_ceramico14', 'Cerâmico estrutural 14 cm'], ['estrutural_concreto14', 'Concreto estrutural 14 cm']] },
   { k: 'fundacao', t: 'Fundação', base: 1, d: 'Dimensionada pelo solo escolhido acima e pela carga dos pavimentos. Radier: placa de concreto armado sob toda a casa, com borda e faixas sob as paredes engrossadas.', o: [['sapata', 'Sapata + baldrame'], ['broca', 'Estaca broca + baldrame'], ['radier', 'Radier (laje no solo)']] },
   { k: 'laje', t: 'Laje do último pavimento', base: 1, d: 'Os pavimentos de baixo sempre têm laje.', o: [['trelicada', 'Laje treliçada (EPS)'], ['nenhuma', 'Sem laje']] },
   { k: 'teto', t: 'Acabamento do teto', base: 1, o: [['reboco', 'Reboco + pintura'], ['gesso', 'Gesso liso'], ['drywall', 'Forro de gesso (drywall)'], ['pvc', 'Forro de PVC']] },
@@ -997,7 +997,7 @@ function renderPerguntas() {
   let prev = '';
   try {
     const r = E.calcular({ pavimentos: S.pavimentos.map((p) => ({ nome: p.nome, rep: p.rep, lev: p.lev })), resp: S.resp, coef: S.coef });
-    const trocou = r.fundacao.tipo !== S.resp.fundacao;
+    const trocou = r.fundacao.tipo !== S.resp.fundacao && r.fundacao.tipo !== 'corrida';
     prev = '<div class="note ' + (trocou ? 'warn' : 'info') + '" style="margin-top:8px"><b>Com a planta atual:</b> ' + esc(r.fundacao.texto || '') + (trocou ? ' Sapata rasa não é indicada para este solo: o cálculo usa estacas.' : '') + '</div>';
   } catch (e) { prev = ''; }
   $('#qEspecial').innerHTML = '<div class="item"><div class="t">Padrão de acabamento</div><div class="d">Ajusta de uma vez piso, azulejos, teto, fachada e esquadrias. Depois dá para mudar item por item.</div><div class="opt">' +
@@ -1035,7 +1035,7 @@ function renderResultado() {
   $('#kpis').innerHTML = [
     [fmt(r.areaConstruida, 1) + ' m²', 'Área construída'], [r.pavimentos + (r.unidades > 1 ? ' · ' + r.unidades + ' un.' : ''), r.unidades > 1 ? 'Pavimentos · unidades' : 'Pavimentos'],
     [fmt(r.paredesExternas + r.paredesInternas, 1) + ' m', 'Paredes'], [fmt(r.alvenaria, 1) + ' m²', 'Alvenaria'], [fmt(r.areaPiso, 1) + ' m²', 'Pisos'],
-    [fmt(r.telhado, 1) + ' m²', 'Telhado'], [fmt(r.concreto, 1) + ' m³', 'Concreto estrutural'], [R.consolidado.length, 'Insumos diferentes']
+    [fmt(r.telhado, 1) + ' m²', 'Telhado'], r.estrutural ? [fmt(r.graute, 1) + ' m³', 'Graute (alvenaria estrutural)'] : [fmt(r.concreto, 1) + ' m³', 'Concreto estrutural'], [R.consolidado.length, 'Insumos diferentes']
   ].map(([v, l]) => '<div class="kpi"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>').join('');
   const grupos = new Map();
   for (const p of S.pavimentos) if (p.levOrigem === 'auto') for (const a of p.iaAvisos || []) if (!/^Escala|^Área construída|unidade ou outro pavimento/.test(a)) { if (!grupos.has(a)) grupos.set(a, []); grupos.get(a).push(p.nome); }
@@ -1078,7 +1078,7 @@ function tabelaConferencia() {
   h += '<div class="tbl"><table><thead><tr><th>Indicador</th><th class="n">Valor</th><th class="n">Faixa usual</th><th>Situação</th></tr></thead><tbody>' +
     R.indicadores.map((i) => '<tr><td>' + esc(i.nome) + (i.nota ? '<div class="etq">' + esc(i.nota) + '</div>' : '') + '</td><td class="n b">' + fmtV(i) + ' ' + i.un + '</td><td class="n">' + fmt(i.min, 2) + ' a ' + fmt(i.max, 2) + '</td><td><span class="est ' + i.estado + '">' + rot[i.estado] + '</span></td></tr>').join('') + '</tbody></table></div>';
   const fu = R.fundacao;
-  h += '<h3 style="margin:18px 0 6px">Fundação</h3><div class="note info">' + esc({ sapata: 'Sapata isolada + viga baldrame', broca: 'Estacas broca + blocos + baldrame', radier: 'Radier' }[fu.tipo] || fu.tipo) + ' · solo: <b>' + esc(fu.solo) + '</b> (σadm ≈ ' + fu.kpa + ' kPa = ' + fmt(fu.kpa / 100, 1) + ' kgf/cm²) · ' + fu.pilares + ' pilares<br>' + esc(fu.texto || '') + '</div>';
+  h += '<h3 style="margin:18px 0 6px">Fundação</h3><div class="note info">' + esc({ sapata: 'Sapata isolada + viga baldrame', corrida: 'Sapata corrida sob as paredes + viga baldrame', broca: fu.estrutural ? 'Estacas broca ao longo das paredes + baldrame' : 'Estacas broca + blocos + baldrame', radier: 'Radier' }[fu.tipo] || fu.tipo) + ' · solo: <b>' + esc(fu.solo) + '</b> (σadm ≈ ' + fu.kpa + ' kPa = ' + fmt(fu.kpa / 100, 1) + ' kgf/cm²) · ' + (fu.estrutural ? 'alvenaria estrutural, ' + fu.pontosGraute + ' pontos de graute vertical' : fu.pilares + ' pilares') + '<br>' + esc(fu.texto || '') + '</div>';
   h += '<h3 style="margin:18px 0 6px">Pavimentos considerados</h3><div class="tbl"><table><thead><tr><th>Pavimento</th><th class="n">Repetições</th><th class="n">Área (m²)</th><th class="n">Cômodos</th><th class="n">Paredes (m)</th><th>Origem do levantamento</th></tr></thead><tbody>' +
     S.pavimentos.map((p) => { const g = E.normalizar(p.lev, S.resp); return '<tr><td>' + esc(p.nome) + '</td><td class="n">' + p.rep + '</td><td class="n">' + fmt(g.A, 1) + '</td><td class="n">' + g.amb.length + '</td><td class="n">' + fmt(g.Ltot, 1) + '</td><td>' + ({ desenho: 'desenho', auto: 'leitura automática do PDF', ia: 'leitura por IA', manual: 'editado à mão' }[p.levOrigem] || '') + '</td></tr>'; }).join('') + '</tbody></table></div>';
   return h;

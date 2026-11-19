@@ -121,3 +121,27 @@ console.log('OK —', r.consolidado.length, 'insumos consolidados');
   console.log('Radier:', rad.fundacao.texto);
   console.log('OK — muro lado a lado, capa e quintal em brita');
 }
+
+// ---- alvenaria estrutural: sem pilares e vigas
+{
+  for (const ved of ['estrutural_ceramico14', 'estrutural_concreto14']) {
+    const r = E.calcular({ lev: casa.lev, resp: { vedacao: ved } });
+    const est = r.etapas.find((e) => e.id === 'estrutura');
+    const mem = est.itens.map((i) => i.mem.join(' ')).join(' ');
+    assert(!/pilares|Vigas|Cinta de respaldo 14/.test(mem), 'sem pilares/vigas de concreto: ' + ved);
+    assert(/graute vertical/.test(mem) && est.itens.some((i) => /^Brita 0/.test(i.desc)), 'graute');
+    const alv = r.etapas.find((e) => e.id === 'alvenaria');
+    assert(alv.itens.some((i) => /^Canaleta/.test(i.desc)) && alv.itens.some((i) => /^Meio-bloco/.test(i.desc)) && !alv.itens.some((i) => /^Tela galvanizada/.test(i.desc)), 'família de blocos');
+    assert(r.fundacao.tipo === 'corrida' && r.fundacao.estrutural, 'sapata corrida');
+    assert(r.avisos.some((a) => /Alvenaria estrutural/.test(a)));
+    assert(total(r, /^Aço/) < total(E.calcular(casa), /^Aço/), 'menos aço que concreto armado');
+    console.log(ved, '| aço', total(r, /^Aço/).toFixed(0), 'kg | graute', r.resumo.graute.toFixed(2), 'm³ |', r.fundacao.texto);
+  }
+  const radier = E.calcular({ lev: casa.lev, resp: { vedacao: 'estrutural_concreto14', fundacao: 'radier' } });
+  assert(radier.fundacao.tipo === 'radier');
+  const broca = E.calcular({ lev: casa.lev, resp: { vedacao: 'estrutural_concreto14', fundacao: 'broca' } });
+  assert(/ao longo das paredes/.test(broca.fundacao.texto));
+  const sob = E.calcular({ pavimentos: [{ nome: 'T', lev: casa.lev }, { nome: 'S', lev: casa.lev }], resp: { vedacao: 'estrutural_ceramico14' } });
+  assert(sob.etapas.find((e) => e.id === 'estrutura').itens.some((i) => /^Vigota/.test(i.desc)), 'laje mantida');
+  console.log('OK — alvenaria estrutural');
+}
