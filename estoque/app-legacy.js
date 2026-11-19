@@ -68,7 +68,14 @@ function load() {
   return blank();
 }
 var db = load();
+var calculos = null,
+  movimentosOrdenados = null;
+function invalidarCalculos() {
+  calculos = null;
+  movimentosOrdenados = null;
+}
 function save() {
+  invalidarCalculos();
   try {
     localStorage.setItem(KEY, JSON.stringify(db));
     return true;
@@ -83,7 +90,7 @@ var uid = function uid() {
 var aparelhoAntigo = document.documentElement.classList.contains('legacy');
 var modo = 'consultando',
   versao = 0,
-  confirmado = '',
+  confirmado = null,
   ocupada = false,
   ativando = false,
   perfis = [];
@@ -114,9 +121,10 @@ document.addEventListener('keydown', function (e) {
 }, true);
 function usarEstoque(resposta) {
   if (resposta.token) EstoqueCompartilhado.sessao(resposta.token);
-  db = Object.assign(blank(), resposta.dados);
+  db = resposta.dados ? Object.assign(blank(), resposta.dados) : resposta.alteracoes.reduce(EstoqueDelta.aplicar, confirmado);
+  invalidarCalculos();
   versao = resposta.versao;
-  confirmado = JSON.stringify(db);
+  confirmado = EstoqueDelta.copiar(db);
   U = resposta.pessoa;
 }
 function persistir(_x) {
@@ -124,7 +132,7 @@ function persistir(_x) {
 }
 function _persistir() {
   _persistir = _asyncToGenerator(_regenerator().m(function _callee6(opcoes) {
-    var resultado, _t6;
+    var anterior, dados, resultado, _t6;
     return _regenerator().w(function (_context6) {
       while (1) switch (_context6.p = _context6.n) {
         case 0:
@@ -143,49 +151,62 @@ function _persistir() {
           }
           return _context6.a(2, false);
         case 2:
+          invalidarCalculos();
+          anterior = confirmado;
           bloquearRede(true);
           _context6.p = 3;
+          dados = opcoes.restaurar ? {
+            dados: db
+          } : {
+            alteracoes: EstoqueDelta.comparar(anterior, db)
+          };
           _context6.n = 4;
-          return EstoqueCompartilhado.enviar('salvar', _extends({
-            dados: db,
+          return EstoqueCompartilhado.enviar('salvar', _extends({}, dados, {
             versao: versao
           }, opcoes));
         case 4:
           resultado = _context6.v;
           versao = resultado.versao;
           U = resultado.pessoa;
-          confirmado = JSON.stringify(db);
+          confirmado = EstoqueDelta.copiar(db);
           return _context6.a(2, true);
         case 5:
           _context6.p = 5;
           _t6 = _context6.v;
-          db = JSON.parse(confirmado);
-          if (!(_t6.status === 401)) {
+          if (!(confirmado !== anterior)) {
             _context6.n = 6;
             break;
           }
-          logout(_t6.message);
-          _context6.n = 8;
-          break;
+          return _context6.a(2, false);
         case 6:
-          if (!(_t6.status === 409)) {
+          db = EstoqueDelta.copiar(anterior);
+          invalidarCalculos();
+          if (!(_t6.status === 401)) {
             _context6.n = 7;
             break;
           }
-          _context6.n = 7;
-          return atualizarEstoque(true);
+          logout(_t6.message);
+          _context6.n = 9;
+          break;
         case 7:
-          toast(_t6.message);
+          if (!(_t6.status === 409)) {
+            _context6.n = 8;
+            break;
+          }
+          _context6.n = 8;
+          return atualizarEstoque(true);
         case 8:
-          return _context6.a(2, false);
+          toast(_t6.message);
         case 9:
-          _context6.p = 9;
-          bloquearRede(false);
-          return _context6.f(9);
+          return _context6.a(2, false);
         case 10:
+          _context6.p = 10;
+          bloquearRede(false);
+          return _context6.f(10);
+        case 11:
           return _context6.a(2);
       }
-    }, _callee6, null, [[3, 5, 9, 10]]);
+    }, _callee6, null, [[3, 5, 10, 11]]);
   }));
   return _persistir.apply(this, arguments);
 }
@@ -208,11 +229,12 @@ function _atualizarEstoque() {
           _context7.p = 1;
           _context7.n = 2;
           return EstoqueCompartilhado.enviar('ler', {
-            versao: revisao
+            versao: revisao,
+            incremental: true
           });
         case 2:
           resposta = _context7.v;
-          if (!(!U || U.id !== atual.id || versao !== revisao || !conflito && (ocupada || F || $('#sheetBg')) || !resposta.dados)) {
+          if (!(!U || U.id !== atual.id || versao !== revisao || !conflito && (ocupada || F || $('#sheetBg')) || !resposta.dados && !resposta.alteracoes)) {
             _context7.n = 3;
             break;
           }
@@ -230,7 +252,7 @@ function _atualizarEstoque() {
         case 4:
           _context7.p = 4;
           _t7 = _context7.v;
-          if (_t7.status === 401 && U && U.id === atual.id) logout(_t7.message);
+          if (_t7.status === 401 && U && U.id === atual.id && versao === revisao && (conflito || !ocupada)) logout(_t7.message);
         case 5:
           return _context7.a(2);
       }
@@ -255,6 +277,7 @@ function _abrirEstoque() {
           modo = resposta.ativo ? 'online' : 'local';
           perfis = resposta.pessoas || [];
           db = nuvem() ? blank() : load();
+          invalidarCalculos();
           if (!nuvem() && (db.catalogo || 0) < CATALOGO_VERSAO) {
             aplicaCatalogo();
             save();
@@ -605,17 +628,20 @@ function toast(msg) {
   }, 2600);
 }
 function sortedMovs() {
-  return db.movs.slice().sort(function (a, b) {
+  if (!movimentosOrdenados) movimentosOrdenados = db.movs.slice().sort(function (a, b) {
     return (b.data || '').localeCompare(a.data || '') || (b.criado || 0) - (a.criado || 0);
   });
+  return movimentosOrdenados;
 }
 function calc() {
+  if (calculos) return calculos;
   var saldo = {},
     custoTot = {},
     custoQtd = {},
     obraQ = {},
     obraV = {},
-    ult = {};
+    ult = {},
+    freq = {};
   db.materiais.forEach(function (m) {
     saldo[m.id] = 0;
   });
@@ -628,6 +654,7 @@ function calc() {
       var it = _step4.value;
       var q = +it.q || 0,
         m = it.m;
+      freq[m] = (freq[m] || 0) + 1;
       if (mv.tipo === 'entrada') {
         if (!mv.obra) saldo[m] = (saldo[m] || 0) + q;
         if (+it.v > 0) {
@@ -656,13 +683,15 @@ function calc() {
       obraV[_mv.obra] = (obraV[_mv.obra] || 0) + _q * v;
     }
   }
-  return {
+  calculos = {
     saldo: saldo,
     custo: custo,
     obraQ: obraQ,
     obraV: obraV,
-    ult: ult
+    ult: ult,
+    freq: freq
   };
+  return calculos;
 }
 function status(m, s) {
   if (s <= 0) return +m.min > 0 ? {
@@ -772,9 +801,12 @@ function logout(msg) {
   if (nuvem()) {
     EstoqueCompartilhado.sair();
     db = blank();
-    confirmado = '';
+    confirmado = null;
     versao = 0;
+    invalidarCalculos();
   }
+  state.limiteMov = 30;
+  state.resumo = false;
   U = null;
   lockSel = null;
   pinBuf = '';
@@ -1001,18 +1033,19 @@ function _salvarPessoa() {
           return _context10.a(2, toast('Precisa existir pelo menos um administrador ativo'));
         case 3:
           pid = id || uid();
-          p = id ? pessoaById(id) : {
+          p = _extends({}, id ? pessoaById(id) : {
             id: pid,
             criado: Date.now()
-          };
-          Object.assign(p, {
+          }, {
             nome: nome,
             foto: pFotoTmp,
             admin: adm,
             ativo: atv
           });
           if (!nuvem() && pin) p.pin = hpin(pid, pin);
-          if (!id) db.pessoas.push(p);
+          if (id) db.pessoas = db.pessoas.map(function (atual) {
+            return atual.id === id ? p : atual;
+          });else db.pessoas.push(p);
           _context10.n = 4;
           return persistir(nuvem() && pin ? {
             credencial: {
@@ -1081,8 +1114,10 @@ function _delPessoa() {
           }
           return _context11.a(2);
         case 5:
-          db.movs.forEach(function (mv) {
-            if (mv.por === id && !mv.porNome) mv.porNome = p.nome;
+          db.movs = db.movs.map(function (mv) {
+            return mv.por === id && !mv.porNome ? _extends({}, mv, {
+              porNome: p.nome
+            }) : mv;
           });
           db.pessoas = db.pessoas.filter(function (x) {
             return x.id !== id;
@@ -1341,7 +1376,9 @@ var state = {
   fMovTipo: '',
   fMovObra: '',
   fMovPer: '30',
-  fObraSt: 'ativa'
+  fObraSt: 'ativa',
+  limiteMov: 30,
+  resumo: false
 };
 function render() {
   if (!U || !pessoaById(U.id) || pessoaById(U.id).ativo === false) {
@@ -1394,6 +1431,14 @@ function vInicio(C) {
   var valorEst = mats.reduce(function (a, m) {
     return a + Math.max(0, C.saldo[m.id]) * (C.custo[m.id] || 0);
   }, 0);
+  var ult = sortedMovs().slice(0, 6);
+  return (!db.obras.length ? "<div class=\"card\" style=\"display:flex;gap:12px;align-items:center;margin-bottom:12px;border:2px dashed #f0c7ad;background:#fff8f3\"><span style=\"font-size:30px\">\uD83C\uDFD7\uFE0F</span><div style=\"flex:1\"><b>Cadastre suas obras</b><div class=\"muted small\">Para poder enviar material para elas.</div></div><button class=\"btn primary\" onclick=\"formObra()\">\uFF0B Obra</button></div>" : '') + "\n  <div class=\"quick\">\n    <button class=\"qa in\" onclick=\"formMov('entrada')\"><span class=\"i\">\uD83D\uDCE5</span>Entrada<small>chegou material</small></button>\n    <button class=\"qa out\" onclick=\"formMov('saida')\"><span class=\"i\">\uD83D\uDE9A</span>Sa\xEDda<small>enviar p/ obra</small></button>\n    <button class=\"qa back\" onclick=\"formMov('devolucao')\"><span class=\"i\">\u21A9\uFE0F</span>Devolu\xE7\xE3o<small>voltou da obra</small></button>\n  </div>\n  <div class=\"grid g4 mt\">\n    <a class=\"card kpi\" href=\"#estoque\" style=\"text-decoration:none;color:inherit\"><span class=\"e\">\uD83D\uDCE6</span><div class=\"l\">Materiais</div><div class=\"v\">" + mats.length + "</div></a>\n    <a class=\"card kpi " + (low.length ? 'alert' : '') + "\" href=\"#estoque\" onclick=\"state.fStatus='baixo'\" style=\"text-decoration:none;color:inherit\"><span class=\"e\">" + (low.length ? '⚠️' : '✅') + "</span><div class=\"l\">Abaixo do m\xEDnimo</div><div class=\"v\">" + low.length + "</div></a>\n    <a class=\"card kpi\" href=\"#obras\" style=\"text-decoration:none;color:inherit\"><span class=\"e\">\uD83C\uDFD7\uFE0F</span><div class=\"l\">Obras ativas</div><div class=\"v\">" + obrasAt.length + "</div></a>\n    <div class=\"card kpi\"><span class=\"e\">\uD83D\uDCB0</span><div class=\"l\">Valor no dep\xF3sito</div><div class=\"v\" style=\"font-size:" + (valorEst >= 1e5 ? 21 : 25) + "px\">" + (valorEst ? money(valorEst) : '—') + "</div></div>\n  </div>\n  " + (low.length ? "<div class=\"sec\"><h2>\u26A0\uFE0F Precisa comprar</h2><span class=\"sp\"></span><a href=\"#estoque\" onclick=\"state.fStatus='baixo'\">ver todos</a></div>\n   <div class=\"list\">" + low.slice(0, 4).map(function (m) {
+    return matRow(m, C);
+  }).join('') + "</div>" : '') + "\n  " + (aparelhoAntigo ? "<button class=\"btn soft full mt2\" onclick=\"state.resumo=!state.resumo;render()\">" + (state.resumo ? 'Ocultar resumo' : 'Ver resumo') + "</button>" : '') + "\n  " + (!aparelhoAntigo || state.resumo ? resumoInicio(C) : '') + "\n  <div class=\"sec\"><h2>\xDAltimas movimenta\xE7\xF5es</h2><span class=\"sp\"></span><a href=\"#movs\">ver todas</a></div>\n  <div class=\"list\">" + (ult.length ? ult.map(function (mv) {
+    return movRow(mv, C);
+  }).join('') : '<div class="card muted small">Nenhuma movimentação ainda. Use os botões acima.</div>') + "</div>";
+}
+function resumoInicio(C) {
   var d30 = daysAgo(30),
     m30 = db.movs.filter(function (m) {
       return m.data >= d30;
@@ -1445,18 +1490,13 @@ function vInicio(C) {
   var mxc = Math.max.apply(Math, [1].concat(cnt.map(function (c) {
     return Math.max(c.e, c.s);
   })));
-  var ult = sortedMovs().slice(0, 6);
-  return (!db.obras.length ? "<div class=\"card\" style=\"display:flex;gap:12px;align-items:center;margin-bottom:12px;border:2px dashed #f0c7ad;background:#fff8f3\"><span style=\"font-size:30px\">\uD83C\uDFD7\uFE0F</span><div style=\"flex:1\"><b>Cadastre suas obras</b><div class=\"muted small\">Para poder enviar material para elas.</div></div><button class=\"btn primary\" onclick=\"formObra()\">\uFF0B Obra</button></div>" : '') + "\n  <div class=\"quick\">\n    <button class=\"qa in\" onclick=\"formMov('entrada')\"><span class=\"i\">\uD83D\uDCE5</span>Entrada<small>chegou material</small></button>\n    <button class=\"qa out\" onclick=\"formMov('saida')\"><span class=\"i\">\uD83D\uDE9A</span>Sa\xEDda<small>enviar p/ obra</small></button>\n    <button class=\"qa back\" onclick=\"formMov('devolucao')\"><span class=\"i\">\u21A9\uFE0F</span>Devolu\xE7\xE3o<small>voltou da obra</small></button>\n  </div>\n  <div class=\"grid g4 mt\">\n    <a class=\"card kpi\" href=\"#estoque\" style=\"text-decoration:none;color:inherit\"><span class=\"e\">\uD83D\uDCE6</span><div class=\"l\">Materiais</div><div class=\"v\">" + mats.length + "</div></a>\n    <a class=\"card kpi " + (low.length ? 'alert' : '') + "\" href=\"#estoque\" onclick=\"state.fStatus='baixo'\" style=\"text-decoration:none;color:inherit\"><span class=\"e\">" + (low.length ? '⚠️' : '✅') + "</span><div class=\"l\">Abaixo do m\xEDnimo</div><div class=\"v\">" + low.length + "</div></a>\n    <a class=\"card kpi\" href=\"#obras\" style=\"text-decoration:none;color:inherit\"><span class=\"e\">\uD83C\uDFD7\uFE0F</span><div class=\"l\">Obras ativas</div><div class=\"v\">" + obrasAt.length + "</div></a>\n    <div class=\"card kpi\"><span class=\"e\">\uD83D\uDCB0</span><div class=\"l\">Valor no dep\xF3sito</div><div class=\"v\" style=\"font-size:" + (valorEst >= 1e5 ? 21 : 25) + "px\">" + (valorEst ? money(valorEst) : '—') + "</div></div>\n  </div>\n  " + (low.length ? "<div class=\"sec\"><h2>\u26A0\uFE0F Precisa comprar</h2><span class=\"sp\"></span><a href=\"#estoque\" onclick=\"state.fStatus='baixo'\">ver todos</a></div>\n   <div class=\"list\">" + low.slice(0, 4).map(function (m) {
-    return matRow(m, C);
-  }).join('') + "</div>" : '') + "\n  <div class=\"grid mt2\" style=\"grid-template-columns:repeat(auto-fit,minmax(300px,1fr))\">\n    <div class=\"card\"><h3 style=\"font-size:15px\">Para onde foi o material <span class=\"muted small\">\xB7 30 dias</span></h3>\n      <div class=\"bars mt\">" + (porArr.length ? porArr.slice(0, 7).map(function (x) {
+  return "<div class=\"grid mt2\" style=\"grid-template-columns:repeat(auto-fit,minmax(300px,1fr))\">\n    <div class=\"card\"><h3 style=\"font-size:15px\">Para onde foi o material <span class=\"muted small\">\xB7 30 dias</span></h3>\n      <div class=\"bars mt\">" + (porArr.length ? porArr.slice(0, 7).map(function (x) {
     return "<a href=\"#obra/" + x.o.id + "\" class=\"bar-row\" style=\"text-decoration:none;color:inherit\"><span class=\"n\"><span class=\"dot\" style=\"background:" + x.o.cor + "\"></span>" + esc(x.o.nome) + "</span>\n        <span class=\"bar-track\"><span class=\"bar-fill\" style=\"display:block;width:" + Math.round((temValor ? x.v : x.n) / mx * 100) + "%;background:" + x.o.cor + "\"></span></span>\n        <span class=\"val\">" + (temValor ? money(x.v) : x.n + ' itens') + "</span></a>";
   }).join('') : '<p class="muted small">Nenhuma saída para obra nos últimos 30 dias.</p>') + "</div></div>\n    <div class=\"card\"><h3 style=\"font-size:15px\">Itens movimentados <span class=\"muted small\">\xB7 14 dias</span></h3>\n      <div class=\"cols\">" + cnt.map(function (c) {
     return "<div class=\"c\" title=\"" + fdate(c.d) + ": " + c.e + " item(ns) de entrada, " + c.s + " de sa\xEDda\"><div style=\"display:flex;gap:2px;align-items:flex-end;height:100%\"><i style=\"flex:1;height:" + c.e / mxc * 100 + "%;background:var(--in)\"></i><i style=\"flex:1;height:" + c.s / mxc * 100 + "%;background:var(--out)\"></i></div></div>";
   }).join('') + "</div>\n      <div class=\"cols-x\">" + cnt.map(function (c, i) {
     return "<span>" + (i % 2 ? '' : c.d.slice(8, 10)) + "</span>";
-  }).join('') + "</div>\n      <div class=\"legend\"><span><i class=\"dot\" style=\"background:var(--in)\"></i>Entradas</span><span><i class=\"dot\" style=\"background:var(--out)\"></i>Sa\xEDdas</span></div></div>\n  </div>\n  <div class=\"sec\"><h2>\xDAltimas movimenta\xE7\xF5es</h2><span class=\"sp\"></span><a href=\"#movs\">ver todas</a></div>\n  <div class=\"list\">" + (ult.length ? ult.map(function (mv) {
-    return movRow(mv, C);
-  }).join('') : '<div class="card muted small">Nenhuma movimentação ainda. Use os botões acima.</div>') + "</div>";
+  }).join('') + "</div>\n      <div class=\"legend\"><span><i class=\"dot\" style=\"background:var(--in)\"></i>Entradas</span><span><i class=\"dot\" style=\"background:var(--out)\"></i>Sa\xEDdas</span></div></div>\n  </div>";
 }
 function matRow(m, C) {
   var s = C.saldo[m.id] || 0,
@@ -1648,12 +1688,42 @@ function vObra(C, id) {
     return movRow(mv, C);
   }).join('') : '<div class="card muted small">Sem movimentações.</div>') + "</div>";
 }
-function vMovs(C) {
+function movsFiltrados() {
   var per = state.fMovPer,
     lim = per === 'todos' ? '' : daysAgo(+per);
-  var ms = sortedMovs().filter(function (mv) {
+  return sortedMovs().filter(function (mv) {
     return (!lim || mv.data >= lim) && (!state.fMovTipo || mv.tipo === state.fMovTipo) && (!state.fMovObra || mv.obra === state.fMovObra);
   });
+}
+function linhasMovs(ms, C, inicio, fim) {
+  var html = '',
+    cur = inicio > 0 && ms[inicio - 1] ? ms[inicio - 1].data : '';
+  for (var _iterator9 = _createForOfIteratorHelperLoose(ms.slice(inicio, fim)), _step9; !(_step9 = _iterator9()).done;) {
+    var mv = _step9.value;
+    if (mv.data !== cur) {
+      cur = mv.data;
+      html += "<div class=\"muted small b\" style=\"margin:12px 2px 2px\">" + diaLabel(cur) + "</div>";
+    }
+    html += movRow(mv, C);
+  }
+  return html;
+}
+function alterarFiltroMov(campo, valor) {
+  state[campo] = valor;
+  state.limiteMov = 30;
+  render();
+}
+function mostrarMaisMovs() {
+  var ms = movsFiltrados(),
+    inicio = state.limiteMov;
+  state.limiteMov += 30;
+  $('#listaMovs').insertAdjacentHTML('beforeend', linhasMovs(ms, calc(), inicio, state.limiteMov));
+  $('#maisMovs').classList.toggle('hidden', ms.length <= state.limiteMov);
+}
+function vMovs(C) {
+  var per = state.fMovPer,
+    ms = movsFiltrados(),
+    limite = aparelhoAntigo ? state.limiteMov : 300;
   var tot = {
     entrada: 0,
     saida: 0,
@@ -1662,27 +1732,18 @@ function vMovs(C) {
   ms.forEach(function (mv) {
     if (tot[mv.tipo] != null) tot[mv.tipo] += movValor(mv, C);
   });
-  var html = '',
-    cur = '';
-  for (var _iterator9 = _createForOfIteratorHelperLoose(ms.slice(0, 300)), _step9; !(_step9 = _iterator9()).done;) {
-    var mv = _step9.value;
-    if (mv.data !== cur) {
-      cur = mv.data;
-      html += "<div class=\"muted small b\" style=\"margin:12px 2px 2px\">" + diaLabel(cur) + "</div>";
-    }
-    html += movRow(mv, C);
-  }
+  var html = linhasMovs(ms, C, 0, limite);
   return "<div class=\"sec\" style=\"margin-top:4px\"><h2 style=\"font-size:22px\">Movimenta\xE7\xF5es</h2><span class=\"sp\"></span><button class=\"btn soft\" onclick=\"exportCSV()\">\u2B07\uFE0F Planilha</button></div>\n  <div class=\"chips\">" + [['', 'Todas'], ['entrada', '📥 Entradas'], ['saida', '🚚 Saídas'], ['devolucao', '↩️ Devoluções'], ['ajuste', '⚖️ Ajustes']].map(function (_ref7) {
     var k = _ref7[0],
       l = _ref7[1];
-    return "<button class=\"chip " + (state.fMovTipo === k ? 'on' : '') + "\" onclick=\"state.fMovTipo='" + k + "';render()\">" + l + "</button>";
-  }).join('') + "</div>\n  <div class=\"search\">\n    <select onchange=\"state.fMovObra=this.value;render()\" style=\"flex:1\"><option value=\"\">Todas as obras</option>" + db.obras.map(function (o) {
+    return "<button class=\"chip " + (state.fMovTipo === k ? 'on' : '') + "\" onclick=\"alterarFiltroMov('fMovTipo','" + k + "')\">" + l + "</button>";
+  }).join('') + "</div>\n  <div class=\"search\">\n    <select onchange=\"alterarFiltroMov('fMovObra',this.value)\" style=\"flex:1\"><option value=\"\">Todas as obras</option>" + db.obras.map(function (o) {
     return "<option value=\"" + o.id + "\" " + (state.fMovObra === o.id ? 'selected' : '') + ">" + esc(o.nome) + "</option>";
-  }).join('') + "</select>\n    <select onchange=\"state.fMovPer=this.value;render()\">" + [['7', '7 dias'], ['30', '30 dias'], ['90', '90 dias'], ['365', '12 meses'], ['todos', 'Tudo']].map(function (_ref8) {
+  }).join('') + "</select>\n    <select onchange=\"alterarFiltroMov('fMovPer',this.value)\">" + [['7', '7 dias'], ['30', '30 dias'], ['90', '90 dias'], ['365', '12 meses'], ['todos', 'Tudo']].map(function (_ref8) {
     var k = _ref8[0],
       l = _ref8[1];
     return "<option value=\"" + k + "\" " + (per === k ? 'selected' : '') + ">" + l + "</option>";
-  }).join('') + "</select>\n  </div>\n  " + (tot.entrada || tot.saida ? "<div class=\"grid g2\" style=\"grid-template-columns:repeat(3,1fr)\">\n    <div class=\"card kpi\" style=\"padding:11px\"><div class=\"l\">\uD83D\uDCE5 Entradas</div><div class=\"v\" style=\"font-size:17px;color:var(--in)\">" + money(tot.entrada) + "</div></div>\n    <div class=\"card kpi\" style=\"padding:11px\"><div class=\"l\">\uD83D\uDE9A Sa\xEDdas</div><div class=\"v\" style=\"font-size:17px;color:var(--out)\">" + money(tot.saida) + "</div></div>\n    <div class=\"card kpi\" style=\"padding:11px\"><div class=\"l\">\u21A9\uFE0F Devolu\xE7\xF5es</div><div class=\"v\" style=\"font-size:17px;color:var(--back)\">" + money(tot.devolucao) + "</div></div></div>" : '') + "\n  <div class=\"list\">" + (html || '<div class="card muted small mt">Nenhuma movimentação neste filtro.</div>') + "</div>";
+  }).join('') + "</select>\n  </div>\n  " + (tot.entrada || tot.saida ? "<div class=\"grid g2\" style=\"grid-template-columns:repeat(3,1fr)\">\n    <div class=\"card kpi\" style=\"padding:11px\"><div class=\"l\">\uD83D\uDCE5 Entradas</div><div class=\"v\" style=\"font-size:17px;color:var(--in)\">" + money(tot.entrada) + "</div></div>\n    <div class=\"card kpi\" style=\"padding:11px\"><div class=\"l\">\uD83D\uDE9A Sa\xEDdas</div><div class=\"v\" style=\"font-size:17px;color:var(--out)\">" + money(tot.saida) + "</div></div>\n    <div class=\"card kpi\" style=\"padding:11px\"><div class=\"l\">\u21A9\uFE0F Devolu\xE7\xF5es</div><div class=\"v\" style=\"font-size:17px;color:var(--back)\">" + money(tot.devolucao) + "</div></div></div>" : '') + "\n  <div class=\"list\" id=\"listaMovs\">" + (html || '<div class="card muted small mt">Nenhuma movimentação neste filtro.</div>') + "</div>\n  " + (aparelhoAntigo && ms.length > limite ? '<button id="maisMovs" class="btn soft full mt" onclick="mostrarMaisMovs()">Ver mais</button>' : '');
 }
 var DIAS = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'],
   MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -1883,12 +1944,7 @@ function tilesHTML(C) {
   var categorias = aparelhoAntigo ? seletorCategorias(ms, F.cat, 'categoriaMov') : '';
   if (!ms.length) return categorias + ("<div class=\"card muted small\" style=\"grid-column:1/-1\">" + (t === 'devolucao' && !F.cat && !ws.length ? 'Esta obra não tem material para devolver.' : 'Nenhum material encontrado.') + "</div>");
   if (aparelhoAntigo && !F.cat) return categorias;
-  var freq = {};
-  db.movs.forEach(function (mv) {
-    return (mv.itens || []).forEach(function (it) {
-      freq[it.m] = (freq[it.m] || 0) + 1;
-    });
-  });
+  var freq = C.freq;
   var tem = function tem(m) {
     return t === 'saida' && (C.saldo[m.id] || 0) > 0 ? 1 : 0;
   };
@@ -2119,7 +2175,10 @@ function _salvarMov() {
             _context12.n = 6;
             break;
           }
-          if (!nuvem() && db.movs[db.movs.length - 1] === mv) db.movs.pop();
+          if (!nuvem() && db.movs[db.movs.length - 1] === mv) {
+            db.movs.pop();
+            invalidarCalculos();
+          }
           return _context12.a(2);
         case 6:
           if (!nuvem() && foto) fotoPut(mv.id, foto).catch(function () {
@@ -2415,7 +2474,9 @@ function formMaterial(id, cb) {
             foto: mf.foto
           };
           mid = id;
-          if (id) Object.assign(matById(id), data);else {
+          if (id) db.materiais = db.materiais.map(function (atual) {
+            return atual.id === id ? _extends({}, atual, data) : atual;
+          });else {
             mid = uid();
             db.materiais.push(_extends({
               id: mid
@@ -2507,10 +2568,11 @@ function _delMaterial() {
             return x.id !== id;
           });
           db.movs = db.movs.map(function (mv) {
-            return _extends({}, mv, {
-              itens: (mv.itens || []).filter(function (it) {
-                return it.m !== id;
-              })
+            var itens = (mv.itens || []).filter(function (it) {
+              return it.m !== id;
+            });
+            return mv.itens && itens.length === mv.itens.length ? mv : _extends({}, mv, {
+              itens: itens
             });
           }).filter(function (mv) {
             return mv.itens.length;
@@ -2572,7 +2634,9 @@ function formObra(id, cb) {
           };
           if (id) {
             data.status = $('#oSt').value;
-            Object.assign(obraById(id), data);
+            db.obras = db.obras.map(function (atual) {
+              return atual.id === id ? _extends({}, atual, data) : atual;
+            });
           }
           oid = id;
           if (!id) {

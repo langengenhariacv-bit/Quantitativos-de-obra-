@@ -13,12 +13,14 @@ const TIPOS={entrada:{nome:'Entrada',ic:'📥',cls:'in'},saida:{nome:'Saída',ic
 function blank(){return {empresa:'LANG Engenharia',seq:0,materiais:[],obras:[],movs:[],ultimoResp:'',pessoas:[]}}
 function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&Array.isArray(d.materiais)&&Array.isArray(d.obras)&&Array.isArray(d.movs))return Object.assign(blank(),d)}catch(e){}return blank()}
 let db=load();
-function save(){try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){toast('⚠️ Não foi possível salvar no aparelho. Exporte um backup.');return false}}
+let calculos=null, movimentosOrdenados=null;
+function invalidarCalculos(){calculos=null;movimentosOrdenados=null}
+function save(){invalidarCalculos();try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){toast('⚠️ Não foi possível salvar no aparelho. Exporte um backup.');return false}}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const aparelhoAntigo=document.documentElement.classList.contains('legacy');
 
 /* ============ Estoque compartilhado ============ */
-let modo='consultando', versao=0, confirmado='', ocupada=false, ativando=false, perfis=[];
+let modo='consultando', versao=0, confirmado=null, ocupada=false, ativando=false, perfis=[];
 const nuvem=()=>modo==='online';
 const senhaOk=senha=>senha.length>=10&&senha.length<=128;
 
@@ -39,24 +41,30 @@ document.addEventListener('keydown',e=>{if(ocupada){e.preventDefault();e.stopImm
 
 function usarEstoque(resposta){
   if(resposta.token)EstoqueCompartilhado.sessao(resposta.token);
-  db=Object.assign(blank(),resposta.dados);
+  db=resposta.dados?Object.assign(blank(),resposta.dados):resposta.alteracoes.reduce(EstoqueDelta.aplicar,confirmado);
+  invalidarCalculos();
   versao=resposta.versao;
-  confirmado=JSON.stringify(db);
+  confirmado=EstoqueDelta.copiar(db);
   U=resposta.pessoa;
 }
 
 async function persistir(opcoes={}){
   if(!nuvem())return save();
   if(ocupada||!U)return false;
+  invalidarCalculos();
+  const anterior=confirmado;
   bloquearRede(true);
   try{
-    const resultado=await EstoqueCompartilhado.enviar('salvar',{dados:db,versao,...opcoes});
+    const dados=opcoes.restaurar?{dados:db}:{alteracoes:EstoqueDelta.comparar(anterior,db)};
+    const resultado=await EstoqueCompartilhado.enviar('salvar',{...dados,versao,...opcoes});
     versao=resultado.versao;
     U=resultado.pessoa;
-    confirmado=JSON.stringify(db);
+    confirmado=EstoqueDelta.copiar(db);
     return true;
   }catch(err){
-    db=JSON.parse(confirmado);
+    if(confirmado!==anterior)return false;
+    db=EstoqueDelta.copiar(anterior);
+    invalidarCalculos();
     if(err.status===401)logout(err.message);
     else{
       if(err.status===409)await atualizarEstoque(true);
@@ -70,12 +78,12 @@ async function atualizarEstoque(conflito){
   const atual=U, revisao=versao;
   if(!nuvem()||!atual||(!conflito&&(ocupada||F||$('#sheetBg')||document.hidden)))return;
   try{
-    const resposta=await EstoqueCompartilhado.enviar('ler',{versao:revisao});
-    if(!U||U.id!==atual.id||versao!==revisao||(!conflito&&(ocupada||F||$('#sheetBg')))||!resposta.dados)return;
+    const resposta=await EstoqueCompartilhado.enviar('ler',{versao:revisao,incremental:true});
+    if(!U||U.id!==atual.id||versao!==revisao||(!conflito&&(ocupada||F||$('#sheetBg')))||(!resposta.dados&&!resposta.alteracoes))return;
     usarEstoque(resposta);
     if(conflito){F=null;closeSheet();location.hash='#inicio'}
     render();
-  }catch(err){if(err.status===401&&U&&U.id===atual.id)logout(err.message)}
+  }catch(err){if(err.status===401&&U&&U.id===atual.id&&versao===revisao&&(conflito||!ocupada))logout(err.message)}
 }
 
 async function abrirEstoque(){
@@ -85,6 +93,7 @@ async function abrirEstoque(){
     modo=resposta.ativo?'online':'local';
     perfis=resposta.pessoas||[];
     db=nuvem()?blank():load();
+    invalidarCalculos();
     if(!nuvem()&&(db.catalogo||0)<CATALOGO_VERSAO){aplicaCatalogo();save()}
   }catch(err){modo='indisponivel'}
   render();
@@ -224,17 +233,22 @@ const catIcon=c=>CAT_ICON[c]||'📦';
 function guessIcon(nome,cat){const n=norm(nome);for(const [e,k] of ICONS)if(k&&k.split(' ').some(w=>n.includes(w)))return e;return catIcon(cat)}
 function matIcon(m,mostrarFoto=true){if(!m)return '📦';if(m.foto&&mostrarFoto)return `<img class="mi" src="${esc(m.foto)}" alt="">`;return m.ic||guessIcon(m.nome,m.cat)}
 function toast(msg){document.querySelectorAll('.toast').forEach(x=>x.remove());const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
-function sortedMovs(){return db.movs.slice().sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.criado||0)-(a.criado||0))}
+function sortedMovs(){
+  if(!movimentosOrdenados)movimentosOrdenados=db.movs.slice().sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.criado||0)-(a.criado||0));
+  return movimentosOrdenados;
+}
 
 /* ============ Cálculos ============ */
 // Saldo no depósito: entradas (sem obra) + devoluções − saídas ± ajustes.
 // Entrada com obra = compra entregue direto na obra: conta para a obra, não passa pelo depósito.
 function calc(){
-  const saldo={},custoTot={},custoQtd={},obraQ={},obraV={},ult={};
+  if(calculos)return calculos;
+  const saldo={},custoTot={},custoQtd={},obraQ={},obraV={},ult={},freq={};
   db.materiais.forEach(m=>{saldo[m.id]=0});
   const sorted=db.movs.slice().sort((a,b)=>(a.data||'').localeCompare(b.data||'')||(a.criado||0)-(b.criado||0));
   for(const mv of sorted)for(const it of mv.itens||[]){
     const q=+it.q||0,m=it.m;
+    freq[m]=(freq[m]||0)+1;
     if(mv.tipo==='entrada'){if(!mv.obra)saldo[m]=(saldo[m]||0)+q;if(+it.v>0){custoTot[m]=(custoTot[m]||0)+q*it.v;custoQtd[m]=(custoQtd[m]||0)+q}}
     else if(mv.tipo==='saida')saldo[m]=(saldo[m]||0)-q;
     else if(mv.tipo==='devolucao')saldo[m]=(saldo[m]||0)+q;
@@ -249,7 +263,8 @@ function calc(){
     for(const it of mv.itens||[]){const q=sg*(+it.q||0);oq[it.m]=(oq[it.m]||0)+q;
       const v=(mv.tipo==='entrada'&&+it.v>0?+it.v:custo[it.m]||0);obraV[mv.obra]=(obraV[mv.obra]||0)+q*v}
   }
-  return {saldo,custo,obraQ,obraV,ult};
+  calculos={saldo,custo,obraQ,obraV,ult,freq};
+  return calculos;
 }
 function status(m,s){if(s<=0)return +m.min>0?{k:'zero',t:'Sem estoque',c:'var(--danger)'}:{k:'none',t:'Sem saldo',c:'#b7b0aa'};if(+m.min>0&&s<=+m.min)return{k:'low',t:'Estoque baixo',c:'var(--warn)'};return{k:'ok',t:'Em estoque',c:'var(--in)'}}
 const alerta=k=>k==='zero'||k==='low';
@@ -277,7 +292,7 @@ function avatar(p,size){size=size||40;const st=`width:${size}px;height:${size}px
   let h=0;for(let i=0;i<nm.length;i++)h=(h*31+nm.charCodeAt(i))>>>0;
   return `<span class="av" style="${st};background:${AVCOR[h%AVCOR.length]}">${esc(ini)}</span>`}
 function soAdmin(){if(isAdmin())return true;toast('🔒 Só o administrador pode fazer isso');return false}
-function logout(msg){if(nuvem()){EstoqueCompartilhado.sair();db=blank();confirmado='';versao=0}U=null;lockSel=null;pinBuf='';F=null;window._onClose=null;closeSheet();if(location.hash&&location.hash!=='#inicio')location.hash='#inicio';render();if(nuvem())atualizarPerfis();if(msg)toast(msg)}
+function logout(msg){if(nuvem()){EstoqueCompartilhado.sair();db=blank();confirmado=null;versao=0;invalidarCalculos()}state.limiteMov=30;state.resumo=false;U=null;lockSel=null;pinBuf='';F=null;window._onClose=null;closeSheet();if(location.hash&&location.hash!=='#inicio')location.hash='#inicio';render();if(nuvem())atualizarPerfis();if(msg)toast(msg)}
 ['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
 setInterval(()=>{if(U&&!ocupada&&!camAtiva&&Date.now()-lastAct>INATIVO_MS)logout('Sessão encerrada por inatividade')},15000);
 
@@ -371,10 +386,10 @@ async function salvarPessoa(id){
   const outrosAdm=(db.pessoas||[]).filter(x=>x.id!==id&&x.admin&&x.ativo!==false).length;
   if(id&&(!adm||!atv)&&!outrosAdm)return toast('Precisa existir pelo menos um administrador ativo');
   const pid=id||uid();
-  const p=id?pessoaById(id):{id:pid,criado:Date.now()};
-  Object.assign(p,{nome,foto:pFotoTmp,admin:adm,ativo:atv});
+  const p={...(id?pessoaById(id):{id:pid,criado:Date.now()}),nome,foto:pFotoTmp,admin:adm,ativo:atv};
   if(!nuvem()&&pin)p.pin=hpin(pid,pin);
-  if(!id)db.pessoas.push(p);
+  if(id)db.pessoas=db.pessoas.map(atual=>atual.id===id?p:atual);
+  else db.pessoas.push(p);
   if(!await persistir(nuvem()&&pin?{credencial:{id:pid,senha:pin}}:undefined))return;
   if(!nuvem()&&U&&U.id===id)U=p;
   pFotoTmp='';config();toast('Pessoa salva');
@@ -386,7 +401,7 @@ async function delPessoa(id){
   if(U&&U.id===id)return toast('Você não pode excluir a si mesmo');
   if(p.admin&&!(db.pessoas||[]).some(x=>x.id!==id&&x.admin&&x.ativo!==false))return toast('Precisa existir pelo menos um administrador ativo');
   if(!confirm(`Excluir ${p.nome}? Ela não poderá mais entrar no app. Os lançamentos dela continuam no histórico.`))return;
-  db.movs.forEach(mv=>{if(mv.por===id&&!mv.porNome)mv.porNome=p.nome});
+  db.movs=db.movs.map(mv=>mv.por===id&&!mv.porNome?{...mv,porNome:p.nome}:mv);
   db.pessoas=db.pessoas.filter(x=>x.id!==id);if(!await persistir())return;config();toast('Pessoa excluída');
 }
 /* ============ Selfie no lançamento ============ */
@@ -427,7 +442,7 @@ function selfie(){return new Promise(resolve=>{
 
 /* ============ Rotas ============ */
 function route(){const h=(location.hash||'#inicio').slice(1).split('/');return{p:h[0]||'inicio',id:h[1]?decodeURIComponent(h[1]):null}}
-const state={fEst:'',fCat:'',fStatus:'',fMovTipo:'',fMovObra:'',fMovPer:'30',fObraSt:'ativa'};
+const state={fEst:'',fCat:'',fStatus:'',fMovTipo:'',fMovObra:'',fMovPer:'30',fObraSt:'ativa',limiteMov:30,resumo:false};
 function render(){
   if(!U||!pessoaById(U.id)||pessoaById(U.id).ativo===false){U=null;document.body.classList.add('locked');renderLock();return}
   U=pessoaById(U.id);document.body.classList.remove('locked');$('#lock').innerHTML='';
@@ -457,18 +472,6 @@ function vInicio(C){
   const mats=db.materiais,obrasAt=db.obras.filter(o=>o.status!=='concluida');
   const low=mats.filter(m=>alerta(status(m,C.saldo[m.id]).k)).sort((a,b)=>C.saldo[a.id]-C.saldo[b.id]);
   const valorEst=mats.reduce((a,m)=>a+Math.max(0,C.saldo[m.id])*(C.custo[m.id]||0),0);
-  const d30=daysAgo(30),m30=db.movs.filter(m=>m.data>=d30);
-  // saídas por obra (30 dias)
-  const por={};let temValor=false;
-  for(const mv of m30){if(!mv.obra||!(mv.tipo==='saida'||mv.tipo==='entrada'))continue;const v=movValor(mv,C);if(v>0)temValor=true;
-    const p=por[mv.obra]||(por[mv.obra]={v:0,n:0});p.v+=v;p.n+=(mv.itens||[]).length}
-  const porArr=Object.entries(por).map(([id,x])=>({o:obraById(id),...x})).filter(x=>x.o).sort((a,b)=>temValor?b.v-a.v:b.n-a.n);
-  const mx=Math.max(1,...porArr.map(x=>temValor?x.v:x.n));
-  // movimento diário 14 dias
-  const days=[];for(let i=13;i>=0;i--)days.push(daysAgo(i));
-  const cnt=days.map(d=>({d,e:0,s:0}));
-  for(const mv of db.movs){const k=days.indexOf(mv.data);if(k<0)continue;const n=(mv.itens||[]).length;if(mv.tipo==='entrada')cnt[k].e+=n;else if(mv.tipo==='saida')cnt[k].s+=n}
-  const mxc=Math.max(1,...cnt.map(c=>Math.max(c.e,c.s)));
   const ult=sortedMovs().slice(0,6);
   return `${!db.obras.length?`<div class="card" style="display:flex;gap:12px;align-items:center;margin-bottom:12px;border:2px dashed #f0c7ad;background:#fff8f3"><span style="font-size:30px">🏗️</span><div style="flex:1"><b>Cadastre suas obras</b><div class="muted small">Para poder enviar material para elas.</div></div><button class="btn primary" onclick="formObra()">＋ Obra</button></div>`:''}
   <div class="quick">
@@ -484,7 +487,26 @@ function vInicio(C){
   </div>
   ${low.length?`<div class="sec"><h2>⚠️ Precisa comprar</h2><span class="sp"></span><a href="#estoque" onclick="state.fStatus='baixo'">ver todos</a></div>
    <div class="list">${low.slice(0,4).map(m=>matRow(m,C)).join('')}</div>`:''}
-  <div class="grid mt2" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+  ${aparelhoAntigo?`<button class="btn soft full mt2" onclick="state.resumo=!state.resumo;render()">${state.resumo?'Ocultar resumo':'Ver resumo'}</button>`:''}
+  ${!aparelhoAntigo||state.resumo?resumoInicio(C):''}
+  <div class="sec"><h2>Últimas movimentações</h2><span class="sp"></span><a href="#movs">ver todas</a></div>
+  <div class="list">${ult.length?ult.map(mv=>movRow(mv,C)).join(''):'<div class="card muted small">Nenhuma movimentação ainda. Use os botões acima.</div>'}</div>`;
+}
+
+function resumoInicio(C){
+  const d30=daysAgo(30),m30=db.movs.filter(m=>m.data>=d30);
+  // saídas por obra (30 dias)
+  const por={};let temValor=false;
+  for(const mv of m30){if(!mv.obra||!(mv.tipo==='saida'||mv.tipo==='entrada'))continue;const v=movValor(mv,C);if(v>0)temValor=true;
+    const p=por[mv.obra]||(por[mv.obra]={v:0,n:0});p.v+=v;p.n+=(mv.itens||[]).length}
+  const porArr=Object.entries(por).map(([id,x])=>({o:obraById(id),...x})).filter(x=>x.o).sort((a,b)=>temValor?b.v-a.v:b.n-a.n);
+  const mx=Math.max(1,...porArr.map(x=>temValor?x.v:x.n));
+  // movimento diário 14 dias
+  const days=[];for(let i=13;i>=0;i--)days.push(daysAgo(i));
+  const cnt=days.map(d=>({d,e:0,s:0}));
+  for(const mv of db.movs){const k=days.indexOf(mv.data);if(k<0)continue;const n=(mv.itens||[]).length;if(mv.tipo==='entrada')cnt[k].e+=n;else if(mv.tipo==='saida')cnt[k].s+=n}
+  const mxc=Math.max(1,...cnt.map(c=>Math.max(c.e,c.s)));
+  return `<div class="grid mt2" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
     <div class="card"><h3 style="font-size:15px">Para onde foi o material <span class="muted small">· 30 dias</span></h3>
       <div class="bars mt">${porArr.length?porArr.slice(0,7).map(x=>`<a href="#obra/${x.o.id}" class="bar-row" style="text-decoration:none;color:inherit"><span class="n"><span class="dot" style="background:${x.o.cor}"></span>${esc(x.o.nome)}</span>
         <span class="bar-track"><span class="bar-fill" style="display:block;width:${Math.round((temValor?x.v:x.n)/mx*100)}%;background:${x.o.cor}"></span></span>
@@ -493,9 +515,7 @@ function vInicio(C){
       <div class="cols">${cnt.map(c=>`<div class="c" title="${fdate(c.d)}: ${c.e} item(ns) de entrada, ${c.s} de saída"><div style="display:flex;gap:2px;align-items:flex-end;height:100%"><i style="flex:1;height:${c.e/mxc*100}%;background:var(--in)"></i><i style="flex:1;height:${c.s/mxc*100}%;background:var(--out)"></i></div></div>`).join('')}</div>
       <div class="cols-x">${cnt.map((c,i)=>`<span>${i%2?'':c.d.slice(8,10)}</span>`).join('')}</div>
       <div class="legend"><span><i class="dot" style="background:var(--in)"></i>Entradas</span><span><i class="dot" style="background:var(--out)"></i>Saídas</span></div></div>
-  </div>
-  <div class="sec"><h2>Últimas movimentações</h2><span class="sp"></span><a href="#movs">ver todas</a></div>
-  <div class="list">${ult.length?ult.map(mv=>movRow(mv,C)).join(''):'<div class="card muted small">Nenhuma movimentação ainda. Use os botões acima.</div>'}</div>`;
+  </div>`;
 }
 
 function matRow(m,C){
@@ -631,24 +651,38 @@ function vObra(C,id){
   <div class="list">${movs.length?movs.map(mv=>movRow(mv,C)).join(''):'<div class="card muted small">Sem movimentações.</div>'}</div>`;
 }
 
-function vMovs(C){
+function movsFiltrados(){
   const per=state.fMovPer,lim=per==='todos'?'':daysAgo(+per);
-  const ms=sortedMovs().filter(mv=>(!lim||mv.data>=lim)&&(!state.fMovTipo||mv.tipo===state.fMovTipo)&&(!state.fMovObra||mv.obra===state.fMovObra));
+  return sortedMovs().filter(mv=>(!lim||mv.data>=lim)&&(!state.fMovTipo||mv.tipo===state.fMovTipo)&&(!state.fMovObra||mv.obra===state.fMovObra));
+}
+function linhasMovs(ms,C,inicio,fim){
+  let html='',cur=inicio>0&&ms[inicio-1]?ms[inicio-1].data:'';
+  for(const mv of ms.slice(inicio,fim)){if(mv.data!==cur){cur=mv.data;html+=`<div class="muted small b" style="margin:12px 2px 2px">${diaLabel(cur)}</div>`}html+=movRow(mv,C)}
+  return html;
+}
+function alterarFiltroMov(campo,valor){state[campo]=valor;state.limiteMov=30;render()}
+function mostrarMaisMovs(){
+  const ms=movsFiltrados(),inicio=state.limiteMov;
+  state.limiteMov+=30;
+  $('#listaMovs').insertAdjacentHTML('beforeend',linhasMovs(ms,calc(),inicio,state.limiteMov));
+  $('#maisMovs').classList.toggle('hidden',ms.length<=state.limiteMov);
+}
+function vMovs(C){
+  const per=state.fMovPer,ms=movsFiltrados(),limite=aparelhoAntigo?state.limiteMov:300;
   const tot={entrada:0,saida:0,devolucao:0};ms.forEach(mv=>{if(tot[mv.tipo]!=null)tot[mv.tipo]+=movValor(mv,C)});
-  // agrupar por data
-  let html='',cur='';
-  for(const mv of ms.slice(0,300)){if(mv.data!==cur){cur=mv.data;html+=`<div class="muted small b" style="margin:12px 2px 2px">${diaLabel(cur)}</div>`}html+=movRow(mv,C)}
+  const html=linhasMovs(ms,C,0,limite);
   return `<div class="sec" style="margin-top:4px"><h2 style="font-size:22px">Movimentações</h2><span class="sp"></span><button class="btn soft" onclick="exportCSV()">⬇️ Planilha</button></div>
-  <div class="chips">${[['','Todas'],['entrada','📥 Entradas'],['saida','🚚 Saídas'],['devolucao','↩️ Devoluções'],['ajuste','⚖️ Ajustes']].map(([k,l])=>`<button class="chip ${state.fMovTipo===k?'on':''}" onclick="state.fMovTipo='${k}';render()">${l}</button>`).join('')}</div>
+  <div class="chips">${[['','Todas'],['entrada','📥 Entradas'],['saida','🚚 Saídas'],['devolucao','↩️ Devoluções'],['ajuste','⚖️ Ajustes']].map(([k,l])=>`<button class="chip ${state.fMovTipo===k?'on':''}" onclick="alterarFiltroMov('fMovTipo','${k}')">${l}</button>`).join('')}</div>
   <div class="search">
-    <select onchange="state.fMovObra=this.value;render()" style="flex:1"><option value="">Todas as obras</option>${db.obras.map(o=>`<option value="${o.id}" ${state.fMovObra===o.id?'selected':''}>${esc(o.nome)}</option>`).join('')}</select>
-    <select onchange="state.fMovPer=this.value;render()">${[['7','7 dias'],['30','30 dias'],['90','90 dias'],['365','12 meses'],['todos','Tudo']].map(([k,l])=>`<option value="${k}" ${per===k?'selected':''}>${l}</option>`).join('')}</select>
+    <select onchange="alterarFiltroMov('fMovObra',this.value)" style="flex:1"><option value="">Todas as obras</option>${db.obras.map(o=>`<option value="${o.id}" ${state.fMovObra===o.id?'selected':''}>${esc(o.nome)}</option>`).join('')}</select>
+    <select onchange="alterarFiltroMov('fMovPer',this.value)">${[['7','7 dias'],['30','30 dias'],['90','90 dias'],['365','12 meses'],['todos','Tudo']].map(([k,l])=>`<option value="${k}" ${per===k?'selected':''}>${l}</option>`).join('')}</select>
   </div>
   ${(tot.entrada||tot.saida)?`<div class="grid g2" style="grid-template-columns:repeat(3,1fr)">
     <div class="card kpi" style="padding:11px"><div class="l">📥 Entradas</div><div class="v" style="font-size:17px;color:var(--in)">${money(tot.entrada)}</div></div>
     <div class="card kpi" style="padding:11px"><div class="l">🚚 Saídas</div><div class="v" style="font-size:17px;color:var(--out)">${money(tot.saida)}</div></div>
     <div class="card kpi" style="padding:11px"><div class="l">↩️ Devoluções</div><div class="v" style="font-size:17px;color:var(--back)">${money(tot.devolucao)}</div></div></div>`:''}
-  <div class="list">${html||'<div class="card muted small mt">Nenhuma movimentação neste filtro.</div>'}</div>`;
+  <div class="list" id="listaMovs">${html||'<div class="card muted small mt">Nenhuma movimentação neste filtro.</div>'}</div>
+  ${aparelhoAntigo&&ms.length>limite?'<button id="maisMovs" class="btn soft full mt" onclick="mostrarMaisMovs()">Ver mais</button>':''}`;
 }
 const DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'],MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 function diaLabel(d){if(d===today())return 'Hoje';if(d===daysAgo(1))return 'Ontem';const dt=new Date(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10),12);return DIAS[dt.getDay()]+', '+d.slice(8,10)+' de '+MESES[dt.getMonth()]}
@@ -721,7 +755,7 @@ function tilesHTML(C){
   const categorias=aparelhoAntigo?seletorCategorias(ms,F.cat,'categoriaMov'):'';
   if(!ms.length)return categorias+`<div class="card muted small" style="grid-column:1/-1">${t==='devolucao'&&!F.cat&&!ws.length?'Esta obra não tem material para devolver.':'Nenhum material encontrado.'}</div>`;
   if(aparelhoAntigo&&!F.cat)return categorias;
-  const freq={};db.movs.forEach(mv=>(mv.itens||[]).forEach(it=>{freq[it.m]=(freq[it.m]||0)+1}));
+  const freq=C.freq;
   const tem=m=>t==='saida'&&(C.saldo[m.id]||0)>0?1:0;
   ms.sort((a,b)=>tem(b)-tem(a)||(freq[b.id]||0)-(freq[a.id]||0)||a.nome.localeCompare(b.nome,'pt-BR'));
   return categorias+ms.map(m=>{const s=C.saldo[m.id]||0,st=status(m,s),sel=F.itens[m.id],dim=t==='saida'&&s<=0&&!sel;
@@ -813,7 +847,7 @@ async function salvarMov(){
   db.seq=(db.seq||0)+1;
   const mv={id:uid(),n:db.seq,tipo:F.tipo,obra:F.obra||'',data:F.data,resp:F.resp.trim(),doc:F.doc.trim(),forn:F.tipo==='entrada'?F.forn.trim():'',obs:F.obs.trim(),itens,criado:Date.now(),por:U.id,porNome:U.nome,foto:!!foto};
   db.movs.push(mv);if(mv.resp)db.ultimoResp=mv.resp;
-  if(!await persistir(nuvem()&&foto?{fotos:{[mv.id]:foto}}:undefined)){if(!nuvem()&&db.movs[db.movs.length-1]===mv)db.movs.pop();return}
+  if(!await persistir(nuvem()&&foto?{fotos:{[mv.id]:foto}}:undefined)){if(!nuvem()&&db.movs[db.movs.length-1]===mv){db.movs.pop();invalidarCalculos()}return}
   if(!nuvem()&&foto)fotoPut(mv.id,foto).catch(()=>toast('⚠️ A foto não pôde ser salva'));
   F.itens={};F.doc='';F.forn='';F.obs='';F.q='';
   closeSheet();drawMovPage(true);
@@ -904,7 +938,7 @@ function formMaterial(id,cb){
     const cat=(($('#mCat .chip.on')||{dataset:{}}).dataset.v)||'Outros';
     const data={nome,cat,un:$('#mUn').value,min:num($('#mMin').value),preco:num($('#mPreco').value),local:$('#mLocal').value.trim(),ic:mf.ic||guessIcon(nome,cat),foto:mf.foto};
     let mid=id;
-    if(id)Object.assign(matById(id),data);
+    if(id)db.materiais=db.materiais.map(atual=>atual.id===id?{...atual,...data}:atual);
     else{mid=uid();db.materiais.push({id:mid,...data,criado:Date.now()});const ini=$('#mIni')?num($('#mIni').value):0;
       if(ini>0){db.seq=(db.seq||0)+1;db.movs.push({id:uid(),n:db.seq,tipo:'ajuste',obra:'',data:today(),resp:'',doc:'',forn:'',obs:'Saldo inicial',itens:[{m:mid,q:ini}],criado:Date.now(),por:U.id,porNome:U.nome})}}
     if(!await persistir())return;closeSheet();
@@ -916,7 +950,10 @@ async function delMaterial(id){
   if(!soAdmin())return;
   const m=matById(id);if(!confirm(`Excluir "${m.nome}"? As movimentações deste material também serão apagadas.`))return;
   db.materiais=db.materiais.filter(x=>x.id!==id);
-  db.movs=db.movs.map(mv=>({...mv,itens:(mv.itens||[]).filter(it=>it.m!==id)})).filter(mv=>mv.itens.length);
+  db.movs=db.movs.map(mv=>{
+    const itens=(mv.itens||[]).filter(it=>it.m!==id);
+    return mv.itens&&itens.length===mv.itens.length?mv:{...mv,itens};
+  }).filter(mv=>mv.itens.length);
   if(!await persistir())return;closeSheet();location.hash='#estoque';render();toast('Material excluído');
 }
 function formObra(id,cb){
@@ -933,7 +970,7 @@ function formObra(id,cb){
   $('#oSave').onclick=async()=>{
     const nome=$('#oNome').value.trim();if(!nome){toast('Informe o nome da obra');return}
     const data={nome,end:$('#oEnd').value.trim(),resp:$('#oResp').value.trim(),cor:(($('#oCor .on')||{dataset:{}}).dataset.v)||COLORS[0]};
-    if(id){data.status=$('#oSt').value;Object.assign(obraById(id),data)}
+    if(id){data.status=$('#oSt').value;db.obras=db.obras.map(atual=>atual.id===id?{...atual,...data}:atual)}
     let oid=id;if(!id){oid=uid();db.obras.push({id:oid,...data,status:'ativa',criado:Date.now()})}
     if(!await persistir())return;closeSheet();
     if(cb)cb(oid);else{render();toast(id?'Obra atualizada':'Obra cadastrada')}

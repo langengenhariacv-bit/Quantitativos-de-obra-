@@ -26,3 +26,8 @@ CREATE TABLE IF NOT EXISTS fotos (
   movimento text PRIMARY KEY,
   imagem text NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS estoque_revisoes (
+  versao integer PRIMARY KEY,
+  alteracoes jsonb NOT NULL
+);

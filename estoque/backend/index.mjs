@@ -1,12 +1,14 @@
 import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { isDeepStrictEqual, promisify } from 'node:util';
 import pg from 'pg';
+import EstoqueDelta from '../delta.js';
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
 pool.on('error', error => console.error('Conexão ociosa com Postgres', error.code));
 const derivar = promisify(scrypt);
 const hash = value => createHash('sha256').update(value).digest('hex');
 const origem = 'https://langengenhariacv-bit.github.io';
+const MAX_REVISOES = 60;
 const chaveId = /^[a-z0-9-]{1,64}$/i;
 const nomeLogin = nome => String(nome ?? '').trim().normalize('NFC').toLowerCase();
 const imagem = value => typeof value === 'string' && value.length <= 400000 &&
@@ -258,12 +260,19 @@ async function atender(body) {
     return transacao(async db => {
       const registro = await carregar(db, body.token, true);
       exigir(registro.versao === body.versao, 'Outro aparelho salvou alterações. Atualize e tente novamente.', 409);
-      validarDados(body.dados);
-      verificarAlteracoes(registro.dados, body.dados, registro.pessoa, body.restaurar === true);
-      const perfil = body.dados.pessoas.find(p => p.id === registro.pessoa.id && p.ativo !== false);
+      const incremental = Object.hasOwn(body, 'alteracoes');
+      exigir(!incremental || (!body.restaurar && !Object.hasOwn(body, 'dados')));
+      let dados = body.dados;
+      if (incremental) {
+        try { dados = EstoqueDelta.aplicar(registro.dados, body.alteracoes); }
+        catch (error) { throw new Falha(400, error.message); }
+      }
+      validarDados(dados);
+      verificarAlteracoes(registro.dados, dados, registro.pessoa, body.restaurar === true);
+      const perfil = dados.pessoas.find(p => p.id === registro.pessoa.id && p.ativo !== false);
       exigir(perfil, 'Mantenha sua conta ativa ao salvar.');
       const anteriores = mapear(registro.dados.pessoas);
-      for (const pessoa of body.dados.pessoas) {
+      for (const pessoa of dados.pessoas) {
         const anterior = anteriores.get(pessoa.id);
         if (anterior && anterior.admin !== pessoa.admin) {
           exigir(body.credencial?.id === pessoa.id, 'Defina uma nova senha ou PIN ao mudar o tipo de acesso.');
@@ -272,7 +281,7 @@ async function atender(body) {
       if (body.credencial) {
         exigir(registro.pessoa.admin, 'Acesso restrito ao administrador.', 403);
         const alvo = body.credencial.id;
-        const conta = body.dados.pessoas.find(p => p.id === alvo);
+        const conta = dados.pessoas.find(p => p.id === alvo);
         exigir(conta);
         const tipo = conta.admin ? 'senha' : 'pin';
         const senha = await protegerSenha(body.credencial.senha, tipo);
@@ -281,25 +290,41 @@ async function atender(body) {
         await db.query('DELETE FROM sessoes WHERE pessoa=$1 AND token<>$2', [alvo, hash(body.token)]);
         await db.query('DELETE FROM tentativas WHERE chave=ANY($1::text[])', [['p:' + alvo, 'dia:' + alvo]]);
       }
-      const pessoas = body.dados.pessoas.filter(p => p.ativo !== false).map(p => p.id);
+      const pessoas = dados.pessoas.filter(p => p.ativo !== false).map(p => p.id);
       await db.query('DELETE FROM sessoes WHERE NOT (pessoa=ANY($1::text[]))', [pessoas]);
-      await db.query('DELETE FROM credenciais WHERE NOT (pessoa=ANY($1::text[]))', [body.dados.pessoas.map(p => p.id)]);
+      await db.query('DELETE FROM credenciais WHERE NOT (pessoa=ANY($1::text[]))', [dados.pessoas.map(p => p.id)]);
       const fotos = body.fotos || {};
       if (!body.restaurar) {
         const ids = new Set(registro.dados.movs.map(mov => mov.id));
         exigir(Object.keys(fotos).every(id => !ids.has(id)));
       }
-      await guardarFotos(db, fotos, body.dados);
+      await guardarFotos(db, fotos, dados);
       await db.query('DELETE FROM fotos WHERE NOT (movimento=ANY($1::text[]))',
-        [body.dados.movs.filter(mov => mov.foto).map(mov => mov.id)]);
+        [dados.movs.filter(mov => mov.foto).map(mov => mov.id)]);
       const { rows: [atual] } = await db.query(
-        'UPDATE estoque SET dados=$1, versao=versao+1 RETURNING versao', [JSON.stringify(body.dados)]);
+        'UPDATE estoque SET dados=$1, versao=versao+1 RETURNING versao', [JSON.stringify(dados)]);
+      if (incremental) {
+        await db.query('INSERT INTO estoque_revisoes VALUES ($1, $2)',
+          [atual.versao, JSON.stringify(body.alteracoes)]);
+      }
+      await db.query('DELETE FROM estoque_revisoes WHERE versao <= $1', [atual.versao - MAX_REVISOES]);
       return { ...atual, pessoa: perfil };
     });
   }
   const registro = await carregar(pool, body.token);
   if (body.acao === 'ler') {
-    return registro.versao === body.versao ? { versao: registro.versao } : registro;
+    if (registro.versao === body.versao) return { versao: registro.versao };
+    const diferenca = registro.versao - body.versao;
+    if (body.incremental === true && Number.isSafeInteger(body.versao) &&
+        body.versao >= 1 && diferenca > 0 && diferenca <= MAX_REVISOES) {
+      const { rows } = await pool.query(
+        'SELECT versao, alteracoes FROM estoque_revisoes WHERE versao > $1 AND versao <= $2 ORDER BY versao',
+        [body.versao, registro.versao]);
+      if (rows.length === diferenca && rows.every((row, i) => row.versao === body.versao + i + 1)) {
+        return { versao: registro.versao, pessoa: registro.pessoa, alteracoes: rows.map(row => row.alteracoes) };
+      }
+    }
+    return registro;
   }
   if (body.acao === 'foto') {
     const { rows: [foto] } = await pool.query('SELECT imagem FROM fotos WHERE movimento=$1', [body.id]);
