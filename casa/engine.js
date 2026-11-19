@@ -90,6 +90,8 @@
     manta: true,
     piso: 'porcelanato',     // chave de PISOS
     pisoQuartos: '',         // '' = igual ao piso; ou chave de PISOS
+    pisoEscada: 'granito',   // 'granito' ou chave de PISOS (cerâmicos)
+    escadaLargura: 0,        // m; 0 = lida da planta ou 1,20 m
     revBanheiro: 'teto',     // teto | 1.50
     revCozinha: 'faixa',     // faixa | 1.50 | teto
     revParede: 'retificado30x58', // peça da parede: chave de PAREDES
@@ -304,7 +306,7 @@
       const somaPer = amb.filter((a) => !TIPOS_AMBIENTE[a.tipo].externo).reduce((s, a) => s + a.perimetro, 0);
       Lint = Math.max(0, (somaPer - Lext) / 2);
     }
-    return { amb, ab, somaArea, A, P, Lc, Wc, Lext, Lint, Ltot: Lext + Lint, bl, nos: num(lev.nos), escadas: Math.max(0, Math.round(num(lev.escadas))) };
+    return { amb, ab, somaArea, A, P, Lc, Wc, Lext, Lint, Ltot: Lext + Lint, bl, nos: num(lev.nos), escadas: Math.max(0, Math.round(num(lev.escadas))), escadaLargura: num(lev.escadaLargura) };
   }
 
   function pavimentosDe(projeto, resp) {
@@ -435,6 +437,8 @@
     const NQ = somaF((f) => cont(f.g, 'quarto'));
     const unidades = num(resp.unidades) > 0 ? Math.round(num(resp.unidades)) : Math.max(1, NC);
     const nEscadas = Math.max(1, ...F.map((f) => f.g.escadas)); // escadas por pavimento (casas geminadas: uma por casa)
+    const lidaEsc = F.map((f) => f.g.escadaLargura).find((x) => x >= 0.6 && x <= 2.0);
+    const LE = num(resp.escadaLargura) >= 0.6 ? num(resp.escadaLargura) : lidaEsc || 1.20; // largura útil da escada (m)
     const pessoas = num(resp.moradores) > 0 ? num(resp.moradores) : Math.max(2 * unidades, NQ * 2, 2);
     const areaTotal = somaF((f) => f.g.A);
     const ambTot = somaF((f) => f.g.amb.length);
@@ -675,11 +679,11 @@
       etapa('estrutura');
       const n = (nPav - 1) * nEscadas, degraus = Math.round(hPiso / 0.175);
       const desenv = Math.sqrt(Math.pow(degraus * 0.28 / 2, 2) + Math.pow(hPiso / 2, 2)) * 2;
-      const vol = desenv * 1.20 * 0.12 + degraus * 0.28 * 0.175 / 2 * 1.20 + 1.20 * 2.40 * 0.12;
+      const vol = desenv * LE * 0.12 + degraus * 0.28 * 0.175 / 2 * LE + LE * 2 * LE * 0.12;
       MULT = n;
-      concreto(vol, 'c25', 'Escada em U: ' + degraus + ' degraus (e=17,5 cm, p=28 cm) × 1,20 m + patamar, ' + n + ' escada(s)' + (nEscadas > 1 ? ' (' + nEscadas + ' por pavimento)' : ''));
-      aco('8.0', desenv / 0.12 * 1.20 + (1.20 / 0.20) * desenv, 'escada: Ø8 c/12 longitudinal + distribuição');
-      forma(desenv * 1.20 + degraus * 0.175 * 1.20 + 2 * desenv * 0.30 + 1.2 * 2.4);
+      concreto(vol, 'c25', 'Escada em U: ' + degraus + ' degraus (e=17,5 cm, p=28 cm) × ' + fmt(LE, 2) + ' m + patamar, ' + n + ' escada(s)' + (nEscadas > 1 ? ' (' + nEscadas + ' por pavimento)' : ''));
+      aco('8.0', desenv / 0.12 * LE + (LE / 0.20) * desenv, 'escada: Ø8 c/12 longitudinal + distribuição');
+      forma(desenv * LE + degraus * 0.175 * LE + 2 * desenv * 0.30 + LE * 2 * LE);
       add('corrimao', 'Corrimão metálico Ø 1½" com suportes', 'm', desenv * 1.1, 'um lado da escada');
       MULT = 1;
     }
@@ -1174,13 +1178,33 @@
     etapa('loucas');
     add('torneiraJardim', 'Torneira de jardim 1/2" com bico', 'un', 2, 'frente e fundos');
     if (nPav > 1) {
-      // revestimento da escada
+      // revestimento da escada: pisos (degraus + patamar), espelhos, rodapé lateral e antiderrapante
       etapa('pisos');
       const degraus = Math.round(hPiso / 0.175), n = (nPav - 1) * nEscadas;
+      const nPisos = degraus - 1; // o último degrau é o piso do pavimento de cima
+      const aPiso = nPisos * 0.28 * LE, aEsp = degraus * 0.175 * LE, aPat = LE * 2 * LE;
+      const desenv = Math.sqrt(Math.pow(degraus * 0.28 / 2, 2) + Math.pow(hPiso / 2, 2)) * 2;
+      const rodEsc = desenv + 2 * LE; // um lado encostado na parede + patamar
+      const mem = degraus + ' espelhos e ' + nPisos + ' pisos de ' + fmt(LE, 2) + ' m + patamar ' + fmt(LE, 2) + '×' + fmt(2 * LE, 2) + ' m, por escada';
       MULT = n;
-      const aEsc = degraus * (0.28 + 0.175) * 1.20 + 1.20 * 2.40;
-      add('piso_escada', 'Revestimento de escada (piso e espelho) em granito/porcelanato', 'm²', aEsc * 1.10, degraus + ' degraus × 1,20 m + patamar, por lance');
-      add('colanteAC-III', 'Argamassa colante AC-III', 'kg', aEsc * 6, 'escada', EMB.colante);
+      let PE = resp.pisoEscada === 'granito' ? null : PISOS[resp.pisoEscada] || PISOS[resp.piso];
+      if (PE && !PE.A) PE = null; // laminado/vinílico/cimentado: escada em granito
+      if (!PE) {
+        add('granitoPisoEsc', 'Piso de degrau em granito ' + fmt(LE, 2) + ' × 0,30 m (2 cm, com boleado)', 'un', nPisos, mem);
+        add('granitoEspelho', 'Espelho de degrau em granito ' + fmt(LE, 2) + ' × 0,175 m (2 cm)', 'un', degraus, mem);
+        add('granitoPatamar', 'Patamar de escada em granito 2 cm', 'm²', aPat * 1.05, 'patamar ' + fmt(LE, 2) + '×' + fmt(2 * LE, 2) + ' m');
+        add('granitoRodEsc', 'Rodapé de granito para escada h = 7 cm (recortado nos degraus)', 'm', rodEsc * 1.10, 'lateral da escada junto à parede + patamar');
+        add('colanteAC-III', 'Argamassa colante AC-III', 'kg', (aPiso + aEsp + aPat) * 7, 'granito da escada, 7 kg/m² (dupla colagem)', EMB.colante);
+        add('rejunteParede', 'Rejunte cimentício flexível', 'kg', (aPiso + aEsp + aPat) * 0.3, 'juntas do granito da escada', EMB.rejunte);
+      } else {
+        const aTot = aPiso + aEsp + aPat, perdaE = 0.20; // muitos recortes
+        add('piso_escada', 'Revestimento da escada: ' + PE.nome + ' (pisos, espelhos e patamar)', 'm²', aTot * (1 + perdaE), mem + '; ' + fmt(aTot, 2) + ' m² + 20% de recortes', PE.caixa ? { nome: 'caixa ' + fmt(PE.caixa, 2) + ' m²', qtd: PE.caixa } : null);
+        add('colanteAC-III', 'Argamassa colante AC-III', 'kg', aTot * Math.max(PE.kg || 6, 6), 'escada (dupla colagem)', EMB.colante);
+        add('rejunteParede', 'Rejunte cimentício flexível', 'kg', aTot * rejunteKg(PE.A, PE.B, PE.esp, PE.junta) * 1.20, 'escada, junta ' + PE.junta + ' mm', EMB.rejunte);
+        add('rodape_escada', 'Rodapé da escada (mesma peça, recortado nos degraus) h = 7 cm', 'm', rodEsc * 1.15, 'lateral da escada junto à parede + patamar');
+        add('perfilDegrau', 'Perfil de alumínio para quina de degrau (barra 3 m)', 'un', ceil(nPisos / Math.floor(3 / LE)), 'acabamento da quina dos ' + nPisos + ' pisos');
+      }
+      add('fitaAntiderrapante', 'Fita antiderrapante 50 mm (rolo 5 m)', 'un', ceil(nPisos * LE / 5), nPisos + ' degraus × ' + fmt(LE, 2) + ' m');
       MULT = 1;
     }
     etapa('pisos');
