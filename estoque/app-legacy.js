@@ -592,8 +592,40 @@ var obraById = function obraById(id) {
     return o.id === id;
   });
 };
+var CAT_NOME = {
+  'Agregados': 'Areia, brita e pedra',
+  'Aço e ferragens': 'Ferragens e fixação',
+  'Alvenaria': 'Blocos e tijolos',
+  'Hidráulica': 'Hidráulica e louças',
+  'Revestimento': 'Pisos e revestimentos',
+  'Pintura': 'Pintura e acabamento',
+  'Ferramentas': 'Ferramentas e máquinas',
+  'EPI': 'EPI e segurança',
+  'Outros': 'Diversos'
+};
+var catNome = function catNome(c) {
+  return CAT_NOME[c || 'Outros'] || c || 'Diversos';
+};
+var CAT_SVG = {
+  'Cimento e argamassa': '<path d="M11 9h26l3 7v21a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V16z" fill="#a7adb3"/><path d="M8 16h32" stroke="#7d848b" stroke-width="2.5"/><rect x="14" y="22" width="20" height="11" rx="2" fill="#fff"/><path d="M17 26h14M17 29.5h9" stroke="#7d848b" stroke-width="2" stroke-linecap="round"/>',
+  'Agregados': '<path d="M3 40c4-11 10-19 19-19 4 0 6 2 8 4 2-2 4-3 7-3 5 0 8 8 8 18z" fill="#e0b04a"/><path d="M10 33l2 1M18 28l2 1M26 33l2 1M34 30l2 1M22 37l2 1" stroke="#b88720" stroke-width="2" stroke-linecap="round"/><circle cx="36" cy="38" r="3.5" fill="#8b9096"/><circle cx="42" cy="36" r="2.5" fill="#6f757b"/>',
+  'Aço e ferragens': '<path d="M17 6h14l5 8-5 8H17l-5-8z" fill="#5d6b78"/><circle cx="24" cy="14" r="3.5" fill="#d7dde2"/><rect x="20" y="22" width="8" height="21" rx="2" fill="#7b8a97"/><path d="M20 27l8-2M20 32l8-2M20 37l8-2" stroke="#4a5763" stroke-width="2"/>',
+  'Alvenaria': '<rect x="4" y="9" width="40" height="31" rx="3" fill="#e9e1d8"/><path d="M6 11h17v8H6zM25 11h17v8H25zM6 21h8v8H6zM16 21h17v8H16zM35 21h7v8h-7zM6 31h17v7H6zM25 31h17v7H25z" fill="#c9573f"/>',
+  'Hidráulica': '<path d="M6 16h20a8 8 0 0 1 8 8v4" fill="none" stroke="#2d6bd6" stroke-width="7" stroke-linecap="round"/><rect x="4" y="11" width="6" height="10" rx="1.5" fill="#1f4fa3"/><rect x="29" y="26" width="10" height="5" rx="1.5" fill="#1f4fa3"/><path d="M34 34c0 0-4 5-4 7.5a4 4 0 0 0 8 0C38 39 34 34 34 34z" fill="#45a3ff"/>',
+  'Elétrica': '<path d="M27 3L10 27h11l-4 18 20-26H25z" fill="#f5b800" stroke="#c98d00" stroke-width="2" stroke-linejoin="round"/>',
+  'Madeira e fôrmas': '<rect x="5" y="9" width="38" height="9" rx="2" fill="#c98a4b"/><rect x="5" y="20" width="38" height="9" rx="2" fill="#b5763a"/><rect x="5" y="31" width="38" height="9" rx="2" fill="#c98a4b"/><path d="M11 13.5c6-2 12 2 20 0M14 24.5c6-2 10 2 18 0M10 35.5c7-2 12 2 22 0" fill="none" stroke="#8a5424" stroke-width="1.6" stroke-linecap="round"/>',
+  'Revestimento': '<rect x="5" y="5" width="18" height="18" rx="2.5" fill="#1d9b8f"/><rect x="25" y="5" width="18" height="18" rx="2.5" fill="#7fd1c7"/><rect x="5" y="25" width="18" height="18" rx="2.5" fill="#7fd1c7"/><rect x="25" y="25" width="18" height="18" rx="2.5" fill="#1d9b8f"/>',
+  'Pintura': '<rect x="6" y="6" width="30" height="13" rx="4" fill="#ff5a00"/><path d="M36 12h4v12H24v6" fill="none" stroke="#5b5b5b" stroke-width="3" stroke-linejoin="round"/><rect x="20.5" y="30" width="7" height="14" rx="2.5" fill="#3c3c3c"/><path d="M12 19v4" stroke="#ff5a00" stroke-width="3" stroke-linecap="round"/>',
+  'Ferramentas': '<path d="M9 13l9-7 6 6-3 3 19 19-4 4-19-19-3 3z" fill="#7a5bd1"/><path d="M33 6a7 7 0 0 0-6 9L8 34a3.5 3.5 0 0 0 5 5l19-19a7 7 0 0 0 9-6l-4 4-4-1-1-4z" fill="#6b7480"/>',
+  'EPI': '<path d="M8 32a16 16 0 0 1 32 0z" fill="#ffc107"/><path d="M20 17v-3a4 4 0 0 1 8 0v3" fill="#ffc107" stroke="#e0a400" stroke-width="2"/><path d="M24 16v16" stroke="#e0a400" stroke-width="2.5"/><rect x="4" y="31" width="40" height="6" rx="3" fill="#f0a500"/>',
+  'Outros': '<path d="M24 5l18 9v20l-18 9-18-9V14z" fill="#c4935e"/><path d="M6 14l18 9 18-9M24 23v20" fill="none" stroke="#9a6c3c" stroke-width="2.5"/><path d="M15 9.5l18 9" stroke="#e6c49c" stroke-width="3"/>'
+};
 var catIcon = function catIcon(c) {
-  return CAT_ICON[c] || '📦';
+  return "<svg class=\"cat-svg\" viewBox=\"0 0 48 48\" aria-hidden=\"true\">" + (CAT_SVG[c] || CAT_SVG['Outros']) + "</svg>";
+};
+var EMOJI_NOVOS = '🪣🧱🪵🧰🦺🧤🥾🥽🪚🪛🪜🧪🧴🧵🧽🛞🪨🧷🪟🧹🛒🟢🟡⏚🧯';
+var emojiOk = function emojiOk(e) {
+  return !aparelhoAntigo || !e || EMOJI_NOVOS.indexOf(String(e).replace('️', '')) < 0;
 };
 function guessIcon(nome, cat) {
   var n = norm(nome);
@@ -603,7 +635,7 @@ function guessIcon(nome, cat) {
       k = _step$value[1];
     if (k && k.split(' ').some(function (w) {
       return n.includes(w);
-    })) return e;
+    })) return emojiOk(e) ? e : catIcon(cat);
   }
   return catIcon(cat);
 }
@@ -613,7 +645,7 @@ function matIcon(m, mostrarFoto) {
   }
   if (!m) return '📦';
   if (m.foto && mostrarFoto) return "<img class=\"mi\" src=\"" + esc(m.foto) + "\" alt=\"\">";
-  return m.ic || guessIcon(m.nome, m.cat);
+  return m.ic ? emojiOk(m.ic) ? m.ic : catIcon(m.cat) : guessIcon(m.nome, m.cat);
 }
 function toast(msg) {
   document.querySelectorAll('.toast').forEach(function (x) {
@@ -1519,19 +1551,20 @@ function movRow(mv, C) {
   }() : "<div class=\"q\">" + its.length + "</div><div class=\"u\">itens</div>";
   return "<button class=\"row\" onclick=\"verMov('" + mv.id + "')\"><span class=\"ic " + t.cls + "\">" + t.ic + "</span>\n   <span class=\"tx\"><div class=\"t\">" + (esc(nomes) || '—') + "</div><div class=\"s\">" + (o ? "<span class=\"dot\" style=\"background:" + o.cor + ";width:8px;height:8px\"></span> " : '') + esc(dest) + " \xB7 " + fdateS(mv.data) + (mv.porNome ? ' · 👤 ' + esc(mv.porNome.split(' ')[0]) : '') + "</div></span>\n   <span class=\"r\">" + q1 + "</span></button>";
 }
-function seletorCategorias(materiais, selecionada, acao) {
-  if (selecionada) return "<div class=\"categorias-leve\"><button class=\"btn soft\" onclick=\"" + acao + "('')\">\u2039 Categorias</button> <b>" + esc(selecionada) + "</b></div>";
+function seletorCategorias(materiais, selecionada, acao, envolver) {
+  if (selecionada) return "<div class=\"categorias-leve cat-atual\"><button class=\"btn soft\" onclick=\"" + acao + "('')\">\u2039 Categorias</button><span class=\"cat-atual-ic\">" + catIcon(selecionada) + "</span><b>" + esc(catNome(selecionada)) + "</b></div>";
   var grupos = Object.create(null);
   materiais.forEach(function (m) {
     var cat = m.cat || 'Outros';
     grupos[cat] = (grupos[cat] || 0) + 1;
   });
   var botoes = Object.keys(grupos).sort(function (a, b) {
-    return a.localeCompare(b, 'pt-BR');
+    return catNome(a).localeCompare(catNome(b), 'pt-BR');
   }).map(function (cat) {
-    return "<button class=\"row\" data-cat=\"" + esc(cat) + "\" onclick=\"" + acao + "(this.dataset.cat)\"><span class=\"ic\">" + catIcon(cat) + "</span><b class=\"tx\">" + esc(cat) + "</b><span>" + grupos[cat] + " \u203A</span></button>";
+    return "<button class=\"tile cat-tile\" data-cat=\"" + esc(cat) + "\" onclick=\"" + acao + "(this.dataset.cat)\"><span class=\"ti\">" + catIcon(cat) + "</span><span class=\"tn\">" + esc(catNome(cat)) + "</span><span class=\"ts\">" + grupos[cat] + " " + (grupos[cat] === 1 ? 'material' : 'materiais') + " \u203A</span></button>";
   });
-  return botoes.length ? "<div class=\"list categorias-leve\">" + botoes.join('') + "</div>" : '';
+  if (!botoes.length) return '';
+  return envolver ? "<div class=\"tiles\">" + botoes.join('') + "</div>" : botoes.join('');
 }
 function categoriaEstoque(cat) {
   state.fCat = cat;
@@ -1562,8 +1595,8 @@ function vEstoque(C) {
     return alerta(status(m, C.saldo[m.id]).k);
   }).length;
   return "<div class=\"sec\" style=\"margin-top:4px\"><h2 style=\"font-size:22px\">Estoque</h2><span class=\"sp\"></span><button class=\"btn primary\" onclick=\"formMaterial()\">\uFF0B Material</button></div>\n  <div class=\"search\"><input id=\"qEst\" placeholder=\"\uD83D\uDD0E Buscar material\u2026\" value=\"" + esc(state.fEst) + "\" oninput=\"state.fEst=this.value;clearTimeout(window._t);window._t=setTimeout(()=>{render();const i=$('#qEst');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)\"></div>\n  <div class=\"chips\">\n    <button class=\"chip " + (!state.fCat && !state.fStatus ? 'on' : '') + "\" onclick=\"state.fCat='';state.fStatus='';render()\">" + (aparelhoAntigo ? 'Categorias' : 'Todos') + "</button>\n    <button class=\"chip " + (state.fStatus === 'baixo' ? 'on' : '') + "\" onclick=\"state.fStatus=state.fStatus==='baixo'?'':'baixo';render()\">\u26A0\uFE0F Comprar (" + nLow + ")</button>\n    " + (aparelhoAntigo ? '' : cats.map(function (c) {
-    return "<button class=\"chip " + (state.fCat === c ? 'on' : '') + "\" data-c=\"" + esc(c) + "\" onclick=\"state.fCat=state.fCat===this.dataset.c?'':this.dataset.c;render()\">" + catIcon(c) + " " + esc(c) + "</button>";
-  }).join('')) + "\n  </div>\n  " + (aparelhoAntigo ? seletorCategorias(ms, state.fCat, 'categoriaEstoque') : '') + "\n  <div class=\"list\">" + (ms.length ? aparelhoAntigo && !state.fCat ? '' : ms.map(function (m) {
+    return "<button class=\"chip " + (state.fCat === c ? 'on' : '') + "\" data-c=\"" + esc(c) + "\" onclick=\"state.fCat=state.fCat===this.dataset.c?'':this.dataset.c;render()\">" + catIcon(c) + " " + esc(catNome(c)) + "</button>";
+  }).join('')) + "\n  </div>\n  " + (aparelhoAntigo ? seletorCategorias(ms, state.fCat, 'categoriaEstoque', true) : '') + "\n  <div class=\"list\">" + (ms.length ? aparelhoAntigo && !state.fCat ? '' : ms.map(function (m) {
     return matRow(m, C);
   }).join('') : '<div class="card muted small">Nada encontrado.</div>') + "</div>";
 }
@@ -1591,7 +1624,7 @@ function vMat(C, id) {
       return it.m === m.id;
     });
   });
-  return "<a class=\"link\" href=\"#estoque\">\u2039 Estoque</a>\n  <div class=\"card mt\" style=\"display:flex;gap:16px;align-items:center;flex-wrap:wrap\">\n    <div class=\"ic\" style=\"width:64px;height:64px;border-radius:18px;background:#f3f0ec;display:grid;place-items:center;font-size:34px\">" + matIcon(m) + "</div>\n    <div style=\"flex:1;min-width:180px\"><h1 style=\"font-size:21px\">" + esc(m.nome) + "</h1><div class=\"muted small\" style=\"margin-top:4px\">" + esc(m.cat) + (m.local ? ' · 📍 ' + esc(m.local) : '') + "</div>\n      <div style=\"margin-top:8px\"><span class=\"pill " + st.k + "\">" + st.t + "</span></div></div>\n    <div style=\"text-align:right\"><div class=\"muted small b\">No dep\xF3sito</div><div class=\"big-saldo\" style=\"color:" + st.c + "\">" + fq(s) + "</div><div class=\"muted b\">" + esc(m.un) + "</div></div>\n  </div>\n  <div class=\"grid g4 mt\">\n    <div class=\"card kpi\"><div class=\"l\">Estoque m\xEDnimo</div><div class=\"v\">" + (+m.min ? fq(m.min) : '—') + "</div></div>\n    <div class=\"card kpi\"><div class=\"l\">Custo m\xE9dio</div><div class=\"v\" style=\"font-size:20px\">" + (c ? brl.format(c) : '—') + "</div></div>\n    <div class=\"card kpi\"><div class=\"l\">Valor em estoque</div><div class=\"v\" style=\"font-size:20px\">" + (c && s > 0 ? money(s * c) : '—') + "</div></div>\n    <div class=\"card kpi\"><div class=\"l\">\xDAltima movimenta\xE7\xE3o</div><div class=\"v\" style=\"font-size:20px\">" + (C.ult[m.id] ? fdate(C.ult[m.id]) : '—') + "</div></div>\n  </div>\n  <div class=\"actions\">\n    <button class=\"btn primary\" onclick=\"formMov('entrada',{m:'" + m.id + "'})\">\uD83D\uDCE5 Entrada</button>\n    <button class=\"btn dark\" onclick=\"formMov('saida',{m:'" + m.id + "'})\">\uD83D\uDE9A Enviar p/ obra</button>\n    " + (isAdmin() ? "<button class=\"btn soft\" onclick=\"formAjuste('" + m.id + "')\">\u2696\uFE0F Corrigir saldo</button>" : '') + "\n    <button class=\"btn soft\" onclick=\"formMaterial('" + m.id + "')\">\u270F\uFE0F Editar</button>\n  </div>\n  <div class=\"sec\"><h2>Usado nas obras</h2></div>\n  <div class=\"card\">" + (usos.length ? "<div class=\"bars\">" + usos.map(function (x) {
+  return "<a class=\"link\" href=\"#estoque\">\u2039 Estoque</a>\n  <div class=\"card mt\" style=\"display:flex;gap:16px;align-items:center;flex-wrap:wrap\">\n    <div class=\"ic\" style=\"width:64px;height:64px;border-radius:18px;background:#f3f0ec;display:grid;place-items:center;font-size:34px\">" + matIcon(m) + "</div>\n    <div style=\"flex:1;min-width:180px\"><h1 style=\"font-size:21px\">" + esc(m.nome) + "</h1><div class=\"muted small\" style=\"margin-top:4px\">" + catIcon(m.cat) + " " + esc(catNome(m.cat)) + (m.local ? ' · 📍 ' + esc(m.local) : '') + "</div>\n      <div style=\"margin-top:8px\"><span class=\"pill " + st.k + "\">" + st.t + "</span></div></div>\n    <div style=\"text-align:right\"><div class=\"muted small b\">No dep\xF3sito</div><div class=\"big-saldo\" style=\"color:" + st.c + "\">" + fq(s) + "</div><div class=\"muted b\">" + esc(m.un) + "</div></div>\n  </div>\n  <div class=\"grid g4 mt\">\n    <div class=\"card kpi\"><div class=\"l\">Estoque m\xEDnimo</div><div class=\"v\">" + (+m.min ? fq(m.min) : '—') + "</div></div>\n    <div class=\"card kpi\"><div class=\"l\">Custo m\xE9dio</div><div class=\"v\" style=\"font-size:20px\">" + (c ? brl.format(c) : '—') + "</div></div>\n    <div class=\"card kpi\"><div class=\"l\">Valor em estoque</div><div class=\"v\" style=\"font-size:20px\">" + (c && s > 0 ? money(s * c) : '—') + "</div></div>\n    <div class=\"card kpi\"><div class=\"l\">\xDAltima movimenta\xE7\xE3o</div><div class=\"v\" style=\"font-size:20px\">" + (C.ult[m.id] ? fdate(C.ult[m.id]) : '—') + "</div></div>\n  </div>\n  <div class=\"actions\">\n    <button class=\"btn primary\" onclick=\"formMov('entrada',{m:'" + m.id + "'})\">\uD83D\uDCE5 Entrada</button>\n    <button class=\"btn dark\" onclick=\"formMov('saida',{m:'" + m.id + "'})\">\uD83D\uDE9A Enviar p/ obra</button>\n    " + (isAdmin() ? "<button class=\"btn soft\" onclick=\"formAjuste('" + m.id + "')\">\u2696\uFE0F Corrigir saldo</button>" : '') + "\n    <button class=\"btn soft\" onclick=\"formMaterial('" + m.id + "')\">\u270F\uFE0F Editar</button>\n  </div>\n  <div class=\"sec\"><h2>Usado nas obras</h2></div>\n  <div class=\"card\">" + (usos.length ? "<div class=\"bars\">" + usos.map(function (x) {
     return "<a href=\"#obra/" + x.o.id + "\" class=\"bar-row\" style=\"text-decoration:none;color:inherit\"><span class=\"n\"><span class=\"dot\" style=\"background:" + x.o.cor + "\"></span>" + esc(x.o.nome) + "</span><span class=\"bar-track\"><span class=\"bar-fill\" style=\"display:block;width:" + x.q / mx * 100 + "%;background:" + x.o.cor + "\"></span></span><span class=\"val\">" + fq(x.q) + " " + esc(m.un) + "</span></a>";
   }).join('') + "</div>" : '<p class="muted small" style="margin:0">Ainda não foi enviado para nenhuma obra.</p>') + "</div>\n  <div class=\"sec\"><h2>Hist\xF3rico</h2></div>\n  <div class=\"list\">" + (movs.length ? movs.slice(0, 60).map(function (mv) {
     return movRowMat(mv, m);
@@ -1677,11 +1710,11 @@ function vObra(C, id) {
   return "<a class=\"link\" href=\"#obras\">\u2039 Obras</a>\n  <div class=\"hero mt\" style=\"--c:" + o.cor + "\">\n    <h1>" + esc(o.nome) + "</h1><div class=\"sub\">" + esc(o.end || '') + (o.resp ? ' · 👷 ' + esc(o.resp) : '') + (o.status === 'concluida' ? ' · ✔ Concluída' : '') + "</div>\n    <div class=\"meta\"><div><b>" + (C.obraV[o.id] ? money(C.obraV[o.id]) : '—') + "</b>em material</div><div><b>" + rem.length + "</b>remessas</div><div><b>" + linhas.length + "</b>materiais</div><div><b>" + (rem[0] ? fdate(rem[0].data) : '—') + "</b>\xFAltima remessa</div></div>\n    <div class=\"actions\" style=\"position:relative;z-index:1\">\n      <button class=\"btn white\" onclick=\"formMov('saida',{obra:'" + o.id + "'})\">\uD83D\uDE9A Enviar material</button>\n      <button class=\"btn ghost\" onclick=\"formMov('devolucao',{obra:'" + o.id + "'})\">\u21A9\uFE0F Devolu\xE7\xE3o</button>\n      <button class=\"btn ghost\" onclick=\"printObra('" + o.id + "')\">\uD83D\uDDA8\uFE0F Relat\xF3rio</button>\n      <button class=\"btn ghost\" onclick=\"formObra('" + o.id + "')\">\u270F\uFE0F</button>\n    </div>\n  </div>\n  " + (catArr.length > 1 ? "<div class=\"card mt\"><div class=\"muted small b\" style=\"margin-bottom:8px\">Divis\xE3o por tipo " + (temV ? '(valor)' : '') + "</div>\n    <div style=\"display:flex;height:16px;border-radius:9px;overflow:hidden\">" + catArr.map(function (_ref5, i) {
     var c = _ref5[0],
       v = _ref5[1];
-    return "<span title=\"" + esc(c) + "\" style=\"width:" + v / totCat * 100 + "%;background:" + COLORS[i % COLORS.length] + "\"></span>";
+    return "<span title=\"" + esc(catNome(c)) + "\" style=\"width:" + v / totCat * 100 + "%;background:" + COLORS[i % COLORS.length] + "\"></span>";
   }).join('') + "</div>\n    <div class=\"legend\" style=\"flex-wrap:wrap;gap:6px 14px\">" + catArr.map(function (_ref6, i) {
     var c = _ref6[0],
       v = _ref6[1];
-    return "<span><i class=\"dot\" style=\"background:" + COLORS[i % COLORS.length] + "\"></i>" + catIcon(c) + " " + esc(c) + " " + Math.round(v / totCat * 100) + "%</span>";
+    return "<span><i class=\"dot\" style=\"background:" + COLORS[i % COLORS.length] + "\"></i>" + catIcon(c) + " " + esc(catNome(c)) + " " + Math.round(v / totCat * 100) + "%</span>";
   }).join('') + "</div></div>" : '') + "\n  <div class=\"sec\"><h2>Material na obra</h2><span class=\"muted small\">enviado \u2212 devolvido</span></div>\n  <div class=\"card\" style=\"padding:6px 12px\">" + (linhas.length ? "<table class=\"tbl\"><thead><tr><th>Material</th><th class=\"n\">Qtd.</th>" + (temV ? '<th class="n">Valor</th>' : '') + "</tr></thead><tbody>\n    " + linhas.map(function (x) {
     return "<tr onclick=\"location.hash='#mat/" + x.m.id + "'\" style=\"cursor:pointer\"><td><div style=\"display:flex;align-items:center;gap:8px\"><span>" + matIcon(x.m) + "</span><div style=\"flex:1;min-width:0\"><div class=\"b\">" + esc(x.m.nome) + "</div>" + (temV ? "<div class=\"lvl\" style=\"margin-top:4px\"><i style=\"width:" + Math.max(0, x.v / mxv * 100) + "%;background:" + o.cor + "\"></i></div>" : '') + "</div></div></td>\n      <td class=\"n b\">" + fq(x.q) + " <span class=\"muted small\">" + esc(x.m.un) + "</span></td>" + (temV ? "<td class=\"n\">" + (x.v ? money(x.v) : '—') + "</td>" : '') + "</tr>";
   }).join('') + "</tbody></table>" : '<p class="muted small">Nenhum material enviado ainda. Toque em <b>Enviar material</b>.</p>') + "</div>\n  <div class=\"sec\"><h2>Hist\xF3rico da obra</h2></div>\n  <div class=\"list\">" + (movs.length ? movs.map(function (mv) {
@@ -1864,7 +1897,7 @@ function vMov(C) {
   return "<div style=\"display:flex;align-items:center;gap:10px;margin-bottom:12px\"><button class=\"link\" style=\"font-size:15px\" onclick=\"sairMov()\">\u2039 Voltar</button><span class=\"sp\" style=\"flex:1\"></span><span class=\"muted small b\">" + fdate(F.data) + "</span></div>\n  <div class=\"seg big\">" + ['entrada', 'saida', 'devolucao'].map(function (k) {
     return "<button class=\"" + TIPOS[k].cls + " " + (t === k ? 'on' : '') + "\" onclick=\"trocaTipo('" + k + "')\"><span class=\"i\">" + TIPOS[k].ic + "</span>" + TIPOS[k].nome + "</button>";
   }).join('') + "</div>\n  <div class=\"stepper-label\"><span class=\"n\">1</span>" + (t === 'saida' ? 'Para qual obra vai?' : t === 'devolucao' ? 'De qual obra voltou?' : 'Onde o material foi entregue?') + "</div>\n  <div class=\"obras-strip\">" + obraCards() + "</div>\n  " + (t === 'entrada' && F.obra ? '<div class="small muted" style="margin:-2px 0 10px">Compra entregue direto na obra: conta para a obra e não muda o saldo do depósito.</div>' : '') + "\n  <div class=\"stepper-label\"><span class=\"n\">2</span>" + (aparelhoAntigo ? 'Escolha uma categoria e depois o material' : 'Toque no material e digite a quantidade') + "</div>\n  <div class=\"search\"><input id=\"mvQ\" type=\"search\" placeholder=\"\uD83D\uDD0E Buscar material\u2026\" value=\"" + esc(F.q) + "\" oninput=\"F.q=this.value;drawTiles()\"></div>\n  " + (!aparelhoAntigo && cats.length > 1 ? "<div class=\"chips\"><button class=\"chip " + (!F.cat ? 'on' : '') + "\" onclick=\"F.cat='';drawMovPage()\">Todos</button>" + cats.map(function (c) {
-    return "<button class=\"chip " + (F.cat === c ? 'on' : '') + "\" data-c=\"" + esc(c) + "\" onclick=\"F.cat=F.cat===this.dataset.c?'':this.dataset.c;drawMovPage()\">" + catIcon(c) + " " + esc(c) + "</button>";
+    return "<button class=\"chip " + (F.cat === c ? 'on' : '') + "\" data-c=\"" + esc(c) + "\" onclick=\"F.cat=F.cat===this.dataset.c?'':this.dataset.c;drawMovPage()\">" + catIcon(c) + " " + esc(catNome(c)) + "</button>";
   }).join('') + "</div>" : '') + "\n  <div class=\"tiles\" id=\"tiles\">" + tilesHTML(C) + "</div>\n  <button class=\"add-item mt\" onclick=\"formMaterial(null,id=>{drawMovPage();openKey(id)})\">\uFF0B Cadastrar material novo</button>\n  <div class=\"mv-bar\" id=\"mvBar\">" + barHTML() + "</div>";
 }
 function trocaTipo(k) {
@@ -2367,7 +2400,7 @@ function formMaterial(id, cb) {
   }).join('') + "</div></div>\n   <div class=\"f\"><label>Categoria</label><div class=\"chips\" style=\"flex-wrap:wrap\" id=\"mCat\">" + CATS.map(function (_ref1) {
     var c = _ref1[0],
       i = _ref1[1];
-    return "<button type=\"button\" class=\"chip " + (m.cat === c ? 'on' : '') + "\" data-v=\"" + esc(c) + "\" onclick=\"this.parentNode.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));this.classList.add('on')\">" + i + " " + esc(c) + "</button>";
+    return "<button type=\"button\" class=\"chip " + (m.cat === c ? 'on' : '') + "\" data-v=\"" + esc(c) + "\" onclick=\"this.parentNode.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));this.classList.add('on')\">" + catIcon(c) + " " + esc(catNome(c)) + "</button>";
   }).join('') + "</div></div>\n   <div class=\"f2\"><div class=\"f\"><label>Unidade</label><select id=\"mUn\">" + UNITS.map(function (u) {
     return "<option " + (m.un === u ? 'selected' : '') + ">" + u + "</option>";
   }).join('') + (!UNITS.includes(m.un) ? "<option selected>" + esc(m.un) + "</option>" : '') + "</select></div>\n   <div class=\"f\"><label>Estoque m\xEDnimo</label><input id=\"mMin\" inputmode=\"decimal\" value=\"" + (m.min !== '' && m.min != null ? String(m.min).replace('.', ',') : '') + "\" placeholder=\"Avisa quando baixar\"></div></div>\n   <div class=\"f2\"><div class=\"f\"><label>Pre\xE7o de refer\xEAncia (R$)</label><input id=\"mPreco\" inputmode=\"decimal\" value=\"" + (m.preco ? String(m.preco).replace('.', ',') : '') + "\" placeholder=\"opcional\"></div>\n   <div class=\"f\"><label>Local no dep\xF3sito</label><input id=\"mLocal\" value=\"" + esc(m.local || '') + "\" placeholder=\"Ex.: Prateleira A\"></div></div>\n   " + (id || !isAdmin() ? '' : "<div class=\"f\"><label>Quantidade que j\xE1 tem no dep\xF3sito</label><input id=\"mIni\" inputmode=\"decimal\" placeholder=\"0\"></div>") + "\n   " + (id && isAdmin() ? "<button class=\"btn danger full\" onclick=\"delMaterial('" + id + "')\">\uD83D\uDDD1\uFE0F Excluir material</button>" + (used ? '<div class="small muted mt">Este material tem movimentações; ao excluir, elas também serão apagadas.</div>' : '') : ''), "<button class=\"btn primary lg full\" id=\"mSave\">Salvar</button>");
@@ -2803,7 +2836,7 @@ function exportCSV() {
       var m = matById(it.m) || {},
         o = obraById(mv.obra),
         pu = mv.tipo === 'entrada' && it.v ? it.v : C.custo[it.m] || 0;
-      rows.push([fdate(mv.data), mv.n || '', TIPOS[mv.tipo].nome, o ? o.nome : mv.tipo === 'entrada' ? 'Depósito' : '', m.nome || '', m.cat || '', nf.format(it.q), m.un || '', pu ? nf.format(pu) : '', pu ? nf.format(pu * it.q) : '', mv.forn || '', mv.doc || '', mv.resp || '', mv.obs || '', mv.porNome || '']);
+      rows.push([fdate(mv.data), mv.n || '', TIPOS[mv.tipo].nome, o ? o.nome : mv.tipo === 'entrada' ? 'Depósito' : '', m.nome || '', m.cat ? catNome(m.cat) : '', nf.format(it.q), m.un || '', pu ? nf.format(pu) : '', pu ? nf.format(pu * it.q) : '', mv.forn || '', mv.doc || '', mv.resp || '', mv.obs || '', mv.porNome || '']);
     }
   }
   download("movimentacoes-estoque-" + today() + ".csv", '﻿' + rows.map(function (r) {
@@ -2817,7 +2850,7 @@ function exportEstoqueCSV() {
     };
   var rows = [['Material', 'Categoria', 'Unidade', 'Saldo no depósito', 'Estoque mínimo', 'Situação', 'Custo médio', 'Valor em estoque', 'Local']].concat(db.materiais.map(function (m) {
     var s = C.saldo[m.id] || 0;
-    return [m.nome, m.cat, m.un, nf.format(s), m.min ? nf.format(m.min) : '', status(m, s).t, C.custo[m.id] ? nf.format(C.custo[m.id]) : '', C.custo[m.id] && s > 0 ? nf.format(s * C.custo[m.id]) : '', m.local || ''];
+    return [m.nome, catNome(m.cat), m.un, nf.format(s), m.min ? nf.format(m.min) : '', status(m, s).t, C.custo[m.id] ? nf.format(C.custo[m.id]) : '', C.custo[m.id] && s > 0 ? nf.format(s * C.custo[m.id]) : '', m.local || ''];
   }));
   download("estoque-" + today() + ".csv", '﻿' + rows.map(function (r) {
     return r.map(q).join(';');
