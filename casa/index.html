@@ -209,8 +209,8 @@ tr.feito td{opacity:.45;text-decoration:line-through}
     <div id="iaAvisos"></div>
     <h3 style="margin:10px 0 8px">Contorno e paredes</h3>
     <div class="grid2" id="contorno"></div>
-    <div class="row" style="margin:20px 0 8px"><h3>Ambientes</h3><span class="sp"></span><button class="btn sm" id="addAmb">+ Ambiente</button></div>
-    <div class="tbl"><table><thead><tr><th>Nome</th><th>Tipo</th><th class="n">Área (m²)</th><th class="n">Perímetro (m)</th><th>Piso</th><th>Parede</th><th>Teto</th><th></th></tr></thead><tbody id="tbAmb"></tbody>
+    <div class="row" style="margin:20px 0 8px"><h3>Ambientes</h3><span class="sp"></span><button class="btn sm" id="btnCer" title="Informar quais paredes da cozinha e da área de serviço recebem cerâmica">🧱 Paredes com cerâmica</button> <button class="btn sm" id="addAmb">+ Ambiente</button></div>
+    <div class="tbl"><table><thead><tr><th>Nome</th><th>Tipo</th><th class="n">Área (m²)</th><th class="n">Perímetro (m)</th><th>Piso</th><th>Parede</th><th class="n" title="Comprimento das paredes que recebem cerâmica">Paredes c/ cerâmica (m)</th><th>Teto</th><th></th></tr></thead><tbody id="tbAmb"></tbody>
       <tfoot><tr><td colspan="2" class="b">Total</td><td class="n b" id="totArea"></td><td colspan="5"></td></tr></tfoot></table></div>
     <div class="row" style="margin:20px 0 8px"><h3>Portas e janelas</h3><span class="sp"></span><button class="btn sm" id="addAb">+ Abertura</button></div>
     <div class="tbl"><table><thead><tr><th>Tipo</th><th class="n">Largura (m)</th><th class="n">Altura (m)</th><th class="n">Peitoril (m)</th><th class="n">Qtd</th><th>Externa</th><th></th></tr></thead><tbody id="tbAb"></tbody></table></div>
@@ -359,6 +359,7 @@ function irPara(n) {
   if (n === 3) renderPerguntas();
   if (n === 4) renderResultado();
   window.scrollTo(0, 0);
+  if (n === 3 || n === 4) perguntarCeramica(false);
 }
 $('#steps').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) irPara(+b.dataset.s); });
 document.addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) irPara(+b.dataset.go); });
@@ -811,7 +812,7 @@ function desenhoParaLev() {
     env.comprimento = (Math.max(...xs) - Math.min(...xs)) * s + e; env.largura = (Math.max(...ys) - Math.min(...ys)) * s + e;
   }
   if (fech) { const A = areaPoly(fech.pts) * s * s, P = perPoly(fech.pts) * s; env.area = A + P * e / 2 + e * e; env.perimetro = P + 4 * e; }
-  const ambientes = D.ambientes.map((a) => ({ nome: a.nome, tipo: a.tipo, area: +(areaPoly(a.pts) * s * s).toFixed(2), perimetro: +(perPoly(a.pts) * s).toFixed(2), piso: a.piso, parede: a.parede, teto: a.teto }));
+  const ambientes = D.ambientes.map((a) => ({ nome: a.nome, tipo: a.tipo, area: +(areaPoly(a.pts) * s * s).toFixed(2), perimetro: +(perPoly(a.pts) * s).toFixed(2), piso: a.piso, parede: a.parede, teto: a.teto, paredeCer: a.paredeCer, cerOk: a.cerOk }));
   const aberturas = D.aberturas.map((o) => ({ tipo: o.tipo, largura: o.largura, altura: o.altura, peitoril: o.peitoril, externa: o.externa, qtd: 1 }));
   return { ambientes, aberturas, paredes: { externas: +ext.toFixed(2), internas: +int.toFixed(2) }, envelope: { area: +env.area.toFixed(2), perimetro: +env.perimetro.toFixed(2), comprimento: +env.comprimento.toFixed(2), largura: +env.largura.toFixed(2) }, nos };
 }
@@ -944,7 +945,7 @@ function renderLev() {
   $('#contorno').innerHTML = campos.map(([g, k, t]) => '<label class="f">' + t + '<input type="number" step="any" min="0" data-g="' + (g || '') + '" data-k="' + k + '" value="' + (g ? (L[g][k] || '') : (L[k] || '')) + '"></label>').join('');
   const tiposA = Object.entries(E.TIPOS_AMBIENTE).map(([k, v]) => [k, v.nome]);
   const sel = (f, opts, v) => '<select data-f="' + f + '" style="min-width:110px">' + opts.map(([k, n]) => '<option value="' + k + '"' + (k === (v || 'auto') ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>';
-  $('#tbAmb').innerHTML = L.ambientes.map((a, i) => '<tr data-i="' + i + '"><td><input data-f="nome" value="' + esc(a.nome) + '" style="min-width:120px"></td><td><select data-f="tipo">' + tiposA.map(([k, n]) => '<option value="' + k + '"' + (k === a.tipo ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></td><td><input type="number" step="any" data-f="area" value="' + (a.area || '') + '"></td><td><input type="number" step="any" data-f="perimetro" value="' + (a.perimetro || '') + '"></td><td>' + sel('piso', OPC_PISO, a.piso) + '</td><td>' + sel('parede', OPC_PAREDE, a.parede) + '</td><td>' + sel('teto', OPC_TETO, a.teto) + '</td><td><button class="x" data-del="amb" title="Remover">×</button></td></tr>').join('') || '<tr><td colspan="8" class="muted">Nenhum ambiente. Desenhe na planta ou clique em “+ Ambiente”.</td></tr>';
+  $('#tbAmb').innerHTML = L.ambientes.map((a, i) => '<tr data-i="' + i + '"><td><input data-f="nome" value="' + esc(a.nome) + '" style="min-width:120px"></td><td><select data-f="tipo">' + tiposA.map(([k, n]) => '<option value="' + k + '"' + (k === a.tipo ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></td><td><input type="number" step="any" data-f="area" value="' + (a.area || '') + '"></td><td><input type="number" step="any" data-f="perimetro" value="' + (a.perimetro || '') + '"></td><td>' + sel('piso', OPC_PISO, a.piso) + '</td><td>' + sel('parede', OPC_PAREDE, a.parede) + '</td><td><input type="number" step="any" min="0" data-f="paredeCer" placeholder="todas" value="' + (a.paredeCer || '') + '" style="width:80px"></td><td>' + sel('teto', OPC_TETO, a.teto) + '</td><td><button class="x" data-del="amb" title="Remover">×</button></td></tr>').join('') || '<tr><td colspan="9" class="muted">Nenhum ambiente. Desenhe na planta ou clique em “+ Ambiente”.</td></tr>';
   $('#totArea').textContent = fmt(L.ambientes.reduce((s, a) => s + (+a.area || 0), 0), 2) + ' m²';
   const tiposO = Object.entries(E.TIPOS_ABERTURA).map(([k, v]) => [k, v.nome]);
   $('#tbAb').innerHTML = L.aberturas.map((o, i) => '<tr data-i="' + i + '"><td><select data-f="tipo">' + tiposO.map(([k, n]) => '<option value="' + k + '"' + (k === o.tipo ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></td>' + ['largura', 'altura', 'peitoril', 'qtd'].map((f) => '<td><input type="number" step="any" data-f="' + f + '" value="' + (o[f] == null ? '' : o[f]) + '"></td>').join('') + '<td><input type="checkbox" data-f="externa"' + (o.externa ? ' checked' : '') + '></td><td><button class="x" data-del="ab" title="Remover">×</button></td></tr>').join('') || '<tr><td colspan="7" class="muted">Nenhuma porta ou janela.</td></tr>';
@@ -957,9 +958,10 @@ $('#contorno').addEventListener('input', (e) => { const t = e.target; const v = 
 function editarLinha(lista, e) {
   const tr = e.target.closest('tr[data-i]'); if (!tr || !e.target.dataset.f) return;
   const o = lista[+tr.dataset.i], f = e.target.dataset.f;
-  if (f === 'piso' || f === 'parede' || f === 'teto') {
-    const v = e.target.value === 'auto' ? undefined : e.target.value; o[f] = v;
-    const da = S.levOrigem === 'desenho' && S.desenho.ambientes[+tr.dataset.i]; if (da) da[f] = v;
+  if (f === 'piso' || f === 'parede' || f === 'teto' || f === 'paredeCer') {
+    const v = f === 'paredeCer' ? (parseFloat(e.target.value) > 0 ? parseFloat(e.target.value) : undefined) : e.target.value === 'auto' ? undefined : e.target.value; o[f] = v;
+    if (f === 'paredeCer' || f === 'parede') o.cerOk = true;
+    const da = S.levOrigem === 'desenho' && S.desenho.ambientes[+tr.dataset.i]; if (da) { da[f] = v; if (o.cerOk) da.cerOk = true; }
     salvar(); return;
   }
   o[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.type === 'number' ? (e.target.value === '' ? null : parseFloat(e.target.value)) : e.target.value;
@@ -976,6 +978,43 @@ document.addEventListener('click', (e) => {
 });
 $('#addAmb').onclick = () => { S.lev.ambientes.push({ nome: 'Ambiente', tipo: 'quarto', area: 9, perimetro: 12 }); marcarManual(); renderLev(); };
 $('#addAb').onclick = () => { S.lev.aberturas.push({ tipo: 'janela', largura: 1.2, altura: 1.2, peitoril: 1.0, externa: true, qtd: 1 }); marcarManual(); renderLev(); };
+
+// ------------------------------------------------------------------ paredes com cerâmica (cozinha e área de serviço)
+const TIPOS_CER = ['cozinha', 'servico', 'cozinha_servico', 'conjugado'];
+const numBR = (t) => String(t || '').split('+').reduce((s, x) => s + (parseFloat(x.replace(',', '.').trim()) || 0), 0);
+async function perguntarCeramica(forcar) {
+  // agrupa cômodos iguais (mesmo nome, tipo e perímetro) de todos os pavimentos: uma resposta vale para todos
+  const grupos = new Map();
+  for (const pv of S.pavimentos) for (const a of (pv.lev && pv.lev.ambientes) || []) {
+    if (!TIPOS_CER.includes(a.tipo) || !(+a.area > 0)) continue;
+    if (!forcar && a.cerOk) continue;
+    const ch = a.nome + '|' + a.tipo + '|' + Math.round((+a.perimetro || 0) * 10);
+    if (!grupos.has(ch)) grupos.set(ch, { a, lista: [], pavs: new Set() });
+    const g = grupos.get(ch); g.lista.push(a); g.pavs.add(pv.nome);
+    // no modo desenho o levantamento é refeito a partir do desenho: grava lá também
+    const i = pv.lev.ambientes.indexOf(a), da = pv.levOrigem === 'desenho' && pv.desenho && pv.desenho.ambientes[i]; if (da) g.lista.push(da);
+  }
+  if (!grupos.size) { if (forcar) toast('Não há cozinha nem área de serviço no levantamento.'); return; }
+  const G = [...grupos.values()];
+  const contar = (g) => g.lista.filter((x) => !x.pts).length;
+  const padrao = (S.resp && S.resp.revCozinha) || 'faixa';
+  const campos = [{ info: 'Para o azulejo e o rodapé saírem certos, informe <b>quanto de parede recebe cerâmica</b> em cada cômodo. Some as paredes com o sinal +, por exemplo <b>2,40 + 1,80</b> (parede da pia + parede do fogão). Deixe em branco para usar o padrão: na faixa, só a bancada; até 1,50 m ou até o teto, todas as paredes. Onde vai cerâmica até o chão não entra rodapé.' }];
+  G.forEach((g, i) => {
+    const a = g.a, n = contar(g);
+    campos.push({ info: '<b style="color:var(--tx,#222)">' + esc(a.nome) + '</b>' + (n > 1 ? ' ×' + n : '') + ' — ' + esc([...g.pavs].join(', ')) + ' · perímetro ' + fmt(+a.perimetro || 0, 2) + ' m' });
+    campos.push({ k: 'c' + i, label: 'Paredes com cerâmica (m)', v: a.paredeCer ? String(a.paredeCer).replace('.', ',') : '' });
+    campos.push({ k: 'h' + i, label: 'Altura da cerâmica', opts: [['faixa', 'Faixa de 60 cm sobre a bancada/tanque'], ['1.50', 'Até 1,50 m (até o chão)'], ['teto', 'Até o teto (até o chão)'], ['nenhum', 'Sem cerâmica']], v: a.parede || padrao });
+  });
+  const r = await perguntar('Paredes com cerâmica', campos, 'Aplicar');
+  if (!r) { if (!forcar) for (const g of G) for (const a of g.lista) a.cerOk = true; salvar(); return; }
+  G.forEach((g, i) => {
+    const c = numBR(r['c' + i]), hh = r['h' + i];
+    for (const a of g.lista) { a.paredeCer = c > 0 ? +c.toFixed(2) : undefined; a.parede = hh === padrao && !a.parede ? undefined : hh; a.cerOk = true; }
+  });
+  salvar(); if (S.etapa === 2) renderLev(); if (S.etapa === 4) renderResultado();
+  toast('Paredes com cerâmica aplicadas.');
+}
+$('#btnCer').onclick = () => perguntarCeramica(true);
 
 // ================================================================== PERGUNTAS
 const PERG = [

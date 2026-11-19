@@ -166,3 +166,20 @@ console.log('OK —', r.consolidado.length, 'insumos consolidados');
   assert(Math.abs(total(seis, /^Corrimão/) - 6 * total(um, /^Corrimão/)) < 1e-6, '6 escadas = 6 corrimãos');
   console.log('OK — escadas por pavimento');
 }
+
+// ---- paredes com cerâmica informadas na cozinha
+{
+  const lev = JSON.parse(JSON.stringify(casa.lev));
+  const coz = lev.ambientes.find((a) => a.tipo === 'cozinha' || a.tipo === 'cozinha_servico' || a.tipo === 'conjugado');
+  assert(coz, 'tem cozinha');
+  coz.parede = '1.50';
+  const todas = E.calcular({ lev, resp: {} });
+  coz.paredeCer = 3.0;
+  const tres = E.calcular({ lev, resp: {} });
+  assert(total(tres, /^Revestimento de parede/) < total(todas, /^Revestimento de parede/), 'menos azulejo com 3 m');
+  assert(total(tres, /^Rodapé/) > total(todas, /^Rodapé/), 'rodapé nas paredes sem cerâmica');
+  coz.parede = 'faixa'; coz.paredeCer = 4.0; const f4 = E.calcular({ lev, resp: {} });
+  coz.paredeCer = 2.0; const f2 = E.calcular({ lev, resp: {} });
+  assert(Math.abs(total(f4, /^Revestimento de parede/) - total(f2, /^Revestimento de parede/) - 2 * 0.6 * 1.1) < 0.01, 'faixa 0,60 × comprimento');
+  console.log('OK — paredes com cerâmica por cômodo');
+}
