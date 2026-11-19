@@ -122,3 +122,36 @@ A **lista padrão de materiais** da LANG (conexões, fios, elétrica, ferramenta
 **Login e permissões.** No primeiro acesso o app pede para cadastrar o **administrador** (nome, foto e PIN de 4 números). Depois, cada pessoa entra tocando na **própria foto** e digitando o **PIN**. Todo lançamento fica no nome de quem entrou e, ao confirmar, o app tira uma **selfie** pela câmera frontal (contagem 3‑2‑1), guardada no histórico da movimentação. Todos podem lançar entradas, saídas e devoluções e cadastrar materiais e obras. Só o administrador pode **excluir lançamentos**, **corrigir saldo**, excluir materiais e obras, cadastrar e excluir pessoas e mexer nas configurações (backup, restaurar, apagar). O app sai sozinho após 3 minutos sem uso e no botão **Concluir e sair**. As selfies ficam no aparelho (IndexedDB) e vão junto no backup. O PIN protege o uso do dia a dia no tablet, mas não é uma senha de segurança forte: quem tiver acesso ao aparelho e conhecimento técnico consegue ler os dados.
 
 Os dados ficam salvos só no aparelho: use a engrenagem para fazer **backup** (e restaurar em outro aparelho) e exportar as planilhas. O botão *Ver com dados de exemplo* mostra o app preenchido.
+
+## Lang Casa — quantitativo de insumos por etapa (`/casa/`)
+
+App (PWA) que gera o quantitativo completo de **insumos** de uma casa térrea a partir da planta baixa, separado por etapa da obra e com a tabela total consolidada. Ferramentas, equipamentos e mão de obra não entram.
+
+1. **Planta**: importe a planta baixa (PDF, JPG, PNG ou WebP) ou use *Desenhar sem planta* (grade de 1 m).
+   **PDF exportado do CAD é lido automaticamente, sem IA** (`casa/leitor-vetorial.js`):
+   - A escala sai das cotas, comparando o número com o comprimento da linha.
+   - As paredes saem da camada de traço mais escura e comprida, com a espessura medida entre as faces.
+   - Os cômodos saem do preenchimento entre paredes: nome e área vêm dos textos ("Quarto · Área: 9,40 m²") e o perímetro vem do contorno.
+   - As portas e janelas saem dos rótulos P/J e dos vãos entre arremates (face interrompida = porta; caixilho dentro da parede = janela).
+   - A área construída vem do quadro de áreas, quando existir.
+   - O resultado aparece colorido sobre a planta (laranja = paredes externas, azul = internas, verde = vãos) e vai para o levantamento, onde pode ser corrigido.
+   Para imagem ou PDF escaneado, trace por cima: Calibre a escala clicando nas pontas de uma cota conhecida e trace por cima: paredes externas (contorno), paredes internas, ambientes (retângulo ou polígono, com o tipo), portas e janelas (clique sobre a parede). O ímã prende nos pontos e paredes, e o modo ortogonal trava em 0°/90°. Opcional: **Ler planta com IA**, que envia a página ao servidor e devolve ambientes, paredes, contorno e vãos lidos das cotas.
+2. **Levantamento**: confira e corrija áreas, perímetros, comprimentos de parede e a lista de portas e janelas.
+3. **Perguntas**: pé-direito, tipo de parede, fundação, laje, teto, telhado, piso e esgoto, já com respostas comuns. Acabamentos e coeficientes ficam em seções opcionais.
+4. **Quantitativos**: 16 etapas (preliminares, fundação, estrutura, alvenaria, cobertura, água fria, esgoto, elétrica, impermeabilização, revestimentos, pisos, forro, esquadrias, louças e metais, pintura, limpeza), cada insumo com quantidade, unidade de compra (sacos, barras de 12 m, latas, rolos…) e memória de cálculo, além do **total consolidado**. Exporta CSV, imprime/gera PDF e faz backup em JSON.
+
+Concretos e argamassas são decompostos em cimento, cal, areia e brita (ou concreto usinado e argamassa industrializada, se escolhidos). O aço sai por bitola em kg e em barras. Estrutura e fundação seguem critérios paramétricos de pré-dimensionamento, como sapata 0,80×0,80 m, pilares 14×30 cm com 4Ø10 e baldrame e cinta com 4 barras: confira com o projeto estrutural. Os consumos e perdas ficam editáveis em *Coeficientes*.
+
+- **Pavimentos e unidades:** cada pavimento tem a sua planta e o seu levantamento (botão *＋ Pavimento*, com opção de copiar outro) e pode se repetir (pavimento tipo). Lajes entre pavimentos, escada de concreto com revestimento e corrimão, prumadas de água e esgoto, telhado só sobre o último pavimento (e sobre o térreo descoberto), e um quadro de luz, medidor e cavalete por unidade.
+- **Acabamento por cômodo:** no passo 2, cada cômodo pode ter piso (retificado 59×59, cerâmica, porcelanato 60 ou 90, laminado, vinílico, cimentado), parede (sem cerâmica, faixa, 1,50 m ou até o teto) e teto (reboco, gesso, drywall, PVC) próprios. No passo 3 há os padrões Popular, Médio e Alto e a peça da parede (retificado 30×58 ou cerâmica 32×57). O rodapé vai em todo o piso, menos nas paredes com cerâmica até o chão e atrás das bancadas, com desconto das portas.
+- **Quadro de esquadrias:** se a prancha tem a tabela (ex.: “P1 0,80 x 2,10”, “J1 1,50 x 1,20 / 1,00”), a leitura automática usa largura, altura e peitoril dela.
+- **Fundação pelo solo:** escolha o solo numa lista do mais ao menos resistente, com tensões admissíveis presuntivas da NBR 6122:1996. A sapata é dimensionada pela carga por pilar (área de influência × pavimentos). Em solo mole, a sapata rasa é trocada por estacas, com aviso.
+- **Área externa (opcional, passo 3):** muro de divisa (brocas, baldrame, pilaretes, cinta, blocos, chapisco, reboco, pintura e chapim), portão de garagem (com ou sem automatizador), portões sociais, aterro sob a casa, drenagem do quintal, piso externo (concreto com tela ou paver), jardim (grama, terra vegetal, adubo e mudas), calçada pública com piso podotátil, caixa de correio, lixeira, número, interfone/porteiro eletrônico e entrada de telefonia/internet. Os indicadores de conferência consideram só a casa.
+- **Embalagens reais de compra:** piso e revestimento em caixas (m² por caixa), blocos e telhas em milheiros, tintas em latas de 18 L mais galões de 3,6 L com a menor sobra, aço em barras de 12 m. A perda do piso sobe 5% no assentamento diagonal.
+- **Conferência:** indicadores com faixa usual (aço/m³, concreto/m², fôrma/m³, cimento/m², alvenaria/m², blocos/m², janelas ÷ piso e pontos elétricos/m²), mais a memória da fundação.
+- **Compras por fase:** lista de compras na ordem da obra (mobilização e fundação → estrutura → instalações embutidas → revestimentos → acabamentos → área externa → entrega), com prazos de encomenda (esquadrias sob medida, granito, laje, concreto usinado) e marcação do que já foi comprado.
+- **Revisões:** salve o quantitativo como revisão (ex.: “Rev 03”) e compare com outra ou com o atual.
+- **Excel e relatório:** planilha .xlsx com fórmulas (SOMASE no consolidado, ARREDONDAR.PARA.CIMA na compra e coluna de preço para preencher), compras por fase, levantamento e coeficientes. A impressão/PDF sai com logotipo, empresa, responsável técnico, ART e assinatura.
+- Motor de cálculo: `casa/engine.js` (teste: `node tests/casa-engine.cjs`). Leitor de PDF vetorial: `casa/leitor-vetorial.js` (teste: `node tests/casa-leitor.cjs`). Planilha: `casa/xlsx.js`.
+- Leitura por IA: rota `api/casa-planta.js` com Claude. Para ativar, cadastre a variável de ambiente `ANTHROPIC_API_KEY` no projeto Vercel. Sem a chave, o app funciona normalmente pelo desenho.
+- Os dados ficam no aparelho (localStorage e IndexedDB para a imagem da planta). Use o backup.

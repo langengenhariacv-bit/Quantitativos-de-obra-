@@ -1,0 +1,13 @@
+{
+  "id": "./",
+  "name": "Lang Casa — Quantitativos",
+  "short_name": "Lang Casa",
+  "description": "Quantitativo de insumos por etapa de uma casa, a partir da planta baixa.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f3f1",
+  "theme_color": "#171717",
+  "icons": [{"src": "./assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}]
+}

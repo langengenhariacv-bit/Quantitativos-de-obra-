@@ -1,0 +1,1225 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#171717" />
+<meta name="color-scheme" content="light" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Lang Casa" />
+<title>Lang Casa — Quantitativos</title>
+<style>
+:root{--bg:#f4f3f1;--card:#fff;--ink:#181818;--muted:#6f6a65;--line:#e5e0da;--brand:#171717;--accent:#ff5a00;--accent-bg:#fff0e7;
+  --ext:#d9480f;--int:#1f6fd1;--porta:#16855f;--janela:#0aa2b8;--warn:#9a5b00;--warn-bg:#fff6e3;--ok:#16855f;--ok-bg:#e8f6f0;--danger:#c23b3b;
+  --shadow:0 8px 26px rgba(25,25,25,.07);--r:16px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}.hidden{display:none!important}
+h1,h2,h3{margin:0;letter-spacing:-.02em}h2{font-size:18px}h3{font-size:15px}
+.top{position:sticky;top:0;z-index:30;background:var(--brand);color:#fff;padding:calc(8px + env(safe-area-inset-top)) 16px 8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:18px}
+.logo .mk{width:32px;height:32px;border-radius:10px;background:var(--accent);display:grid;place-items:center;font-size:17px}
+.logo small{display:block;font-size:11px;font-weight:600;color:#bdb6b0}
+.steps{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.steps button{border:0;background:transparent;color:#cfc9c3;font-weight:750;padding:8px 12px;border-radius:10px;font-size:14px;display:flex;gap:6px;align-items:center}
+.steps button b{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.15);font-size:12px}
+.steps button.on{background:rgba(255,255,255,.13);color:#fff}.steps button.on b{background:var(--accent)}
+main{max-width:1280px;margin:0 auto;padding:16px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;border:1px solid rgba(0,0,0,.03)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.muted{color:var(--muted)}.small{font-size:12.5px}.b{font-weight:800}
+.btn{border:1px solid var(--line);background:#fff;border-radius:11px;padding:9px 14px;font-weight:750;font-size:14px;display:inline-flex;gap:6px;align-items:center}
+.btn:hover{border-color:#cfc7bf}.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}.btn.dark{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:9px}.btn:disabled{opacity:.45;cursor:not-allowed}
+.note{border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+.note.warn{background:var(--warn-bg);color:var(--warn)}.note.ok{background:var(--ok-bg);color:var(--ok)}.note.info{background:#eef3fb;color:#24508f}
+/* editor */
+.ed{display:grid;grid-template-columns:1fr 300px;gap:14px}
+@media(max-width:980px){.ed{grid-template-columns:1fr}}
+.tools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tool{border:1px solid var(--line);background:#fff;border-radius:11px;padding:7px 10px;font-weight:750;font-size:13px;display:flex;gap:6px;align-items:center}
+.tool .sw{width:12px;height:12px;border-radius:3px}
+.tool.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.stage{position:relative;height:min(68vh,720px);min-height:380px;border-radius:14px;overflow:hidden;background:#fbfaf8;border:1px solid var(--line);touch-action:none}
+.stage canvas{display:block;width:100%;height:100%;cursor:crosshair}
+.stage.pan canvas{cursor:grab}
+.hud{position:absolute;left:10px;bottom:10px;background:rgba(23,23,23,.86);color:#fff;border-radius:10px;padding:6px 10px;font-size:12.5px;pointer-events:none;max-width:calc(100% - 20px)}
+.zoom{position:absolute;right:10px;top:10px;display:grid;gap:6px}
+.zoom button{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:18px;font-weight:700}
+.finish{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
+.drop{display:grid;place-items:center;text-align:center;height:100%;padding:24px;color:var(--muted)}
+.drop .big{font-size:40px}
+.side .card+.card{margin-top:12px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13.5px}.kv b{font-variant-numeric:tabular-nums}
+ol.help{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.5;color:#3f3b37}
+/* tabelas */
+table{border-collapse:collapse;width:100%}
+th,td{padding:8px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:13.5px}
+th{font-size:12px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.03em;background:#faf9f7;position:sticky;top:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+.tbl input,.tbl select{width:100%;border:1px solid var(--line);border-radius:8px;padding:6px 7px;background:#fff;min-width:60px}
+.tbl input[type=number]{text-align:right}
+.tbl input[type=checkbox]{width:auto;min-width:0}
+.x{border:0;background:none;color:var(--danger);font-size:18px;line-height:1;padding:4px 6px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+label.f{display:grid;gap:4px;font-size:12.5px;font-weight:700;color:#4a4540}
+label.f input,label.f select{width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;font-weight:500;font-size:14px}
+.q{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.q .opt{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.q .opt button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:650}
+.q .opt button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.q .item{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fff}
+.q .item .t{font-weight:800;font-size:14px}.q .item .d{font-size:12px;color:var(--muted);margin-top:2px}
+.q .item input[type=number]{border:1px solid var(--line);border-radius:10px;padding:8px 10px;width:120px;margin-top:6px}
+details.more>summary{cursor:pointer;font-weight:800;margin:18px 0 10px;list-style:none}
+details.more>summary::before{content:'▸ ';color:var(--accent)}details.more[open]>summary::before{content:'▾ '}
+/* resultados */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px}
+.kpi .v{font-size:20px;font-weight:900;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.kpi .l{font-size:12px;color:var(--muted);font-weight:650}
+.tabs{display:flex;gap:6px;overflow:auto;padding-bottom:6px;margin:14px 0 10px}
+.tabs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:750;white-space:nowrap}
+.tabs button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.tabs button .c{opacity:.6;font-weight:600;margin-left:4px}
+td.mem{color:var(--muted);font-size:12px;max-width:420px}
+.etq{font-size:11.5px;color:var(--muted)}
+.search{border:1px solid var(--line);border-radius:10px;padding:8px 11px;min-width:220px;background:#fff}
+dialog{border:0;border-radius:18px;padding:0;max-width:440px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(20,20,20,.45)}
+dialog form{padding:18px;display:grid;gap:12px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#171717;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:99;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:s 1s linear infinite}@keyframes s{to{transform:rotate(360deg)}}
+.print-only{display:none}
+.pavbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.pavbar .lbl{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-right:4px}
+.pav{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-weight:750;font-size:13px;display:flex;gap:6px;align-items:center}
+.pav.on{background:var(--accent);border-color:var(--accent);color:#fff}.pav .rep{font-size:11px;opacity:.75}
+.pav .ed{border:0;background:none;color:inherit;padding:0 0 0 2px;font-size:13px}
+.solos{display:grid;gap:6px;margin-top:8px}
+.solo{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;text-align:left;font-size:13px}
+.solo.on{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand);background:#faf9f7}
+.solo .rank{font-weight:900;color:var(--muted)}.solo .barra{height:6px;border-radius:4px;background:linear-gradient(90deg,#d9480f,#16855f);margin-top:4px}
+.solo .kpa{font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap}
+.q .wide{grid-column:1/-1}
+.est{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:800}
+.est.ok{background:var(--ok-bg);color:var(--ok)}.est.atencao{background:var(--warn-bg);color:var(--warn)}.est.fora{background:#fdeeee;color:var(--danger)}.est.na{background:#f1efec;color:var(--muted)}
+.fase{margin-top:16px}.fase h3{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.fase h3 small{font-weight:600;color:var(--muted);font-size:12.5px}
+tr.feito td{opacity:.45;text-decoration:line-through}
+.prazo{color:#9a5b00;font-size:12px}
+.cab-rel{display:none}
+@media print{
+  .top,.no-print,.tabs,.ed,.search{display:none!important}
+  body{background:#fff;font-size:11px}main{padding:0;max-width:none}.toast{display:none!important}.card{box-shadow:none;border:0;padding:0}
+  .print-only{display:block}.page[data-p]{display:none!important}.page[data-p="4"]{display:block!important}
+  .cab-rel{display:flex!important;gap:16px;align-items:center;border-bottom:2px solid #171717;padding-bottom:10px;margin-bottom:10px}
+  .cab-rel img{max-height:60px;max-width:180px}.cab-rel .dados{font-size:11px;line-height:1.45}
+  .assinatura{margin-top:40px;text-align:center;font-size:11px}.assinatura .linha{border-top:1px solid #000;width:260px;margin:0 auto 4px}
+  .etapa-print{break-inside:auto;margin-top:14px}.etapa-print h3{margin:10px 0 6px}
+  th{position:static}td,th{padding:4px 6px;font-size:10.5px}td.mem{font-size:9.5px}.tbl{border:0;overflow:visible}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo"><span class="mk">🏠</span><div>Lang Casa<small>Quantitativos de insumos por etapa</small></div></div>
+  <nav class="steps" id="steps">
+    <button data-s="1" class="on"><b>1</b>Planta</button>
+    <button data-s="2"><b>2</b>Levantamento</button>
+    <button data-s="3"><b>3</b>Perguntas</button>
+    <button data-s="4"><b>4</b>Quantitativos</button>
+  </nav>
+</header>
+
+<main>
+<!-- ===================== 1 PLANTA ===================== -->
+<section class="page" data-p="1">
+  <div class="ed">
+    <div>
+      <div class="pavbar no-print" id="pavBar1"></div>
+      <div class="row no-print" style="margin-bottom:10px">
+        <label class="btn pri">📂 Importar planta<input id="file" type="file" accept=".pdf,image/png,image/jpeg,image/webp" hidden></label>
+        <select id="pdfPage" class="btn hidden" title="Página do PDF"></select>
+        <button class="btn" id="btnBlank" title="Desenhar sobre uma grade sem planta">Desenhar sem planta</button>
+        <button class="btn" id="btnAuto" title="Lê paredes, cômodos e esquadrias do PDF exportado do CAD, sem IA">🔎 Ler automaticamente</button>
+        <button class="btn" id="btnIA">✨ Ler com IA</button>
+        <span class="sp"></span>
+        <button class="btn sm" id="btnUndo" title="Desfazer (Ctrl+Z)">↶ Desfazer</button>
+        <button class="btn sm" id="btnClear">Limpar desenho</button>
+      </div>
+      <div class="tools" id="tools">
+        <button class="tool" data-t="mao">✋ Mover</button>
+        <button class="tool" data-t="calibrar">📏 Calibrar escala</button>
+        <button class="tool on" data-t="ext"><span class="sw" style="background:var(--ext)"></span>Parede externa</button>
+        <button class="tool" data-t="int"><span class="sw" style="background:var(--int)"></span>Parede interna</button>
+        <button class="tool" data-t="rect">▭ Ambiente (retângulo)</button>
+        <button class="tool" data-t="poly">⬠ Ambiente (polígono)</button>
+        <button class="tool" data-t="porta"><span class="sw" style="background:var(--porta)"></span>Porta</button>
+        <button class="tool" data-t="janela"><span class="sw" style="background:var(--janela)"></span>Janela</button>
+        <button class="tool" data-t="apagar">🗑 Apagar</button>
+        <label class="tool"><input type="checkbox" id="orto" checked> Ortogonal</label>
+        <label class="tool hidden" id="verLeituraBox"><input type="checkbox" id="verLeitura" checked> Mostrar leitura</label>
+      </div>
+      <div class="stage" id="stage">
+        <canvas id="cv"></canvas>
+        <div class="drop" id="drop"><div><div class="big">📐</div><b>Importe a planta baixa</b> (PDF, JPG ou PNG)<br><span class="small">ou arraste o arquivo para cá. Também dá para desenhar sem planta.</span></div></div>
+        <div class="zoom"><button id="zin">+</button><button id="zout">−</button><button id="zfit" title="Ajustar">⤢</button></div>
+        <div class="finish hidden" id="finishBar"><button class="btn sm" id="btnCancel">Cancelar</button><button class="btn sm dark" id="btnFinish">Concluir</button></div>
+        <div class="hud" id="hud"></div>
+      </div>
+    </div>
+    <aside class="side">
+      <div class="card">
+        <h3>Como levantar</h3>
+        <p class="small" style="margin:6px 0 0"><b>PDF exportado do CAD:</b> ao importar, o app lê sozinho paredes, cômodos (nome e área) e portas/janelas pelas cotas e rótulos. Confira e corrija no passo 2.</p>
+        <p class="small muted" style="margin:6px 0 0">Imagem ou PDF escaneado: desenhe por cima, assim:</p>
+        <ol class="help">
+          <li><b>Calibrar escala:</b> clique nas duas pontas de uma cota conhecida e informe a medida.</li>
+          <li><b>Paredes externas:</b> clique nos cantos pelo eixo das paredes; feche clicando no primeiro ponto.</li>
+          <li><b>Paredes internas:</b> clique de parede a parede (o ímã prende nos pontos e nas paredes); termine com duplo clique ou <i>Concluir</i>.</li>
+          <li><b>Ambientes:</b> retângulo (2 cliques em cantos opostos) ou polígono; escolha o tipo.</li>
+          <li><b>Portas e janelas:</b> clique sobre a parede e confira a medida.</li>
+        </ol>
+        <p class="small muted" style="margin:8px 0 0">Arraste para mover a planta e use a roda do mouse ou o gesto de pinça para zoom. Esc cancela e Backspace desfaz o último ponto.</p>
+      </div>
+      <div class="card">
+        <div class="row"><h3>Medido no desenho</h3><span class="sp"></span><span class="small muted" id="escalaTxt"></span></div>
+        <div class="kv" id="medidas" style="margin-top:8px"></div>
+      </div>
+      <div class="card"><div id="origemBox"></div>
+        <button class="btn pri" style="width:100%;justify-content:center;margin-top:10px" data-go="2">Conferir levantamento →</button></div>
+    </aside>
+  </div>
+</section>
+
+<!-- ===================== 2 LEVANTAMENTO ===================== -->
+<section class="page hidden" data-p="2">
+  <div class="card">
+    <div class="row"><h2>Levantamento da planta</h2><span class="sp"></span><span id="origemTag" class="small"></span>
+      <button class="btn sm" id="btnReapply">Usar medidas do desenho</button></div>
+    <div class="pavbar" id="pavBar2" style="margin-top:10px"></div>
+    <p class="small muted" style="margin:6px 0 12px">Estes números alimentam o cálculo. Vêm do desenho, da leitura automática ou da IA e podem ser corrigidos à mão. Piso, parede e teto de cada cômodo seguem o padrão do passo 3, a não ser que você escolha outro aqui.</p>
+    <div id="iaAvisos"></div>
+    <h3 style="margin:10px 0 8px">Contorno e paredes</h3>
+    <div class="grid2" id="contorno"></div>
+    <div class="row" style="margin:20px 0 8px"><h3>Ambientes</h3><span class="sp"></span><button class="btn sm" id="addAmb">+ Ambiente</button></div>
+    <div class="tbl"><table><thead><tr><th>Nome</th><th>Tipo</th><th class="n">Área (m²)</th><th class="n">Perímetro (m)</th><th>Piso</th><th>Parede</th><th>Teto</th><th></th></tr></thead><tbody id="tbAmb"></tbody>
+      <tfoot><tr><td colspan="2" class="b">Total</td><td class="n b" id="totArea"></td><td colspan="5"></td></tr></tfoot></table></div>
+    <div class="row" style="margin:20px 0 8px"><h3>Portas e janelas</h3><span class="sp"></span><button class="btn sm" id="addAb">+ Abertura</button></div>
+    <div class="tbl"><table><thead><tr><th>Tipo</th><th class="n">Largura (m)</th><th class="n">Altura (m)</th><th class="n">Peitoril (m)</th><th class="n">Qtd</th><th>Externa</th><th></th></tr></thead><tbody id="tbAb"></tbody></table></div>
+    <div class="row" style="margin-top:16px"><span class="sp"></span><button class="btn pri" data-go="3">Responder perguntas →</button></div>
+  </div>
+</section>
+
+<!-- ===================== 3 PERGUNTAS ===================== -->
+<section class="page hidden" data-p="3">
+  <div class="card">
+    <h2>Algumas perguntas sobre a obra</h2>
+    <p class="small muted" style="margin:6px 0 14px">Já vêm com respostas comuns para uma casa térrea. Mude só o que for diferente.</p>
+    <div class="q" id="qEspecial" style="margin-bottom:14px"></div>
+    <div class="q" id="qBase"></div>
+    <details class="more"><summary>Acabamentos e detalhes (opcional)</summary><div class="q" id="qMais"></div></details>
+    <details class="more"><summary>Área externa: muro, portões, aterro, piso externo, jardim e calçada (opcional)</summary>
+      <p class="small muted">Deixe 0 no que a obra não tiver. Entram na etapa “Área externa, muros e ligações”.</p><div class="q" id="qExt"></div></details>
+    <details class="more"><summary>Coeficientes de consumo e perdas (avançado)</summary>
+      <p class="small muted">Valores de referência de mercado para pré-orçamento. Ajuste conforme o fornecedor ou o projeto.</p>
+      <div class="row" style="margin-bottom:8px"><span class="sp"></span><button class="btn sm" id="coefReset">Restaurar padrões</button></div>
+      <div class="tbl" style="max-height:420px"><table><thead><tr><th>Coeficiente</th><th class="n">Valor</th><th>Unidade</th></tr></thead><tbody id="tbCoef"></tbody></table></div>
+    </details>
+    <div class="row" style="margin-top:16px"><span class="sp"></span><button class="btn pri" data-go="4">Calcular quantitativos →</button></div>
+  </div>
+</section>
+
+<!-- ===================== 4 RESULTADOS ===================== -->
+<section class="page hidden" data-p="4">
+  <div class="card">
+    <div class="row no-print"><h2>Quantitativos de insumos</h2><span class="sp"></span>
+      <input id="nomeObra" class="search" style="min-width:180px" placeholder="Nome da obra">
+      <button class="btn sm" id="btnXlsx">⬇ Excel</button>
+      <button class="btn sm" id="btnCsv">⬇ CSV</button>
+      <button class="btn sm" id="btnPrint">🖨 Imprimir / PDF</button>
+      <button class="btn sm" id="btnBackup">💾 Backup</button>
+      <label class="btn sm">📥 Restaurar<input type="file" id="restore" accept=".json" hidden></label>
+    </div>
+    <div class="cab-rel" id="cabRel"></div>
+    <div class="print-only"><h2 id="printTitle"></h2><p class="small" id="printSub"></p></div>
+    <details class="more no-print" id="relBox"><summary>Dados do relatório (timbre, responsável técnico)</summary>
+      <div class="grid2" id="relCampos" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))"></div>
+      <div class="row" style="margin-top:10px"><label class="btn sm">🖼 Logotipo<input type="file" id="relLogo" accept="image/*" hidden></label><span class="small muted" id="relLogoTxt"></span><button class="btn sm hidden" id="relLogoDel">Remover logotipo</button></div>
+    </details>
+    <div class="kpis" id="kpis" style="margin-top:12px"></div>
+    <div id="avisos" style="margin-top:12px;display:grid;gap:8px"></div>
+    <div class="row no-print" style="margin-top:6px"><div class="tabs" id="tabs" style="flex:1"></div></div>
+    <div class="row no-print" style="margin-bottom:8px"><input id="busca" class="search" placeholder="Buscar insumo…"><span class="sp"></span><span class="small muted" id="contagem"></span></div>
+    <div id="resultado"></div>
+    <div class="assinatura print-only" id="assinatura"></div>
+    <details class="more no-print" id="revBox"><summary>Revisões do projeto (comparar quantitativos)</summary>
+      <p class="small muted">Salve o quantitativo atual como uma revisão (ex.: “Rev 03”). Depois de mudar a planta ou as respostas, compare para ver o que aumentou ou diminuiu.</p>
+      <div class="row"><input id="revNome" class="search" style="min-width:160px" placeholder="Nome da revisão"><button class="btn sm dark" id="revSalvar">Salvar revisão</button></div>
+      <div id="revLista" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:10px"><label class="small b">Comparar <select id="revA" class="search" style="min-width:140px"></select></label><label class="small b">com <select id="revB" class="search" style="min-width:140px"></select></label><button class="btn sm" id="revComparar">Comparar</button></div>
+      <div id="revResultado" style="margin-top:10px"></div>
+    </details>
+    <p class="small muted" style="margin-top:14px">Somente insumos (materiais): ferramentas, equipamentos e mão de obra não entram. Quantidades de pré-orçamento com perdas incluídas; fundação, estrutura e instalações devem ser conferidas com os projetos complementares quando existirem.</p>
+  </div>
+</section>
+</main>
+
+<dialog id="dlg"><form method="dialog" id="dlgForm"></form></dialog>
+<div class="toast hidden" id="toast"></div>
+
+<script src="engine.js"></script>
+<script src="leitor-vetorial.js"></script>
+<script src="xlsx.js"></script>
+<script>
+'use strict';
+const E = window.CasaEngine;
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const fmt = E.fmt;
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const KEY = 'lang-casa-v1';
+
+// ------------------------------------------------------------------ estado
+const levVazio = () => ({ ambientes: [], aberturas: [], paredes: { externas: 0, internas: 0 }, envelope: { area: 0, perimetro: 0, comprimento: 0, largura: 0 }, nos: 0 });
+function novoPav(nome, rep) {
+  return { id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), nome: nome || 'Térreo', rep: rep || 1,
+    desenho: { escala: null, paredes: [], ambientes: [], aberturas: [] }, lev: levVazio(), levOrigem: 'desenho', iaAvisos: [] };
+}
+function novoEstado() {
+  return { nome: '', etapa: 1, pavimentos: [novoPav('Térreo')], pavAtivo: 0, resp: Object.assign({}, E.RESPOSTAS_PADRAO), coef: {}, relatorio: {}, revisoes: [], comprados: {} };
+}
+// S.lev, S.desenho, S.levOrigem e S.iaAvisos apontam para o pavimento ativo
+function ligar(o) {
+  for (const k of ['lev', 'desenho', 'levOrigem', 'iaAvisos']) Object.defineProperty(o, k, { get() { return o.pavimentos[o.pavAtivo][k]; }, set(v) { o.pavimentos[o.pavAtivo][k] = v; }, enumerable: false, configurable: true });
+  return o;
+}
+function carregarEstado(o) {
+  const n = Object.assign(novoEstado(), o);
+  n.resp = Object.assign({}, E.RESPOSTAS_PADRAO, o.resp || {});
+  if (!Array.isArray(o.pavimentos) || !o.pavimentos.length) {
+    const p = novoPav('Térreo');
+    if (o.lev) p.lev = o.lev; if (o.desenho) p.desenho = o.desenho; if (o.levOrigem) p.levOrigem = o.levOrigem; if (o.iaAvisos) p.iaAvisos = o.iaAvisos;
+    n.pavimentos = [p];
+  }
+  delete n.lev; delete n.desenho; delete n.levOrigem; delete n.iaAvisos;
+  n.pavAtivo = Math.min(Math.max(0, n.pavAtivo | 0), n.pavimentos.length - 1);
+  n.relatorio = n.relatorio || {}; n.revisoes = n.revisoes || []; n.comprados = n.comprados || {};
+  return ligar(n);
+}
+const pavAtual = () => S.pavimentos[S.pavAtivo];
+let S = ligar(novoEstado());
+try { const raw = localStorage.getItem(KEY); if (raw) S = carregarEstado(JSON.parse(raw)); } catch (e) { /* armazenamento indisponível */ }
+let saveT = 0;
+function salvar() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sem armazenamento */ } }, 300); }
+
+function toast(msg, ms = 3200) { const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.add('hidden'), ms); }
+
+// ------------------------------------------------------------------ diálogo genérico
+function perguntar(titulo, campos, okTxt = 'OK') {
+  return new Promise((res) => {
+    const d = $('#dlg'), f = $('#dlgForm');
+    f.innerHTML = '<h3>' + esc(titulo) + '</h3>' + campos.map((c) => {
+      if (c.info) return '<p class="small muted" style="margin:0">' + c.info + '</p>';
+      if (c.opts) return '<label class="f">' + esc(c.label) + '<select name="' + c.k + '">' + c.opts.map(([v, t]) => '<option value="' + esc(v) + '"' + (v === c.v ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select></label>';
+      if (c.type === 'checkbox') return '<label class="row small b"><input type="checkbox" name="' + c.k + '"' + (c.v ? ' checked' : '') + '> ' + esc(c.label) + '</label>';
+      return '<label class="f">' + esc(c.label) + '<input name="' + c.k + '" type="' + (c.type || 'text') + '" step="any" value="' + esc(c.v == null ? '' : c.v) + '"></label>';
+    }).join('') + '<div class="row" style="flex-direction:row-reverse"><button class="btn pri" value="ok">' + esc(okTxt) + '</button><button class="btn" value="cancel" formnovalidate>Cancelar</button><span class="sp"></span></div>';
+    const sel = f.querySelector('select[name=tipo]');
+    if (sel && campos.onTipo) sel.addEventListener('change', () => campos.onTipo(sel.value, f));
+    d.onclose = () => {
+      if (d.returnValue !== 'ok') return res(null);
+      const out = {};
+      for (const c of campos) if (c.k) { const el = f.elements[c.k]; out[c.k] = c.type === 'checkbox' ? el.checked : c.type === 'number' ? parseFloat(String(el.value).replace(',', '.')) : el.value; }
+      res(out);
+    };
+    d.returnValue = ''; d.showModal();
+    const first = f.querySelector('input,select'); if (first) setTimeout(() => { first.focus(); if (first.select) first.select(); }, 30);
+  });
+}
+
+// ------------------------------------------------------------------ navegação
+function irPara(n) {
+  S.etapa = n; salvar();
+  $$('.page').forEach((p) => p.classList.toggle('hidden', p.dataset.p !== String(n)));
+  $$('#steps button').forEach((b) => b.classList.toggle('on', b.dataset.s === String(n)));
+  if (n === 1) { resize(); }
+  if (n === 2) renderLev();
+  if (n === 3) renderPerguntas();
+  if (n === 4) renderResultado();
+  window.scrollTo(0, 0);
+}
+$('#steps').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) irPara(+b.dataset.s); });
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) irPara(+b.dataset.go); });
+
+// ================================================================== EDITOR
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+let IMG = null; // {src: canvas|img, w, h, nome, grade}
+let pdfDoc = null, PDFJS = null, CAMADA = null;
+const V = { z: 1, ox: 0, oy: 0 };
+let tool = 'ext', cur = null, hover = null, calib = [], dpr = 1;
+const hist = [];
+
+function snapshot() { hist.push(JSON.stringify(S.desenho)); if (hist.length > 80) hist.shift(); }
+function desfazer() {
+  if (cur) { cur.pts.pop(); if (!cur.pts.length) cur = null; atualizarFinish(); draw(); return; }
+  const h = hist.pop(); if (!h) return toast('Nada para desfazer');
+  S.desenho = JSON.parse(h); mudouDesenho();
+}
+
+function resize() {
+  const r = stage.getBoundingClientRect(); dpr = window.devicePixelRatio || 1;
+  cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
+  draw();
+}
+window.addEventListener('resize', resize);
+function ajustar() {
+  if (!IMG) return;
+  const r = stage.getBoundingClientRect();
+  V.z = Math.min(r.width / IMG.w, r.height / IMG.h) * 0.95;
+  V.ox = (r.width - IMG.w * V.z) / 2; V.oy = (r.height - IMG.h * V.z) / 2; draw();
+}
+function zoomEm(f, sx, sy) {
+  const r = stage.getBoundingClientRect(); if (sx == null) { sx = r.width / 2; sy = r.height / 2; }
+  const nz = Math.min(40, Math.max(0.02, V.z * f));
+  V.ox = sx - (sx - V.ox) * (nz / V.z); V.oy = sy - (sy - V.oy) * (nz / V.z); V.z = nz; draw();
+}
+$('#zin').onclick = () => zoomEm(1.3); $('#zout').onclick = () => zoomEm(1 / 1.3); $('#zfit').onclick = ajustar;
+
+// ---- importação
+async function carregarArquivo(file) {
+  if (!file) return;
+  const nome = file.name || 'planta';
+  try {
+    if (/\.pdf$/i.test(nome) || file.type === 'application/pdf') {
+      toast('Abrindo PDF…');
+      const pdfjs = await import('../vendor/pdf.min.mjs');
+      pdfjs.GlobalWorkerOptions.workerSrc = new URL('../vendor/pdf.worker.min.mjs', location.href).href;
+      PDFJS = pdfjs;
+      pdfDoc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+      const sel = $('#pdfPage'); sel.innerHTML = '';
+      for (let i = 1; i <= pdfDoc.numPages; i++) sel.insertAdjacentHTML('beforeend', '<option value="' + i + '">Página ' + i + ' de ' + pdfDoc.numPages + '</option>');
+      sel.classList.toggle('hidden', pdfDoc.numPages < 2);
+      await renderPagina(1, nome);
+    } else {
+      pdfDoc = null; $('#pdfPage').classList.add('hidden');
+      const bmp = await createImageBitmap(file);
+      const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height; c.getContext('2d').drawImage(bmp, 0, 0);
+      definirImagem(c, nome);
+    }
+  } catch (err) { console.error(err); toast('Não foi possível abrir o arquivo: ' + (err.message || err)); }
+}
+async function renderPagina(n, nome) {
+  const pg = await pdfDoc.getPage(n);
+  const vp0 = pg.getViewport({ scale: 1 });
+  const sc = Math.min(4, 4200 / Math.max(vp0.width, vp0.height));
+  const vp = pg.getViewport({ scale: sc });
+  const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+  const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+  await pg.render({ canvasContext: cx, viewport: vp }).promise;
+  definirImagem(c, (nome || (IMG && IMG.nome) || 'planta') + ' · p.' + n, false, true);
+  IMG.pagina = pg; IMG.sc = sc; IMG.pdfjs = PDFJS;
+  await lerAutomatico(true);
+}
+function definirImagem(c, nome, manterDesenho, ehPdf) {
+  CAMADA = null; $('#verLeituraBox').classList.add('hidden');
+  const trocou = IMG && !IMG.grade && (IMG.w !== c.width || IMG.h !== c.height);
+  IMG = { src: c, w: c.width, h: c.height, nome }; IMGS[pavAtual().id] = IMG;
+  $('#drop').classList.add('hidden');
+  if (trocou && !manterDesenho && (S.desenho.paredes.length || S.desenho.ambientes.length)) toast('Nova imagem carregada: confira se o desenho anterior ainda corresponde.');
+  ajustar(); guardarImagem(c);
+  if (!S.desenho.escala && !ehPdf) { setTool('calibrar'); toast('Comece calibrando a escala numa cota conhecida.', 4500); }
+}
+
+// ---- leitura automática de PDF vetorial (sem IA)
+async function lerAutomatico(aoImportar) {
+  if (!IMG || !IMG.pagina) { if (!aoImportar) toast('A leitura automática funciona com PDF exportado do CAD. Para imagem, desenhe ou use a IA.'); return; }
+  const b = $('#btnAuto'); b.disabled = true; b.innerHTML = '<span class="spin" style="border-color:rgba(0,0,0,.2);border-top-color:#333"></span> Lendo…';
+  try {
+    const dados = await window.LeitorVetorial.extrair(IMG.pdfjs, IMG.pagina);
+    await new Promise((r) => setTimeout(r, 20));
+    const r = window.LeitorVetorial.analisar(dados);
+    if (!r.ok) {
+      if (aoImportar) { setTool('calibrar'); toast(r.erro + ' Comece calibrando a escala.', 6000); } else toast(r.erro, 6000);
+      return;
+    }
+    const temAlgo = S.levOrigem !== 'desenho' || S.desenho.paredes.length || S.desenho.ambientes.length;
+    if (temAlgo && !aoImportar) {
+      const ok = await perguntar('Substituir o levantamento?', [{ info: 'A leitura encontrou ' + r.lev.ambientes.length + ' cômodos e ' + r.lev.aberturas.length + ' esquadrias. As medidas atuais serão trocadas por essas.' }], 'Substituir');
+      if (!ok) return;
+    }
+    // camada visual alinhada à imagem da página
+    const cc = document.createElement('canvas'); cc.width = r.camada.w; cc.height = r.camada.h;
+    cc.getContext('2d').putImageData(new ImageData(r.camada.data, r.camada.w, r.camada.h), 0, 0);
+    CAMADA = { cv: cc, x: r.camada.x0 * IMG.sc, y: r.camada.y0 * IMG.sc, w: r.camada.w / r.camada.k * IMG.sc, h: r.camada.h / r.camada.k * IMG.sc, amb: r.detalhe.ambientes.map((a) => ({ nome: a.nome, area: a.area, x: a.x * IMG.sc, y: a.y * IMG.sc })) };
+    $('#verLeituraBox').classList.remove('hidden'); $('#verLeitura').checked = true; CAMADAS[pavAtual().id] = CAMADA;
+    snapshot();
+    S.desenho = { escala: r.escala / IMG.sc, paredes: [], ambientes: [], aberturas: [] };
+    S.lev = r.lev; S.levOrigem = 'auto';
+    S.iaAvisos = ['Escala lida das cotas: 1:' + fmt(r.escala * 100 / 0.0352778, 0) + ' na folha (' + r.votosEscala + ' cotas concordantes); paredes de ' + fmt(r.espessura * 100, 0) + ' cm.', 'Área construída: ' + r.detalhe.fonteArea + '.'].concat(r.avisos);
+    salvar(); painelMedidas(); setTool('mao'); draw();
+    toast('Planta lida: ' + r.lev.ambientes.length + ' cômodos, ' + fmt(r.lev.paredes.externas + r.lev.paredes.internas, 0) + ' m de paredes e ' + r.lev.aberturas.length + ' esquadrias. Confira no passo 2.', 6000);
+  } catch (err) { console.error(err); toast('Falha na leitura automática: ' + (err.message || err)); }
+  finally { b.disabled = false; b.innerHTML = '🔎 Ler automaticamente'; }
+}
+$('#btnAuto').onclick = () => lerAutomatico(false);
+$('#verLeitura').addEventListener('change', () => draw());
+function gradeBranca() {
+  const c = document.createElement('canvas'); c.width = 4000; c.height = 3000;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+  for (let x = 0; x <= c.width; x += 50) { g.strokeStyle = x % 100 === 0 ? '#d3dae2' : '#eef1f4'; g.lineWidth = x % 500 === 0 ? 3 : 1; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, c.height); g.stroke(); }
+  for (let y = 0; y <= c.height; y += 50) { g.strokeStyle = y % 100 === 0 ? '#d3dae2' : '#eef1f4'; g.lineWidth = y % 500 === 0 ? 3 : 1; g.beginPath(); g.moveTo(0, y); g.lineTo(c.width, y); g.stroke(); }
+  g.fillStyle = '#9aa5b1'; g.font = '22px sans-serif'; g.fillText('Grade: quadrado = 1 m (linha forte a cada 5 m)', 20, 34);
+  return c;
+}
+$('#btnBlank').onclick = () => {
+  const c = gradeBranca(); IMG = { src: c, w: c.width, h: c.height, nome: 'grade', grade: true };
+  if (!S.desenho.escala || !S.desenho.grade) { S.desenho.escala = 1 / 100; S.desenho.grade = true; }
+  $('#drop').classList.add('hidden'); resize(); { const r = stage.getBoundingClientRect(); V.z = Math.min(r.width / 2400, r.height / 1800); V.ox = 10; V.oy = 10; } setTool('ext'); mudouDesenho(true);
+  toast('Grade de 1 m pronta: desenhe as paredes pelo eixo.');
+};
+$('#file').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) { S.desenho.grade = false; carregarArquivo(f); } });
+$('#pdfPage').addEventListener('change', (e) => renderPagina(+e.target.value));
+stage.addEventListener('dragover', (e) => { e.preventDefault(); });
+stage.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) carregarArquivo(f); });
+
+// guarda a imagem no IndexedDB para reabrir depois (opcional)
+function idb() { return new Promise((res, rej) => { try { const r = indexedDB.open('lang-casa', 1); r.onupgradeneeded = () => r.result.createObjectStore('img'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }); }
+function guardarImagem(c) {
+  if (IMG && IMG.grade) return;
+  const chave = 'planta-' + pavAtual().id, nome = IMG.nome;
+  c.toBlob(async (blob) => { try { const db = await idb(); db.transaction('img', 'readwrite').objectStore('img').put({ blob, nome }, chave); } catch (e) { /* opcional */ } }, 'image/jpeg', 0.9);
+}
+async function recuperarImagem() {
+  const pid = pavAtual().id;
+  try {
+    const db = await idb();
+    const ler = (k) => new Promise((res) => { const r = db.transaction('img').objectStore('img').get(k); r.onsuccess = () => res(r.result); r.onerror = () => res(null); });
+    let v = await ler('planta-' + pid);
+    if (!v && S.pavAtivo === 0) v = await ler('planta');
+    if (pid !== pavAtual().id) return;
+    if (v && v.blob && !S.desenho.grade) {
+      const bmp = await createImageBitmap(v.blob);
+      const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height; c.getContext('2d').drawImage(bmp, 0, 0);
+      IMG = { src: c, w: c.width, h: c.height, nome: v.nome }; $('#drop').classList.add('hidden'); ajustar();
+    } else if (S.desenho.grade) $('#btnBlank').onclick();
+  } catch (e) { /* sem imagem salva */ }
+}
+
+// ---- pavimentos
+const IMGS = {}, CAMADAS = {};
+function renderPavs() {
+  const html = '<span class="lbl">Pavimentos</span>' + S.pavimentos.map((p, i) => '<button class="pav' + (i === S.pavAtivo ? ' on' : '') + '" data-pav="' + i + '">' + esc(p.nome) + (p.rep > 1 ? ' <span class="rep">×' + p.rep + '</span>' : '') + (i === S.pavAtivo ? ' <span class="ed" data-edpav="' + i + '" title="Editar pavimento">✎</span>' : '') + '</button>').join('') +
+    '<button class="pav" data-addpav="1" title="Adicionar pavimento">＋ Pavimento</button>' + (S.pavimentos.length > 1 ? '<span class="small muted">o telhado vai sobre o último da lista</span>' : '');
+  $('#pavBar1').innerHTML = html; $('#pavBar2').innerHTML = html;
+}
+function trocarPav(i) {
+  if (i === S.pavAtivo || !S.pavimentos[i]) return;
+  const atual = pavAtual(); IMGS[atual.id] = IMG; CAMADAS[atual.id] = CAMADA;
+  S.pavAtivo = i; cur = null; calib = []; hist.length = 0; atualizarFinish();
+  const p = pavAtual(); IMG = IMGS[p.id] || null; CAMADA = CAMADAS[p.id] || null;
+  $('#pdfPage').classList.add('hidden'); $('#verLeituraBox').classList.toggle('hidden', !CAMADA);
+  if (IMG) { $('#drop').classList.add('hidden'); ajustar(); } else { $('#drop').classList.remove('hidden'); recuperarImagem(); }
+  salvar(); renderPavs(); painelMedidas(); draw();
+  if (S.etapa === 2) renderLev();
+}
+async function novoPavimento() {
+  const n = S.pavimentos.length;
+  const r = await perguntar('Novo pavimento', [
+    { info: 'Cada pavimento tem a sua planta e o seu levantamento. Use repetições para o pavimento tipo de um prédio. O telhado é calculado sobre o último pavimento da lista.' },
+    { k: 'nome', label: 'Nome', v: n === 1 ? 'Pavimento superior' : n + 'º pavimento' },
+    { k: 'rep', label: 'Quantas vezes se repete (pavimento tipo)', type: 'number', v: 1 },
+    { k: 'origem', label: 'Começar com', opts: [['vazio', 'Planta vazia (importar ou desenhar)']].concat(S.pavimentos.map((p, i) => ['copia' + i, 'Cópia do levantamento de ' + p.nome])), v: 'vazio' }
+  ], 'Criar');
+  if (!r) return;
+  const p = novoPav(r.nome || n + 'º pavimento', Math.max(1, Math.round(r.rep || 1)));
+  if (r.origem.startsWith('copia')) {
+    const src = S.pavimentos[+r.origem.slice(5)];
+    p.lev = JSON.parse(JSON.stringify(src.lev)); p.desenho = JSON.parse(JSON.stringify(src.desenho)); p.levOrigem = src.levOrigem; p.iaAvisos = (src.iaAvisos || []).slice();
+    const atual = pavAtual(); IMGS[atual.id] = IMG; CAMADAS[atual.id] = CAMADA;
+    if (IMGS[src.id]) { IMGS[p.id] = IMGS[src.id]; CAMADAS[p.id] = CAMADAS[src.id] || null; }
+  }
+  S.pavimentos.push(p); trocarPav(S.pavimentos.length - 1);
+  toast(p.nome + ' criado' + (r.origem.startsWith('copia') ? ' como cópia. Ajuste o que for diferente.' : '. Importe a planta deste pavimento.'));
+}
+async function editarPav(i) {
+  const p = S.pavimentos[i];
+  const campos = [{ k: 'nome', label: 'Nome', v: p.nome }, { k: 'rep', label: 'Quantas vezes se repete', type: 'number', v: p.rep }];
+  if (S.pavimentos.length > 1) campos.push({ k: 'pos', label: 'Posição na lista (1 = térreo)', type: 'number', v: i + 1 }, { k: 'excluir', label: 'Excluir este pavimento', type: 'checkbox', v: false });
+  const r = await perguntar('Pavimento', campos, 'Salvar');
+  if (!r) return;
+  if (r.excluir) { S.pavimentos.splice(i, 1); S.pavAtivo = Math.min(S.pavAtivo, S.pavimentos.length - 1); IMG = IMGS[pavAtual().id] || null; CAMADA = CAMADAS[pavAtual().id] || null; if (!IMG) { $('#drop').classList.remove('hidden'); recuperarImagem(); } salvar(); renderPavs(); painelMedidas(); draw(); if (S.etapa === 2) renderLev(); return; }
+  p.nome = r.nome || p.nome; p.rep = Math.max(1, Math.round(r.rep || 1));
+  if (r.pos && S.pavimentos.length > 1) { const to = Math.min(S.pavimentos.length, Math.max(1, Math.round(r.pos))) - 1; if (to !== i) { S.pavimentos.splice(i, 1); S.pavimentos.splice(to, 0, p); S.pavAtivo = to; } }
+  salvar(); renderPavs();
+}
+document.addEventListener('click', (e) => {
+  const ed = e.target.closest('[data-edpav]'); if (ed) { e.stopPropagation(); editarPav(+ed.dataset.edpav); return; }
+  const b = e.target.closest('[data-pav]'); if (b) { trocarPav(+b.dataset.pav); return; }
+  if (e.target.closest('[data-addpav]')) novoPavimento();
+});
+
+// ---- ferramentas
+function setTool(t) {
+  tool = t; cur = null; calib = []; atualizarFinish();
+  $$('#tools .tool[data-t]').forEach((b) => b.classList.toggle('on', b.dataset.t === t));
+  stage.classList.toggle('pan', t === 'mao'); draw();
+}
+$('#tools').addEventListener('click', (e) => { const b = e.target.closest('.tool[data-t]'); if (b) setTool(b.dataset.t); });
+function atualizarFinish() { $('#finishBar').classList.toggle('hidden', !cur); }
+$('#btnFinish').onclick = () => concluir();
+$('#btnCancel').onclick = () => { cur = null; atualizarFinish(); draw(); };
+$('#btnUndo').onclick = desfazer;
+$('#btnClear').onclick = async () => {
+  const r = await perguntar('Limpar desenho?', [{ info: 'Apaga paredes, ambientes, portas e janelas desenhados. A escala é mantida.' }], 'Limpar');
+  if (!r) return; snapshot(); S.desenho.paredes = []; S.desenho.ambientes = []; S.desenho.aberturas = []; mudouDesenho();
+};
+
+// ---- geometria
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+function projSeg(p, a, b) { const dx = b.x - a.x, dy = b.y - a.y, L = dx * dx + dy * dy; let t = L ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / L : 0; t = Math.max(0, Math.min(1, t)); return { x: a.x + t * dx, y: a.y + t * dy, t }; }
+function segsParede(w) { const s = []; const n = w.pts.length; for (let i = 0; i < n - 1; i++) s.push([w.pts[i], w.pts[i + 1]]); if (w.fechada && n > 2) s.push([w.pts[n - 1], w.pts[0]]); return s; }
+function areaPoly(pts) { let a = 0; for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length]; a += p.x * q.y - q.x * p.y; } return Math.abs(a) / 2; }
+function perPoly(pts) { let s = 0; for (let i = 0; i < pts.length; i++) s += dist(pts[i], pts[(i + 1) % pts.length]); return s; }
+function dentro(p, pts) { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const a = pts[i], b = pts[j]; if ((a.y > p.y) !== (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x) c = !c; } return c; }
+function centro(pts) { let x = 0, y = 0; for (const p of pts) { x += p.x; y += p.y; } return { x: x / pts.length, y: y / pts.length }; }
+
+function ima(p, from) {
+  const tol = 12 / V.z;
+  let best = null, bd = tol;
+  const vert = [];
+  for (const w of S.desenho.paredes) for (const q of w.pts) vert.push(q);
+  for (const a of S.desenho.ambientes) for (const q of a.pts) vert.push(q);
+  if (cur) for (const q of cur.pts) vert.push(q);
+  for (const q of vert) { const d = dist(p, q); if (d < bd) { bd = d; best = { x: q.x, y: q.y, k: 'ponto' }; } }
+  if (best) return best;
+  let r = { x: p.x, y: p.y, k: '' };
+  if (from && $('#orto').checked) {
+    const dx = p.x - from.x, dy = p.y - from.y, tg = Math.tan(7 * Math.PI / 180);
+    if (Math.abs(dy) <= Math.abs(dx) * tg) { r.y = from.y; r.k = 'orto'; for (const q of vert) if (Math.abs(q.x - r.x) < tol) { r.x = q.x; r.k = 'alinhado'; break; } }
+    else if (Math.abs(dx) <= Math.abs(dy) * tg) { r.x = from.x; r.k = 'orto'; for (const q of vert) if (Math.abs(q.y - r.y) < tol) { r.y = q.y; r.k = 'alinhado'; break; } }
+  }
+  // sobre parede existente (encontro em T)
+  bd = tol;
+  for (const w of S.desenho.paredes) for (const [a, b] of segsParede(w)) {
+    const pr = projSeg(r, a, b), d = dist(r, pr);
+    if (d < bd) { bd = d; best = { x: pr.x, y: pr.y, k: 'parede' }; }
+  }
+  if (best) {
+    // mantém a ortogonalidade se possível
+    if (r.k === 'orto' && from) { if (r.y === from.y && Math.abs(best.y - r.y) < tol) best.y = r.y; if (r.x === from.x && Math.abs(best.x - r.x) < tol) best.x = r.x; }
+    return best;
+  }
+  return r;
+}
+function paredeProxima(p) {
+  let best = null, bd = 25 / V.z;
+  S.desenho.paredes.forEach((w, wi) => segsParede(w).forEach(([a, b], si) => { const pr = projSeg(p, a, b), d = dist(p, pr); if (d < bd) { bd = d; best = { wi, si, a, b, pr, w }; } }));
+  return best;
+}
+
+// ---- ponteiro
+const ptrs = new Map(); let gesto = null;
+cv.addEventListener('pointerdown', (e) => {
+  cv.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; gesto = { tipo: 'pinca', d: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, mov: 99 }; return; }
+  gesto = { tipo: 'talvez', x0: e.clientX, y0: e.clientY, ox: V.ox, oy: V.oy, mov: 0, botao: e.button };
+});
+cv.addEventListener('pointermove', (e) => {
+  const r = cv.getBoundingClientRect();
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (gesto && gesto.tipo === 'pinca' && ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y), cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+    V.ox += cx - gesto.cx; V.oy += cy - gesto.cy; zoomEm(d / gesto.d, cx - r.left, cy - r.top); gesto.d = d; gesto.cx = cx; gesto.cy = cy; return;
+  }
+  if (gesto && gesto.tipo === 'talvez') {
+    const mv = Math.hypot(e.clientX - gesto.x0, e.clientY - gesto.y0); gesto.mov = Math.max(gesto.mov, mv);
+    if (mv > 6) { V.ox = gesto.ox + e.clientX - gesto.x0; V.oy = gesto.oy + e.clientY - gesto.y0; draw(); return; }
+  }
+  const p = { x: (e.clientX - r.left - V.ox) / V.z, y: (e.clientY - r.top - V.oy) / V.z };
+  const from = cur && cur.pts.length ? cur.pts[cur.pts.length - 1] : calib.length ? calib[0] : null;
+  hover = ['mao', 'apagar', 'porta', 'janela'].includes(tool) ? p : ima(p, from);
+  draw();
+});
+function fimPonteiro(e) {
+  ptrs.delete(e.pointerId);
+  if (!gesto) return;
+  const g = gesto; if (ptrs.size === 0) gesto = null;
+  if (g.tipo === 'talvez' && g.mov <= 6 && g.botao === 0 && tool !== 'mao') {
+    const r = cv.getBoundingClientRect();
+    const p = { x: (e.clientX - r.left - V.ox) / V.z, y: (e.clientY - r.top - V.oy) / V.z };
+    clique(p, e);
+  }
+}
+cv.addEventListener('pointerup', fimPonteiro);
+cv.addEventListener('pointercancel', (e) => { ptrs.delete(e.pointerId); gesto = null; });
+cv.addEventListener('wheel', (e) => { e.preventDefault(); const r = cv.getBoundingClientRect(); zoomEm(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+cv.addEventListener('dblclick', (e) => { e.preventDefault(); if (cur && (tool === 'ext' || tool === 'int' || tool === 'poly')) concluir(); });
+document.addEventListener('keydown', (e) => {
+  if (S.etapa !== 1 || $('#dlg').open || /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  if (e.key === 'Escape') { cur = null; calib = []; atualizarFinish(); draw(); }
+  else if (e.key === 'Enter') concluir();
+  else if (e.key === 'Backspace' && cur) { e.preventDefault(); cur.pts.pop(); if (!cur.pts.length) cur = null; atualizarFinish(); draw(); }
+  else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); desfazer(); }
+});
+
+async function clique(p0) {
+  if (!IMG) return toast('Importe a planta ou use “Desenhar sem planta”.');
+  const from = cur && cur.pts.length ? cur.pts[cur.pts.length - 1] : calib.length ? calib[0] : null;
+  if (tool === 'calibrar') {
+    const p = ima(p0, from); calib.push(p); draw();
+    if (calib.length === 2) {
+      const px = dist(calib[0], calib[1]);
+      const r = await perguntar('Calibrar escala', [{ info: 'Informe a medida real entre os dois pontos clicados (use uma cota longa, de preferência a maior da planta).' }, { k: 'm', label: 'Medida real (m)', type: 'number', v: '' }], 'Calibrar');
+      calib = [];
+      if (r && r.m > 0 && px > 2) {
+        snapshot(); S.desenho.escala = r.m / px; S.desenho.grade = false; mudouDesenho();
+        toast('Escala definida: 1 m = ' + fmt(1 / S.desenho.escala, 1) + ' px. Agora desenhe as paredes externas.'); setTool('ext');
+      } else draw();
+    }
+    return;
+  }
+  if (tool === 'ext' || tool === 'int' || tool === 'poly') {
+    const p = ima(p0, from);
+    if (!cur) { cur = { pts: [p] }; atualizarFinish(); draw(); return; }
+    const first = cur.pts[0], last = cur.pts[cur.pts.length - 1];
+    if (cur.pts.length >= 3 && dist(p, first) < 12 / V.z) { cur.fechada = true; concluir(); return; }
+    if (dist(p, last) < 3 / V.z) { concluir(); return; }
+    cur.pts.push(p); draw(); return;
+  }
+  if (tool === 'rect') {
+    const p = ima(p0, null);
+    if (!cur) { cur = { pts: [p] }; atualizarFinish(); draw(); return; }
+    const a = cur.pts[0]; cur.pts = [a, { x: p.x, y: a.y }, p, { x: a.x, y: p.y }]; cur.fechada = true; concluir(); return;
+  }
+  if (tool === 'porta' || tool === 'janela') {
+    const pw = paredeProxima(p0);
+    if (!pw) return toast('Clique sobre uma parede já desenhada.');
+    const ext = pw.w.tipo === 'ext';
+    const t0 = tool === 'porta' ? (ext ? 'porta_ext' : 'porta_int') : 'janela';
+    const d = E.TIPOS_ABERTURA[t0];
+    const opts = Object.entries(E.TIPOS_ABERTURA).filter(([, v]) => tool === 'porta' ? v.porta : v.janela).map(([k, v]) => [k, v.nome]);
+    const campos = [{ k: 'tipo', label: 'Tipo', opts, v: t0 }, { k: 'largura', label: 'Largura (m)', type: 'number', v: d.w }, { k: 'altura', label: 'Altura (m)', type: 'number', v: d.h }, { k: 'peitoril', label: 'Peitoril (m)', type: 'number', v: d.p }, { k: 'externa', label: 'Em parede externa', type: 'checkbox', v: ext }];
+    campos.onTipo = (t, f) => { const v = E.TIPOS_ABERTURA[t]; f.elements.largura.value = v.w; f.elements.altura.value = v.h; f.elements.peitoril.value = v.p; };
+    const r = await perguntar(tool === 'porta' ? 'Porta' : 'Janela', campos, 'Inserir');
+    if (!r) return;
+    snapshot();
+    S.desenho.aberturas.push({ x: pw.pr.x, y: pw.pr.y, ang: Math.atan2(pw.b.y - pw.a.y, pw.b.x - pw.a.x), tipo: r.tipo, largura: r.largura || d.w, altura: r.altura || d.h, peitoril: r.peitoril || 0, externa: r.externa });
+    mudouDesenho(); return;
+  }
+  if (tool === 'apagar') {
+    const tol = 12 / V.z;
+    let i = S.desenho.aberturas.findIndex((o) => dist(o, p0) < Math.max(tol, (o.largura / (S.desenho.escala || 1)) / 2));
+    if (i >= 0) { snapshot(); S.desenho.aberturas.splice(i, 1); return mudouDesenho(); }
+    i = S.desenho.paredes.findIndex((w) => segsParede(w).some(([a, b]) => dist(p0, projSeg(p0, a, b)) < tol));
+    if (i >= 0) { snapshot(); S.desenho.paredes.splice(i, 1); return mudouDesenho(); }
+    i = S.desenho.ambientes.findIndex((a) => dentro(p0, a.pts));
+    if (i >= 0) { snapshot(); S.desenho.ambientes.splice(i, 1); return mudouDesenho(); }
+    toast('Nada para apagar aqui.');
+  }
+}
+
+async function concluir() {
+  if (!cur) return;
+  const pts = cur.pts.filter((p, i, arr) => i === 0 || dist(p, arr[i - 1]) > 2 / V.z);
+  const fechada = !!cur.fechada;
+  const t = tool; cur = null; atualizarFinish();
+  if (t === 'ext' || t === 'int') {
+    if (pts.length < 2) return draw();
+    snapshot(); S.desenho.paredes.push({ tipo: t, pts, fechada: fechada && pts.length > 2 }); mudouDesenho();
+    if (!S.desenho.escala) toast('Calibre a escala para medir as paredes.');
+    return;
+  }
+  if (t === 'poly' || t === 'rect') {
+    if (pts.length < 3) return draw();
+    const s = S.desenho.escala;
+    const area = s ? areaPoly(pts) * s * s : 0;
+    const sug = sugerirTipo(area);
+    const r = await perguntar('Ambiente' + (s ? ' — ' + fmt(area, 2) + ' m²' : ''), [
+      { k: 'tipo', label: 'Tipo', opts: Object.entries(E.TIPOS_AMBIENTE).map(([k, v]) => [k, v.nome]), v: sug },
+      { k: 'nome', label: 'Nome', v: '' }], 'Salvar');
+    if (!r) return draw();
+    snapshot(); S.desenho.ambientes.push({ pts, tipo: r.tipo, nome: r.nome || nomeAuto(r.tipo) }); mudouDesenho();
+  }
+}
+function sugerirTipo(a) { if (!a) return 'quarto'; if (a < 3) return 'lavabo'; if (a < 5.5) return 'banheiro'; if (a > 16) return 'sala'; return 'quarto'; }
+function nomeAuto(t) { const n = S.desenho.ambientes.filter((a) => a.tipo === t).length + 1; const b = E.TIPOS_AMBIENTE[t].nome.split(' /')[0]; return n > 1 || t === 'quarto' || t === 'banheiro' ? b + ' ' + n : b; }
+
+// ---- desenho → levantamento
+function desenhoParaLev() {
+  const D = S.desenho, s = D.escala; if (!s) return null;
+  const bl = E.BLOCOS[S.resp.vedacao] || E.BLOCOS.ceramico14; const e = bl.e + 0.05;
+  let ext = 0, int = 0, nos = 0;
+  const verts = [];
+  const add = (p) => { if (!verts.some((q) => dist(p, q) * s < 0.15)) verts.push(p); };
+  for (const w of D.paredes) for (const [a, b] of segsParede(w)) {
+    const L = dist(a, b) * s; if (w.tipo === 'ext') ext += L; else int += L;
+    nos += Math.max(0, Math.ceil(L / 3.5 - 1e-6) - 1); add(a); add(b);
+  }
+  nos += verts.length;
+  let env = { area: 0, perimetro: 0, comprimento: 0, largura: 0 };
+  const fech = D.paredes.filter((w) => w.tipo === 'ext' && w.fechada).sort((a, b) => areaPoly(b.pts) - areaPoly(a.pts))[0];
+  const extPts = D.paredes.filter((w) => w.tipo === 'ext').flatMap((w) => w.pts);
+  const bbPts = extPts.length ? extPts : D.paredes.flatMap((w) => w.pts);
+  if (bbPts.length) {
+    const xs = bbPts.map((p) => p.x), ys = bbPts.map((p) => p.y);
+    env.comprimento = (Math.max(...xs) - Math.min(...xs)) * s + e; env.largura = (Math.max(...ys) - Math.min(...ys)) * s + e;
+  }
+  if (fech) { const A = areaPoly(fech.pts) * s * s, P = perPoly(fech.pts) * s; env.area = A + P * e / 2 + e * e; env.perimetro = P + 4 * e; }
+  const ambientes = D.ambientes.map((a) => ({ nome: a.nome, tipo: a.tipo, area: +(areaPoly(a.pts) * s * s).toFixed(2), perimetro: +(perPoly(a.pts) * s).toFixed(2), piso: a.piso, parede: a.parede, teto: a.teto }));
+  const aberturas = D.aberturas.map((o) => ({ tipo: o.tipo, largura: o.largura, altura: o.altura, peitoril: o.peitoril, externa: o.externa, qtd: 1 }));
+  return { ambientes, aberturas, paredes: { externas: +ext.toFixed(2), internas: +int.toFixed(2) }, envelope: { area: +env.area.toFixed(2), perimetro: +env.perimetro.toFixed(2), comprimento: +env.comprimento.toFixed(2), largura: +env.largura.toFixed(2) }, nos };
+}
+function mudouDesenho(silencioso) {
+  if (S.levOrigem === 'desenho') { const l = desenhoParaLev(); if (l) S.lev = l; }
+  salvar(); draw(); painelMedidas();
+}
+function painelMedidas() {
+  const l = S.levOrigem === 'desenho' ? desenhoParaLev() : S.lev;
+  $('#escalaTxt').textContent = S.levOrigem === 'auto' ? 'leitura automática' : S.levOrigem === 'ia' ? 'leitura por IA' : S.levOrigem === 'manual' ? 'editado à mão' : S.desenho.escala ? (S.desenho.grade ? 'grade 1 m' : 'escala calibrada') : 'sem escala';
+  if (!l) { $('#medidas').innerHTML = '<span class="muted small" style="grid-column:1/-1">Calibre a escala para ver as medidas.</span>'; }
+  else {
+    const ar = l.ambientes.reduce((s, a) => s + a.area, 0);
+    $('#medidas').innerHTML = [
+      ['Paredes externas', fmt(l.paredes.externas, 2) + ' m'], ['Paredes internas', fmt(l.paredes.internas, 2) + ' m'],
+      ['Área construída', l.envelope.area ? fmt(l.envelope.area, 2) + ' m²' : '<span class="muted">feche o contorno</span>'],
+      ['Ambientes', l.ambientes.length + ' · ' + fmt(ar, 2) + ' m²'], ['Portas e janelas', l.aberturas.reduce((s2, o) => s2 + (+o.qtd || 1), 0)], ['Nós p/ pilares', l.nos || 'estimado']
+    ].map(([k, v]) => '<span>' + k + '</span><b>' + v + '</b>').join('');
+  }
+  const o = S.levOrigem;
+  $('#origemBox').innerHTML = o === 'desenho' ? '<div class="note ok">O levantamento acompanha o desenho automaticamente.</div>'
+    : o === 'auto' ? '<div class="note ok">Levantamento lido automaticamente do PDF (laranja = paredes externas, azul = internas, verde = vãos). Confira os números no passo 2.<br><button class="btn sm" style="margin-top:6px" id="btnUsarDesenho">Trocar pelo meu desenho</button></div>'
+    : '<div class="note warn">O levantamento atual veio ' + (o === 'ia' ? 'da leitura por IA' : 'de edição manual') + '. O desenho não o altera.<br><button class="btn sm" style="margin-top:6px" id="btnUsarDesenho">Usar o desenho</button></div>';
+  const b = $('#btnUsarDesenho'); if (b) b.onclick = usarDesenho;
+}
+async function usarDesenho() {
+  const l = desenhoParaLev(); if (!l) return toast('Calibre a escala e desenhe a planta primeiro.');
+  if (S.levOrigem !== 'desenho') { const r = await perguntar('Substituir levantamento?', [{ info: 'As medidas atuais (IA ou edição manual) serão trocadas pelas do desenho.' }], 'Substituir'); if (!r) return; }
+  S.levOrigem = 'desenho'; S.lev = l; S.iaAvisos = []; salvar(); painelMedidas(); if (S.etapa === 2) renderLev();
+}
+$('#btnReapply').onclick = usarDesenho;
+
+// ---- renderização do canvas
+function draw() {
+  const W = cv.width, H = cv.height;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
+  if (!IMG) { $('#hud').textContent = ''; return; }
+  const z = V.z, k = 1 / z;
+  ctx.setTransform(dpr * z, 0, 0, dpr * z, dpr * V.ox, dpr * V.oy);
+  ctx.imageSmoothingQuality = 'high'; ctx.drawImage(IMG.src, 0, 0);
+  const D = S.desenho, s = D.escala;
+  const verCamada = CAMADA && $('#verLeitura').checked;
+  if (verCamada) { ctx.imageSmoothingEnabled = false; ctx.drawImage(CAMADA.cv, CAMADA.x, CAMADA.y, CAMADA.w, CAMADA.h); ctx.imageSmoothingEnabled = true; }
+  const label = (txt, x, y, cor, bg) => {
+    ctx.font = 'bold ' + 12 * k + 'px system-ui,sans-serif'; const w = ctx.measureText(txt).width;
+    ctx.fillStyle = bg || 'rgba(255,255,255,.88)'; ctx.fillRect(x - w / 2 - 3 * k, y - 8 * k, w + 6 * k, 16 * k);
+    ctx.fillStyle = cor || '#111'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, x, y);
+  };
+  if (verCamada && z > 0.12) for (const a of CAMADA.amb) label(a.nome + ' · ' + fmt(a.area, 2) + ' m²', a.x, a.y - 16 / z, '#fff', 'rgba(23,23,23,.78)');
+  // ambientes
+  for (const a of D.ambientes) {
+    ctx.beginPath(); a.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath();
+    ctx.fillStyle = E.TIPOS_AMBIENTE[a.tipo]?.molhado ? 'rgba(10,162,184,.13)' : E.TIPOS_AMBIENTE[a.tipo]?.externo ? 'rgba(120,120,120,.12)' : 'rgba(255,90,0,.08)';
+    ctx.fill(); ctx.setLineDash([6 * k, 4 * k]); ctx.strokeStyle = 'rgba(80,60,40,.55)'; ctx.lineWidth = 1.2 * k; ctx.stroke(); ctx.setLineDash([]);
+    const c = centro(a.pts); label(a.nome + (s ? ' · ' + fmt(areaPoly(a.pts) * s * s, 1) + ' m²' : ''), c.x, c.y, '#3b2a1c');
+  }
+  // paredes
+  for (const w of D.paredes) {
+    ctx.beginPath(); w.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); if (w.fechada) ctx.closePath();
+    ctx.strokeStyle = w.tipo === 'ext' ? '#d9480f' : '#1f6fd1'; ctx.lineWidth = (w.tipo === 'ext' ? 5 : 4) * k; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.globalAlpha = .85; ctx.stroke(); ctx.globalAlpha = 1;
+    if (s && z > 0.15) for (const [a, b] of segsParede(w)) { const L = dist(a, b) * s; if (L * z / s > 46) label(fmt(L, 2), (a.x + b.x) / 2, (a.y + b.y) / 2, w.tipo === 'ext' ? '#b33a0a' : '#174f97'); }
+    for (const p of w.pts) { ctx.beginPath(); ctx.arc(p.x, p.y, 3 * k, 0, 7); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 1.5 * k; ctx.stroke(); }
+  }
+  // aberturas
+  for (const o of D.aberturas) {
+    const L = s ? o.largura / s : 30, porta = E.TIPOS_ABERTURA[o.tipo]?.porta;
+    ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.ang || 0);
+    ctx.fillStyle = porta ? '#16855f' : '#0aa2b8'; ctx.fillRect(-L / 2, -5 * k, L, 10 * k);
+    ctx.restore(); label((porta ? 'P ' : 'J ') + fmt(o.largura, 2) + '×' + fmt(o.altura, 2), o.x, o.y - 14 * k, '#fff', porta ? '#16855f' : '#0a8597');
+  }
+  // em construção
+  const hp = hover;
+  if (cur && cur.pts.length) {
+    const pts = cur.pts.slice(); let fim = hp;
+    if (tool === 'rect' && hp) { const a = pts[0]; pts.splice(0, pts.length, a, { x: hp.x, y: a.y }, hp, { x: a.x, y: hp.y }, a); fim = null; }
+    ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); if (fim) ctx.lineTo(fim.x, fim.y);
+    ctx.strokeStyle = tool === 'ext' ? '#d9480f' : tool === 'int' ? '#1f6fd1' : '#7a5bd1'; ctx.lineWidth = 3 * k; ctx.setLineDash([8 * k, 5 * k]); ctx.stroke(); ctx.setLineDash([]);
+    if (s && fim) { const a = cur.pts[cur.pts.length - 1]; label(fmt(dist(a, fim) * s, 2) + ' m', (a.x + fim.x) / 2, (a.y + fim.y) / 2 - 14 * k, '#fff', '#171717'); }
+    if (tool === 'rect' && s && hp) { const a = cur.pts[0]; label(fmt(Math.abs(hp.x - a.x) * s, 2) + ' × ' + fmt(Math.abs(hp.y - a.y) * s, 2) + ' m', (a.x + hp.x) / 2, (a.y + hp.y) / 2, '#fff', '#171717'); }
+  }
+  if (calib.length) {
+    ctx.beginPath(); ctx.moveTo(calib[0].x, calib[0].y); const b = calib[1] || hp; if (b) ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = '#7a5bd1'; ctx.lineWidth = 3 * k; ctx.stroke();
+    for (const p of calib) { ctx.beginPath(); ctx.arc(p.x, p.y, 5 * k, 0, 7); ctx.fillStyle = '#7a5bd1'; ctx.fill(); }
+  }
+  if (hp && tool !== 'mao') {
+    ctx.beginPath(); ctx.arc(hp.x, hp.y, (hp.k ? 6 : 4) * k, 0, 7);
+    ctx.strokeStyle = hp.k === 'ponto' ? '#ff5a00' : hp.k === 'parede' ? '#16855f' : hp.k ? '#7a5bd1' : '#333'; ctx.lineWidth = 2 * k; ctx.stroke();
+  }
+  const dicas = { mao: 'Arraste para mover.', calibrar: calib.length ? 'Clique no segundo ponto da cota.' : 'Clique no primeiro ponto de uma cota conhecida.', ext: cur ? 'Clique nos cantos; clique no 1º ponto para fechar.' : 'Clique no primeiro canto da parede externa (eixo).', int: cur ? 'Duplo clique ou Concluir para terminar.' : 'Clique no início da parede interna.', rect: cur ? 'Clique no canto oposto.' : 'Clique num canto do ambiente.', poly: cur ? 'Clique no 1º ponto para fechar.' : 'Clique nos cantos do ambiente.', porta: 'Clique sobre a parede onde fica a porta.', janela: 'Clique sobre a parede onde fica a janela.', apagar: 'Clique num elemento para apagar.' };
+  $('#hud').textContent = (s ? '' : '⚠ Sem escala · ') + dicas[tool] + (hp && hp.k ? '  · ímã: ' + hp.k : '');
+}
+
+// ---- leitura por IA
+$('#btnIA').onclick = async () => {
+  if (!IMG || IMG.grade) return toast('Importe a planta (PDF ou imagem) primeiro.');
+  const r = await perguntar('Ler planta com IA', [{ info: 'A imagem da página atual é enviada ao servidor do app e lida pelo Claude, que devolve ambientes, paredes, portas e janelas a partir das cotas e textos da planta. Você confere tudo no passo 2.' }], 'Ler planta');
+  if (!r) return;
+  const b = $('#btnIA'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Lendo…';
+  try {
+    const max = 2400, f = Math.min(1, max / Math.max(IMG.w, IMG.h));
+    const c = document.createElement('canvas'); c.width = Math.round(IMG.w * f); c.height = Math.round(IMG.h * f);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(IMG.src, 0, 0, c.width, c.height);
+    const data = c.toDataURL('image/jpeg', 0.88).split(',')[1];
+    const resp = await fetch('/api/casa-planta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: data, mediaType: 'image/jpeg', peDireito: S.resp.peDireito }) });
+    const j = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(j.error || ('HTTP ' + resp.status));
+    aplicarIA(j);
+  } catch (err) {
+    console.error(err);
+    await perguntar('Leitura por IA indisponível', [{ info: esc(err.message || String(err)) + '<br><br>Você pode continuar desenhando sobre a planta: calibre a escala e trace as paredes, ambientes e vãos. O resultado é o mesmo.' }], 'Entendi');
+  } finally { b.disabled = false; b.innerHTML = '✨ Ler planta com IA'; }
+};
+function aplicarIA(j) {
+  const amb = (j.ambientes || []).map((a) => ({ nome: a.nome, tipo: E.TIPOS_AMBIENTE[a.tipo] ? a.tipo : 'sala', area: +(a.area_m2 || 0), perimetro: +(a.perimetro_m || 0) }));
+  const ab = (j.aberturas || []).map((o) => ({ tipo: E.TIPOS_ABERTURA[o.tipo] ? o.tipo : 'janela', largura: +o.largura_m || 0, altura: +o.altura_m || 0, peitoril: o.peitoril_m == null ? null : +o.peitoril_m, externa: !!o.externa, qtd: Math.max(1, Math.round(+o.quantidade || 1)) }));
+  const c = j.contorno || {}, p = j.paredes || {};
+  S.lev = { ambientes: amb, aberturas: ab, paredes: { externas: +p.externas_m || 0, internas: +p.internas_m || 0 }, envelope: { area: +c.area_construida_m2 || 0, perimetro: +c.perimetro_m || 0, comprimento: +c.comprimento_m || 0, largura: +c.largura_m || 0 }, nos: 0 };
+  S.levOrigem = 'ia'; S.iaAvisos = (j.observacoes || []).slice(0, 12);
+  if (j.pe_direito_m > 2 && j.pe_direito_m < 5) S.iaAvisos.unshift('Pé-direito indicado na planta: ' + fmt(j.pe_direito_m, 2) + ' m (confira no passo 3).');
+  salvar(); painelMedidas(); toast('Planta lida: ' + amb.length + ' ambientes e ' + ab.length + ' tipos de abertura. Confira os números.'); irPara(2);
+}
+
+// ================================================================== LEVANTAMENTO
+function renderLev() {
+  const L = S.lev;
+  $('#origemTag').innerHTML = { desenho: '<span class="note ok" style="padding:4px 8px">do desenho</span>', ia: '<span class="note info" style="padding:4px 8px">da leitura por IA</span>', auto: '<span class="note ok" style="padding:4px 8px">lido automaticamente do PDF</span>', manual: '<span class="note warn" style="padding:4px 8px">editado à mão</span>' }[S.levOrigem] || '';
+  $('#iaAvisos').innerHTML = (S.levOrigem === 'ia' || S.levOrigem === 'auto') && S.iaAvisos.length ? '<div class="note info" style="margin-bottom:10px"><b>Observações da leitura:</b><ul style="margin:4px 0 0;padding-left:18px">' + S.iaAvisos.map((a) => '<li>' + esc(a) + '</li>').join('') + '</ul></div>' : '';
+  const campos = [['envelope', 'area', 'Área construída (m²)'], ['envelope', 'perimetro', 'Perímetro externo (m)'], ['envelope', 'comprimento', 'Comprimento (m)'], ['envelope', 'largura', 'Largura (m)'], ['paredes', 'externas', 'Paredes externas (m)'], ['paredes', 'internas', 'Paredes internas (m)'], [null, 'nos', 'Pilares (0 = estimar)']];
+  $('#contorno').innerHTML = campos.map(([g, k, t]) => '<label class="f">' + t + '<input type="number" step="any" min="0" data-g="' + (g || '') + '" data-k="' + k + '" value="' + (g ? (L[g][k] || '') : (L[k] || '')) + '"></label>').join('');
+  const tiposA = Object.entries(E.TIPOS_AMBIENTE).map(([k, v]) => [k, v.nome]);
+  const sel = (f, opts, v) => '<select data-f="' + f + '" style="min-width:110px">' + opts.map(([k, n]) => '<option value="' + k + '"' + (k === (v || 'auto') ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>';
+  $('#tbAmb').innerHTML = L.ambientes.map((a, i) => '<tr data-i="' + i + '"><td><input data-f="nome" value="' + esc(a.nome) + '" style="min-width:120px"></td><td><select data-f="tipo">' + tiposA.map(([k, n]) => '<option value="' + k + '"' + (k === a.tipo ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></td><td><input type="number" step="any" data-f="area" value="' + (a.area || '') + '"></td><td><input type="number" step="any" data-f="perimetro" value="' + (a.perimetro || '') + '"></td><td>' + sel('piso', OPC_PISO, a.piso) + '</td><td>' + sel('parede', OPC_PAREDE, a.parede) + '</td><td>' + sel('teto', OPC_TETO, a.teto) + '</td><td><button class="x" data-del="amb" title="Remover">×</button></td></tr>').join('') || '<tr><td colspan="8" class="muted">Nenhum ambiente. Desenhe na planta ou clique em “+ Ambiente”.</td></tr>';
+  $('#totArea').textContent = fmt(L.ambientes.reduce((s, a) => s + (+a.area || 0), 0), 2) + ' m²';
+  const tiposO = Object.entries(E.TIPOS_ABERTURA).map(([k, v]) => [k, v.nome]);
+  $('#tbAb').innerHTML = L.aberturas.map((o, i) => '<tr data-i="' + i + '"><td><select data-f="tipo">' + tiposO.map(([k, n]) => '<option value="' + k + '"' + (k === o.tipo ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></td>' + ['largura', 'altura', 'peitoril', 'qtd'].map((f) => '<td><input type="number" step="any" data-f="' + f + '" value="' + (o[f] == null ? '' : o[f]) + '"></td>').join('') + '<td><input type="checkbox" data-f="externa"' + (o.externa ? ' checked' : '') + '></td><td><button class="x" data-del="ab" title="Remover">×</button></td></tr>').join('') || '<tr><td colspan="7" class="muted">Nenhuma porta ou janela.</td></tr>';
+}
+const OPC_PISO = [['auto', 'Padrão']].concat(Object.entries(E.PISOS).map(([k, v]) => [k, v.nome.split(' (')[0]]));
+const OPC_PAREDE = [['auto', 'Padrão'], ['nenhum', 'Sem cerâmica'], ['faixa', 'Faixa da bancada'], ['1.50', 'Cerâmica até 1,50 m'], ['teto', 'Cerâmica até o teto']];
+const OPC_TETO = [['auto', 'Padrão'], ['reboco', 'Reboco + pintura'], ['gesso', 'Gesso liso'], ['drywall', 'Forro drywall'], ['pvc', 'Forro PVC']];
+function marcarManual() { if (S.levOrigem === 'desenho') S.levOrigem = 'manual'; salvar(); }
+$('#contorno').addEventListener('input', (e) => { const t = e.target; const v = parseFloat(t.value) || 0; if (t.dataset.g) S.lev[t.dataset.g][t.dataset.k] = v; else S.lev[t.dataset.k] = v; marcarManual(); });
+function editarLinha(lista, e) {
+  const tr = e.target.closest('tr[data-i]'); if (!tr || !e.target.dataset.f) return;
+  const o = lista[+tr.dataset.i], f = e.target.dataset.f;
+  if (f === 'piso' || f === 'parede' || f === 'teto') {
+    const v = e.target.value === 'auto' ? undefined : e.target.value; o[f] = v;
+    const da = S.levOrigem === 'desenho' && S.desenho.ambientes[+tr.dataset.i]; if (da) da[f] = v;
+    salvar(); return;
+  }
+  o[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.type === 'number' ? (e.target.value === '' ? null : parseFloat(e.target.value)) : e.target.value;
+  if (lista === S.lev.aberturas && f === 'tipo') { const d = E.TIPOS_ABERTURA[o.tipo]; Object.assign(o, { largura: d.w, altura: d.h, peitoril: d.p, externa: !!d.externa }); marcarManual(); renderLev(); return; }
+  marcarManual(); if (f === 'area') $('#totArea').textContent = fmt(S.lev.ambientes.reduce((s, a) => s + (+a.area || 0), 0), 2) + ' m²';
+}
+$('#tbAmb').addEventListener('input', (e) => editarLinha(S.lev.ambientes, e));
+$('#tbAmb').addEventListener('change', (e) => editarLinha(S.lev.ambientes, e));
+$('#tbAb').addEventListener('input', (e) => editarLinha(S.lev.aberturas, e));
+$('#tbAb').addEventListener('change', (e) => editarLinha(S.lev.aberturas, e));
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  const i = +b.closest('tr').dataset.i; (b.dataset.del === 'amb' ? S.lev.ambientes : S.lev.aberturas).splice(i, 1); marcarManual(); renderLev();
+});
+$('#addAmb').onclick = () => { S.lev.ambientes.push({ nome: 'Ambiente', tipo: 'quarto', area: 9, perimetro: 12 }); marcarManual(); renderLev(); };
+$('#addAb').onclick = () => { S.lev.aberturas.push({ tipo: 'janela', largura: 1.2, altura: 1.2, peitoril: 1.0, externa: true, qtd: 1 }); marcarManual(); renderLev(); };
+
+// ================================================================== PERGUNTAS
+const PERG = [
+  { k: 'peDireito', t: 'Pé-direito', d: 'Altura do piso ao teto (m).', num: true, base: 1 },
+  { k: 'vedacao', t: 'Paredes', base: 1, o: [['ceramico14', 'Bloco cerâmico 14 cm'], ['ceramico9', 'Bloco cerâmico 9 cm'], ['concreto14', 'Bloco de concreto 14 cm']] },
+  { k: 'fundacao', t: 'Fundação', base: 1, d: 'A sapata é dimensionada pelo solo escolhido acima e pela carga dos pavimentos.', o: [['sapata', 'Sapata + baldrame'], ['broca', 'Estaca broca + baldrame'], ['radier', 'Radier']] },
+  { k: 'laje', t: 'Laje do último pavimento', base: 1, d: 'Os pavimentos de baixo sempre têm laje.', o: [['trelicada', 'Laje treliçada (EPS)'], ['nenhuma', 'Sem laje']] },
+  { k: 'teto', t: 'Acabamento do teto', base: 1, o: [['reboco', 'Reboco + pintura'], ['gesso', 'Gesso liso'], ['drywall', 'Forro de gesso (drywall)'], ['pvc', 'Forro de PVC']] },
+  { k: 'telha', t: 'Telhado', base: 1, o: [['ceramica', 'Telha cerâmica'], ['fibrocimento', 'Fibrocimento'], ['metalica', 'Metálica termoacústica']] },
+  { k: 'piso', t: 'Piso interno (padrão)', base: 1, d: 'Cada cômodo pode ter outro piso no passo 2.', o: [['retificado59', 'Retificado 59×59'], ['porcelanato', 'Porcelanato 60×60'], ['porcelanato_gg', 'Porcelanato 90×90'], ['ceramica', 'Cerâmica 45×45'], ['laminado', 'Laminado'], ['vinilico', 'Vinílico'], ['cimentado', 'Cimentado']] },
+  { k: 'pisoQuartos', t: 'Piso dos quartos', o: [['', 'Igual ao piso padrão'], ['laminado', 'Laminado'], ['vinilico', 'Vinílico'], ['porcelanato', 'Porcelanato'], ['ceramica', 'Cerâmica']] },
+  { k: 'esgoto', t: 'Esgoto', base: 1, o: [['rede', 'Rede pública'], ['fossa', 'Fossa, filtro e sumidouro']] },
+  { k: 'revParede', t: 'Revestimento de parede (cozinha e banheiro)', d: 'Peça usada onde a parede leva cerâmica.', o: [['retificado30x58', 'Retificado 30×58'], ['ceramica32x57', 'Cerâmica 32×57']] },
+  { k: 'revBanheiro', t: 'Azulejo do banheiro', o: [['teto', 'Até o teto'], ['1.50', 'Até 1,50 m']] },
+  { k: 'revCozinha', t: 'Azulejo da cozinha e área', o: [['faixa', 'Faixa sobre a pia/tanque'], ['1.50', 'Até 1,50 m'], ['teto', 'Até o teto']] },
+  { k: 'pinturaExterna', t: 'Fachada', o: [['textura', 'Textura acrílica'], ['acrilica', 'Massa + tinta acrílica']] },
+  { k: 'janelas', t: 'Janelas', o: [['aluminio', 'Alumínio'], ['pvc', 'PVC']] },
+  { k: 'portaExterna', t: 'Portas externas', o: [['madeira', 'Madeira'], ['aluminio', 'Alumínio']] },
+  { k: 'beiral', t: 'Beiral', d: 'Avanço do telhado além das paredes (m).', num: true },
+  { k: 'calhas', t: 'Calhas e condutores', o: [[true, 'Sim'], [false, 'Não']] },
+  { k: 'manta', t: 'Manta sob as telhas', o: [[true, 'Sim'], [false, 'Não']] },
+  { k: 'arCondicionado', t: 'Pontos de ar-condicionado', d: 'Nos quartos e na sala.', o: [[true, 'Sim'], [false, 'Não']] },
+  { k: 'calcada', t: 'Calçada em volta da casa', d: 'Largura em metros (0 = sem calçada).', num: true },
+  { k: 'concreto', t: 'Concreto estrutural', o: [['obra', 'Feito na obra'], ['usinado', 'Usinado (caminhão)']] },
+  { k: 'argamassa', t: 'Argamassas', o: [['obra', 'Feitas na obra'], ['industrializada', 'Industrializadas (saco)']] },
+  { k: 'unidades', t: 'Unidades (casas ou apartamentos)', d: '0 = automático (uma por cozinha). Define quadros de luz, medidores e cavaletes.', num: true },
+  { k: 'moradores', t: 'Moradores', d: '0 = automático (2 por quarto). Dimensiona caixa d’água e fossa.', num: true },
+  { k: 'distRede', t: 'Distância até a rua (m)', d: 'Para ligação de água, esgoto e energia.', num: true },
+  { k: 'canteiro', t: 'Barracão e placa de obra', o: [[true, 'Incluir'], [false, 'Não incluir']] },
+  { k: 'pisoDiagonal', t: 'Assentamento do piso', d: 'Na diagonal a perda sobe 5%.', o: [[false, 'Reto'], [true, 'Diagonal']] },
+  // área externa
+  { k: 'muroComp', t: 'Muro de divisa: comprimento (m)', d: 'Soma das divisas a murar. 0 = sem muro.', num: true, grp: 'ext' },
+  { k: 'muroAlt', t: 'Muro: altura (m)', num: true, grp: 'ext' },
+  { k: 'muroBloco', t: 'Muro: bloco', grp: 'ext', o: [['concreto14', 'Concreto 14 cm'], ['ceramico14', 'Cerâmico 14 cm'], ['ceramico9', 'Cerâmico 9 cm']] },
+  { k: 'muroAcab', t: 'Muro: acabamento', grp: 'ext', o: [['reboco', 'Reboco + pintura nas 2 faces'], ['chapisco', 'Só chapisco'], ['aparente', 'Bloco aparente']] },
+  { k: 'portaoGaragem', t: 'Portão de garagem: largura (m)', d: '0 = sem portão de garagem.', num: true, grp: 'ext' },
+  { k: 'automatizar', t: 'Automatizar o portão de garagem', grp: 'ext', o: [[false, 'Não'], [true, 'Sim (motor)']] },
+  { k: 'portaoSocial', t: 'Portões sociais (pedestre)', d: 'Quantidade.', num: true, grp: 'ext' },
+  { k: 'aterroAltura', t: 'Aterro sob a casa: altura média (m)', d: 'Para nivelar o terreno. 0 = sem aterro.', num: true, grp: 'ext' },
+  { k: 'terrenoArea', t: 'Área do terreno (m²)', d: 'Para a drenagem do quintal. 0 = não incluir.', num: true, grp: 'ext' },
+  { k: 'pisoExtArea', t: 'Piso externo descoberto (m²)', d: 'Garagem descoberta, pátio, acesso.', num: true, grp: 'ext' },
+  { k: 'pisoExtTipo', t: 'Piso externo: tipo', grp: 'ext', o: [['concreto', 'Concreto 8 cm com tela'], ['paver', 'Paver (bloco intertravado)']] },
+  { k: 'jardimArea', t: 'Jardim / grama (m²)', num: true, grp: 'ext' },
+  { k: 'testada', t: 'Calçada pública: testada do lote (m)', d: 'Frente do terreno. 0 = sem calçada pública.', num: true, grp: 'ext' },
+  { k: 'passeioLarg', t: 'Calçada pública: largura (m)', num: true, grp: 'ext' },
+  { k: 'itensFachada', t: 'Caixa de correio, lixeira e número', grp: 'ext', o: [[true, 'Incluir'], [false, 'Não incluir']] },
+  { k: 'interfone', t: 'Interfone / porteiro eletrônico', grp: 'ext', o: [[false, 'Não'], [true, 'Sim']] }
+];
+function renderPerguntas() {
+  const html = (p) => '<div class="item"><div class="t">' + p.t + '</div>' + (p.d ? '<div class="d">' + p.d + '</div>' : '') +
+    (p.num ? '<input type="number" step="0.05" min="0" data-k="' + p.k + '" value="' + S.resp[p.k] + '">'
+      : '<div class="opt">' + p.o.map(([v, t]) => '<button data-k="' + p.k + '" data-v="' + v + '" class="' + (String(S.resp[p.k]) === String(v) ? 'on' : '') + '">' + t + '</button>').join('') + '</div>') + '</div>';
+  // padrão de acabamento + solo
+  const padraoAtual = Object.entries(E.PADROES_ACABAMENTO).find(([, v]) => Object.entries(v.resp).every(([k, x]) => String(S.resp[k]) === String(x)));
+  const lmin = Math.log(40), lmax = Math.log(1000);
+  let prev = '';
+  try {
+    const r = E.calcular({ pavimentos: S.pavimentos.map((p) => ({ nome: p.nome, rep: p.rep, lev: p.lev })), resp: S.resp, coef: S.coef });
+    const trocou = r.fundacao.tipo !== S.resp.fundacao;
+    prev = '<div class="note ' + (trocou ? 'warn' : 'info') + '" style="margin-top:8px"><b>Com a planta atual:</b> ' + esc(r.fundacao.texto || '') + (trocou ? ' Sapata rasa não é indicada para este solo: o cálculo usa estacas.' : '') + '</div>';
+  } catch (e) { prev = ''; }
+  $('#qEspecial').innerHTML = '<div class="item"><div class="t">Padrão de acabamento</div><div class="d">Ajusta de uma vez piso, azulejos, teto, fachada e esquadrias. Depois dá para mudar item por item.</div><div class="opt">' +
+    Object.entries(E.PADROES_ACABAMENTO).map(([k, v]) => '<button data-padrao="' + k + '" class="' + (padraoAtual && padraoAtual[0] === k ? 'on' : '') + '">' + v.nome + '</button>').join('') + '</div></div>' +
+    '<div class="item wide"><div class="t">Tipo de solo da fundação</div><div class="d">Do mais resistente (1) para o menos resistente. Na dúvida, mantenha <b>argila média</b>, que fica a favor da segurança. Tensões admissíveis presuntivas (NBR 6122:1996): confirme com sondagem SPT.</div><div class="solos">' +
+    E.SOLOS.map((so, i) => { const w = Math.max(6, Math.min(100, (Math.log(so.kpa) - lmin) / (lmax - lmin) * 100)); return '<button class="solo' + (S.resp.solo === so.id ? ' on' : '') + '" data-solo="' + so.id + '"><span class="rank">' + (i + 1) + '</span><span>' + esc(so.nome) + '<div class="barra" style="width:' + w + '%"></div></span><span class="kpa">≈ ' + fmt(so.kpa / 100, 1) + ' kgf/cm²<br><span class="muted small">' + so.kpa + ' kPa</span></span></button>'; }).join('') + '</div>' + prev + '</div>';
+  $('#qBase').innerHTML = PERG.filter((p) => p.base).map(html).join('');
+  $('#qMais').innerHTML = PERG.filter((p) => !p.base && !p.grp).map(html).join('');
+  $('#qExt').innerHTML = PERG.filter((p) => p.grp === 'ext').map(html).join('');
+  $('#tbCoef').innerHTML = Object.entries(E.COEF).map(([k, [v, u, d]]) => '<tr><td>' + d + '</td><td style="width:120px"><input type="number" step="any" data-c="' + k + '" value="' + (S.coef[k] != null ? S.coef[k] : v) + '"' + (S.coef[k] != null && S.coef[k] !== v ? ' style="border-color:var(--accent)"' : '') + '></td><td class="muted small">' + u + '</td></tr>').join('');
+}
+document.addEventListener('click', (e) => {
+  const pd = e.target.closest('[data-padrao]'); if (pd) { Object.assign(S.resp, E.PADROES_ACABAMENTO[pd.dataset.padrao].resp); salvar(); renderPerguntas(); toast('Padrão ' + E.PADROES_ACABAMENTO[pd.dataset.padrao].nome + ' aplicado.'); return; }
+  const so = e.target.closest('[data-solo]'); if (so) { S.resp.solo = so.dataset.solo; salvar(); renderPerguntas(); return; }
+  const b = e.target.closest('.q .opt button'); if (!b || !b.dataset.k) return;
+  const p = PERG.find((x) => x.k === b.dataset.k); const v = p.o.find(([x]) => String(x) === b.dataset.v)[0];
+  S.resp[p.k] = v; salvar(); $$('.opt button[data-k="' + p.k + '"]').forEach((x) => x.classList.toggle('on', x === b));
+  if (['fundacao', 'piso', 'pisoQuartos', 'revParede', 'teto', 'revBanheiro', 'revCozinha', 'janelas', 'portaExterna', 'pinturaExterna'].includes(p.k)) renderPerguntas();
+  if (p.k === 'vedacao' && S.levOrigem === 'desenho') { const l = desenhoParaLev(); if (l) S.lev = l; }
+});
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if (t.matches('.q input[data-k]')) { S.resp[t.dataset.k] = parseFloat(t.value) || 0; salvar(); }
+  if (t.matches('#tbCoef input')) { const v = parseFloat(t.value); if (Number.isFinite(v)) S.coef[t.dataset.c] = v; else delete S.coef[t.dataset.c]; salvar(); }
+});
+$('#coefReset').onclick = () => { S.coef = {}; salvar(); renderPerguntas(); };
+
+// ================================================================== RESULTADOS
+let R = null, aba = 'total';
+const projetoMotor = () => ({ pavimentos: S.pavimentos.map((p) => ({ nome: p.nome, rep: p.rep, lev: p.lev })), resp: S.resp, coef: S.coef });
+function renderResultado() {
+  R = E.calcular(projetoMotor());
+  $('#nomeObra').value = S.nome || '';
+  const r = R.resumo;
+  $('#kpis').innerHTML = [
+    [fmt(r.areaConstruida, 1) + ' m²', 'Área construída'], [r.pavimentos + (r.unidades > 1 ? ' · ' + r.unidades + ' un.' : ''), r.unidades > 1 ? 'Pavimentos · unidades' : 'Pavimentos'],
+    [fmt(r.paredesExternas + r.paredesInternas, 1) + ' m', 'Paredes'], [fmt(r.alvenaria, 1) + ' m²', 'Alvenaria'], [fmt(r.areaPiso, 1) + ' m²', 'Pisos'],
+    [fmt(r.telhado, 1) + ' m²', 'Telhado'], [fmt(r.concreto, 1) + ' m³', 'Concreto estrutural'], [R.consolidado.length, 'Insumos diferentes']
+  ].map(([v, l]) => '<div class="kpi"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>').join('');
+  const grupos = new Map();
+  for (const p of S.pavimentos) if (p.levOrigem === 'auto') for (const a of p.iaAvisos || []) if (!/^Escala|^Área construída|unidade ou outro pavimento/.test(a)) { if (!grupos.has(a)) grupos.set(a, []); grupos.get(a).push(p.nome); }
+  const avLeitura = [...grupos].map(([a, nomes]) => (S.pavimentos.length > 1 ? (nomes.length === S.pavimentos.length ? 'Todos os pavimentos' : nomes.join(', ')) + ': ' : '') + a);
+  $('#avisos').innerHTML = avLeitura.concat(R.avisos).map((a) => '<div class="note warn">⚠ ' + esc(a) + '</div>').join('');
+  const fora = R.indicadores.filter((i) => i.estado === 'fora' || i.estado === 'atencao').length;
+  $('#tabs').innerHTML = '<button data-a="total" class="' + (aba === 'total' ? 'on' : '') + '">Total consolidado<span class="c">' + R.consolidado.length + '</span></button>' +
+    '<button data-a="compras" class="' + (aba === 'compras' ? 'on' : '') + '">🛒 Compras por fase<span class="c">' + R.compras.length + '</span></button>' +
+    '<button data-a="conferencia" class="' + (aba === 'conferencia' ? 'on' : '') + '">✔ Conferência' + (fora ? '<span class="c">' + fora + ' alerta(s)</span>' : '') + '</button>' +
+    R.etapas.map((e, i) => '<button data-a="' + e.id + '" class="' + (aba === e.id ? 'on' : '') + '">' + (i + 1) + '. ' + e.nome + '<span class="c">' + e.itens.length + '</span></button>').join('');
+  if (!['total', 'compras', 'conferencia'].includes(aba) && !R.etapas.some((e) => e.id === aba)) aba = 'total';
+  $('#printTitle').textContent = 'Quantitativo de insumos — ' + (S.nome || S.relatorio.obra || 'Obra');
+  $('#printSub').textContent = fmt(r.areaConstruida, 1) + ' m² · ' + r.pavimentos + ' pavimento(s)' + (S.relatorio.revisao ? ' · ' + S.relatorio.revisao : '') + ' · ' + new Date().toLocaleDateString('pt-BR');
+  renderRelatorio(); renderRevisoes(); renderTabela();
+}
+function tabelaEtapa(et, f) {
+  const it = et.itens.filter((i) => !f || i.desc.toLowerCase().includes(f));
+  if (!it.length) return '';
+  return '<div class="tbl"><table><thead><tr><th>Insumo</th><th class="n">Qtd</th><th>Un</th><th class="n">Compra</th><th>Memória de cálculo</th></tr></thead><tbody>' +
+    it.map((i) => '<tr><td>' + esc(i.desc) + '</td><td class="n">' + fmt(i.qtd, 2) + '</td><td>' + i.un + '</td><td class="n b">' + esc(i.compra) + '</td><td class="mem">' + esc(i.mem.join('; ')) + '</td></tr>').join('') + '</tbody></table></div>';
+}
+function tabelaTotal(f) {
+  const it = R.consolidado.filter((i) => !f || i.desc.toLowerCase().includes(f));
+  return '<div class="tbl"><table><thead><tr><th>#</th><th>Insumo</th><th class="n">Qtd</th><th>Un</th><th class="n">Compra</th><th>Etapas</th></tr></thead><tbody>' +
+    it.map((i, n) => '<tr><td class="muted">' + (n + 1) + '</td><td>' + esc(i.desc) + '</td><td class="n">' + fmt(i.qtd, 2) + '</td><td>' + i.un + '</td><td class="n b">' + esc(i.compra) + '</td><td class="etq">' + esc([...new Set(i.etapas)].join(', ')) + '</td></tr>').join('') + '</tbody></table></div>';
+}
+function tabelaCompras(f, imprimir) {
+  return R.compras.map((fa) => {
+    const it = fa.itens.filter((i) => !f || i.desc.toLowerCase().includes(f));
+    if (!it.length) return '';
+    const feitos = it.filter((i) => S.comprados[fa.id + '|' + i.key]).length;
+    return '<div class="fase"><h3>' + esc(fa.nome) + ' <small>' + esc(fa.quando) + (imprimir ? '' : ' · ' + feitos + '/' + it.length + ' comprados') + '</small></h3><div class="tbl"><table><thead><tr>' + (imprimir ? '' : '<th style="width:34px">✓</th>') + '<th>Insumo</th><th class="n">Compra</th><th class="n">Qtd</th><th>Un</th><th>Observação</th></tr></thead><tbody>' +
+      it.map((i) => { const k = fa.id + '|' + i.key, ok = !!S.comprados[k]; return '<tr class="' + (ok && !imprimir ? 'feito' : '') + '">' + (imprimir ? '' : '<td><input type="checkbox" data-ck="' + esc(k) + '"' + (ok ? ' checked' : '') + '></td>') + '<td>' + esc(i.desc) + '</td><td class="n b">' + esc(i.compra) + '</td><td class="n">' + fmt(i.qtd, 2) + '</td><td>' + i.un + '</td><td class="prazo">' + esc(i.prazo || '') + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+  }).join('');
+}
+function tabelaConferencia() {
+  const fmtV = (i) => i.valor == null ? '—' : fmt(i.valor, i.valor < 1 ? 2 : 1);
+  const rot = { ok: 'dentro da faixa', atencao: 'perto do limite', fora: 'fora da faixa', na: 'sem dado' };
+  let h = '<p class="small muted">Indicadores de um orçamentista experiente: números fora da faixa usual não são necessariamente erro, mas pedem uma olhada no levantamento ou nas respostas.</p>';
+  h += '<div class="tbl"><table><thead><tr><th>Indicador</th><th class="n">Valor</th><th class="n">Faixa usual</th><th>Situação</th></tr></thead><tbody>' +
+    R.indicadores.map((i) => '<tr><td>' + esc(i.nome) + (i.nota ? '<div class="etq">' + esc(i.nota) + '</div>' : '') + '</td><td class="n b">' + fmtV(i) + ' ' + i.un + '</td><td class="n">' + fmt(i.min, 2) + ' a ' + fmt(i.max, 2) + '</td><td><span class="est ' + i.estado + '">' + rot[i.estado] + '</span></td></tr>').join('') + '</tbody></table></div>';
+  const fu = R.fundacao;
+  h += '<h3 style="margin:18px 0 6px">Fundação</h3><div class="note info">' + esc({ sapata: 'Sapata isolada + viga baldrame', broca: 'Estacas broca + blocos + baldrame', radier: 'Radier' }[fu.tipo] || fu.tipo) + ' · solo: <b>' + esc(fu.solo) + '</b> (σadm ≈ ' + fu.kpa + ' kPa = ' + fmt(fu.kpa / 100, 1) + ' kgf/cm²) · ' + fu.pilares + ' pilares<br>' + esc(fu.texto || '') + '</div>';
+  h += '<h3 style="margin:18px 0 6px">Pavimentos considerados</h3><div class="tbl"><table><thead><tr><th>Pavimento</th><th class="n">Repetições</th><th class="n">Área (m²)</th><th class="n">Cômodos</th><th class="n">Paredes (m)</th><th>Origem do levantamento</th></tr></thead><tbody>' +
+    S.pavimentos.map((p) => { const g = E.normalizar(p.lev, S.resp); return '<tr><td>' + esc(p.nome) + '</td><td class="n">' + p.rep + '</td><td class="n">' + fmt(g.A, 1) + '</td><td class="n">' + g.amb.length + '</td><td class="n">' + fmt(g.Ltot, 1) + '</td><td>' + ({ desenho: 'desenho', auto: 'leitura automática do PDF', ia: 'leitura por IA', manual: 'editado à mão' }[p.levOrigem] || '') + '</td></tr>'; }).join('') + '</tbody></table></div>';
+  return h;
+}
+function renderTabela() {
+  const f = $('#busca').value.trim().toLowerCase();
+  let html = '';
+  if (aba === 'total') { html = tabelaTotal(f); $('#contagem').textContent = R.consolidado.length + ' insumos'; }
+  else if (aba === 'compras') { html = '<p class="small muted no-print">Lista de compras na ordem da obra. As quantidades de cada fase são as que aquela fase consome (cimento e areia aparecem em várias). Marque o que já foi comprado.</p>' + tabelaCompras(f); $('#contagem').textContent = R.compras.reduce((s, fa) => s + fa.itens.length, 0) + ' linhas de compra'; }
+  else if (aba === 'conferencia') { html = tabelaConferencia(); $('#contagem').textContent = ''; }
+  else { const et = R.etapas.find((e) => e.id === aba); html = tabelaEtapa(et, f) || '<p class="muted">Nada encontrado.</p>'; $('#contagem').textContent = et.itens.length + ' insumos nesta etapa'; }
+  html = '<div class="tela">' + html + '</div>';
+  // versão de impressão: conferência, etapas, total e compras
+  html += '<div class="print-only"><div class="etapa-print"><h3>Conferência</h3>' + tabelaConferencia() + '</div>' + R.etapas.map((e, i) => '<div class="etapa-print"><h3>' + (i + 1) + '. ' + esc(e.nome) + '</h3>' + tabelaEtapa(e, '') + '</div>').join('') +
+    '<div class="etapa-print"><h3>Total consolidado</h3>' + tabelaTotal('') + '</div><div class="etapa-print"><h3>Compras por fase</h3>' + tabelaCompras('', true) + '</div></div>';
+  $('#resultado').innerHTML = html;
+}
+$('#tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; aba = b.dataset.a; $$('#tabs button').forEach((x) => x.classList.toggle('on', x === b)); renderTabela(); });
+$('#busca').addEventListener('input', renderTabela);
+$('#resultado').addEventListener('change', (e) => { const c = e.target.closest('[data-ck]'); if (!c) return; if (c.checked) S.comprados[c.dataset.ck] = 1; else delete S.comprados[c.dataset.ck]; salvar(); renderTabela(); });
+$('#nomeObra').addEventListener('input', (e) => { S.nome = e.target.value; salvar(); });
+$('#btnPrint').onclick = () => { const vis = $('#resultado .tela'); if (vis) vis.classList.add('no-print'); window.print(); if (vis) vis.classList.remove('no-print'); };
+function baixar(nome, conteudo, tipo) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([conteudo], { type: tipo })); a.download = nome; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+const slug = () => (S.nome || 'obra').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase();
+$('#btnCsv').onclick = () => {
+  const q = (s) => '"' + String(s).replace(/"/g, '""') + '"', n = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
+  const L = ['Etapa;Insumo;Quantidade;Unidade;Compra;Memória de cálculo'];
+  R.etapas.forEach((e, i) => e.itens.forEach((it) => L.push([q((i + 1) + '. ' + e.nome), q(it.desc), n(it.qtd), q(it.un), q(it.compra), q(it.mem.join('; '))].join(';'))));
+  L.push('', 'TOTAL CONSOLIDADO;Insumo;Quantidade;Unidade;Compra;Etapas');
+  R.consolidado.forEach((it) => L.push(['', q(it.desc), n(it.qtd), q(it.un), q(it.compra), q([...new Set(it.etapas)].join(', '))].join(';')));
+  L.push('', 'COMPRAS POR FASE;Insumo;Quantidade;Unidade;Compra;Observação');
+  R.compras.forEach((fa) => fa.itens.forEach((it) => L.push([q(fa.nome), q(it.desc), n(it.qtd), q(it.un), q(it.compra), q(it.prazo || '')].join(';'))));
+  baixar('quantitativo-' + slug() + '.csv', '﻿' + L.join('\r\n'), 'text/csv;charset=utf-8');
+};
+
+// ---- planilha Excel com fórmulas
+function planilhasExcel() {
+  const rel = S.relatorio || {}, r = R.resumo, hoje = new Date().toLocaleDateString('pt-BR');
+  const cab = (t) => ({ v: t, s: 'cab' });
+  const compraF = (row, colQ, colF, un, emb) => un === 'm³' ? 'ROUNDUP(' + colQ + row + ',1)' : emb && emb.frac ? 'ROUNDUP(' + colQ + row + '/' + colF + row + ',1)' : 'IF(' + colF + row + '>0,ROUNDUP(' + colQ + row + '/' + colF + row + ',0),ROUNDUP(' + colQ + row + ',0))';
+  const compraV = (i) => i.un === 'm³' ? Math.ceil(i.qtd * 10 - 1e-9) / 10 : i.emb && i.emb.frac ? Math.ceil(i.qtd / i.emb.qtd * 10 - 1e-9) / 10 : i.emb && i.emb.qtd > 0 ? Math.ceil(i.qtd / i.emb.qtd - 1e-9) : Math.ceil(i.qtd - 1e-9);
+  const unCompra = (i) => i.emb && i.emb.qtd > 0 ? i.emb.nome + (i.emb.combo ? ' (equivalente; app sugere latas + galões)' : '') : i.un;
+  // 1. resumo
+  const resumo = [[{ v: 'Quantitativo de insumos — ' + (S.nome || rel.obra || 'Obra'), s: 'tit' }], [],
+    ['Empresa', rel.empresa || ''], ['Responsável técnico', rel.responsavel || ''], ['Registro (CREA/CAU)', rel.registro || ''], ['ART/RRT', rel.art || ''],
+    ['Obra', S.nome || rel.obra || ''], ['Endereço', rel.endereco || ''], ['Cliente', rel.cliente || ''], ['Revisão', rel.revisao || ''], ['Data', hoje], [],
+    [cab('Resumo'), cab('')], ['Área construída (m²)', +r.areaConstruida.toFixed(2)], ['Pavimentos', r.pavimentos], ['Unidades', r.unidades], ['Paredes (m)', +(r.paredesExternas + r.paredesInternas).toFixed(2)],
+    ['Alvenaria (m²)', +r.alvenaria.toFixed(2)], ['Concreto estrutural (m³)', +r.concreto.toFixed(2)], ['Aço (kg)', +r.aco.toFixed(1)], ['Fundação', R.fundacao.texto || ''], [],
+    [cab('Indicador'), cab('Valor'), cab('Mínimo usual'), cab('Máximo usual'), cab('Unidade'), cab('Situação')]];
+  for (const i of R.indicadores) resumo.push([i.nome, i.valor == null ? '' : +i.valor.toFixed(3), i.min, i.max, i.un, { ok: 'ok', atencao: 'atenção', fora: 'fora da faixa', na: '—' }[i.estado]]);
+  // 2. insumos por etapa
+  const et = [[cab('Etapa'), cab('Código'), cab('Insumo'), cab('Un'), cab('Quantidade'), cab('Embalagem'), cab('Qtd por embalagem'), cab('Compra'), cab('Memória de cálculo')]];
+  R.etapas.forEach((e, k) => e.itens.forEach((i) => { const row = et.length + 1; et.push([(k + 1) + '. ' + e.nome, i.key, i.desc, i.un, +i.qtd.toFixed(4), unCompra(i), i.emb && i.emb.qtd > 0 ? +i.emb.qtd.toFixed(4) : 0, { f: compraF(row, 'E', 'G', i.un, i.emb), v: compraV(i), s: i.emb && i.emb.frac ? 'num' : 'int' }, { v: i.mem.join('; '), s: 'txt' }]); }));
+  // 3. total consolidado com SOMASE e coluna de preço
+  const tot = [[cab('Código'), cab('Insumo'), cab('Un'), cab('Quantidade'), cab('Embalagem'), cab('Qtd por embalagem'), cab('Compra'), cab('Preço por embalagem (R$)'), cab('Total (R$)')]];
+  R.consolidado.forEach((i) => { const row = tot.length + 1; tot.push([i.key, i.desc, i.un, { f: "SUMIF('Insumos por etapa'!B:B,A" + row + ",'Insumos por etapa'!E:E)", v: +i.qtd.toFixed(4) }, unCompra(i), i.emb && i.emb.qtd > 0 ? +i.emb.qtd.toFixed(4) : 0, { f: compraF(row, 'D', 'F', i.un, i.emb), v: compraV(i), s: i.emb && i.emb.frac ? 'num' : 'int' }, null, { f: 'IF(H' + row + '="","",G' + row + '*H' + row + ')' }]); });
+  tot.push([null, { v: 'TOTAL', s: 'neg' }, null, null, null, null, null, null, { f: 'SUM(I2:I' + tot.length + ')', s: 'neg' }]);
+  // 4. compras por fase
+  const cp = [[cab('Fase'), cab('Quando'), cab('Insumo'), cab('Un'), cab('Quantidade'), cab('Embalagem'), cab('Qtd por embalagem'), cab('Compra'), cab('Observação'), cab('Comprado')]];
+  R.compras.forEach((fa) => fa.itens.forEach((i) => { const row = cp.length + 1; cp.push([fa.nome, fa.quando, i.desc, i.un, +i.qtd.toFixed(4), unCompra(i), i.emb && i.emb.qtd > 0 ? +i.emb.qtd.toFixed(4) : 0, { f: compraF(row, 'E', 'G', i.un, i.emb), v: compraV(i), s: i.emb && i.emb.frac ? 'num' : 'int' }, i.prazo || '', S.comprados[fa.id + '|' + i.key] ? 'sim' : '']); }));
+  // 5. levantamento
+  const lev = [[cab('Pavimento'), cab('Repetições'), cab('Cômodo'), cab('Tipo'), cab('Área (m²)'), cab('Perímetro (m)'), cab('Piso'), cab('Parede'), cab('Teto')]];
+  const nomeOp = (lista, v) => (lista.find(([k]) => k === (v || 'auto')) || ['', 'Padrão'])[1];
+  for (const p of S.pavimentos) for (const a of p.lev.ambientes || []) lev.push([p.nome, p.rep, a.nome, (E.TIPOS_AMBIENTE[a.tipo] || {}).nome || a.tipo, +a.area || 0, +a.perimetro || 0, nomeOp(OPC_PISO, a.piso), nomeOp(OPC_PAREDE, a.parede), nomeOp(OPC_TETO, a.teto)]);
+  lev.push([], [cab('Pavimento'), cab('Esquadria'), cab('Largura (m)'), cab('Altura (m)'), cab('Peitoril (m)'), cab('Qtd'), cab('Externa')]);
+  for (const p of S.pavimentos) for (const o of p.lev.aberturas || []) lev.push([p.nome, (E.TIPOS_ABERTURA[o.tipo] || {}).nome || o.tipo, +o.largura || 0, +o.altura || 0, o.peitoril == null ? '' : +o.peitoril, +o.qtd || 1, o.externa ? 'sim' : 'não']);
+  // 6. coeficientes
+  const co = [[cab('Coeficiente'), cab('Valor adotado'), cab('Unidade'), cab('Padrão')]];
+  for (const [k, [v, u, d]] of Object.entries(E.COEF)) co.push([d, S.coef[k] != null ? S.coef[k] : v, u, v]);
+  return [
+    { nome: 'Resumo', colunas: [34, 16, 14, 14, 10, 14], linhas: resumo },
+    { nome: 'Insumos por etapa', colunas: [30, 22, 50, 6, 13, 13, 11, 10, 70], linhas: et, congelar: 1, filtro: true },
+    { nome: 'Total consolidado', colunas: [22, 52, 6, 13, 13, 11, 10, 14, 14], linhas: tot, congelar: 1, filtro: true },
+    { nome: 'Compras por fase', colunas: [32, 30, 50, 6, 13, 13, 11, 10, 50, 10], linhas: cp, congelar: 1, filtro: true },
+    { nome: 'Levantamento', colunas: [18, 12, 30, 28, 11, 12, 22, 20, 18], linhas: lev, congelar: 1 },
+    { nome: 'Coeficientes', colunas: [55, 14, 10, 10], linhas: co, congelar: 1 }
+  ];
+}
+$('#btnXlsx').onclick = () => {
+  try { const b = window.Xlsx.gerarXlsx(planilhasExcel()); baixar('quantitativo-' + slug() + '.xlsx', b, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); }
+  catch (err) { console.error(err); toast('Não foi possível gerar a planilha: ' + err.message); }
+};
+
+// ---- dados do relatório (timbre)
+const CAMPOS_REL = [['empresa', 'Empresa'], ['responsavel', 'Responsável técnico'], ['registro', 'Registro (CREA/CAU)'], ['art', 'ART/RRT'], ['obra', 'Obra'], ['endereco', 'Endereço da obra'], ['cliente', 'Cliente'], ['revisao', 'Revisão do projeto']];
+function renderRelatorio() {
+  const rel = S.relatorio;
+  if (!$('#relCampos').children.length) $('#relCampos').innerHTML = CAMPOS_REL.map(([k, t]) => '<label class="f">' + t + '<input data-rel="' + k + '"></label>').join('');
+  for (const [k] of CAMPOS_REL) { const el = $('[data-rel="' + k + '"]'); if (document.activeElement !== el) el.value = rel[k] || ''; }
+  $('#relLogoTxt').textContent = rel.logo ? 'logotipo carregado' : 'sem logotipo';
+  $('#relLogoDel').classList.toggle('hidden', !rel.logo);
+  const linhas = [rel.empresa && '<b>' + esc(rel.empresa) + '</b>', rel.responsavel && 'Responsável técnico: ' + esc(rel.responsavel) + (rel.registro ? ' — ' + esc(rel.registro) : ''), rel.art && 'ART/RRT: ' + esc(rel.art), (S.nome || rel.obra) && 'Obra: ' + esc(S.nome || rel.obra) + (rel.endereco ? ' — ' + esc(rel.endereco) : ''), rel.cliente && 'Cliente: ' + esc(rel.cliente), rel.revisao && 'Revisão: ' + esc(rel.revisao)].filter(Boolean);
+  $('#cabRel').innerHTML = (rel.logo ? '<img src="' + rel.logo + '" alt="">' : '') + '<div class="dados">' + linhas.join('<br>') + '</div>';
+  $('#cabRel').style.display = '';
+  $('#assinatura').innerHTML = rel.responsavel ? '<div class="linha"></div>' + esc(rel.responsavel) + (rel.registro ? '<br>' + esc(rel.registro) : '') : '';
+}
+$('#relCampos').addEventListener('input', (e) => { const k = e.target.dataset.rel; if (!k) return; S.relatorio[k] = e.target.value; salvar(); renderRelatorio(); });
+$('#relLogo').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const bmp = await createImageBitmap(f); const k = Math.min(1, 360 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    S.relatorio.logo = c.toDataURL('image/png'); salvar(); renderRelatorio();
+  } catch (err) { toast('Não foi possível ler a imagem.'); }
+});
+$('#relLogoDel').onclick = () => { delete S.relatorio.logo; salvar(); renderRelatorio(); };
+
+// ---- revisões
+function renderRevisoes() {
+  const L = S.revisoes;
+  $('#revNome').placeholder = 'Rev ' + String(L.length + 1).padStart(2, '0');
+  $('#revLista').innerHTML = L.length ? '<div class="tbl"><table><thead><tr><th>Revisão</th><th>Data</th><th class="n">Área (m²)</th><th class="n">Insumos</th><th></th></tr></thead><tbody>' + L.map((v, i) => '<tr><td class="b">' + esc(v.nome) + '</td><td>' + esc(v.data) + '</td><td class="n">' + fmt(v.area, 1) + '</td><td class="n">' + v.consolidado.length + '</td><td><button class="x" data-delrev="' + i + '" title="Excluir">×</button></td></tr>').join('') + '</tbody></table></div>' : '<p class="small muted">Nenhuma revisão salva ainda.</p>';
+  const opts = '<option value="atual">Quantitativo atual</option>' + L.map((v, i) => '<option value="' + i + '">' + esc(v.nome) + '</option>').join('');
+  const a = $('#revA').value, b = $('#revB').value;
+  $('#revA').innerHTML = opts; $('#revB').innerHTML = opts;
+  $('#revA').value = a && (a === 'atual' || L[a]) ? a : (L.length ? String(L.length - 1) : 'atual'); $('#revB').value = b && (b === 'atual' || L[b]) ? b : 'atual';
+}
+$('#revSalvar').onclick = () => {
+  const nome = $('#revNome').value.trim() || $('#revNome').placeholder;
+  S.revisoes.push({ nome, data: new Date().toLocaleString('pt-BR'), area: R.resumo.areaConstruida, consolidado: R.consolidado.map((i) => ({ key: i.key, desc: i.desc, un: i.un, qtd: +i.qtd.toFixed(4) })) });
+  $('#revNome').value = ''; salvar(); renderRevisoes(); toast('Revisão “' + nome + '” salva.');
+};
+$('#revLista').addEventListener('click', (e) => { const b = e.target.closest('[data-delrev]'); if (!b) return; S.revisoes.splice(+b.dataset.delrev, 1); salvar(); renderRevisoes(); $('#revResultado').innerHTML = ''; });
+$('#revComparar').onclick = () => {
+  const pega = (v) => v === 'atual' ? { nome: 'Atual', consolidado: R.consolidado } : S.revisoes[+v];
+  const A = pega($('#revA').value), B = pega($('#revB').value);
+  if (!A || !B) return;
+  const d = E.comparar(A.consolidado, B.consolidado);
+  $('#revResultado').innerHTML = d.length ? '<div class="tbl" style="max-height:480px"><table><thead><tr><th>Insumo</th><th>Un</th><th class="n">' + esc(A.nome) + '</th><th class="n">' + esc(B.nome) + '</th><th class="n">Diferença</th><th class="n">%</th></tr></thead><tbody>' +
+    d.map((x) => '<tr><td>' + esc(x.desc) + '</td><td>' + x.un + '</td><td class="n">' + fmt(x.a, 2) + '</td><td class="n">' + fmt(x.b, 2) + '</td><td class="n b" style="color:' + (x.dif > 0 ? 'var(--danger)' : 'var(--ok)') + '">' + (x.dif > 0 ? '+' : '') + fmt(x.dif, 2) + '</td><td class="n">' + (x.pct == null ? 'novo' : (x.pct > 0 ? '+' : '') + fmt(x.pct, 1) + '%') + '</td></tr>').join('') + '</tbody></table></div>'
+    : '<p class="note ok">As duas versões têm exatamente os mesmos quantitativos.</p>';
+};
+
+$('#btnBackup').onclick = () => baixar('lang-casa-' + slug() + '.json', JSON.stringify(Object.assign({ app: 'lang-casa', versao: 2 }, S), null, 1), 'application/json');
+$('#restore').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const o = JSON.parse(await f.text()); if (o.app !== 'lang-casa') throw new Error('arquivo não é um backup do Lang Casa');
+    S = carregarEstado(o); IMG = null; CAMADA = null; salvar(); renderPavs(); painelMedidas(); toast('Backup restaurado. Reimporte as plantas para ver o desenho sobre elas.'); irPara(4);
+  } catch (err) { toast('Não foi possível restaurar: ' + err.message); }
+});
+
+// ------------------------------------------------------------------ início
+renderPavs(); painelMedidas();
+recuperarImagem().finally(() => irPara(S.etapa || 1));
+if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('service-worker.js').catch(() => {});
+</script>
+</body>
+</html>
