@@ -1,1 +1,54 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#171717"/><path d="M256 104 92 236h44v168h240V236h44z" fill="#ff5a00"/><path d="M216 404V300h80v104" fill="#171717"/><path d="M150 236h212" stroke="#fff" stroke-width="14" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Lang Quantitativos">
+  <defs>
+    <linearGradient id="fundo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a2a2a"/>
+      <stop offset="1" stop-color="#0f0f0f"/>
+    </linearGradient>
+    <linearGradient id="laranja" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff7a2e"/>
+      <stop offset="1" stop-color="#ff5a00"/>
+    </linearGradient>
+    <linearGradient id="regua" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e9e5e0"/>
+    </linearGradient>
+    <pattern id="grade" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="2"/>
+    </pattern>
+    <clipPath id="borda"><rect width="512" height="512" rx="112"/></clipPath>
+  </defs>
+  <g clip-path="url(#borda)">
+    <rect width="512" height="512" fill="url(#fundo)"/>
+    <rect width="512" height="512" fill="url(#grade)"/>
+    <!-- linha de cota -->
+    <g stroke="#ff5a00" stroke-width="6" stroke-linecap="round">
+      <path d="M210 112H394"/>
+      <path d="M210 96V128M394 96V128"/>
+      <path d="M222 124L238 100M370 124L386 100" stroke-width="5"/>
+    </g>
+    <!-- colunas de blocos (quantitativos) -->
+    <g fill="url(#laranja)">
+      <rect x="210" y="262" width="48" height="36" rx="5"/>
+      <rect x="210" y="306" width="48" height="36" rx="5"/>
+      <rect x="278" y="218" width="48" height="36" rx="5"/>
+      <rect x="278" y="262" width="48" height="36" rx="5"/>
+      <rect x="278" y="306" width="48" height="36" rx="5"/>
+      <rect x="346" y="174" width="48" height="36" rx="5"/>
+      <rect x="346" y="218" width="48" height="36" rx="5"/>
+      <rect x="346" y="262" width="48" height="36" rx="5"/>
+      <rect x="346" y="306" width="48" height="36" rx="5"/>
+    </g>
+    <g fill="#ffffff" fill-opacity=".28">
+      <rect x="210" y="262" width="48" height="8" rx="4"/>
+      <rect x="278" y="218" width="48" height="8" rx="4"/>
+      <rect x="346" y="174" width="48" height="8" rx="4"/>
+    </g>
+    <!-- esquadro em L com régua -->
+    <path d="M112 88H178V352H424V416H112Z" fill="url(#regua)"/>
+    <g stroke="#171717" stroke-width="5" stroke-linecap="round">
+      <path d="M178 120H160M178 152H166M178 184H160M178 216H166M178 248H160M178 280H166M178 312H160"/>
+      <path d="M208 352V370M240 352V364M272 352V370M304 352V364M336 352V370M368 352V364M400 352V370"/>
+    </g>
+    <circle cx="145" cy="384" r="12" fill="#ff5a00"/>
+  </g>
+</svg>
