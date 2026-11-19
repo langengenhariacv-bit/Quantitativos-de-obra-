@@ -195,3 +195,14 @@ console.log('OK —', r.consolidado.length, 'insumos consolidados');
   assert(total(E.calcular({ lev: casa.lev, resp: {} }), /escada/i) === 0, 'térrea sem escada');
   console.log('OK — piso da escada');
 }
+
+// ---- argamassa e fita da escada selecionáveis
+{
+  const pav = [{ nome: 'T', lev: casa.lev }, { nome: 'S', lev: casa.lev }];
+  const colEsc = (r) => r.etapas.find((e) => e.id === 'pisos').itens.filter((i) => /^Argamassa colante/.test(i.desc) && i.mem.some((m) => /escada/.test(m))).map((i) => i.desc);
+  assert(colEsc(E.calcular({ pavimentos: pav, resp: { pisoEscada: 'retificado59' } })).includes('Argamassa colante AC-II'), 'auto retificado = AC-II');
+  assert(colEsc(E.calcular({ pavimentos: pav, resp: { pisoEscada: 'granito', argEscada: 'AC-II' } })).includes('Argamassa colante AC-II'), 'granito com AC-II escolhida');
+  assert(total(E.calcular({ pavimentos: pav, resp: { fitaEscada: false } }), /^Fita antiderrapante/) === 0, 'sem fita');
+  assert(total(E.calcular({ pavimentos: pav, resp: {} }), /^Fita antiderrapante/) > 0, 'com fita');
+  console.log('OK — argamassa e fita da escada');
+}
