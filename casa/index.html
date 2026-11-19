@@ -122,7 +122,8 @@ dialog form{padding:18px;display:grid;gap:12px}
         <label class="btn pri">📂 Importar planta<input id="file" type="file" accept=".pdf,image/png,image/jpeg,image/webp" hidden></label>
         <select id="pdfPage" class="btn hidden" title="Página do PDF"></select>
         <button class="btn" id="btnBlank" title="Desenhar sobre uma grade sem planta">Desenhar sem planta</button>
-        <button class="btn" id="btnIA">✨ Ler planta com IA</button>
+        <button class="btn" id="btnAuto" title="Lê paredes, cômodos e esquadrias do PDF exportado do CAD, sem IA">🔎 Ler automaticamente</button>
+        <button class="btn" id="btnIA">✨ Ler com IA</button>
         <span class="sp"></span>
         <button class="btn sm" id="btnUndo" title="Desfazer (Ctrl+Z)">↶ Desfazer</button>
         <button class="btn sm" id="btnClear">Limpar desenho</button>
@@ -138,6 +139,7 @@ dialog form{padding:18px;display:grid;gap:12px}
         <button class="tool" data-t="janela"><span class="sw" style="background:var(--janela)"></span>Janela</button>
         <button class="tool" data-t="apagar">🗑 Apagar</button>
         <label class="tool"><input type="checkbox" id="orto" checked> Ortogonal</label>
+        <label class="tool hidden" id="verLeituraBox"><input type="checkbox" id="verLeitura" checked> Mostrar leitura</label>
       </div>
       <div class="stage" id="stage">
         <canvas id="cv"></canvas>
@@ -150,6 +152,8 @@ dialog form{padding:18px;display:grid;gap:12px}
     <aside class="side">
       <div class="card">
         <h3>Como levantar</h3>
+        <p class="small" style="margin:6px 0 0"><b>PDF exportado do CAD:</b> ao importar, o app lê sozinho paredes, cômodos (nome e área) e portas/janelas pelas cotas e rótulos. Confira e corrija no passo 2.</p>
+        <p class="small muted" style="margin:6px 0 0">Imagem ou PDF escaneado: desenhe por cima, assim:</p>
         <ol class="help">
           <li><b>Calibrar escala:</b> clique nas duas pontas de uma cota conhecida e informe a medida.</li>
           <li><b>Paredes externas:</b> clique nos cantos pelo eixo das paredes; feche clicando no primeiro ponto.</li>
@@ -228,6 +232,7 @@ dialog form{padding:18px;display:grid;gap:12px}
 <div class="toast hidden" id="toast"></div>
 
 <script src="engine.js"></script>
+<script src="leitor-vetorial.js"></script>
 <script>
 'use strict';
 const E = window.CasaEngine;
@@ -294,7 +299,7 @@ document.addEventListener('click', (e) => { const b = e.target.closest('[data-go
 // ================================================================== EDITOR
 const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
 let IMG = null; // {src: canvas|img, w, h, nome, grade}
-let pdfDoc = null;
+let pdfDoc = null, PDFJS = null, CAMADA = null;
 const V = { z: 1, ox: 0, oy: 0 };
 let tool = 'ext', cur = null, hover = null, calib = [], dpr = 1;
 const hist = [];
@@ -334,6 +339,7 @@ async function carregarArquivo(file) {
       toast('Abrindo PDF…');
       const pdfjs = await import('../vendor/pdf.min.mjs');
       pdfjs.GlobalWorkerOptions.workerSrc = new URL('../vendor/pdf.worker.min.mjs', location.href).href;
+      PDFJS = pdfjs;
       pdfDoc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
       const sel = $('#pdfPage'); sel.innerHTML = '';
       for (let i = 1; i <= pdfDoc.numPages; i++) sel.insertAdjacentHTML('beforeend', '<option value="' + i + '">Página ' + i + ' de ' + pdfDoc.numPages + '</option>');
@@ -355,16 +361,53 @@ async function renderPagina(n, nome) {
   const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
   const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
   await pg.render({ canvasContext: cx, viewport: vp }).promise;
-  definirImagem(c, (nome || (IMG && IMG.nome) || 'planta') + ' · p.' + n);
+  definirImagem(c, (nome || (IMG && IMG.nome) || 'planta') + ' · p.' + n, false, true);
+  IMG.pagina = pg; IMG.sc = sc; IMG.pdfjs = PDFJS;
+  await lerAutomatico(true);
 }
-function definirImagem(c, nome, manterDesenho) {
+function definirImagem(c, nome, manterDesenho, ehPdf) {
+  CAMADA = null; $('#verLeituraBox').classList.add('hidden');
   const trocou = IMG && !IMG.grade && (IMG.w !== c.width || IMG.h !== c.height);
   IMG = { src: c, w: c.width, h: c.height, nome };
   $('#drop').classList.add('hidden');
   if (trocou && !manterDesenho && (S.desenho.paredes.length || S.desenho.ambientes.length)) toast('Nova imagem carregada: confira se o desenho anterior ainda corresponde.');
   ajustar(); guardarImagem(c);
-  if (!S.desenho.escala) { setTool('calibrar'); toast('Comece calibrando a escala numa cota conhecida.', 4500); }
+  if (!S.desenho.escala && !ehPdf) { setTool('calibrar'); toast('Comece calibrando a escala numa cota conhecida.', 4500); }
 }
+
+// ---- leitura automática de PDF vetorial (sem IA)
+async function lerAutomatico(aoImportar) {
+  if (!IMG || !IMG.pagina) { if (!aoImportar) toast('A leitura automática funciona com PDF exportado do CAD. Para imagem, desenhe ou use a IA.'); return; }
+  const b = $('#btnAuto'); b.disabled = true; b.innerHTML = '<span class="spin" style="border-color:rgba(0,0,0,.2);border-top-color:#333"></span> Lendo…';
+  try {
+    const dados = await window.LeitorVetorial.extrair(IMG.pdfjs, IMG.pagina);
+    await new Promise((r) => setTimeout(r, 20));
+    const r = window.LeitorVetorial.analisar(dados);
+    if (!r.ok) {
+      if (aoImportar) { setTool('calibrar'); toast(r.erro + ' Comece calibrando a escala.', 6000); } else toast(r.erro, 6000);
+      return;
+    }
+    const temAlgo = S.levOrigem !== 'desenho' || S.desenho.paredes.length || S.desenho.ambientes.length;
+    if (temAlgo && !aoImportar) {
+      const ok = await perguntar('Substituir o levantamento?', [{ info: 'A leitura encontrou ' + r.lev.ambientes.length + ' cômodos e ' + r.lev.aberturas.length + ' esquadrias. As medidas atuais serão trocadas por essas.' }], 'Substituir');
+      if (!ok) return;
+    }
+    // camada visual alinhada à imagem da página
+    const cc = document.createElement('canvas'); cc.width = r.camada.w; cc.height = r.camada.h;
+    cc.getContext('2d').putImageData(new ImageData(r.camada.data, r.camada.w, r.camada.h), 0, 0);
+    CAMADA = { cv: cc, x: r.camada.x0 * IMG.sc, y: r.camada.y0 * IMG.sc, w: r.camada.w / r.camada.k * IMG.sc, h: r.camada.h / r.camada.k * IMG.sc, amb: r.detalhe.ambientes.map((a) => ({ nome: a.nome, area: a.area, x: a.x * IMG.sc, y: a.y * IMG.sc })) };
+    $('#verLeituraBox').classList.remove('hidden'); $('#verLeitura').checked = true;
+    snapshot();
+    S.desenho = { escala: r.escala / IMG.sc, paredes: [], ambientes: [], aberturas: [] };
+    S.lev = r.lev; S.levOrigem = 'auto';
+    S.iaAvisos = ['Escala lida das cotas: 1:' + fmt(r.escala * 100 / 0.0352778, 0) + ' na folha (' + r.votosEscala + ' cotas concordantes); paredes de ' + fmt(r.espessura * 100, 0) + ' cm.', 'Área construída: ' + r.detalhe.fonteArea + '.'].concat(r.avisos);
+    salvar(); painelMedidas(); setTool('mao'); draw();
+    toast('Planta lida: ' + r.lev.ambientes.length + ' cômodos, ' + fmt(r.lev.paredes.externas + r.lev.paredes.internas, 0) + ' m de paredes e ' + r.lev.aberturas.length + ' esquadrias. Confira no passo 2.', 6000);
+  } catch (err) { console.error(err); toast('Falha na leitura automática: ' + (err.message || err)); }
+  finally { b.disabled = false; b.innerHTML = '🔎 Ler automaticamente'; }
+}
+$('#btnAuto').onclick = () => lerAutomatico(false);
+$('#verLeitura').addEventListener('change', () => draw());
 function gradeBranca() {
   const c = document.createElement('canvas'); c.width = 4000; c.height = 3000;
   const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
@@ -619,19 +662,20 @@ function mudouDesenho(silencioso) {
   salvar(); draw(); painelMedidas();
 }
 function painelMedidas() {
-  const l = desenhoParaLev();
-  $('#escalaTxt').textContent = S.desenho.escala ? (S.desenho.grade ? 'grade 1 m' : 'escala calibrada') : 'sem escala';
+  const l = S.levOrigem === 'desenho' ? desenhoParaLev() : S.lev;
+  $('#escalaTxt').textContent = S.levOrigem === 'auto' ? 'leitura automática' : S.levOrigem === 'ia' ? 'leitura por IA' : S.levOrigem === 'manual' ? 'editado à mão' : S.desenho.escala ? (S.desenho.grade ? 'grade 1 m' : 'escala calibrada') : 'sem escala';
   if (!l) { $('#medidas').innerHTML = '<span class="muted small" style="grid-column:1/-1">Calibre a escala para ver as medidas.</span>'; }
   else {
     const ar = l.ambientes.reduce((s, a) => s + a.area, 0);
     $('#medidas').innerHTML = [
       ['Paredes externas', fmt(l.paredes.externas, 2) + ' m'], ['Paredes internas', fmt(l.paredes.internas, 2) + ' m'],
       ['Área construída', l.envelope.area ? fmt(l.envelope.area, 2) + ' m²' : '<span class="muted">feche o contorno</span>'],
-      ['Ambientes', l.ambientes.length + ' · ' + fmt(ar, 2) + ' m²'], ['Portas e janelas', l.aberturas.length], ['Nós p/ pilares', l.nos]
+      ['Ambientes', l.ambientes.length + ' · ' + fmt(ar, 2) + ' m²'], ['Portas e janelas', l.aberturas.reduce((s2, o) => s2 + (+o.qtd || 1), 0)], ['Nós p/ pilares', l.nos || 'estimado']
     ].map(([k, v]) => '<span>' + k + '</span><b>' + v + '</b>').join('');
   }
   const o = S.levOrigem;
   $('#origemBox').innerHTML = o === 'desenho' ? '<div class="note ok">O levantamento acompanha o desenho automaticamente.</div>'
+    : o === 'auto' ? '<div class="note ok">Levantamento lido automaticamente do PDF (laranja = paredes externas, azul = internas, verde = vãos). Confira os números no passo 2.<br><button class="btn sm" style="margin-top:6px" id="btnUsarDesenho">Trocar pelo meu desenho</button></div>'
     : '<div class="note warn">O levantamento atual veio ' + (o === 'ia' ? 'da leitura por IA' : 'de edição manual') + '. O desenho não o altera.<br><button class="btn sm" style="margin-top:6px" id="btnUsarDesenho">Usar o desenho</button></div>';
   const b = $('#btnUsarDesenho'); if (b) b.onclick = usarDesenho;
 }
@@ -651,11 +695,14 @@ function draw() {
   ctx.setTransform(dpr * z, 0, 0, dpr * z, dpr * V.ox, dpr * V.oy);
   ctx.imageSmoothingQuality = 'high'; ctx.drawImage(IMG.src, 0, 0);
   const D = S.desenho, s = D.escala;
+  const verCamada = CAMADA && $('#verLeitura').checked;
+  if (verCamada) { ctx.imageSmoothingEnabled = false; ctx.drawImage(CAMADA.cv, CAMADA.x, CAMADA.y, CAMADA.w, CAMADA.h); ctx.imageSmoothingEnabled = true; }
   const label = (txt, x, y, cor, bg) => {
     ctx.font = 'bold ' + 12 * k + 'px system-ui,sans-serif'; const w = ctx.measureText(txt).width;
     ctx.fillStyle = bg || 'rgba(255,255,255,.88)'; ctx.fillRect(x - w / 2 - 3 * k, y - 8 * k, w + 6 * k, 16 * k);
     ctx.fillStyle = cor || '#111'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, x, y);
   };
+  if (verCamada && z > 0.12) for (const a of CAMADA.amb) label(a.nome + ' · ' + fmt(a.area, 2) + ' m²', a.x, a.y - 16 / z, '#fff', 'rgba(23,23,23,.78)');
   // ambientes
   for (const a of D.ambientes) {
     ctx.beginPath(); a.pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath();
@@ -733,8 +780,8 @@ function aplicarIA(j) {
 // ================================================================== LEVANTAMENTO
 function renderLev() {
   const L = S.lev;
-  $('#origemTag').innerHTML = { desenho: '<span class="note ok" style="padding:4px 8px">do desenho</span>', ia: '<span class="note info" style="padding:4px 8px">da leitura por IA</span>', manual: '<span class="note warn" style="padding:4px 8px">editado à mão</span>' }[S.levOrigem] || '';
-  $('#iaAvisos').innerHTML = S.levOrigem === 'ia' && S.iaAvisos.length ? '<div class="note info" style="margin-bottom:10px"><b>Observações da leitura:</b><ul style="margin:4px 0 0;padding-left:18px">' + S.iaAvisos.map((a) => '<li>' + esc(a) + '</li>').join('') + '</ul></div>' : '';
+  $('#origemTag').innerHTML = { desenho: '<span class="note ok" style="padding:4px 8px">do desenho</span>', ia: '<span class="note info" style="padding:4px 8px">da leitura por IA</span>', auto: '<span class="note ok" style="padding:4px 8px">lido automaticamente do PDF</span>', manual: '<span class="note warn" style="padding:4px 8px">editado à mão</span>' }[S.levOrigem] || '';
+  $('#iaAvisos').innerHTML = (S.levOrigem === 'ia' || S.levOrigem === 'auto') && S.iaAvisos.length ? '<div class="note info" style="margin-bottom:10px"><b>Observações da leitura:</b><ul style="margin:4px 0 0;padding-left:18px">' + S.iaAvisos.map((a) => '<li>' + esc(a) + '</li>').join('') + '</ul></div>' : '';
   const campos = [['envelope', 'area', 'Área construída (m²)'], ['envelope', 'perimetro', 'Perímetro externo (m)'], ['envelope', 'comprimento', 'Comprimento (m)'], ['envelope', 'largura', 'Largura (m)'], ['paredes', 'externas', 'Paredes externas (m)'], ['paredes', 'internas', 'Paredes internas (m)'], [null, 'nos', 'Pilares (0 = estimar)']];
   $('#contorno').innerHTML = campos.map(([g, k, t]) => '<label class="f">' + t + '<input type="number" step="any" min="0" data-g="' + (g || '') + '" data-k="' + k + '" value="' + (g ? (L[g][k] || '') : (L[k] || '')) + '"></label>').join('');
   const tiposA = Object.entries(E.TIPOS_AMBIENTE).map(([k, v]) => [k, v.nome]);
@@ -821,7 +868,8 @@ function renderResultado() {
     [fmt(r.alvenaria, 1) + ' m²', 'Alvenaria'], [fmt(r.areaPiso, 1) + ' m²', 'Pisos'], [fmt(r.telhado, 1) + ' m²', 'Telhado'],
     [r.pilares, 'Pilares'], [R.consolidado.length, 'Insumos diferentes']
   ].map(([v, l]) => '<div class="kpi"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>').join('');
-  $('#avisos').innerHTML = R.avisos.map((a) => '<div class="note warn">⚠ ' + esc(a) + '</div>').join('');
+  const avLeitura = S.levOrigem === 'auto' ? S.iaAvisos.filter((a) => !/^Escala|^Área construída/.test(a)) : [];
+  $('#avisos').innerHTML = avLeitura.concat(R.avisos).map((a) => '<div class="note warn">⚠ ' + esc(a) + '</div>').join('');
   $('#tabs').innerHTML = '<button data-a="total" class="' + (aba === 'total' ? 'on' : '') + '">Total consolidado<span class="c">' + R.consolidado.length + '</span></button>' +
     R.etapas.map((e, i) => '<button data-a="' + e.id + '" class="' + (aba === e.id ? 'on' : '') + '">' + (i + 1) + '. ' + e.nome + '<span class="c">' + e.itens.length + '</span></button>').join('');
   if (aba !== 'total' && !R.etapas.some((e) => e.id === aba)) aba = 'total';

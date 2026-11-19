@@ -13,6 +13,8 @@
     escritorio: { nome: 'Escritório', seco: true },
     circulacao: { nome: 'Circulação / hall', seco: true },
     cozinha: { nome: 'Cozinha', molhado: true },
+    conjugado: { nome: 'Sala + cozinha integradas (flat/living)', seco: true },
+    cozinha_servico: { nome: 'Cozinha + área de serviço', molhado: true },
     banheiro: { nome: 'Banheiro', molhado: true },
     lavabo: { nome: 'Lavabo', molhado: true },
     servico: { nome: 'Área de serviço', molhado: true },
@@ -303,7 +305,9 @@
     const amb = g.amb;
     const porTipo = (t) => amb.filter((a) => a.tipo === t);
     const cont = (t) => porTipo(t).length;
-    const nb = cont('banheiro'), nl = cont('lavabo'), nc = cont('cozinha'), ns = cont('servico');
+    const nb = cont('banheiro'), nl = cont('lavabo');
+    const nc = cont('cozinha') + cont('conjugado') + cont('cozinha_servico');
+    const ns = cont('servico') + cont('cozinha_servico');
     const nq = cont('quarto'), nsala = cont('sala') + cont('escritorio');
     const molhados = nb + nl + nc + ns;
     const pessoas = num(resp.moradores) > 0 ? num(resp.moradores) : Math.max(2, nq * 2);
@@ -347,9 +351,11 @@
     for (const a of amb) {
       if (a.tipo === 'banheiro' || a.tipo === 'lavabo') {
         const v = Math.max(0, a.perimetro * hBanh - 1.80); azulejo += v; memAz.push(a.nome + ' ' + fmt(v, 1) + ' m²');
-      } else if (a.tipo === 'cozinha' || a.tipo === 'servico') {
+      } else if (a.tipo === 'conjugado') {
+        const v = 0.60 * 2.40; azulejo += v; memAz.push(a.nome + ' ' + fmt(v, 1) + ' m² (faixa da bancada)');
+      } else if (a.tipo === 'cozinha' || a.tipo === 'servico' || a.tipo === 'cozinha_servico') {
         let v;
-        if (resp.revCozinha === 'faixa') v = a.tipo === 'cozinha' ? 0.60 * 2.40 : 0.60 * 1.20;
+        if (resp.revCozinha === 'faixa') v = a.tipo === 'cozinha' ? 0.60 * 2.40 : a.tipo === 'servico' ? 0.60 * 1.20 : 0.60 * 3.60;
         else v = Math.max(0, a.perimetro * (resp.revCozinha === 'teto' ? h : 1.50) - 2.0);
         azulejo += v; memAz.push(a.nome + ' ' + fmt(v, 1) + ' m²');
       }
@@ -615,14 +621,15 @@
     {
       const run = 0.5 * (g.Lc + g.Wc) + 2.5;
       let luz = 0, interrS = 0, interrP = 0, tugG = 0, tug20 = 0, tv = 0;
-      const tue = { chuveiro: nb, maquina: Math.min(1, ns || nc ? 1 : 0), micro: nc ? 1 : 0, ar: resp.arCondicionado ? nq + (nsala ? 1 : 0) : 0 };
+      const tue = { chuveiro: nb, maquina: ns, micro: nc, ar: resp.arCondicionado ? nq + nsala + cont('conjugado') : 0 };
       for (const a of amb) {
         const t = a.tipo;
         const pl = 1 + (a.area > 20 ? 1 : 0);
         luz += pl;
         if (t === 'circulacao' && a.perimetro > 8) interrP += 2; else interrS += 1;
         if (t === 'sala' || t === 'quarto' || t === 'escritorio') { tugG += Math.max(1, ceil(a.perimetro / 5)); tv += 1; }
-        else if (t === 'cozinha') tug20 += ceil(a.perimetro / 3.5) + 1;
+        else if (t === 'cozinha' || t === 'cozinha_servico') tug20 += ceil(a.perimetro / 3.5) + 1;
+        else if (t === 'conjugado') { tugG += Math.max(1, ceil(a.perimetro / 5)); tug20 += 3; tv += 1; }
         else if (t === 'servico') tug20 += Math.max(1, ceil(a.perimetro / 3.5));
         else tugG += 1;
       }
@@ -704,7 +711,7 @@
       const mem = [];
       for (const a of amb) {
         if (a.tipo === 'banheiro') { const v = a.area + a.perimetro * 0.30 + 3.8; area += v; cantos += a.perimetro; mem.push(a.nome + ' ' + fmt(v, 1) + ' m² (piso + rodapé 30 cm + box até 1,80 m)'); }
-        else if (a.tipo === 'servico' || a.tipo === 'lavabo') { const v = a.area + a.perimetro * 0.30; area += v; cantos += a.perimetro; mem.push(a.nome + ' ' + fmt(v, 1) + ' m²'); }
+        else if (a.tipo === 'servico' || a.tipo === 'lavabo' || a.tipo === 'cozinha_servico') { const v = a.area + a.perimetro * 0.30; area += v; cantos += a.perimetro; mem.push(a.nome + ' ' + fmt(v, 1) + ' m²'); }
         else if (a.tipo === 'varanda' && !temLaje) { /* coberta pelo telhado */ }
       }
       if (area > 0) {
@@ -768,7 +775,7 @@
       let rod = 0;
       for (const a of amb) {
         const t = TIPOS_AMBIENTE[a.tipo];
-        const azulejada = a.tipo === 'banheiro' || a.tipo === 'lavabo' || ((a.tipo === 'cozinha' || a.tipo === 'servico') && resp.revCozinha !== 'faixa');
+        const azulejada = a.tipo === 'banheiro' || a.tipo === 'lavabo' || ((a.tipo === 'cozinha' || a.tipo === 'servico' || a.tipo === 'cozinha_servico') && resp.revCozinha !== 'faixa');
         if (!azulejada && !t.externo) rod += Math.max(0, a.perimetro - 0.85);
       }
       if (rod > 0) {

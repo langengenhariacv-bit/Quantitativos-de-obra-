@@ -127,13 +127,22 @@ Os dados ficam salvos só no aparelho: use a engrenagem para fazer **backup** (e
 
 App (PWA) que gera o quantitativo completo de **insumos** de uma casa térrea a partir da planta baixa, separado por etapa da obra e com a tabela total consolidada. Ferramentas, equipamentos e mão de obra não entram.
 
-1. **Planta**: importe a planta baixa (PDF, JPG, PNG ou WebP) ou use *Desenhar sem planta* (grade de 1 m). Calibre a escala clicando nas pontas de uma cota conhecida e trace por cima: paredes externas (contorno), paredes internas, ambientes (retângulo ou polígono, com o tipo), portas e janelas (clique sobre a parede). O ímã prende nos pontos e paredes, e o modo ortogonal trava em 0°/90°. Opcional: **Ler planta com IA**, que envia a página ao servidor e devolve ambientes, paredes, contorno e vãos lidos das cotas.
+1. **Planta**: importe a planta baixa (PDF, JPG, PNG ou WebP) ou use *Desenhar sem planta* (grade de 1 m).
+   **PDF exportado do CAD é lido automaticamente, sem IA** (`casa/leitor-vetorial.js`):
+   - A escala sai das cotas, comparando o número com o comprimento da linha.
+   - As paredes saem da camada de traço mais escura e comprida, com a espessura medida entre as faces.
+   - Os cômodos saem do preenchimento entre paredes: nome e área vêm dos textos ("Quarto · Área: 9,40 m²") e o perímetro vem do contorno.
+   - As portas e janelas saem dos rótulos P/J e dos vãos entre arremates (face interrompida = porta; caixilho dentro da parede = janela).
+   - A área construída vem do quadro de áreas, quando existir.
+   - O resultado aparece colorido sobre a planta (laranja = paredes externas, azul = internas, verde = vãos) e vai para o levantamento, onde pode ser corrigido.
+   Para imagem ou PDF escaneado, trace por cima: Calibre a escala clicando nas pontas de uma cota conhecida e trace por cima: paredes externas (contorno), paredes internas, ambientes (retângulo ou polígono, com o tipo), portas e janelas (clique sobre a parede). O ímã prende nos pontos e paredes, e o modo ortogonal trava em 0°/90°. Opcional: **Ler planta com IA**, que envia a página ao servidor e devolve ambientes, paredes, contorno e vãos lidos das cotas.
 2. **Levantamento**: confira e corrija áreas, perímetros, comprimentos de parede e a lista de portas e janelas.
 3. **Perguntas**: pé-direito, tipo de parede, fundação, laje, teto, telhado, piso e esgoto, já com respostas comuns. Acabamentos e coeficientes ficam em seções opcionais.
 4. **Quantitativos**: 16 etapas (preliminares, fundação, estrutura, alvenaria, cobertura, água fria, esgoto, elétrica, impermeabilização, revestimentos, pisos, forro, esquadrias, louças e metais, pintura, limpeza), cada insumo com quantidade, unidade de compra (sacos, barras de 12 m, latas, rolos…) e memória de cálculo, além do **total consolidado**. Exporta CSV, imprime/gera PDF e faz backup em JSON.
 
 Concretos e argamassas são decompostos em cimento, cal, areia e brita (ou concreto usinado e argamassa industrializada, se escolhidos). O aço sai por bitola em kg e em barras. Estrutura e fundação seguem critérios paramétricos de pré-dimensionamento, como sapata 0,80×0,80 m, pilares 14×30 cm com 4Ø10 e baldrame e cinta com 4 barras: confira com o projeto estrutural. Os consumos e perdas ficam editáveis em *Coeficientes*.
 
-- Motor de cálculo: `casa/engine.js` (teste: `node tests/casa-engine.cjs`).
+- Motor de cálculo: `casa/engine.js` (teste: `node tests/casa-engine.cjs`). Leitor de PDF vetorial: `casa/leitor-vetorial.js`.
+- Plantas com várias unidades ou pavimentos são calculadas como uma única casa térrea; o app avisa quando detecta isso (escada, várias cozinhas).
 - Leitura por IA: rota `api/casa-planta.js` com Claude. Para ativar, cadastre a variável de ambiente `ANTHROPIC_API_KEY` no projeto Vercel. Sem a chave, o app funciona normalmente pelo desenho.
 - Os dados ficam no aparelho (localStorage e IndexedDB para a imagem da planta). Use o backup.
