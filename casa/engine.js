@@ -100,7 +100,6 @@
     esgoto: 'rede',          // rede | fossa
     calcada: 0.80,           // largura (m); 0 = sem
     concreto: 'obra',        // obra | usinado
-    argamassa: 'obra',       // obra | industrializada
     arCondicionado: true,
     unidades: 0,             // 0 = automático (uma por cozinha)
     moradores: 0,            // 0 = automático (2 por quarto)
@@ -157,6 +156,8 @@
     a128Cimento: [153, 'kg/m³', 'Cimento na argamassa 1:2:8'],
     a128Cal: [150, 'kg/m³', 'Cal hidratada na argamassa 1:2:8'],
     a128Areia: [1.02, 'm³/m³', 'Areia na argamassa 1:2:8'],
+    rbCimento: [324, 'kg/m³', 'Cimento no reboco/emboço 1:4 (cimento + areia fina)'],
+    rbAreia: [1.08, 'm³/m³', 'Areia fina no reboco/emboço 1:4'],
     a13Cimento: [420, 'kg/m³', 'Cimento no chapisco 1:3'],
     a13Areia: [1.05, 'm³/m³', 'Areia no chapisco 1:3'],
     a14Cimento: [324, 'kg/m³', 'Cimento no contrapiso 1:4'],
@@ -363,10 +364,6 @@
     function argamassa128(vol, mem, uso) {
       if (!(vol > 0)) return;
       const v = vol * (1 + C.perdaArgamassa), m = mem + ': ' + fmt(vol, 3) + ' m³';
-      if (resp.argamassa === 'industrializada') {
-        add('arg_' + uso, uso === 'assent' ? 'Argamassa industrializada de assentamento' : 'Argamassa industrializada de revestimento (reboco)', 'kg', v * C.argIndustr, m, EMB.argInd);
-        return;
-      }
       cimento(v * C.a128Cimento, m + ' (traço 1:2:8)'); cal(v * C.a128Cal, m); areia(v * C.a128Areia, m);
     }
     function graute(vol, mem) {
@@ -379,8 +376,13 @@
     function argamassaEstrutural(vol, mem) {
       if (!(vol > 0)) return;
       const v = vol * (1 + C.perdaArgamassa), m = mem + ': ' + fmt(vol, 3) + ' m³ (traço 1:0,5:4,5)';
-      if (resp.argamassa === 'industrializada') { add('arg_estrutural', 'Argamassa industrializada de assentamento estrutural', 'kg', v * C.argIndustr, m, EMB.argInd); return; }
       cimento(v * C.aeCimento, m); cal(v * C.aeCal, m); areia(v * C.aeAreia, m);
+    }
+    function reboco(vol, mem) {
+      if (!(vol > 0)) return;
+      const v = vol * (1 + C.perdaArgamassa), m = mem + ': ' + fmt(vol, 3) + ' m³ (traço 1:4 cimento e areia fina)';
+      cimento(v * C.rbCimento, m);
+      add('areiaFina', 'Areia fina lavada (reboco)', 'm³', v * C.rbAreia, m);
     }
     function argamassa13(vol, mem) { const v = vol * (1 + C.perdaArgamassa), m = mem + ': ' + fmt(vol, 3) + ' m³ (traço 1:3)'; cimento(v * C.a13Cimento, m); areia(v * C.a13Areia, m); }
     function argamassa14(vol, mem) { const v = vol * (1 + C.perdaArgamassa), m = mem + ': ' + fmt(vol, 3) + ' m³ (traço 1:4)'; cimento(v * C.a14Cimento, m); areia(v * C.a14Areia, m); }
@@ -899,9 +901,9 @@
       azulejo = Math.min(azulejo, q.facesInt);
       const chap = q.facesInt + q.facesExt + tetos.reboco;
       argamassa13(chap * C.chapisco, 'Chapisco em ' + fmt(chap, 1) + ' m²');
-      argamassa128(q.facesInt * C.rebocoInt, 'Emboço/reboco interno ' + fmt(q.facesInt, 1) + ' m² × ' + fmt(C.rebocoInt * 100, 1) + ' cm', 'rev');
-      argamassa128(q.facesExt * C.rebocoExt, 'Reboco externo ' + fmt(q.facesExt, 1) + ' m² × ' + fmt(C.rebocoExt * 100, 1) + ' cm', 'rev');
-      if (tetos.reboco) argamassa128(tetos.reboco * C.rebocoTeto, 'Reboco de teto ' + fmt(tetos.reboco, 1) + ' m²', 'rev');
+      reboco(q.facesInt * C.rebocoInt, 'Emboço/reboco interno ' + fmt(q.facesInt, 1) + ' m² × ' + fmt(C.rebocoInt * 100, 1) + ' cm');
+      reboco(q.facesExt * C.rebocoExt, 'Reboco externo ' + fmt(q.facesExt, 1) + ' m² × ' + fmt(C.rebocoExt * 100, 1) + ' cm');
+      if (tetos.reboco) reboco(tetos.reboco * C.rebocoTeto, 'Reboco de teto ' + fmt(tetos.reboco, 1) + ' m²');
       if (tetos.gesso) add('gessoLiso', 'Gesso em pó para revestimento (gesso liso)', 'kg', tetos.gesso * 6, 'teto ' + fmt(tetos.gesso, 1) + ' m², 6 kg/m²', EMB.gesso40);
       if (!EST) add('telaReboco', 'Tela de aço galvanizada para reboco (ponte entre estrutura e alvenaria)', 'm', (q.npil * q.hAlv * 2 + g.Ltot * 2) * 0.5, 'faixas de 25 cm sobre pilares e cintas (face externa)');
       if (azulejo > 0) {
@@ -1221,7 +1223,7 @@
         const face = Lm * Hm;
         for (const l of lados) {
           if (l.rev === 'reboco' || l.rev === 'chapisco') argamassa13(face * C.chapisco, 'Muro, ' + l.nome + ': chapisco (' + fmt(face, 1) + ' m²)');
-          if (l.rev === 'reboco') argamassa128(face * C.rebocoExt, 'Muro, ' + l.nome + ': reboco', 'rev');
+          if (l.rev === 'reboco') reboco(face * C.rebocoExt, 'Muro, ' + l.nome + ': reboco');
           if (l.pint) {
             const fator = l.rev === 'reboco' ? 1 : 1.3; // chapisco e bloco aparente absorvem mais tinta
             add('seladorExt', 'Fundo selador acrílico (externo)', 'L', face * C.seladorExt * fator * (1 + C.perdaPintura), 'muro, ' + l.nome + ' ' + fmt(face, 1) + ' m²' + (fator > 1 ? ' (+30% sobre ' + (l.rev === 'chapisco' ? 'chapisco' : 'bloco') + ')' : ''), EMB.lata18);
@@ -1355,7 +1357,7 @@
       janelaPiso: E.areaPerm ? E.aJanPerm / E.areaPerm * 100 : null,
       pontosArea: E.areaPiso ? E.pontos / E.areaPiso : null
     };
-    if (resp.concreto === 'usinado' || resp.argamassa === 'industrializada') vals.cimentoArea = null;
+    if (resp.concreto === 'usinado') vals.cimentoArea = null;
     const indicadores = INDICADORES.map((d) => {
       const v = vals[d.id];
       const estado = v == null ? 'na' : v < d.min * 0.85 || v > d.max * 1.15 ? 'fora' : v < d.min || v > d.max ? 'atencao' : 'ok';
