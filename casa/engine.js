@@ -490,22 +490,29 @@
       avisos.push('Solo “' + solo.nome + '”: sapata rasa não é recomendada. Adotadas estacas (broca) com blocos de coroamento; confirme com sondagem e projeto de fundação.');
     }
     if (fundTipo === 'radier') {
-      const area = F0.g.A + F0.g.P * 0.10;
-      const esp = nPav > 1 ? 0.15 : 0.12;
-      const vol = area * esp + F0.g.P * 0.20 * 0.20;
-      add('brita1', 'Brita 1', 'm³', area * 0.05 * 1.05, 'lastro de brita 5 cm sob o radier');
+      const area = F0.g.A + F0.g.P * 0.10; // placa avança 5 cm além das paredes
+      const esp = nPav >= 3 ? 0.20 : nPav === 2 ? 0.15 : 0.12;
+      const hb = esp + 0.15, hi = esp + 0.10; // borda e faixas sob paredes internas (engrossamentos)
+      const vPlaca = area * esp, vBorda = F0.g.P * 0.25 * (hb - esp), vInt = F0.g.Lint * 0.25 * (hi - esp);
+      add('britaGrad', 'Brita graduada para base (5 cm compactada)', 'm³', area * 0.05 * 1.10, 'base sob o radier');
       add('lona', 'Lona plástica preta 150 µm', 'm²', area * 1.15, 'barreira de umidade sob o radier');
-      concreto(vol, 'c25', 'Radier e=' + fmt(esp * 100, 0) + ' cm + borda engrossada 20×20');
-      add('telaQ138', 'Tela soldada Q-138 (Ø 4,2 c/10) painel 2,0×3,0 m', 'un', ceil(area * 1.15 / 6) * (nPav > 1 ? 2 : 1), 'armadura do radier' + (nPav > 1 ? ' (2 camadas)' : '') + ', 15% de transpasse');
-      add('espacadorTrel', 'Espaçador treliçado (caranguejo) para tela', 'un', ceil(area * 0.8), '0,8 por m²');
+      concreto(vPlaca, 'c25', 'Radier: placa e=' + fmt(esp * 100, 0) + ' cm em ' + fmt(area, 1) + ' m²');
+      concreto(vBorda, 'c25', 'Radier: borda engrossada 25×' + fmt(hb * 100, 0) + ' cm em ' + fmt(F0.g.P, 1) + ' m');
+      concreto(vInt, 'c25', 'Radier: engrossamento sob paredes internas 25×' + fmt(hi * 100, 0) + ' cm em ' + fmt(F0.g.Lint, 1) + ' m');
+      const camadas = nPav > 1 ? 2 : 1;
+      add('telaQ138', 'Tela soldada Q-138 (Ø 4,2 c/10) painel 2,0×3,0 m', 'un', ceil(area * 1.15 / 6) * camadas, 'armadura da placa' + (camadas > 1 ? ' (2 camadas)' : '') + ', 15% de transpasse');
+      add('espacadorTrel', 'Espaçador treliçado (caranguejo) para tela', 'un', ceil(area * 0.8 * camadas), '0,8 por m² por camada');
       aco('10.0', F0.g.P * 4 * 1.10, 'borda engrossada 4Ø10');
-      aco('5.0', F0.g.P / 0.20 * 0.70, 'estribos da borda c/20');
-      forma(F0.g.P * 0.20);
+      aco('5.0', F0.g.P / 0.20 * (2 * (0.25 - 0.05 + hb - 0.05) + 0.10), 'estribos da borda Ø5 c/20');
+      aco('8.0', F0.g.Lint * 4 * 1.10, 'engrossamento das paredes internas 4Ø8');
+      aco('5.0', F0.g.Lint / 0.25 * (2 * (0.25 - 0.05 + hi - 0.05) + 0.10), 'estribos dos engrossamentos Ø5 c/25');
+      forma(F0.g.P * hb);
       aco('10.0', npil0 * 4 * 1.0, 'esperas dos pilares');
-      pecas(F0.g.P);
+      pecas(F0.g.P + F0.g.Lint);
+      memFund.esp = esp;
       if (solo.kpa < 80) avisos.push('Radier sobre solo fraco: verifique recalques com projeto de fundação.');
       const q = (C.cargaPav * nPav + C.cargaCob);
-      memFund.texto = 'Radier: pressão média ≈ ' + fmt(q, 0) + ' kPa para σadm ≈ ' + solo.kpa + ' kPa.';
+      memFund.texto = 'Radier e=' + fmt(esp * 100, 0) + ' cm com borda e faixas sob as paredes engrossadas: pressão média ≈ ' + fmt(q, 0) + ' kPa para σadm ≈ ' + solo.kpa + ' kPa (' + (q <= solo.kpa * 0.9 ? 'atende' : 'no limite') + ').';
       if (q > solo.kpa * 0.9) avisos.push('A pressão do radier (' + fmt(q, 0) + ' kPa) se aproxima da resistência do solo (' + solo.kpa + ' kPa).');
     } else {
       if (fundTipo === 'broca') {
@@ -1183,10 +1190,9 @@
       // piso externo
       const ape = num(resp.pisoExtArea);
       if (ape > 0) {
-        if (resp.pisoExtTipo === 'brita') {
+        if (resp.pisoExtTipo === 'brita' || resp.pisoExtTipo === 'brita_manta') {
           add('brita1', 'Brita 1', 'm³', ape * 0.05 * 1.10, 'quintal em brita, camada de 5 cm (' + fmt(ape, 1) + ' m²)');
-          add('mantaGeo', 'Manta geotêxtil não tecida (bidim) sob a brita', 'm²', ape * 1.10, 'evita mato e mistura com a terra');
-          add('meioFio', 'Guia/meio-fio de concreto para contenção', 'm', 4 * Math.sqrt(ape) * 1.05, 'contorno da brita');
+          if (resp.pisoExtTipo === 'brita_manta') add('mantaGeo', 'Manta geotêxtil não tecida (bidim) sob a brita', 'm²', ape * 1.10, 'evita mato e mistura com a terra');
         } else if (resp.pisoExtTipo === 'paver') {
           add('paver', 'Bloco intertravado (paver) de concreto 6 cm, 35 MPa', 'm²', ape * 1.05, fmt(ape, 1) + ' m² de piso externo');
           add('britaGrad', 'Brita graduada para base (10 cm)', 'm³', ape * 0.10 * 1.10, 'base compactada');
