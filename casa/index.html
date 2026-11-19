@@ -449,27 +449,60 @@ async function lerAutomatico(aoImportar) {
   try {
     const dados = await window.LeitorVetorial.extrair(IMG.pdfjs, IMG.pagina);
     await new Promise((r) => setTimeout(r, 20));
-    const r = window.LeitorVetorial.analisar(dados);
-    if (!r.ok) {
-      if (aoImportar) { setTool('calibrar'); toast(r.erro + ' Comece calibrando a escala.', 6000); } else toast(r.erro, 6000);
+    const folha = window.LeitorVetorial.analisarFolha(dados);
+    if (!folha.ok || !folha.plantas.length) {
+      const erro = folha.erro || 'Não consegui ler a planta.';
+      if (aoImportar) { setTool('calibrar'); toast(erro + ' Comece calibrando a escala.', 6000); } else toast(erro, 6000);
       return;
     }
-    const temAlgo = S.levOrigem !== 'desenho' || S.desenho.paredes.length || S.desenho.ambientes.length;
-    if (temAlgo && !aoImportar) {
-      const ok = await perguntar('Substituir o levantamento?', [{ info: 'A leitura encontrou ' + r.lev.ambientes.length + ' cômodos e ' + r.lev.aberturas.length + ' esquadrias. As medidas atuais serão trocadas por essas.' }], 'Substituir');
-      if (!ok) return;
+    const plantas = folha.plantas;
+    let separar = plantas.length > 1;
+    if (separar) {
+      const lista = plantas.map((p) => '<b>' + esc(p.nome || p.titulo || 'Planta') + '</b> (' + fmt(p.r.lev.envelope.area, 2) + ' m², ' + p.r.lev.ambientes.length + ' cômodos)').join('<br>');
+      const ok = await perguntar('Esta folha tem ' + plantas.length + ' plantas', [{ info: lista + '<br><br>Vou criar um pavimento para cada uma. Depois ajuste em ✎ o nome e quantas vezes cada pavimento se repete.' }], 'Criar pavimentos');
+      if (!ok) separar = false;
+    } else {
+      const temAlgo = S.levOrigem !== 'desenho' || S.desenho.paredes.length || S.desenho.ambientes.length;
+      if (temAlgo && !aoImportar) {
+        const r0 = plantas[0].r;
+        const ok = await perguntar('Substituir o levantamento?', [{ info: 'A leitura encontrou ' + r0.lev.ambientes.length + ' cômodos e ' + r0.lev.aberturas.length + ' esquadrias. As medidas atuais serão trocadas por essas.' }], 'Substituir');
+        if (!ok) return;
+      }
     }
-    // camada visual alinhada à imagem da página
-    const cc = document.createElement('canvas'); cc.width = r.camada.w; cc.height = r.camada.h;
-    cc.getContext('2d').putImageData(new ImageData(r.camada.data, r.camada.w, r.camada.h), 0, 0);
-    CAMADA = { cv: cc, x: r.camada.x0 * IMG.sc, y: r.camada.y0 * IMG.sc, w: r.camada.w / r.camada.k * IMG.sc, h: r.camada.h / r.camada.k * IMG.sc, amb: r.detalhe.ambientes.map((a) => ({ nome: a.nome, area: a.area, x: a.x * IMG.sc, y: a.y * IMG.sc })) };
-    $('#verLeituraBox').classList.remove('hidden'); $('#verLeitura').checked = true; CAMADAS[pavAtual().id] = CAMADA;
     snapshot();
-    S.desenho = { escala: r.escala / IMG.sc, paredes: [], ambientes: [], aberturas: [] };
-    S.lev = r.lev; S.levOrigem = 'auto';
-    S.iaAvisos = ['Escala lida das cotas: 1:' + fmt(r.escala * 100 / 0.0352778, 0) + ' na folha (' + r.votosEscala + ' cotas concordantes); paredes de ' + fmt(r.espessura * 100, 0) + ' cm.', 'Área construída: ' + r.detalhe.fonteArea + '.'].concat(r.avisos);
-    salvar(); painelMedidas(); setTool('mao'); draw();
-    toast('Planta lida: ' + r.lev.ambientes.length + ' cômodos, ' + fmt(r.lev.paredes.externas + r.lev.paredes.internas, 0) + ' m de paredes e ' + r.lev.aberturas.length + ' esquadrias. Confira no passo 2.', 6000);
+    const img = IMG;
+    const aplicar = (pav, r, nome) => {
+      const cc = document.createElement('canvas'); cc.width = r.camada.w; cc.height = r.camada.h;
+      cc.getContext('2d').putImageData(new ImageData(r.camada.data, r.camada.w, r.camada.h), 0, 0);
+      const cam = { cv: cc, x: r.camada.x0 * img.sc, y: r.camada.y0 * img.sc, w: r.camada.w / r.camada.k * img.sc, h: r.camada.h / r.camada.k * img.sc, amb: r.detalhe.ambientes.map((a) => ({ nome: a.nome, area: a.area, x: a.x * img.sc, y: a.y * img.sc })) };
+      CAMADAS[pav.id] = cam; IMGS[pav.id] = img;
+      if (nome) pav.nome = nome;
+      pav.desenho = { escala: r.escala / img.sc, paredes: [], ambientes: [], aberturas: [] };
+      pav.lev = r.lev; pav.levOrigem = 'auto';
+      pav.iaAvisos = ['Escala lida das cotas: 1:' + fmt(r.escala * 100 / 0.0352778, 0) + ' na folha (' + r.votosEscala + ' cotas concordantes); paredes de ' + fmt(r.espessura * 100, 0) + ' cm.', 'Área construída: ' + r.detalhe.fonteArea + '.', 'Comprimento das paredes: ' + r.detalhe.fonteParedes + '.'].concat(r.avisos);
+      return cam;
+    };
+    if (!separar) {
+      // uma planta (ou o usuário preferiu não separar): usa a primeira
+      CAMADA = aplicar(pavAtual(), plantas[0].r, '');
+    } else {
+      const base = S.pavAtivo;
+      plantas.forEach((pl, i) => {
+        let pav;
+        if (i === 0) pav = pavAtual();
+        else {
+          // reaproveita pavimento com o mesmo nome criado por uma leitura anterior; senão cria
+          pav = S.pavimentos.find((q, k) => k !== base && q.nome === pl.nome && q.levOrigem === 'auto');
+          if (!pav) { pav = novoPav(pl.nome || (S.pavimentos.length + 1) + 'º pavimento', 1); S.pavimentos.splice(base + i, 0, pav); }
+        }
+        const cam = aplicar(pav, pl.r, pl.nome);
+        if (i === 0) CAMADA = cam;
+      });
+    }
+    $('#verLeituraBox').classList.remove('hidden'); $('#verLeitura').checked = true;
+    salvar(); renderPavs(); painelMedidas(); setTool('mao'); draw();
+    if (separar) toast(plantas.length + ' pavimentos criados: ' + plantas.map((p) => p.nome || p.titulo).join(' e ') + '. Toque em cada um na barra de pavimentos para conferir.', 7000);
+    else { const r0 = plantas[0].r; toast('Planta lida: ' + r0.lev.ambientes.length + ' cômodos, ' + fmt(r0.lev.paredes.externas + r0.lev.paredes.internas, 0) + ' m de paredes e ' + r0.lev.aberturas.length + ' esquadrias. Confira no passo 2.', 6000); }
   } catch (err) { console.error(err); toast('Falha na leitura automática: ' + (err.message || err)); }
   finally { b.disabled = false; b.innerHTML = '🔎 Ler automaticamente'; }
 }
@@ -907,7 +940,7 @@ function renderLev() {
   const L = S.lev;
   $('#origemTag').innerHTML = { desenho: '<span class="note ok" style="padding:4px 8px">do desenho</span>', ia: '<span class="note info" style="padding:4px 8px">da leitura por IA</span>', auto: '<span class="note ok" style="padding:4px 8px">lido automaticamente do PDF</span>', manual: '<span class="note warn" style="padding:4px 8px">editado à mão</span>' }[S.levOrigem] || '';
   $('#iaAvisos').innerHTML = (S.levOrigem === 'ia' || S.levOrigem === 'auto') && S.iaAvisos.length ? '<div class="note info" style="margin-bottom:10px"><b>Observações da leitura:</b><ul style="margin:4px 0 0;padding-left:18px">' + S.iaAvisos.map((a) => '<li>' + esc(a) + '</li>').join('') + '</ul></div>' : '';
-  const campos = [['envelope', 'area', 'Área construída (m²)'], ['envelope', 'perimetro', 'Perímetro externo (m)'], ['envelope', 'comprimento', 'Comprimento (m)'], ['envelope', 'largura', 'Largura (m)'], ['paredes', 'externas', 'Paredes externas (m)'], ['paredes', 'internas', 'Paredes internas (m)'], [null, 'nos', 'Pilares (0 = estimar)']];
+  const campos = [['envelope', 'area', 'Área construída (m²)'], ['envelope', 'perimetro', 'Perímetro externo (m)'], ['envelope', 'comprimento', 'Comprimento (m)'], ['envelope', 'largura', 'Largura (m)'], ['paredes', 'externas', 'Paredes externas (m)'], ['paredes', 'internas', 'Paredes internas (m)'], [null, 'nos', 'Pilares (0 = estimar)'], [null, 'escadas', 'Escadas neste pavimento']];
   $('#contorno').innerHTML = campos.map(([g, k, t]) => '<label class="f">' + t + '<input type="number" step="any" min="0" data-g="' + (g || '') + '" data-k="' + k + '" value="' + (g ? (L[g][k] || '') : (L[k] || '')) + '"></label>').join('');
   const tiposA = Object.entries(E.TIPOS_AMBIENTE).map(([k, v]) => [k, v.nome]);
   const sel = (f, opts, v) => '<select data-f="' + f + '" style="min-width:110px">' + opts.map(([k, n]) => '<option value="' + k + '"' + (k === (v || 'auto') ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>';
@@ -1046,7 +1079,7 @@ function renderResultado() {
     [fmt(r.telhado, 1) + ' m²', 'Telhado'], r.estrutural ? [fmt(r.graute, 1) + ' m³', 'Graute (alvenaria estrutural)'] : [fmt(r.concreto, 1) + ' m³', 'Concreto estrutural'], [R.consolidado.length, 'Insumos diferentes']
   ].map(([v, l]) => '<div class="kpi"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>').join('');
   const grupos = new Map();
-  for (const p of S.pavimentos) if (p.levOrigem === 'auto') for (const a of p.iaAvisos || []) if (!/^Escala|^Área construída|unidade ou outro pavimento/.test(a)) { if (!grupos.has(a)) grupos.set(a, []); grupos.get(a).push(p.nome); }
+  for (const p of S.pavimentos) if (p.levOrigem === 'auto') for (const a of p.iaAvisos || []) if (!/^Escala|^Área construída|^Comprimento das paredes|unidade ou outro pavimento/.test(a)) { if (!grupos.has(a)) grupos.set(a, []); grupos.get(a).push(p.nome); }
   const avLeitura = [...grupos].map(([a, nomes]) => (S.pavimentos.length > 1 ? (nomes.length === S.pavimentos.length ? 'Todos os pavimentos' : nomes.join(', ')) + ': ' : '') + a);
   $('#avisos').innerHTML = avLeitura.concat(R.avisos).map((a) => '<div class="note warn">⚠ ' + esc(a) + '</div>').join('');
   const fora = R.indicadores.filter((i) => i.estado === 'fora' || i.estado === 'atencao').length;

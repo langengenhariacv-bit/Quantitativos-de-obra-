@@ -95,7 +95,7 @@
       const nx = -t.uy, ny = t.ux, v = t.x * nx + t.y * ny, u = t.x * t.ux + t.y * t.uy;
       let L = linhas.find((l) => Math.abs(l.ux - t.ux) < 0.05 && Math.abs(l.uy - t.uy) < 0.05 && Math.abs(l.v - v) < Math.max(1.2, t.h * 0.5));
       if (!L) { L = { ux: t.ux, uy: t.uy, v, itens: [] }; linhas.push(L); }
-      L.itens.push({ s: t.s, u, h: t.h || 2 });
+      L.itens.push({ s: t.s, u, h: t.h || 2, t });
     }
     // medida: "0,80" / "2,10" (metros com 2 casas) ou "80" / "210" (centímetros, 40 a 400)
     const medida = (x) => {
@@ -122,7 +122,7 @@
         }
         if (!(l >= 0.3 && l <= 5 && a >= 0.3 && a <= 3.2)) return;
         if (p != null && !(p >= 0 && p <= 2.5)) p = null;
-        achados.push({ rot: it.s.toUpperCase(), l, a, p, u: it.u, h: it.h, ux: L.ux, uy: L.uy, v: L.v });
+        achados.push({ rot: it.s.toUpperCase(), l, a, p, u: it.u, h: it.h, ux: L.ux, uy: L.uy, v: L.v, t: it.t });
       });
     }
     // tabela de verdade: rótulos alinhados em coluna (mesma posição ao longo da linha), em linhas próximas
@@ -132,9 +132,96 @@
       if (new Set(col.map((y) => y.rot)).size > new Set(melhor.map((y) => y.rot)).size) melhor = col;
     }
     const res = {};
+    // 1º) tabela com cabeçalho: as colunas valem pelo nome (a ordem varia de prancha para prancha)
+    const porCab = quadroPorCabecalho(linhas);
+    if (Object.keys(porCab).filter((k) => k[0] !== '_').length >= 2) { Object.defineProperty(porCab, '_textos', { value: porCab._textos, enumerable: false }); return porCab; }
     if (new Set(melhor.map((y) => y.rot)).size < 2) return res;
     for (const y of melhor) if (!res[y.rot]) res[y.rot] = { l: y.l, a: y.a, p: y.p };
+    Object.defineProperty(res, '_textos', { value: melhor.map((y) => y.t).filter(Boolean), enumerable: false });
     return res;
+  }
+  function quadroPorCabecalho(linhas) {
+    const res = {};
+    const valor = (x) => { const t = String(x).trim(); if (/^[-–—]+$/.test(t)) return null; if (!/^\d+([.,]\d+)?$/.test(t)) return undefined; const n = num(t); return n >= 10 ? n / 100 : n; };
+    for (const L of linhas) {
+      const cab = {};
+      for (const it of L.itens) {
+        const n = semAcento(it.s).toUpperCase();
+        if (/^LARG/.test(n)) cab.l = it.u; else if (/^ALT/.test(n)) cab.a = it.u; else if (/^PEIT/.test(n)) cab.p = it.u;
+      }
+      if (cab.l == null || cab.a == null) continue;
+      // linhas da tabela: mesma direção, abaixo do cabeçalho
+      for (const M of linhas) {
+        if (M === L || Math.abs(M.ux - L.ux) > 0.05 || Math.abs(M.uy - L.uy) > 0.05) continue;
+        const dv = (M.v - L.v) * (L.ux >= 0 ? 1 : -1);
+        if (Math.abs(M.v - L.v) > 600) continue;
+        const rot = M.itens.find((it) => /^[PJ]\d+$/i.test(it.s) && it.u < Math.min(cab.l, cab.a));
+        if (!rot) continue;
+        const pega = (u) => { if (u == null) return undefined; let best = null, bd = 30; for (const it of M.itens) { const d = Math.abs(it.u - u); if (d < bd && valor(it.s) !== undefined) { bd = d; best = it; } } return best ? valor(best.s) : undefined; };
+        const l = pega(cab.l), a = pega(cab.a), pe = pega(cab.p);
+        if (!(l >= 0.3 && l <= 5 && a >= 0.2 && a <= 3.2)) continue;
+        const k = rot.s.toUpperCase();
+        if (!res[k]) res[k] = { l, a, p: pe == null ? null : (pe >= 0 && pe <= 2.5 ? pe : null) };
+        (res._textos = res._textos || []).push(rot.t);
+        void dv;
+      }
+      if (Object.keys(res).length) break;
+    }
+    return res;
+  }
+
+  // ---------------------------------------------------------------- escadas: degraus desenhados na camada de paredes
+  // sequência de >= 4 linhas paralelas, de mesmo comprimento (0,5 a 1,8 m), espaçadas de 22 a 34 cm e alinhadas
+  function acharEscadas(paredes, S) {
+    const remover = new Set(), caixas = [];
+    const cand = paredes.filter((s) => !s.curva && s.L * S > 0.5 && s.L * S < 1.8);
+    const grupos = {};
+    for (const s of cand) {
+      let ang = Math.atan2(s.y2 - s.y1, s.x2 - s.x1); if (ang < 0) ang += Math.PI; if (ang >= Math.PI - 0.01) ang -= Math.PI;
+      const k = Math.round(ang * 180 / Math.PI) + '|' + Math.round(s.L * S * 20);
+      (grupos[k] = grupos[k] || []).push({ s, ang });
+    }
+    for (const k in grupos) {
+      const g = grupos[k]; if (g.length < 4) continue;
+      const ux = Math.cos(g[0].ang), uy = Math.sin(g[0].ang), nx = -uy, ny = ux;
+      for (const o of g) { const mx = (o.s.x1 + o.s.x2) / 2, my = (o.s.y1 + o.s.y2) / 2; o.v = (mx * nx + my * ny) * S; o.u = (mx * ux + my * uy) * S; }
+      g.sort((a, b) => a.v - b.v);
+      // agrupa por posição ao longo (degraus alinhados)
+      const usados = new Set();
+      for (let i = 0; i < g.length; i++) {
+        if (usados.has(i)) continue;
+        const run = [i];
+        for (let j = i + 1; j < g.length; j++) {
+          if (usados.has(j) || Math.abs(g[j].u - g[i].u) > 0.06) continue;
+          const ult = g[run[run.length - 1]], d = g[j].v - ult.v;
+          if (d < 0.005) continue;
+          if (d > 0.34) break;
+          if (d >= 0.22) run.push(j);
+        }
+        if (run.length < 4) continue;
+        // espaçamento constante (piso do degrau)
+        const esp = []; for (let q = 1; q < run.length; q++) esp.push(g[run[q]].v - g[run[q - 1]].v);
+        const med = esp.reduce((a, b) => a + b, 0) / esp.length;
+        if (esp.some((x) => Math.abs(x - med) > 0.03)) continue;
+        run.forEach((q) => { usados.add(q); remover.add(g[q].s); });
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const q of run) { const t = g[q].s; x0 = Math.min(x0, t.x1, t.x2); x1 = Math.max(x1, t.x1, t.x2); y0 = Math.min(y0, t.y1, t.y2); y1 = Math.max(y1, t.y1, t.y2); }
+        caixas.push({ x0, y0, x1, y1, degraus: run.length + 1, piso: med });
+      }
+    }
+    // dentro da caixa da escada: remove linhas internas (corte diagonal, numeração), mas mantém as que ficam
+    // sobre a borda (faces das paredes que contornam a escada)
+    const tol = 0.03 / S;
+    for (const c of caixas) {
+      for (const s of paredes) {
+        if (remover.has(s)) continue;
+        const dentro = Math.min(s.x1, s.x2) >= c.x0 - tol && Math.max(s.x1, s.x2) <= c.x1 + tol && Math.min(s.y1, s.y2) >= c.y0 - tol && Math.max(s.y1, s.y2) <= c.y1 + tol;
+        if (!dentro) continue;
+        const naBorda = (Math.abs(s.x1 - s.x2) < tol && (Math.abs(s.x1 - c.x0) < tol || Math.abs(s.x1 - c.x1) < tol)) || (Math.abs(s.y1 - s.y2) < tol && (Math.abs(s.y1 - c.y0) < tol || Math.abs(s.y1 - c.y1) < tol));
+        if (!naBorda) remover.add(s);
+      }
+    }
+    return { remover, caixas };
   }
 
   // ------------------------------------------------------------------ análise
@@ -187,8 +274,11 @@
     const candidatos = lista.filter((g) => sat(g) < 60 && lum(g) < 150);
     if (!candidatos.length) return { ok: false, erro: 'Não identifiquei a camada de paredes.' };
     candidatos.sort((a, b) => b.L - a.L);
-    const camadaParede = candidatos[0];
+    const camadaParede0 = candidatos[0];
+    const esc0 = acharEscadas(camadaParede0.segs, S);
+    const camadaParede = Object.assign({}, camadaParede0, { segs: camadaParede0.segs.filter((s) => !esc0.remover.has(s)) });
     const paredes = camadaParede.segs.filter((s) => !s.curva);
+    if (esc0.caixas.length) avisos.push(esc0.caixas.length + ' lance(s) de escada reconhecido(s) (' + esc0.caixas.map((c) => c.degraus + ' degraus').join(', ') + '): os degraus não foram contados como parede.');
 
     // ---- espessura das paredes: distância entre faces paralelas
     const dists = [];
@@ -328,7 +418,7 @@
     for (const R of regioes) {
       if (externas.has(R.id) || usadosReg.has(R.id)) continue;
       const esp = R.per > 0 ? R.area / (R.per / 2) : 1;
-      if (esp < t * 1.3 && esp > t * 0.25) { finas.add(R.id); celParede += R.n; }
+      if (esp < Math.max(t * 1.3, 0.32) && esp > t * 0.25) { finas.add(R.id); celParede += R.n; }
     }
     // contorno externo
     let bordaExt = 0;
@@ -347,15 +437,48 @@
     // área total escrita fora dos cômodos (carimbo/quadro de áreas)
     const somaAmb = ambientes.reduce((s2, a) => s2 + a.area, 0);
     const totais = rotulosArea.map((x) => ({ x, v: num((semAcento(x.s).match(/(\d+[.,]\d+)/) || [])[1]) }))
-      .filter((o) => o.v > somaAmb && Math.abs(o.v - areaConstr) / areaConstr < 0.12 && externas.has(regiaoEm(o.x.x, o.x.y)));
+      .filter((o) => o.v > somaAmb && Math.abs(o.v - areaConstr) / areaConstr < 0.12 && (externas.has(regiaoEm(o.x.x, o.x.y)) || regiaoEm(o.x.x, o.x.y) < 0));
     let fonteArea = 'medida no desenho';
     if (totais.length) { areaConstr = totais[0].v; fonteArea = 'quadro de áreas da prancha'; }
     let vazios = 0;
     for (const R of regioes) if (!externas.has(R.id) && !usadosReg.has(R.id) && !finas.has(R.id)) vazios += R.area;
     let areaParedes = celParede * cel * cel;
-    const porDiferenca = areaConstr - somaAmb - vazios;
-    if (ambientes.length >= 3 && porDiferenca > 0) areaParedes = porDiferenca;
-    const Ltot = areaParedes / t;
+    const porDiferenca = areaConstr - somaAmb - (fonteArea === 'quadro de áreas da prancha' ? 0 : vazios);
+    // eixo das paredes pelas faces paralelas: pares de faces vizinhas (7 a 32 cm), contados uma vez
+    let Lpares = 0, Apares = 0;
+    {
+      const P = paredes.filter((a) => a.L * S >= 0.1).map((a) => { const dx = (a.x2 - a.x1) / a.L, dy = (a.y2 - a.y1) / a.L; return { a, dx, dy }; });
+      const viz = P.map(() => [null, null]); // vizinho mais próximo de cada lado
+      for (let i = 0; i < P.length; i++) {
+        const { a, dx, dy } = P[i];
+        const ua1 = a.x1 * dx + a.y1 * dy, ua2 = a.x2 * dx + a.y2 * dy, amin = Math.min(ua1, ua2), amax = Math.max(ua1, ua2);
+        for (let j = 0; j < P.length; j++) {
+          if (i === j) continue; const c = P[j].a;
+          if (Math.abs(dx * P[j].dy - dy * P[j].dx) > 0.02) continue;
+          const sp = ((c.x1 - a.x1) * dy - (c.y1 - a.y1) * dx) * S, perp = Math.abs(sp);
+          if (perp < 0.07 || perp > 0.32) continue;
+          const uc1 = c.x1 * dx + c.y1 * dy, uc2 = c.x2 * dx + c.y2 * dy;
+          const ov = Math.min(amax, Math.max(uc1, uc2)) - Math.max(amin, Math.min(uc1, uc2));
+          if (ov * S < 0.05) continue;
+          const lado = sp > 0 ? 0 : 1;
+          if (!viz[i][lado] || perp < viz[i][lado].perp - 0.005) viz[i][lado] = { j, perp, ov };
+        }
+      }
+      const contados = new Set();
+      for (let i = 0; i < P.length; i++) for (const lado of [0, 1]) {
+        const v = viz[i][lado]; if (!v) continue;
+        const k = Math.min(i, v.j) + '-' + Math.max(i, v.j);
+        if (contados.has(k)) continue; contados.add(k);
+        Lpares += v.ov * S; Apares += v.ov * S * v.perp;
+      }
+    }
+    const LporDif = porDiferenca > 0 ? porDiferenca / t : 0;
+    // principal: faixas das paredes medidas no desenho; reserva: área construída − cômodos
+    let fonteParedes = 'faixas das paredes no desenho';
+    if (ambientes.length >= 3 && porDiferenca > 0 && areaParedes < porDiferenca * 0.5) { areaParedes = porDiferenca; fonteParedes = 'área construída − cômodos'; }
+    void LporDif;
+    const tMed = Lpares > 0 && Apares > 0 ? Math.min(Math.max(Apares / Lpares, t), 0.30) : t; // espessura média (paredes de 15 e 20 cm)
+    const Ltot = areaParedes / tMed;
     const Lext = Math.max(0, Pface - 4 * t);
     const Lint = Math.max(0, Ltot - Lext);
     const envelope = { area: +areaConstr.toFixed(2), perimetro: +Pface.toFixed(2), comprimento: +((maxX - minX + 1) * cel).toFixed(2), largura: +((maxY - minY + 1) * cel).toFixed(2) };
@@ -364,7 +487,8 @@
     // ---- vãos de portas e janelas
     const portasCam = lista.filter((g2) => sat(g2) > 60 && !(g2.r > 170 && g2.g < 110 && g2.b < 110)).flatMap((g2) => g2.segs);
     const rotPJ = [];
-    for (const x of D.textos) if (/^[PJ]\d+$/i.test(x.s) && !rotPJ.some((y) => y.s === x.s && Math.hypot(y.x - x.x, y.y - x.y) * S < 0.3)) rotPJ.push(x);
+    const quadroTxt = new Set((opt.quadro || lerQuadro(D.textos))._textos || []);
+    for (const x of D.textos) if (/^[PJ]\d+$/i.test(x.s) && !quadroTxt.has(x) && !rotPJ.some((y) => y.s === x.s && Math.hypot(y.x - x.x, y.y - x.y) * S < 0.3)) rotPJ.push(x);
     // caixilho desenhado dentro da espessura da parede: linha paralela entre as duas faces
     const caixilhos = [];
     for (const c of paredes) {
@@ -473,7 +597,7 @@
     const semRot = aberturas.filter((a) => !a.rotulo || a.rotulo.endsWith('*')).length;
     if (porRotulo && semRot) avisos.push(semRot + ' esquadria(s) sem rótulo em texto foram reconhecidas pelo desenho (vão com arco de porta ou caixilho).');
     // quadro de esquadrias da prancha: vale mais que a medida no desenho
-    const quadro = lerQuadro(D.textos);
+    const quadro = opt.quadro || lerQuadro(D.textos);
     const qk = Object.keys(quadro);
     if (qk.length) {
       avisos.unshift('Quadro de esquadrias lido da prancha: ' + qk.sort().map((k) => k + ' ' + fmtN(quadro[k].l) + '×' + fmtN(quadro[k].a) + (quadro[k].p != null ? ' peitoril ' + fmtN(quadro[k].p) : '')).join('; ') + '.');
@@ -493,10 +617,6 @@
       a.peitoril = a.porta ? 0 : a.peitorilQuadro != null ? a.peitorilQuadro : a.tipo === 'basculante' ? 1.60 : 1.00; a.qtd = 1;
     }
 
-    // multiunidades / pavimentos
-    const nomes = ambientes.map((a) => semAcento(a.nome)).join(' ');
-    if (/escada/.test(nomes) || ambientes.filter((a) => a.tipo === 'conjugado').length > 1 || ambientes.filter((a) => a.tipo === 'cozinha' || a.tipo === 'cozinha_servico').length > 1)
-      avisos.push('A planta parece ter mais de uma unidade ou outro pavimento (escada, várias cozinhas). O cálculo trata tudo como uma única casa térrea: quadro, padrão de entrada, caixa d’água e cobertura devem ser ajustados.');
 
     function regiaoEm(x, y) {
       let X = gx(x), Y = gy(y);
@@ -558,9 +678,9 @@
         ambientes: ambientes.map((a) => ({ nome: a.nome, tipo: a.tipo, area: a.area, perimetro: a.perimetro })),
         aberturas: aberturas.map((a) => ({ tipo: a.tipo, largura: a.largura, altura: a.altura, peitoril: a.peitoril, externa: a.externa, qtd: 1 })),
         paredes: { externas: +Lext.toFixed(2), internas: +Lint.toFixed(2) },
-        envelope, nos: 0
+        envelope, nos: 0, escadas: esc0.caixas.length
       },
-      detalhe: { ambientes, aberturas, vaos, fonteArea, quadro, totalRotulos: rotPJ.length, camadaParede: { cor: [camadaParede.r, camadaParede.g, camadaParede.b], w: camadaParede.w } },
+      detalhe: { ambientes, aberturas, vaos, fonteArea, fonteParedes, Lpares: +Lpares.toFixed(2), quadro, escadas: esc0.caixas.length, totalRotulos: rotPJ.length, camadaParede: { cor: [camadaParede.r, camadaParede.g, camadaParede.b], w: camadaParede.w } },
       camada: { w: W, h: H, data: camada, x0: minx, y0: miny, k },
       avisos
     };
@@ -595,7 +715,68 @@
   }
 
   const fmtN = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
-  const API = { extrair, analisar, tipoPorNome, lerQuadro };
+  // Separa as plantas da folha (blocos de paredes distantes entre si) e analisa cada uma.
+  function analisarFolha(D) {
+    const geral = analisar(D);
+    if (!geral.ok) return { ok: false, erro: geral.erro, plantas: [] };
+    const S = geral.escala;
+    const cor = geral.detalhe.camadaParede.cor, w = geral.detalhe.camadaParede.w;
+    const ps = D.segs.filter((s) => s[4] === cor[0] && s[5] === cor[1] && s[6] === cor[2] && Math.abs(s[7] - w) < 0.01 && Math.hypot(s[2] - s[0], s[3] - s[1]) * S > 0.3);
+    // união de segmentos próximos (até 1 m)
+    const pai = ps.map((_, i) => i);
+    const raiz = (i) => { while (pai[i] !== i) { pai[i] = pai[pai[i]]; i = pai[i]; } return i; };
+    const bb = ps.map((s) => [Math.min(s[0], s[2]), Math.min(s[1], s[3]), Math.max(s[0], s[2]), Math.max(s[1], s[3])]);
+    const m = 1.0 / S;
+    const ordem = ps.map((_, i) => i).sort((a, b) => bb[a][0] - bb[b][0]);
+    for (let a = 0; a < ordem.length; a++) {
+      const i = ordem[a];
+      for (let c = a + 1; c < ordem.length; c++) {
+        const j = ordem[c];
+        if (bb[j][0] > bb[i][2] + m) break;
+        if (bb[j][1] <= bb[i][3] + m && bb[j][3] >= bb[i][1] - m) { const ri = raiz(i), rj = raiz(j); if (ri !== rj) pai[ri] = rj; }
+      }
+    }
+    const blocos = {};
+    ps.forEach((s, i) => { const r = raiz(i); const b = blocos[r] || (blocos[r] = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity, L: 0 }); b.x0 = Math.min(b.x0, bb[i][0]); b.y0 = Math.min(b.y0, bb[i][1]); b.x1 = Math.max(b.x1, bb[i][2]); b.y1 = Math.max(b.y1, bb[i][3]); b.L += Math.hypot(s[2] - s[0], s[3] - s[1]); });
+    const Ltot = Object.values(blocos).reduce((t, b) => t + b.L, 0);
+    const plantas = Object.values(blocos).filter((b) => b.L > Ltot * 0.15 && (b.x1 - b.x0) * S > 3 && (b.y1 - b.y0) * S > 3);
+    if (plantas.length < 2) return { ok: true, plantas: [{ nome: '', r: geral }] };
+    const quadro = lerQuadro(D.textos);
+    const titulos = D.textos.filter((t) => /pavto|pavimento|planta\s+baixa|t[eé]rreo|superior|inferior/i.test(t.s) && !/proje[cç]/i.test(t.s))
+      .sort((a, b) => (/planta|pavto/i.test(b.s) ? 1 : 0) - (/planta|pavto/i.test(a.s) ? 1 : 0));
+    const res = [];
+    for (const b of plantas) {
+      const mg = 3.0 / S;
+      const X0 = b.x0 - mg, Y0 = b.y0 - mg, X1 = b.x1 + mg, Y1 = b.y1 + mg;
+      const dentro = (x, y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;
+      // não puxa partes da outra planta: corta no meio do vão entre os blocos
+      const outros = plantas.filter((o) => o !== b);
+      const longeDosOutros = (x, y) => outros.every((o) => { const dIn = Math.max(b.x0 - x, x - b.x1, b.y0 - y, y - b.y1, 0); const dOut = Math.max(o.x0 - x, x - o.x1, o.y0 - y, y - o.y1, 0); return dIn <= dOut; });
+      const sub = {
+        w: D.w, h: D.h,
+        segs: D.segs.filter((s) => { const x = (s[0] + s[2]) / 2, y = (s[1] + s[3]) / 2; return dentro(x, y) && longeDosOutros(x, y); }),
+        textos: D.textos.filter((t) => dentro(t.x, t.y) && longeDosOutros(t.x, t.y))
+      };
+      const r = analisar(sub, { escala: S, quadro });
+      // nome: título mais próximo do bloco
+      let nome = '', bd = Infinity;
+      for (const t of titulos) { if (!longeDosOutros(t.x, t.y)) continue; const d = Math.max(b.x0 - t.x, t.x - b.x1, b.y0 - t.y, t.y - b.y1, 0) + (/planta|pavto/i.test(t.s) ? 0 : 3 / S); if (d < bd && d * S < 9) { bd = d; nome = t.s; } }
+      res.push({ nome: nomePavimento(nome), titulo: nome, r, y: b.y0, x: b.x0 });
+    }
+    // ordem: inferior/térreo primeiro, depois pela posição na folha
+    const peso = (p) => /t[eé]rreo|inferior/i.test(p.titulo) ? 0 : /superior/i.test(p.titulo) ? 2 : 1;
+    res.sort((a, b) => peso(a) - peso(b) || a.y - b.y || a.x - b.x);
+    return { ok: true, plantas: res.filter((p) => p.r.ok), escala: S };
+  }
+  function nomePavimento(t) {
+    const n = semAcento(t);
+    if (/terreo|inferior/.test(n)) return 'Térreo';
+    if (/superior/.test(n)) return 'Pavimento superior';
+    const m = n.match(/(\d+)\s*(º|o|°)?\s*(pav|andar)/); if (m) return m[1] + 'º pavimento';
+    return t ? t.replace(/^planta\s+baixa\s*/i, '').trim() : '';
+  }
+
+  const API = { extrair, analisar, analisarFolha, tipoPorNome, lerQuadro };
   if (typeof module === 'object' && module.exports) module.exports = API;
   else root.LeitorVetorial = API;
 })(typeof self !== 'undefined' ? self : this);

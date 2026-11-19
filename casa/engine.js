@@ -302,7 +302,7 @@
       const somaPer = amb.filter((a) => !TIPOS_AMBIENTE[a.tipo].externo).reduce((s, a) => s + a.perimetro, 0);
       Lint = Math.max(0, (somaPer - Lext) / 2);
     }
-    return { amb, ab, somaArea, A, P, Lc, Wc, Lext, Lint, Ltot: Lext + Lint, bl, nos: num(lev.nos) };
+    return { amb, ab, somaArea, A, P, Lc, Wc, Lext, Lint, Ltot: Lext + Lint, bl, nos: num(lev.nos), escadas: Math.max(0, Math.round(num(lev.escadas))) };
   }
 
   function pavimentosDe(projeto, resp) {
@@ -432,6 +432,7 @@
     const NC = somaF((f) => contF(f.g, (t) => t.cozinha)), NS = somaF((f) => contF(f.g, (t) => t.servico));
     const NQ = somaF((f) => cont(f.g, 'quarto'));
     const unidades = num(resp.unidades) > 0 ? Math.round(num(resp.unidades)) : Math.max(1, NC);
+    const nEscadas = Math.max(1, ...F.map((f) => f.g.escadas)); // escadas por pavimento (casas geminadas: uma por casa)
     const pessoas = num(resp.moradores) > 0 ? num(resp.moradores) : Math.max(2 * unidades, NQ * 2, 2);
     const areaTotal = somaF((f) => f.g.A);
     const ambTot = somaF((f) => f.g.amb.length);
@@ -661,11 +662,11 @@
     if (nPav > 1) {
       // escada de concreto por lance entre pavimentos
       etapa('estrutura');
-      const n = nPav - 1, degraus = Math.round(hPiso / 0.175);
+      const n = (nPav - 1) * nEscadas, degraus = Math.round(hPiso / 0.175);
       const desenv = Math.sqrt(Math.pow(degraus * 0.28 / 2, 2) + Math.pow(hPiso / 2, 2)) * 2;
       const vol = desenv * 1.20 * 0.12 + degraus * 0.28 * 0.175 / 2 * 1.20 + 1.20 * 2.40 * 0.12;
       MULT = n;
-      concreto(vol, 'c25', 'Escada em U: ' + degraus + ' degraus (e=17,5 cm, p=28 cm) × 1,20 m + patamar, ' + n + ' lance(s)');
+      concreto(vol, 'c25', 'Escada em U: ' + degraus + ' degraus (e=17,5 cm, p=28 cm) × 1,20 m + patamar, ' + n + ' escada(s)' + (nEscadas > 1 ? ' (' + nEscadas + ' por pavimento)' : ''));
       aco('8.0', desenv / 0.12 * 1.20 + (1.20 / 0.20) * desenv, 'escada: Ø8 c/12 longitudinal + distribuição');
       forma(desenv * 1.20 + degraus * 0.175 * 1.20 + 2 * desenv * 0.30 + 1.2 * 2.4);
       add('corrimao', 'Corrimão metálico Ø 1½" com suportes', 'm', desenv * 1.1, 'um lado da escada');
@@ -1164,7 +1165,7 @@
     if (nPav > 1) {
       // revestimento da escada
       etapa('pisos');
-      const degraus = Math.round(hPiso / 0.175), n = nPav - 1;
+      const degraus = Math.round(hPiso / 0.175), n = (nPav - 1) * nEscadas;
       MULT = n;
       const aEsc = degraus * (0.28 + 0.175) * 1.20 + 1.20 * 2.40;
       add('piso_escada', 'Revestimento de escada (piso e espelho) em granito/porcelanato', 'm²', aEsc * 1.10, degraus + ' degraus × 1,20 m + patamar, por lance');
