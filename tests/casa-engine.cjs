@@ -47,3 +47,39 @@ assert(aco / 72 > 8 && aco / 72 < 40, 'taxa de aço fora da faixa');
 const vazio = E.calcular({ lev: {}, resp: {} });
 assert(vazio.avisos.length > 0);
 console.log('OK —', r.consolidado.length, 'insumos consolidados');
+
+// ---- pavimentos, unidades, solo e acabamento por cômodo
+{
+  const sobrado = E.calcular({ pavimentos: [{ nome: 'Térreo', lev: casa.lev, rep: 1 }, { nome: 'Superior', lev: casa.lev, rep: 1 }], resp: {} });
+  const terrea = E.calcular(casa);
+  const cim2 = total(sobrado, /^Cimento/), cim1 = total(terrea, /^Cimento/);
+  assert(cim2 > cim1 * 1.5 && cim2 < cim1 * 2.3, 'sobrado deveria ter ~2x o cimento');
+  assert(total(sobrado, /^Telha cerâmica/) === total(terrea, /^Telha cerâmica/), 'telhado só no último pavimento');
+  assert(sobrado.consolidado.some((i) => /^Corrimão/.test(i.desc)), 'sobrado tem escada');
+  assert(sobrado.fundacao.lado > terrea.fundacao.lado, 'sapata maior com mais pavimentos');
+  console.log('Sapata térrea', terrea.fundacao.lado, '| sobrado', sobrado.fundacao.lado, '|', sobrado.fundacao.texto);
+  // solo: rocha < argila média < mole (vira estaca)
+  const rocha = E.calcular({ lev: casa.lev, resp: { solo: 'rocha' } }), mole = E.calcular({ lev: casa.lev, resp: { solo: 'mole' } });
+  assert(rocha.fundacao.lado <= terrea.fundacao.lado, 'rocha não pode pedir sapata maior');
+  assert(mole.fundacao.tipo === 'broca' && mole.avisos.some((a) => /sapata rasa/.test(a)), 'solo mole vira estaca');
+  for (let i = 1; i < E.SOLOS.length; i++) assert(E.SOLOS[i].kpa <= E.SOLOS[i - 1].kpa, 'solos em ordem de resistência');
+  // prédio com 4 unidades
+  const ap = { ambientes: [{ nome: 'Flat', tipo: 'conjugado', area: 25, perimetro: 21 }, { nome: 'BWC', tipo: 'banheiro', area: 3, perimetro: 7 }], paredes: { externas: 22, internas: 8 }, envelope: { area: 32, perimetro: 23 }, aberturas: [{ tipo: 'porta_int', qtd: 2 }, { tipo: 'janela', qtd: 2 }, { tipo: 'basculante', qtd: 1 }] };
+  const predio = E.calcular({ pavimentos: [{ nome: 'Térreo', lev: ap, rep: 1 }, { nome: 'Tipo', lev: ap, rep: 3 }], resp: {} });
+  assert(predio.resumo.unidades === 4 && predio.resumo.pavimentos === 4);
+  assert(total(predio, /^Quadro de distribuição/) === 5, 'quadro por unidade + comum');
+  assert(total(predio, /^Disjuntor de proteção do medidor/) === 4);
+  assert(predio.avisos.some((a) => /recalque/.test(a)));
+  // acabamento por cômodo
+  const lev2 = JSON.parse(JSON.stringify(casa.lev)); lev2.ambientes[2].piso = 'laminado'; lev2.ambientes[0].teto = 'pvc';
+  const r2 = E.calcular({ lev: lev2, resp: {} });
+  assert(r2.consolidado.some((i) => /laminado/.test(i.desc)) && r2.consolidado.some((i) => /Forro de PVC/.test(i.desc)) && r2.consolidado.some((i) => /Rodapé de poliestireno/.test(i.desc)));
+  // compras por fase e indicadores
+  assert(terrea.compras.length >= 5 && terrea.compras[0].itens.length > 3);
+  const qtdFases = terrea.compras.reduce((s, f) => s + f.itens.reduce((t, i) => t + (i.key.startsWith('cimento') ? i.qtd : 0), 0), 0);
+  assert(Math.abs(qtdFases - total(terrea, /^Cimento/)) < 1e-6, 'fases somam o total');
+  console.log('Indicadores:', terrea.indicadores.map((i) => i.id + '=' + (i.valor == null ? '-' : i.valor.toFixed(2)) + '(' + i.estado + ')').join(' '));
+  const cmp = E.comparar(terrea.consolidado, sobrado.consolidado);
+  assert(cmp.length > 20);
+  console.log('OK — pavimentos, solo, acabamentos, fases e indicadores');
+}

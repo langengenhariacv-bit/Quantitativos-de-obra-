@@ -93,10 +93,30 @@ dialog form{padding:18px;display:grid;gap:12px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#171717;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:99;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:s 1s linear infinite}@keyframes s{to{transform:rotate(360deg)}}
 .print-only{display:none}
+.pavbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.pavbar .lbl{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-right:4px}
+.pav{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-weight:750;font-size:13px;display:flex;gap:6px;align-items:center}
+.pav.on{background:var(--accent);border-color:var(--accent);color:#fff}.pav .rep{font-size:11px;opacity:.75}
+.pav .ed{border:0;background:none;color:inherit;padding:0 0 0 2px;font-size:13px}
+.solos{display:grid;gap:6px;margin-top:8px}
+.solo{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;text-align:left;font-size:13px}
+.solo.on{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand);background:#faf9f7}
+.solo .rank{font-weight:900;color:var(--muted)}.solo .barra{height:6px;border-radius:4px;background:linear-gradient(90deg,#d9480f,#16855f);margin-top:4px}
+.solo .kpa{font-variant-numeric:tabular-nums;font-weight:800;white-space:nowrap}
+.q .wide{grid-column:1/-1}
+.est{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:800}
+.est.ok{background:var(--ok-bg);color:var(--ok)}.est.atencao{background:var(--warn-bg);color:var(--warn)}.est.fora{background:#fdeeee;color:var(--danger)}.est.na{background:#f1efec;color:var(--muted)}
+.fase{margin-top:16px}.fase h3{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.fase h3 small{font-weight:600;color:var(--muted);font-size:12.5px}
+tr.feito td{opacity:.45;text-decoration:line-through}
+.prazo{color:#9a5b00;font-size:12px}
+.cab-rel{display:none}
 @media print{
   .top,.no-print,.tabs,.ed,.search{display:none!important}
-  body{background:#fff;font-size:11px}main{padding:0;max-width:none}.card{box-shadow:none;border:0;padding:0}
+  body{background:#fff;font-size:11px}main{padding:0;max-width:none}.toast{display:none!important}.card{box-shadow:none;border:0;padding:0}
   .print-only{display:block}.page[data-p]{display:none!important}.page[data-p="4"]{display:block!important}
+  .cab-rel{display:flex!important;gap:16px;align-items:center;border-bottom:2px solid #171717;padding-bottom:10px;margin-bottom:10px}
+  .cab-rel img{max-height:60px;max-width:180px}.cab-rel .dados{font-size:11px;line-height:1.45}
+  .assinatura{margin-top:40px;text-align:center;font-size:11px}.assinatura .linha{border-top:1px solid #000;width:260px;margin:0 auto 4px}
   .etapa-print{break-inside:auto;margin-top:14px}.etapa-print h3{margin:10px 0 6px}
   th{position:static}td,th{padding:4px 6px;font-size:10.5px}td.mem{font-size:9.5px}.tbl{border:0;overflow:visible}
 }
@@ -118,6 +138,7 @@ dialog form{padding:18px;display:grid;gap:12px}
 <section class="page" data-p="1">
   <div class="ed">
     <div>
+      <div class="pavbar no-print" id="pavBar1"></div>
       <div class="row no-print" style="margin-bottom:10px">
         <label class="btn pri">📂 Importar planta<input id="file" type="file" accept=".pdf,image/png,image/jpeg,image/webp" hidden></label>
         <select id="pdfPage" class="btn hidden" title="Página do PDF"></select>
@@ -178,13 +199,14 @@ dialog form{padding:18px;display:grid;gap:12px}
   <div class="card">
     <div class="row"><h2>Levantamento da planta</h2><span class="sp"></span><span id="origemTag" class="small"></span>
       <button class="btn sm" id="btnReapply">Usar medidas do desenho</button></div>
-    <p class="small muted" style="margin:6px 0 12px">Estes números alimentam o cálculo. Vêm do desenho ou da leitura por IA e podem ser corrigidos à mão.</p>
+    <div class="pavbar" id="pavBar2" style="margin-top:10px"></div>
+    <p class="small muted" style="margin:6px 0 12px">Estes números alimentam o cálculo. Vêm do desenho, da leitura automática ou da IA e podem ser corrigidos à mão. Piso, parede e teto de cada cômodo seguem o padrão do passo 3, a não ser que você escolha outro aqui.</p>
     <div id="iaAvisos"></div>
     <h3 style="margin:10px 0 8px">Contorno e paredes</h3>
     <div class="grid2" id="contorno"></div>
     <div class="row" style="margin:20px 0 8px"><h3>Ambientes</h3><span class="sp"></span><button class="btn sm" id="addAmb">+ Ambiente</button></div>
-    <div class="tbl"><table><thead><tr><th>Nome</th><th>Tipo</th><th class="n">Área (m²)</th><th class="n">Perímetro (m)</th><th></th></tr></thead><tbody id="tbAmb"></tbody>
-      <tfoot><tr><td colspan="2" class="b">Total</td><td class="n b" id="totArea"></td><td></td><td></td></tr></tfoot></table></div>
+    <div class="tbl"><table><thead><tr><th>Nome</th><th>Tipo</th><th class="n">Área (m²)</th><th class="n">Perímetro (m)</th><th>Piso</th><th>Parede</th><th>Teto</th><th></th></tr></thead><tbody id="tbAmb"></tbody>
+      <tfoot><tr><td colspan="2" class="b">Total</td><td class="n b" id="totArea"></td><td colspan="5"></td></tr></tfoot></table></div>
     <div class="row" style="margin:20px 0 8px"><h3>Portas e janelas</h3><span class="sp"></span><button class="btn sm" id="addAb">+ Abertura</button></div>
     <div class="tbl"><table><thead><tr><th>Tipo</th><th class="n">Largura (m)</th><th class="n">Altura (m)</th><th class="n">Peitoril (m)</th><th class="n">Qtd</th><th>Externa</th><th></th></tr></thead><tbody id="tbAb"></tbody></table></div>
     <div class="row" style="margin-top:16px"><span class="sp"></span><button class="btn pri" data-go="3">Responder perguntas →</button></div>
@@ -196,6 +218,7 @@ dialog form{padding:18px;display:grid;gap:12px}
   <div class="card">
     <h2>Algumas perguntas sobre a obra</h2>
     <p class="small muted" style="margin:6px 0 14px">Já vêm com respostas comuns para uma casa térrea. Mude só o que for diferente.</p>
+    <div class="q" id="qEspecial" style="margin-bottom:14px"></div>
     <div class="q" id="qBase"></div>
     <details class="more"><summary>Acabamentos e detalhes (opcional)</summary><div class="q" id="qMais"></div></details>
     <details class="more"><summary>Coeficientes de consumo e perdas (avançado)</summary>
@@ -212,17 +235,31 @@ dialog form{padding:18px;display:grid;gap:12px}
   <div class="card">
     <div class="row no-print"><h2>Quantitativos de insumos</h2><span class="sp"></span>
       <input id="nomeObra" class="search" style="min-width:180px" placeholder="Nome da obra">
-      <button class="btn sm" id="btnCsv">⬇ Planilha (CSV)</button>
+      <button class="btn sm" id="btnXlsx">⬇ Excel</button>
+      <button class="btn sm" id="btnCsv">⬇ CSV</button>
       <button class="btn sm" id="btnPrint">🖨 Imprimir / PDF</button>
       <button class="btn sm" id="btnBackup">💾 Backup</button>
       <label class="btn sm">📥 Restaurar<input type="file" id="restore" accept=".json" hidden></label>
     </div>
+    <div class="cab-rel" id="cabRel"></div>
     <div class="print-only"><h2 id="printTitle"></h2><p class="small" id="printSub"></p></div>
+    <details class="more no-print" id="relBox"><summary>Dados do relatório (timbre, responsável técnico)</summary>
+      <div class="grid2" id="relCampos" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))"></div>
+      <div class="row" style="margin-top:10px"><label class="btn sm">🖼 Logotipo<input type="file" id="relLogo" accept="image/*" hidden></label><span class="small muted" id="relLogoTxt"></span><button class="btn sm hidden" id="relLogoDel">Remover logotipo</button></div>
+    </details>
     <div class="kpis" id="kpis" style="margin-top:12px"></div>
     <div id="avisos" style="margin-top:12px;display:grid;gap:8px"></div>
     <div class="row no-print" style="margin-top:6px"><div class="tabs" id="tabs" style="flex:1"></div></div>
     <div class="row no-print" style="margin-bottom:8px"><input id="busca" class="search" placeholder="Buscar insumo…"><span class="sp"></span><span class="small muted" id="contagem"></span></div>
     <div id="resultado"></div>
+    <div class="assinatura print-only" id="assinatura"></div>
+    <details class="more no-print" id="revBox"><summary>Revisões do projeto (comparar quantitativos)</summary>
+      <p class="small muted">Salve o quantitativo atual como uma revisão (ex.: “Rev 03”). Depois de mudar a planta ou as respostas, compare para ver o que aumentou ou diminuiu.</p>
+      <div class="row"><input id="revNome" class="search" style="min-width:160px" placeholder="Nome da revisão"><button class="btn sm dark" id="revSalvar">Salvar revisão</button></div>
+      <div id="revLista" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:10px"><label class="small b">Comparar <select id="revA" class="search" style="min-width:140px"></select></label><label class="small b">com <select id="revB" class="search" style="min-width:140px"></select></label><button class="btn sm" id="revComparar">Comparar</button></div>
+      <div id="revResultado" style="margin-top:10px"></div>
+    </details>
     <p class="small muted" style="margin-top:14px">Somente insumos (materiais): ferramentas, equipamentos e mão de obra não entram. Quantidades de pré-orçamento com perdas incluídas; fundação, estrutura e instalações devem ser conferidas com os projetos complementares quando existirem.</p>
   </div>
 </section>
@@ -233,6 +270,7 @@ dialog form{padding:18px;display:grid;gap:12px}
 
 <script src="engine.js"></script>
 <script src="leitor-vetorial.js"></script>
+<script src="xlsx.js"></script>
 <script>
 'use strict';
 const E = window.CasaEngine;
@@ -243,17 +281,35 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 const KEY = 'lang-casa-v1';
 
 // ------------------------------------------------------------------ estado
-function novoEstado() {
-  return {
-    nome: '', etapa: 1,
-    desenho: { escala: null, paredes: [], ambientes: [], aberturas: [] },
-    lev: { ambientes: [], aberturas: [], paredes: { externas: 0, internas: 0 }, envelope: { area: 0, perimetro: 0, comprimento: 0, largura: 0 }, nos: 0 },
-    levOrigem: 'desenho', iaAvisos: [],
-    resp: Object.assign({}, E.RESPOSTAS_PADRAO), coef: {}
-  };
+const levVazio = () => ({ ambientes: [], aberturas: [], paredes: { externas: 0, internas: 0 }, envelope: { area: 0, perimetro: 0, comprimento: 0, largura: 0 }, nos: 0 });
+function novoPav(nome, rep) {
+  return { id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), nome: nome || 'Térreo', rep: rep || 1,
+    desenho: { escala: null, paredes: [], ambientes: [], aberturas: [] }, lev: levVazio(), levOrigem: 'desenho', iaAvisos: [] };
 }
-let S = novoEstado();
-try { const raw = localStorage.getItem(KEY); if (raw) { const o = JSON.parse(raw); S = Object.assign(novoEstado(), o); S.resp = Object.assign({}, E.RESPOSTAS_PADRAO, o.resp || {}); } } catch (e) { /* armazenamento indisponível */ }
+function novoEstado() {
+  return { nome: '', etapa: 1, pavimentos: [novoPav('Térreo')], pavAtivo: 0, resp: Object.assign({}, E.RESPOSTAS_PADRAO), coef: {}, relatorio: {}, revisoes: [], comprados: {} };
+}
+// S.lev, S.desenho, S.levOrigem e S.iaAvisos apontam para o pavimento ativo
+function ligar(o) {
+  for (const k of ['lev', 'desenho', 'levOrigem', 'iaAvisos']) Object.defineProperty(o, k, { get() { return o.pavimentos[o.pavAtivo][k]; }, set(v) { o.pavimentos[o.pavAtivo][k] = v; }, enumerable: false, configurable: true });
+  return o;
+}
+function carregarEstado(o) {
+  const n = Object.assign(novoEstado(), o);
+  n.resp = Object.assign({}, E.RESPOSTAS_PADRAO, o.resp || {});
+  if (!Array.isArray(o.pavimentos) || !o.pavimentos.length) {
+    const p = novoPav('Térreo');
+    if (o.lev) p.lev = o.lev; if (o.desenho) p.desenho = o.desenho; if (o.levOrigem) p.levOrigem = o.levOrigem; if (o.iaAvisos) p.iaAvisos = o.iaAvisos;
+    n.pavimentos = [p];
+  }
+  delete n.lev; delete n.desenho; delete n.levOrigem; delete n.iaAvisos;
+  n.pavAtivo = Math.min(Math.max(0, n.pavAtivo | 0), n.pavimentos.length - 1);
+  n.relatorio = n.relatorio || {}; n.revisoes = n.revisoes || []; n.comprados = n.comprados || {};
+  return ligar(n);
+}
+const pavAtual = () => S.pavimentos[S.pavAtivo];
+let S = ligar(novoEstado());
+try { const raw = localStorage.getItem(KEY); if (raw) S = carregarEstado(JSON.parse(raw)); } catch (e) { /* armazenamento indisponível */ }
 let saveT = 0;
 function salvar() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* sem armazenamento */ } }, 300); }
 
@@ -368,7 +424,7 @@ async function renderPagina(n, nome) {
 function definirImagem(c, nome, manterDesenho, ehPdf) {
   CAMADA = null; $('#verLeituraBox').classList.add('hidden');
   const trocou = IMG && !IMG.grade && (IMG.w !== c.width || IMG.h !== c.height);
-  IMG = { src: c, w: c.width, h: c.height, nome };
+  IMG = { src: c, w: c.width, h: c.height, nome }; IMGS[pavAtual().id] = IMG;
   $('#drop').classList.add('hidden');
   if (trocou && !manterDesenho && (S.desenho.paredes.length || S.desenho.ambientes.length)) toast('Nova imagem carregada: confira se o desenho anterior ainda corresponde.');
   ajustar(); guardarImagem(c);
@@ -396,7 +452,7 @@ async function lerAutomatico(aoImportar) {
     const cc = document.createElement('canvas'); cc.width = r.camada.w; cc.height = r.camada.h;
     cc.getContext('2d').putImageData(new ImageData(r.camada.data, r.camada.w, r.camada.h), 0, 0);
     CAMADA = { cv: cc, x: r.camada.x0 * IMG.sc, y: r.camada.y0 * IMG.sc, w: r.camada.w / r.camada.k * IMG.sc, h: r.camada.h / r.camada.k * IMG.sc, amb: r.detalhe.ambientes.map((a) => ({ nome: a.nome, area: a.area, x: a.x * IMG.sc, y: a.y * IMG.sc })) };
-    $('#verLeituraBox').classList.remove('hidden'); $('#verLeitura').checked = true;
+    $('#verLeituraBox').classList.remove('hidden'); $('#verLeitura').checked = true; CAMADAS[pavAtual().id] = CAMADA;
     snapshot();
     S.desenho = { escala: r.escala / IMG.sc, paredes: [], ambientes: [], aberturas: [] };
     S.lev = r.lev; S.levOrigem = 'auto';
@@ -431,12 +487,17 @@ stage.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTran
 function idb() { return new Promise((res, rej) => { try { const r = indexedDB.open('lang-casa', 1); r.onupgradeneeded = () => r.result.createObjectStore('img'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }); }
 function guardarImagem(c) {
   if (IMG && IMG.grade) return;
-  c.toBlob(async (blob) => { try { const db = await idb(); db.transaction('img', 'readwrite').objectStore('img').put({ blob, nome: IMG.nome }, 'planta'); } catch (e) { /* opcional */ } }, 'image/jpeg', 0.9);
+  const chave = 'planta-' + pavAtual().id, nome = IMG.nome;
+  c.toBlob(async (blob) => { try { const db = await idb(); db.transaction('img', 'readwrite').objectStore('img').put({ blob, nome }, chave); } catch (e) { /* opcional */ } }, 'image/jpeg', 0.9);
 }
 async function recuperarImagem() {
+  const pid = pavAtual().id;
   try {
     const db = await idb();
-    const v = await new Promise((res) => { const r = db.transaction('img').objectStore('img').get('planta'); r.onsuccess = () => res(r.result); r.onerror = () => res(null); });
+    const ler = (k) => new Promise((res) => { const r = db.transaction('img').objectStore('img').get(k); r.onsuccess = () => res(r.result); r.onerror = () => res(null); });
+    let v = await ler('planta-' + pid);
+    if (!v && S.pavAtivo === 0) v = await ler('planta');
+    if (pid !== pavAtual().id) return;
     if (v && v.blob && !S.desenho.grade) {
       const bmp = await createImageBitmap(v.blob);
       const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height; c.getContext('2d').drawImage(bmp, 0, 0);
@@ -444,6 +505,59 @@ async function recuperarImagem() {
     } else if (S.desenho.grade) $('#btnBlank').onclick();
   } catch (e) { /* sem imagem salva */ }
 }
+
+// ---- pavimentos
+const IMGS = {}, CAMADAS = {};
+function renderPavs() {
+  const html = '<span class="lbl">Pavimentos</span>' + S.pavimentos.map((p, i) => '<button class="pav' + (i === S.pavAtivo ? ' on' : '') + '" data-pav="' + i + '">' + esc(p.nome) + (p.rep > 1 ? ' <span class="rep">×' + p.rep + '</span>' : '') + (i === S.pavAtivo ? ' <span class="ed" data-edpav="' + i + '" title="Editar pavimento">✎</span>' : '') + '</button>').join('') +
+    '<button class="pav" data-addpav="1" title="Adicionar pavimento">＋ Pavimento</button>' + (S.pavimentos.length > 1 ? '<span class="small muted">o telhado vai sobre o último da lista</span>' : '');
+  $('#pavBar1').innerHTML = html; $('#pavBar2').innerHTML = html;
+}
+function trocarPav(i) {
+  if (i === S.pavAtivo || !S.pavimentos[i]) return;
+  const atual = pavAtual(); IMGS[atual.id] = IMG; CAMADAS[atual.id] = CAMADA;
+  S.pavAtivo = i; cur = null; calib = []; hist.length = 0; atualizarFinish();
+  const p = pavAtual(); IMG = IMGS[p.id] || null; CAMADA = CAMADAS[p.id] || null;
+  $('#pdfPage').classList.add('hidden'); $('#verLeituraBox').classList.toggle('hidden', !CAMADA);
+  if (IMG) { $('#drop').classList.add('hidden'); ajustar(); } else { $('#drop').classList.remove('hidden'); recuperarImagem(); }
+  salvar(); renderPavs(); painelMedidas(); draw();
+  if (S.etapa === 2) renderLev();
+}
+async function novoPavimento() {
+  const n = S.pavimentos.length;
+  const r = await perguntar('Novo pavimento', [
+    { info: 'Cada pavimento tem a sua planta e o seu levantamento. Use repetições para o pavimento tipo de um prédio. O telhado é calculado sobre o último pavimento da lista.' },
+    { k: 'nome', label: 'Nome', v: n === 1 ? 'Pavimento superior' : n + 'º pavimento' },
+    { k: 'rep', label: 'Quantas vezes se repete (pavimento tipo)', type: 'number', v: 1 },
+    { k: 'origem', label: 'Começar com', opts: [['vazio', 'Planta vazia (importar ou desenhar)']].concat(S.pavimentos.map((p, i) => ['copia' + i, 'Cópia do levantamento de ' + p.nome])), v: 'vazio' }
+  ], 'Criar');
+  if (!r) return;
+  const p = novoPav(r.nome || n + 'º pavimento', Math.max(1, Math.round(r.rep || 1)));
+  if (r.origem.startsWith('copia')) {
+    const src = S.pavimentos[+r.origem.slice(5)];
+    p.lev = JSON.parse(JSON.stringify(src.lev)); p.desenho = JSON.parse(JSON.stringify(src.desenho)); p.levOrigem = src.levOrigem; p.iaAvisos = (src.iaAvisos || []).slice();
+    const atual = pavAtual(); IMGS[atual.id] = IMG; CAMADAS[atual.id] = CAMADA;
+    if (IMGS[src.id]) { IMGS[p.id] = IMGS[src.id]; CAMADAS[p.id] = CAMADAS[src.id] || null; }
+  }
+  S.pavimentos.push(p); trocarPav(S.pavimentos.length - 1);
+  toast(p.nome + ' criado' + (r.origem.startsWith('copia') ? ' como cópia. Ajuste o que for diferente.' : '. Importe a planta deste pavimento.'));
+}
+async function editarPav(i) {
+  const p = S.pavimentos[i];
+  const campos = [{ k: 'nome', label: 'Nome', v: p.nome }, { k: 'rep', label: 'Quantas vezes se repete', type: 'number', v: p.rep }];
+  if (S.pavimentos.length > 1) campos.push({ k: 'pos', label: 'Posição na lista (1 = térreo)', type: 'number', v: i + 1 }, { k: 'excluir', label: 'Excluir este pavimento', type: 'checkbox', v: false });
+  const r = await perguntar('Pavimento', campos, 'Salvar');
+  if (!r) return;
+  if (r.excluir) { S.pavimentos.splice(i, 1); S.pavAtivo = Math.min(S.pavAtivo, S.pavimentos.length - 1); IMG = IMGS[pavAtual().id] || null; CAMADA = CAMADAS[pavAtual().id] || null; if (!IMG) { $('#drop').classList.remove('hidden'); recuperarImagem(); } salvar(); renderPavs(); painelMedidas(); draw(); if (S.etapa === 2) renderLev(); return; }
+  p.nome = r.nome || p.nome; p.rep = Math.max(1, Math.round(r.rep || 1));
+  if (r.pos && S.pavimentos.length > 1) { const to = Math.min(S.pavimentos.length, Math.max(1, Math.round(r.pos))) - 1; if (to !== i) { S.pavimentos.splice(i, 1); S.pavimentos.splice(to, 0, p); S.pavAtivo = to; } }
+  salvar(); renderPavs();
+}
+document.addEventListener('click', (e) => {
+  const ed = e.target.closest('[data-edpav]'); if (ed) { e.stopPropagation(); editarPav(+ed.dataset.edpav); return; }
+  const b = e.target.closest('[data-pav]'); if (b) { trocarPav(+b.dataset.pav); return; }
+  if (e.target.closest('[data-addpav]')) novoPavimento();
+});
 
 // ---- ferramentas
 function setTool(t) {
@@ -653,7 +767,7 @@ function desenhoParaLev() {
     env.comprimento = (Math.max(...xs) - Math.min(...xs)) * s + e; env.largura = (Math.max(...ys) - Math.min(...ys)) * s + e;
   }
   if (fech) { const A = areaPoly(fech.pts) * s * s, P = perPoly(fech.pts) * s; env.area = A + P * e / 2 + e * e; env.perimetro = P + 4 * e; }
-  const ambientes = D.ambientes.map((a) => ({ nome: a.nome, tipo: a.tipo, area: +(areaPoly(a.pts) * s * s).toFixed(2), perimetro: +(perPoly(a.pts) * s).toFixed(2) }));
+  const ambientes = D.ambientes.map((a) => ({ nome: a.nome, tipo: a.tipo, area: +(areaPoly(a.pts) * s * s).toFixed(2), perimetro: +(perPoly(a.pts) * s).toFixed(2), piso: a.piso, parede: a.parede, teto: a.teto }));
   const aberturas = D.aberturas.map((o) => ({ tipo: o.tipo, largura: o.largura, altura: o.altura, peitoril: o.peitoril, externa: o.externa, qtd: 1 }));
   return { ambientes, aberturas, paredes: { externas: +ext.toFixed(2), internas: +int.toFixed(2) }, envelope: { area: +env.area.toFixed(2), perimetro: +env.perimetro.toFixed(2), comprimento: +env.comprimento.toFixed(2), largura: +env.largura.toFixed(2) }, nos };
 }
@@ -785,16 +899,25 @@ function renderLev() {
   const campos = [['envelope', 'area', 'Área construída (m²)'], ['envelope', 'perimetro', 'Perímetro externo (m)'], ['envelope', 'comprimento', 'Comprimento (m)'], ['envelope', 'largura', 'Largura (m)'], ['paredes', 'externas', 'Paredes externas (m)'], ['paredes', 'internas', 'Paredes internas (m)'], [null, 'nos', 'Pilares (0 = estimar)']];
   $('#contorno').innerHTML = campos.map(([g, k, t]) => '<label class="f">' + t + '<input type="number" step="any" min="0" data-g="' + (g || '') + '" data-k="' + k + '" value="' + (g ? (L[g][k] || '') : (L[k] || '')) + '"></label>').join('');
   const tiposA = Object.entries(E.TIPOS_AMBIENTE).map(([k, v]) => [k, v.nome]);
-  $('#tbAmb').innerHTML = L.ambientes.map((a, i) => '<tr data-i="' + i + '"><td><input data-f="nome" value="' + esc(a.nome) + '"></td><td><select data-f="tipo">' + tiposA.map(([k, n]) => '<option value="' + k + '"' + (k === a.tipo ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></td><td><input type="number" step="any" data-f="area" value="' + (a.area || '') + '"></td><td><input type="number" step="any" data-f="perimetro" value="' + (a.perimetro || '') + '"></td><td><button class="x" data-del="amb" title="Remover">×</button></td></tr>').join('') || '<tr><td colspan="5" class="muted">Nenhum ambiente. Desenhe na planta ou clique em “+ Ambiente”.</td></tr>';
+  const sel = (f, opts, v) => '<select data-f="' + f + '" style="min-width:110px">' + opts.map(([k, n]) => '<option value="' + k + '"' + (k === (v || 'auto') ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>';
+  $('#tbAmb').innerHTML = L.ambientes.map((a, i) => '<tr data-i="' + i + '"><td><input data-f="nome" value="' + esc(a.nome) + '" style="min-width:120px"></td><td><select data-f="tipo">' + tiposA.map(([k, n]) => '<option value="' + k + '"' + (k === a.tipo ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></td><td><input type="number" step="any" data-f="area" value="' + (a.area || '') + '"></td><td><input type="number" step="any" data-f="perimetro" value="' + (a.perimetro || '') + '"></td><td>' + sel('piso', OPC_PISO, a.piso) + '</td><td>' + sel('parede', OPC_PAREDE, a.parede) + '</td><td>' + sel('teto', OPC_TETO, a.teto) + '</td><td><button class="x" data-del="amb" title="Remover">×</button></td></tr>').join('') || '<tr><td colspan="8" class="muted">Nenhum ambiente. Desenhe na planta ou clique em “+ Ambiente”.</td></tr>';
   $('#totArea').textContent = fmt(L.ambientes.reduce((s, a) => s + (+a.area || 0), 0), 2) + ' m²';
   const tiposO = Object.entries(E.TIPOS_ABERTURA).map(([k, v]) => [k, v.nome]);
   $('#tbAb').innerHTML = L.aberturas.map((o, i) => '<tr data-i="' + i + '"><td><select data-f="tipo">' + tiposO.map(([k, n]) => '<option value="' + k + '"' + (k === o.tipo ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></td>' + ['largura', 'altura', 'peitoril', 'qtd'].map((f) => '<td><input type="number" step="any" data-f="' + f + '" value="' + (o[f] == null ? '' : o[f]) + '"></td>').join('') + '<td><input type="checkbox" data-f="externa"' + (o.externa ? ' checked' : '') + '></td><td><button class="x" data-del="ab" title="Remover">×</button></td></tr>').join('') || '<tr><td colspan="7" class="muted">Nenhuma porta ou janela.</td></tr>';
 }
+const OPC_PISO = [['auto', 'Padrão']].concat(Object.entries(E.PISOS).map(([k, v]) => [k, v.nome.split(' (')[0]]));
+const OPC_PAREDE = [['auto', 'Padrão'], ['nenhum', 'Sem cerâmica'], ['faixa', 'Faixa da bancada'], ['1.50', 'Cerâmica até 1,50 m'], ['teto', 'Cerâmica até o teto']];
+const OPC_TETO = [['auto', 'Padrão'], ['reboco', 'Reboco + pintura'], ['gesso', 'Gesso liso'], ['drywall', 'Forro drywall'], ['pvc', 'Forro PVC']];
 function marcarManual() { if (S.levOrigem === 'desenho') S.levOrigem = 'manual'; salvar(); }
 $('#contorno').addEventListener('input', (e) => { const t = e.target; const v = parseFloat(t.value) || 0; if (t.dataset.g) S.lev[t.dataset.g][t.dataset.k] = v; else S.lev[t.dataset.k] = v; marcarManual(); });
 function editarLinha(lista, e) {
   const tr = e.target.closest('tr[data-i]'); if (!tr || !e.target.dataset.f) return;
   const o = lista[+tr.dataset.i], f = e.target.dataset.f;
+  if (f === 'piso' || f === 'parede' || f === 'teto') {
+    const v = e.target.value === 'auto' ? undefined : e.target.value; o[f] = v;
+    const da = S.levOrigem === 'desenho' && S.desenho.ambientes[+tr.dataset.i]; if (da) da[f] = v;
+    salvar(); return;
+  }
   o[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.type === 'number' ? (e.target.value === '' ? null : parseFloat(e.target.value)) : e.target.value;
   if (lista === S.lev.aberturas && f === 'tipo') { const d = E.TIPOS_ABERTURA[o.tipo]; Object.assign(o, { largura: d.w, altura: d.h, peitoril: d.p, externa: !!d.externa }); marcarManual(); renderLev(); return; }
   marcarManual(); if (f === 'area') $('#totArea').textContent = fmt(S.lev.ambientes.reduce((s, a) => s + (+a.area || 0), 0), 2) + ' m²';
@@ -814,11 +937,12 @@ $('#addAb').onclick = () => { S.lev.aberturas.push({ tipo: 'janela', largura: 1.
 const PERG = [
   { k: 'peDireito', t: 'Pé-direito', d: 'Altura do piso ao teto (m).', num: true, base: 1 },
   { k: 'vedacao', t: 'Paredes', base: 1, o: [['ceramico14', 'Bloco cerâmico 14 cm'], ['ceramico9', 'Bloco cerâmico 9 cm'], ['concreto14', 'Bloco de concreto 14 cm']] },
-  { k: 'fundacao', t: 'Fundação', base: 1, d: 'Na dúvida, sapata isolada com viga baldrame.', o: [['sapata', 'Sapata + baldrame'], ['broca', 'Estaca broca + baldrame'], ['radier', 'Radier']] },
-  { k: 'laje', t: 'Laje de forro', base: 1, o: [['trelicada', 'Laje treliçada (EPS)'], ['nenhuma', 'Sem laje']] },
+  { k: 'fundacao', t: 'Fundação', base: 1, d: 'A sapata é dimensionada pelo solo escolhido acima e pela carga dos pavimentos.', o: [['sapata', 'Sapata + baldrame'], ['broca', 'Estaca broca + baldrame'], ['radier', 'Radier']] },
+  { k: 'laje', t: 'Laje do último pavimento', base: 1, d: 'Os pavimentos de baixo sempre têm laje.', o: [['trelicada', 'Laje treliçada (EPS)'], ['nenhuma', 'Sem laje']] },
   { k: 'teto', t: 'Acabamento do teto', base: 1, o: [['reboco', 'Reboco + pintura'], ['gesso', 'Gesso liso'], ['drywall', 'Forro de gesso (drywall)'], ['pvc', 'Forro de PVC']] },
   { k: 'telha', t: 'Telhado', base: 1, o: [['ceramica', 'Telha cerâmica'], ['fibrocimento', 'Fibrocimento'], ['metalica', 'Metálica termoacústica']] },
-  { k: 'piso', t: 'Piso interno', base: 1, o: [['porcelanato', 'Porcelanato 60×60'], ['ceramica', 'Cerâmica 45×45']] },
+  { k: 'piso', t: 'Piso interno (padrão)', base: 1, d: 'Cada cômodo pode ter outro piso no passo 2.', o: [['porcelanato', 'Porcelanato 60×60'], ['porcelanato_gg', 'Porcelanato 90×90'], ['ceramica', 'Cerâmica 45×45'], ['laminado', 'Laminado'], ['vinilico', 'Vinílico'], ['cimentado', 'Cimentado']] },
+  { k: 'pisoQuartos', t: 'Piso dos quartos', o: [['', 'Igual ao piso padrão'], ['laminado', 'Laminado'], ['vinilico', 'Vinílico'], ['porcelanato', 'Porcelanato'], ['ceramica', 'Cerâmica']] },
   { k: 'esgoto', t: 'Esgoto', base: 1, o: [['rede', 'Rede pública'], ['fossa', 'Fossa, filtro e sumidouro']] },
   { k: 'revBanheiro', t: 'Azulejo do banheiro', o: [['teto', 'Até o teto'], ['1.50', 'Até 1,50 m']] },
   { k: 'revCozinha', t: 'Azulejo da cozinha e área', o: [['faixa', 'Faixa sobre a pia/tanque'], ['1.50', 'Até 1,50 m'], ['teto', 'Até o teto']] },
@@ -832,6 +956,7 @@ const PERG = [
   { k: 'calcada', t: 'Calçada em volta da casa', d: 'Largura em metros (0 = sem calçada).', num: true },
   { k: 'concreto', t: 'Concreto estrutural', o: [['obra', 'Feito na obra'], ['usinado', 'Usinado (caminhão)']] },
   { k: 'argamassa', t: 'Argamassas', o: [['obra', 'Feitas na obra'], ['industrializada', 'Industrializadas (saco)']] },
+  { k: 'unidades', t: 'Unidades (casas ou apartamentos)', d: '0 = automático (uma por cozinha). Define quadros de luz, medidores e cavaletes.', num: true },
   { k: 'moradores', t: 'Moradores', d: '0 = automático (2 por quarto). Dimensiona caixa d’água e fossa.', num: true },
   { k: 'distRede', t: 'Distância até a rua (m)', d: 'Para ligação de água, esgoto e energia.', num: true },
   { k: 'canteiro', t: 'Barracão e placa de obra', o: [[true, 'Incluir'], [false, 'Não incluir']] }
@@ -840,14 +965,30 @@ function renderPerguntas() {
   const html = (p) => '<div class="item"><div class="t">' + p.t + '</div>' + (p.d ? '<div class="d">' + p.d + '</div>' : '') +
     (p.num ? '<input type="number" step="0.05" min="0" data-k="' + p.k + '" value="' + S.resp[p.k] + '">'
       : '<div class="opt">' + p.o.map(([v, t]) => '<button data-k="' + p.k + '" data-v="' + v + '" class="' + (String(S.resp[p.k]) === String(v) ? 'on' : '') + '">' + t + '</button>').join('') + '</div>') + '</div>';
+  // padrão de acabamento + solo
+  const padraoAtual = Object.entries(E.PADROES_ACABAMENTO).find(([, v]) => Object.entries(v.resp).every(([k, x]) => String(S.resp[k]) === String(x)));
+  const lmin = Math.log(40), lmax = Math.log(1000);
+  let prev = '';
+  try {
+    const r = E.calcular({ pavimentos: S.pavimentos.map((p) => ({ nome: p.nome, rep: p.rep, lev: p.lev })), resp: S.resp, coef: S.coef });
+    const trocou = r.fundacao.tipo !== S.resp.fundacao;
+    prev = '<div class="note ' + (trocou ? 'warn' : 'info') + '" style="margin-top:8px"><b>Com a planta atual:</b> ' + esc(r.fundacao.texto || '') + (trocou ? ' Sapata rasa não é indicada para este solo: o cálculo usa estacas.' : '') + '</div>';
+  } catch (e) { prev = ''; }
+  $('#qEspecial').innerHTML = '<div class="item"><div class="t">Padrão de acabamento</div><div class="d">Ajusta de uma vez piso, azulejos, teto, fachada e esquadrias. Depois dá para mudar item por item.</div><div class="opt">' +
+    Object.entries(E.PADROES_ACABAMENTO).map(([k, v]) => '<button data-padrao="' + k + '" class="' + (padraoAtual && padraoAtual[0] === k ? 'on' : '') + '">' + v.nome + '</button>').join('') + '</div></div>' +
+    '<div class="item wide"><div class="t">Tipo de solo da fundação</div><div class="d">Do mais resistente (1) para o menos resistente. Na dúvida, mantenha <b>argila média</b>, que fica a favor da segurança. Tensões admissíveis presuntivas (NBR 6122:1996): confirme com sondagem SPT.</div><div class="solos">' +
+    E.SOLOS.map((so, i) => { const w = Math.max(6, Math.min(100, (Math.log(so.kpa) - lmin) / (lmax - lmin) * 100)); return '<button class="solo' + (S.resp.solo === so.id ? ' on' : '') + '" data-solo="' + so.id + '"><span class="rank">' + (i + 1) + '</span><span>' + esc(so.nome) + '<div class="barra" style="width:' + w + '%"></div></span><span class="kpa">≈ ' + fmt(so.kpa / 100, 1) + ' kgf/cm²<br><span class="muted small">' + so.kpa + ' kPa</span></span></button>'; }).join('') + '</div>' + prev + '</div>';
   $('#qBase').innerHTML = PERG.filter((p) => p.base).map(html).join('');
   $('#qMais').innerHTML = PERG.filter((p) => !p.base).map(html).join('');
   $('#tbCoef').innerHTML = Object.entries(E.COEF).map(([k, [v, u, d]]) => '<tr><td>' + d + '</td><td style="width:120px"><input type="number" step="any" data-c="' + k + '" value="' + (S.coef[k] != null ? S.coef[k] : v) + '"' + (S.coef[k] != null && S.coef[k] !== v ? ' style="border-color:var(--accent)"' : '') + '></td><td class="muted small">' + u + '</td></tr>').join('');
 }
 document.addEventListener('click', (e) => {
-  const b = e.target.closest('.q .opt button'); if (!b) return;
+  const pd = e.target.closest('[data-padrao]'); if (pd) { Object.assign(S.resp, E.PADROES_ACABAMENTO[pd.dataset.padrao].resp); salvar(); renderPerguntas(); toast('Padrão ' + E.PADROES_ACABAMENTO[pd.dataset.padrao].nome + ' aplicado.'); return; }
+  const so = e.target.closest('[data-solo]'); if (so) { S.resp.solo = so.dataset.solo; salvar(); renderPerguntas(); return; }
+  const b = e.target.closest('.q .opt button'); if (!b || !b.dataset.k) return;
   const p = PERG.find((x) => x.k === b.dataset.k); const v = p.o.find(([x]) => String(x) === b.dataset.v)[0];
   S.resp[p.k] = v; salvar(); $$('.opt button[data-k="' + p.k + '"]').forEach((x) => x.classList.toggle('on', x === b));
+  if (['fundacao', 'piso', 'pisoQuartos', 'teto', 'revBanheiro', 'revCozinha', 'janelas', 'portaExterna', 'pinturaExterna'].includes(p.k)) renderPerguntas();
   if (p.k === 'vedacao' && S.levOrigem === 'desenho') { const l = desenhoParaLev(); if (l) S.lev = l; }
 });
 document.addEventListener('input', (e) => {
@@ -859,23 +1000,29 @@ $('#coefReset').onclick = () => { S.coef = {}; salvar(); renderPerguntas(); };
 
 // ================================================================== RESULTADOS
 let R = null, aba = 'total';
+const projetoMotor = () => ({ pavimentos: S.pavimentos.map((p) => ({ nome: p.nome, rep: p.rep, lev: p.lev })), resp: S.resp, coef: S.coef });
 function renderResultado() {
-  R = E.calcular({ lev: S.lev, resp: S.resp, coef: S.coef });
+  R = E.calcular(projetoMotor());
   $('#nomeObra').value = S.nome || '';
   const r = R.resumo;
   $('#kpis').innerHTML = [
-    [fmt(r.areaConstruida, 1) + ' m²', 'Área construída'], [fmt(r.paredesExternas + r.paredesInternas, 1) + ' m', 'Paredes'],
-    [fmt(r.alvenaria, 1) + ' m²', 'Alvenaria'], [fmt(r.areaPiso, 1) + ' m²', 'Pisos'], [fmt(r.telhado, 1) + ' m²', 'Telhado'],
-    [r.pilares, 'Pilares'], [R.consolidado.length, 'Insumos diferentes']
+    [fmt(r.areaConstruida, 1) + ' m²', 'Área construída'], [r.pavimentos + (r.unidades > 1 ? ' · ' + r.unidades + ' un.' : ''), r.unidades > 1 ? 'Pavimentos · unidades' : 'Pavimentos'],
+    [fmt(r.paredesExternas + r.paredesInternas, 1) + ' m', 'Paredes'], [fmt(r.alvenaria, 1) + ' m²', 'Alvenaria'], [fmt(r.areaPiso, 1) + ' m²', 'Pisos'],
+    [fmt(r.telhado, 1) + ' m²', 'Telhado'], [fmt(r.concreto, 1) + ' m³', 'Concreto estrutural'], [R.consolidado.length, 'Insumos diferentes']
   ].map(([v, l]) => '<div class="kpi"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>').join('');
-  const avLeitura = S.levOrigem === 'auto' ? S.iaAvisos.filter((a) => !/^Escala|^Área construída/.test(a)) : [];
+  const grupos = new Map();
+  for (const p of S.pavimentos) if (p.levOrigem === 'auto') for (const a of p.iaAvisos || []) if (!/^Escala|^Área construída|unidade ou outro pavimento/.test(a)) { if (!grupos.has(a)) grupos.set(a, []); grupos.get(a).push(p.nome); }
+  const avLeitura = [...grupos].map(([a, nomes]) => (S.pavimentos.length > 1 ? (nomes.length === S.pavimentos.length ? 'Todos os pavimentos' : nomes.join(', ')) + ': ' : '') + a);
   $('#avisos').innerHTML = avLeitura.concat(R.avisos).map((a) => '<div class="note warn">⚠ ' + esc(a) + '</div>').join('');
+  const fora = R.indicadores.filter((i) => i.estado === 'fora' || i.estado === 'atencao').length;
   $('#tabs').innerHTML = '<button data-a="total" class="' + (aba === 'total' ? 'on' : '') + '">Total consolidado<span class="c">' + R.consolidado.length + '</span></button>' +
+    '<button data-a="compras" class="' + (aba === 'compras' ? 'on' : '') + '">🛒 Compras por fase<span class="c">' + R.compras.length + '</span></button>' +
+    '<button data-a="conferencia" class="' + (aba === 'conferencia' ? 'on' : '') + '">✔ Conferência' + (fora ? '<span class="c">' + fora + ' alerta(s)</span>' : '') + '</button>' +
     R.etapas.map((e, i) => '<button data-a="' + e.id + '" class="' + (aba === e.id ? 'on' : '') + '">' + (i + 1) + '. ' + e.nome + '<span class="c">' + e.itens.length + '</span></button>').join('');
-  if (aba !== 'total' && !R.etapas.some((e) => e.id === aba)) aba = 'total';
-  $('#printTitle').textContent = 'Quantitativo de insumos — ' + (S.nome || 'Casa');
-  $('#printSub').textContent = fmt(r.areaConstruida, 1) + ' m² · ' + new Date().toLocaleDateString('pt-BR') + ' · Lang Casa';
-  renderTabela();
+  if (!['total', 'compras', 'conferencia'].includes(aba) && !R.etapas.some((e) => e.id === aba)) aba = 'total';
+  $('#printTitle').textContent = 'Quantitativo de insumos — ' + (S.nome || S.relatorio.obra || 'Obra');
+  $('#printSub').textContent = fmt(r.areaConstruida, 1) + ' m² · ' + r.pavimentos + ' pavimento(s)' + (S.relatorio.revisao ? ' · ' + S.relatorio.revisao : '') + ' · ' + new Date().toLocaleDateString('pt-BR');
+  renderRelatorio(); renderRevisoes(); renderTabela();
 }
 function tabelaEtapa(et, f) {
   const it = et.itens.filter((i) => !f || i.desc.toLowerCase().includes(f));
@@ -888,39 +1035,167 @@ function tabelaTotal(f) {
   return '<div class="tbl"><table><thead><tr><th>#</th><th>Insumo</th><th class="n">Qtd</th><th>Un</th><th class="n">Compra</th><th>Etapas</th></tr></thead><tbody>' +
     it.map((i, n) => '<tr><td class="muted">' + (n + 1) + '</td><td>' + esc(i.desc) + '</td><td class="n">' + fmt(i.qtd, 2) + '</td><td>' + i.un + '</td><td class="n b">' + esc(i.compra) + '</td><td class="etq">' + esc([...new Set(i.etapas)].join(', ')) + '</td></tr>').join('') + '</tbody></table></div>';
 }
+function tabelaCompras(f, imprimir) {
+  return R.compras.map((fa) => {
+    const it = fa.itens.filter((i) => !f || i.desc.toLowerCase().includes(f));
+    if (!it.length) return '';
+    const feitos = it.filter((i) => S.comprados[fa.id + '|' + i.key]).length;
+    return '<div class="fase"><h3>' + esc(fa.nome) + ' <small>' + esc(fa.quando) + (imprimir ? '' : ' · ' + feitos + '/' + it.length + ' comprados') + '</small></h3><div class="tbl"><table><thead><tr>' + (imprimir ? '' : '<th style="width:34px">✓</th>') + '<th>Insumo</th><th class="n">Compra</th><th class="n">Qtd</th><th>Un</th><th>Observação</th></tr></thead><tbody>' +
+      it.map((i) => { const k = fa.id + '|' + i.key, ok = !!S.comprados[k]; return '<tr class="' + (ok && !imprimir ? 'feito' : '') + '">' + (imprimir ? '' : '<td><input type="checkbox" data-ck="' + esc(k) + '"' + (ok ? ' checked' : '') + '></td>') + '<td>' + esc(i.desc) + '</td><td class="n b">' + esc(i.compra) + '</td><td class="n">' + fmt(i.qtd, 2) + '</td><td>' + i.un + '</td><td class="prazo">' + esc(i.prazo || '') + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+  }).join('');
+}
+function tabelaConferencia() {
+  const fmtV = (i) => i.valor == null ? '—' : fmt(i.valor, i.valor < 1 ? 2 : 1);
+  const rot = { ok: 'dentro da faixa', atencao: 'perto do limite', fora: 'fora da faixa', na: 'sem dado' };
+  let h = '<p class="small muted">Indicadores de um orçamentista experiente: números fora da faixa usual não são necessariamente erro, mas pedem uma olhada no levantamento ou nas respostas.</p>';
+  h += '<div class="tbl"><table><thead><tr><th>Indicador</th><th class="n">Valor</th><th class="n">Faixa usual</th><th>Situação</th></tr></thead><tbody>' +
+    R.indicadores.map((i) => '<tr><td>' + esc(i.nome) + (i.nota ? '<div class="etq">' + esc(i.nota) + '</div>' : '') + '</td><td class="n b">' + fmtV(i) + ' ' + i.un + '</td><td class="n">' + fmt(i.min, 2) + ' a ' + fmt(i.max, 2) + '</td><td><span class="est ' + i.estado + '">' + rot[i.estado] + '</span></td></tr>').join('') + '</tbody></table></div>';
+  const fu = R.fundacao;
+  h += '<h3 style="margin:18px 0 6px">Fundação</h3><div class="note info">' + esc({ sapata: 'Sapata isolada + viga baldrame', broca: 'Estacas broca + blocos + baldrame', radier: 'Radier' }[fu.tipo] || fu.tipo) + ' · solo: <b>' + esc(fu.solo) + '</b> (σadm ≈ ' + fu.kpa + ' kPa = ' + fmt(fu.kpa / 100, 1) + ' kgf/cm²) · ' + fu.pilares + ' pilares<br>' + esc(fu.texto || '') + '</div>';
+  h += '<h3 style="margin:18px 0 6px">Pavimentos considerados</h3><div class="tbl"><table><thead><tr><th>Pavimento</th><th class="n">Repetições</th><th class="n">Área (m²)</th><th class="n">Cômodos</th><th class="n">Paredes (m)</th><th>Origem do levantamento</th></tr></thead><tbody>' +
+    S.pavimentos.map((p) => { const g = E.normalizar(p.lev, S.resp); return '<tr><td>' + esc(p.nome) + '</td><td class="n">' + p.rep + '</td><td class="n">' + fmt(g.A, 1) + '</td><td class="n">' + g.amb.length + '</td><td class="n">' + fmt(g.Ltot, 1) + '</td><td>' + ({ desenho: 'desenho', auto: 'leitura automática do PDF', ia: 'leitura por IA', manual: 'editado à mão' }[p.levOrigem] || '') + '</td></tr>'; }).join('') + '</tbody></table></div>';
+  return h;
+}
 function renderTabela() {
   const f = $('#busca').value.trim().toLowerCase();
   let html = '';
   if (aba === 'total') { html = tabelaTotal(f); $('#contagem').textContent = R.consolidado.length + ' insumos'; }
+  else if (aba === 'compras') { html = '<p class="small muted no-print">Lista de compras na ordem da obra. As quantidades de cada fase são as que aquela fase consome (cimento e areia aparecem em várias). Marque o que já foi comprado.</p>' + tabelaCompras(f); $('#contagem').textContent = R.compras.reduce((s, fa) => s + fa.itens.length, 0) + ' linhas de compra'; }
+  else if (aba === 'conferencia') { html = tabelaConferencia(); $('#contagem').textContent = ''; }
   else { const et = R.etapas.find((e) => e.id === aba); html = tabelaEtapa(et, f) || '<p class="muted">Nada encontrado.</p>'; $('#contagem').textContent = et.itens.length + ' insumos nesta etapa'; }
-  // versão de impressão: todas as etapas + total
-  html += '<div class="print-only">' + R.etapas.map((e, i) => '<div class="etapa-print"><h3>' + (i + 1) + '. ' + esc(e.nome) + '</h3>' + tabelaEtapa(e, '') + '</div>').join('') + '<div class="etapa-print"><h3>Total consolidado</h3>' + tabelaTotal('') + '</div></div>';
+  html = '<div class="tela">' + html + '</div>';
+  // versão de impressão: conferência, etapas, total e compras
+  html += '<div class="print-only"><div class="etapa-print"><h3>Conferência</h3>' + tabelaConferencia() + '</div>' + R.etapas.map((e, i) => '<div class="etapa-print"><h3>' + (i + 1) + '. ' + esc(e.nome) + '</h3>' + tabelaEtapa(e, '') + '</div>').join('') +
+    '<div class="etapa-print"><h3>Total consolidado</h3>' + tabelaTotal('') + '</div><div class="etapa-print"><h3>Compras por fase</h3>' + tabelaCompras('', true) + '</div></div>';
   $('#resultado').innerHTML = html;
-  if (aba === 'total') { /* a tabela visível já é o total; evita duplicar na impressão */ }
 }
 $('#tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; aba = b.dataset.a; $$('#tabs button').forEach((x) => x.classList.toggle('on', x === b)); renderTabela(); });
 $('#busca').addEventListener('input', renderTabela);
+$('#resultado').addEventListener('change', (e) => { const c = e.target.closest('[data-ck]'); if (!c) return; if (c.checked) S.comprados[c.dataset.ck] = 1; else delete S.comprados[c.dataset.ck]; salvar(); renderTabela(); });
 $('#nomeObra').addEventListener('input', (e) => { S.nome = e.target.value; salvar(); });
-$('#btnPrint').onclick = () => { const vis = $('#resultado').firstElementChild; if (vis && !vis.classList.contains('print-only')) vis.classList.add('no-print'); window.print(); if (vis) vis.classList.remove('no-print'); };
+$('#btnPrint').onclick = () => { const vis = $('#resultado .tela'); if (vis) vis.classList.add('no-print'); window.print(); if (vis) vis.classList.remove('no-print'); };
 function baixar(nome, conteudo, tipo) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([conteudo], { type: tipo })); a.download = nome; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
-const slug = () => (S.nome || 'casa').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase();
+const slug = () => (S.nome || 'obra').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').toLowerCase();
 $('#btnCsv').onclick = () => {
   const q = (s) => '"' + String(s).replace(/"/g, '""') + '"', n = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
   const L = ['Etapa;Insumo;Quantidade;Unidade;Compra;Memória de cálculo'];
   R.etapas.forEach((e, i) => e.itens.forEach((it) => L.push([q((i + 1) + '. ' + e.nome), q(it.desc), n(it.qtd), q(it.un), q(it.compra), q(it.mem.join('; '))].join(';'))));
   L.push('', 'TOTAL CONSOLIDADO;Insumo;Quantidade;Unidade;Compra;Etapas');
   R.consolidado.forEach((it) => L.push(['', q(it.desc), n(it.qtd), q(it.un), q(it.compra), q([...new Set(it.etapas)].join(', '))].join(';')));
+  L.push('', 'COMPRAS POR FASE;Insumo;Quantidade;Unidade;Compra;Observação');
+  R.compras.forEach((fa) => fa.itens.forEach((it) => L.push([q(fa.nome), q(it.desc), n(it.qtd), q(it.un), q(it.compra), q(it.prazo || '')].join(';'))));
   baixar('quantitativo-' + slug() + '.csv', '﻿' + L.join('\r\n'), 'text/csv;charset=utf-8');
 };
-$('#btnBackup').onclick = () => baixar('lang-casa-' + slug() + '.json', JSON.stringify(Object.assign({ app: 'lang-casa', versao: 1 }, S), null, 1), 'application/json');
+
+// ---- planilha Excel com fórmulas
+function planilhasExcel() {
+  const rel = S.relatorio || {}, r = R.resumo, hoje = new Date().toLocaleDateString('pt-BR');
+  const cab = (t) => ({ v: t, s: 'cab' });
+  const compraF = (row, colQ, colF, un) => un === 'm³' ? 'ROUNDUP(' + colQ + row + ',1)' : 'IF(' + colF + row + '>0,ROUNDUP(' + colQ + row + '/' + colF + row + ',0),ROUNDUP(' + colQ + row + ',0))';
+  const compraV = (i) => i.un === 'm³' ? Math.ceil(i.qtd * 10 - 1e-9) / 10 : i.emb && i.emb.qtd > 0 ? Math.ceil(i.qtd / i.emb.qtd - 1e-9) : Math.ceil(i.qtd - 1e-9);
+  const unCompra = (i) => i.emb && i.emb.qtd > 0 ? i.emb.nome : i.un;
+  // 1. resumo
+  const resumo = [[{ v: 'Quantitativo de insumos — ' + (S.nome || rel.obra || 'Obra'), s: 'tit' }], [],
+    ['Empresa', rel.empresa || ''], ['Responsável técnico', rel.responsavel || ''], ['Registro (CREA/CAU)', rel.registro || ''], ['ART/RRT', rel.art || ''],
+    ['Obra', S.nome || rel.obra || ''], ['Endereço', rel.endereco || ''], ['Cliente', rel.cliente || ''], ['Revisão', rel.revisao || ''], ['Data', hoje], [],
+    [cab('Resumo'), cab('')], ['Área construída (m²)', +r.areaConstruida.toFixed(2)], ['Pavimentos', r.pavimentos], ['Unidades', r.unidades], ['Paredes (m)', +(r.paredesExternas + r.paredesInternas).toFixed(2)],
+    ['Alvenaria (m²)', +r.alvenaria.toFixed(2)], ['Concreto estrutural (m³)', +r.concreto.toFixed(2)], ['Aço (kg)', +r.aco.toFixed(1)], ['Fundação', R.fundacao.texto || ''], [],
+    [cab('Indicador'), cab('Valor'), cab('Mínimo usual'), cab('Máximo usual'), cab('Unidade'), cab('Situação')]];
+  for (const i of R.indicadores) resumo.push([i.nome, i.valor == null ? '' : +i.valor.toFixed(3), i.min, i.max, i.un, { ok: 'ok', atencao: 'atenção', fora: 'fora da faixa', na: '—' }[i.estado]]);
+  // 2. insumos por etapa
+  const et = [[cab('Etapa'), cab('Código'), cab('Insumo'), cab('Un'), cab('Quantidade'), cab('Embalagem'), cab('Qtd por embalagem'), cab('Compra'), cab('Memória de cálculo')]];
+  R.etapas.forEach((e, k) => e.itens.forEach((i) => { const row = et.length + 1; et.push([(k + 1) + '. ' + e.nome, i.key, i.desc, i.un, +i.qtd.toFixed(4), unCompra(i), i.emb && i.emb.qtd > 0 ? +i.emb.qtd.toFixed(4) : 0, { f: compraF(row, 'E', 'G', i.un), v: compraV(i), s: 'int' }, { v: i.mem.join('; '), s: 'txt' }]); }));
+  // 3. total consolidado com SOMASE e coluna de preço
+  const tot = [[cab('Código'), cab('Insumo'), cab('Un'), cab('Quantidade'), cab('Embalagem'), cab('Qtd por embalagem'), cab('Compra'), cab('Preço por embalagem (R$)'), cab('Total (R$)')]];
+  R.consolidado.forEach((i) => { const row = tot.length + 1; tot.push([i.key, i.desc, i.un, { f: "SUMIF('Insumos por etapa'!B:B,A" + row + ",'Insumos por etapa'!E:E)", v: +i.qtd.toFixed(4) }, unCompra(i), i.emb && i.emb.qtd > 0 ? +i.emb.qtd.toFixed(4) : 0, { f: compraF(row, 'D', 'F', i.un), v: compraV(i), s: 'int' }, null, { f: 'IF(H' + row + '="","",G' + row + '*H' + row + ')' }]); });
+  tot.push([null, { v: 'TOTAL', s: 'neg' }, null, null, null, null, null, null, { f: 'SUM(I2:I' + tot.length + ')', s: 'neg' }]);
+  // 4. compras por fase
+  const cp = [[cab('Fase'), cab('Quando'), cab('Insumo'), cab('Un'), cab('Quantidade'), cab('Embalagem'), cab('Qtd por embalagem'), cab('Compra'), cab('Observação'), cab('Comprado')]];
+  R.compras.forEach((fa) => fa.itens.forEach((i) => { const row = cp.length + 1; cp.push([fa.nome, fa.quando, i.desc, i.un, +i.qtd.toFixed(4), unCompra(i), i.emb && i.emb.qtd > 0 ? +i.emb.qtd.toFixed(4) : 0, { f: compraF(row, 'E', 'G', i.un), v: compraV(i), s: 'int' }, i.prazo || '', S.comprados[fa.id + '|' + i.key] ? 'sim' : '']); }));
+  // 5. levantamento
+  const lev = [[cab('Pavimento'), cab('Repetições'), cab('Cômodo'), cab('Tipo'), cab('Área (m²)'), cab('Perímetro (m)'), cab('Piso'), cab('Parede'), cab('Teto')]];
+  const nomeOp = (lista, v) => (lista.find(([k]) => k === (v || 'auto')) || ['', 'Padrão'])[1];
+  for (const p of S.pavimentos) for (const a of p.lev.ambientes || []) lev.push([p.nome, p.rep, a.nome, (E.TIPOS_AMBIENTE[a.tipo] || {}).nome || a.tipo, +a.area || 0, +a.perimetro || 0, nomeOp(OPC_PISO, a.piso), nomeOp(OPC_PAREDE, a.parede), nomeOp(OPC_TETO, a.teto)]);
+  lev.push([], [cab('Pavimento'), cab('Esquadria'), cab('Largura (m)'), cab('Altura (m)'), cab('Peitoril (m)'), cab('Qtd'), cab('Externa')]);
+  for (const p of S.pavimentos) for (const o of p.lev.aberturas || []) lev.push([p.nome, (E.TIPOS_ABERTURA[o.tipo] || {}).nome || o.tipo, +o.largura || 0, +o.altura || 0, o.peitoril == null ? '' : +o.peitoril, +o.qtd || 1, o.externa ? 'sim' : 'não']);
+  // 6. coeficientes
+  const co = [[cab('Coeficiente'), cab('Valor adotado'), cab('Unidade'), cab('Padrão')]];
+  for (const [k, [v, u, d]] of Object.entries(E.COEF)) co.push([d, S.coef[k] != null ? S.coef[k] : v, u, v]);
+  return [
+    { nome: 'Resumo', colunas: [34, 16, 14, 14, 10, 14], linhas: resumo },
+    { nome: 'Insumos por etapa', colunas: [30, 22, 50, 6, 13, 13, 11, 10, 70], linhas: et, congelar: 1, filtro: true },
+    { nome: 'Total consolidado', colunas: [22, 52, 6, 13, 13, 11, 10, 14, 14], linhas: tot, congelar: 1, filtro: true },
+    { nome: 'Compras por fase', colunas: [32, 30, 50, 6, 13, 13, 11, 10, 50, 10], linhas: cp, congelar: 1, filtro: true },
+    { nome: 'Levantamento', colunas: [18, 12, 30, 28, 11, 12, 22, 20, 18], linhas: lev, congelar: 1 },
+    { nome: 'Coeficientes', colunas: [55, 14, 10, 10], linhas: co, congelar: 1 }
+  ];
+}
+$('#btnXlsx').onclick = () => {
+  try { const b = window.Xlsx.gerarXlsx(planilhasExcel()); baixar('quantitativo-' + slug() + '.xlsx', b, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); }
+  catch (err) { console.error(err); toast('Não foi possível gerar a planilha: ' + err.message); }
+};
+
+// ---- dados do relatório (timbre)
+const CAMPOS_REL = [['empresa', 'Empresa'], ['responsavel', 'Responsável técnico'], ['registro', 'Registro (CREA/CAU)'], ['art', 'ART/RRT'], ['obra', 'Obra'], ['endereco', 'Endereço da obra'], ['cliente', 'Cliente'], ['revisao', 'Revisão do projeto']];
+function renderRelatorio() {
+  const rel = S.relatorio;
+  if (!$('#relCampos').children.length) $('#relCampos').innerHTML = CAMPOS_REL.map(([k, t]) => '<label class="f">' + t + '<input data-rel="' + k + '"></label>').join('');
+  for (const [k] of CAMPOS_REL) { const el = $('[data-rel="' + k + '"]'); if (document.activeElement !== el) el.value = rel[k] || ''; }
+  $('#relLogoTxt').textContent = rel.logo ? 'logotipo carregado' : 'sem logotipo';
+  $('#relLogoDel').classList.toggle('hidden', !rel.logo);
+  const linhas = [rel.empresa && '<b>' + esc(rel.empresa) + '</b>', rel.responsavel && 'Responsável técnico: ' + esc(rel.responsavel) + (rel.registro ? ' — ' + esc(rel.registro) : ''), rel.art && 'ART/RRT: ' + esc(rel.art), (S.nome || rel.obra) && 'Obra: ' + esc(S.nome || rel.obra) + (rel.endereco ? ' — ' + esc(rel.endereco) : ''), rel.cliente && 'Cliente: ' + esc(rel.cliente), rel.revisao && 'Revisão: ' + esc(rel.revisao)].filter(Boolean);
+  $('#cabRel').innerHTML = (rel.logo ? '<img src="' + rel.logo + '" alt="">' : '') + '<div class="dados">' + linhas.join('<br>') + '</div>';
+  $('#cabRel').style.display = '';
+  $('#assinatura').innerHTML = rel.responsavel ? '<div class="linha"></div>' + esc(rel.responsavel) + (rel.registro ? '<br>' + esc(rel.registro) : '') : '';
+}
+$('#relCampos').addEventListener('input', (e) => { const k = e.target.dataset.rel; if (!k) return; S.relatorio[k] = e.target.value; salvar(); renderRelatorio(); });
+$('#relLogo').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const bmp = await createImageBitmap(f); const k = Math.min(1, 360 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    S.relatorio.logo = c.toDataURL('image/png'); salvar(); renderRelatorio();
+  } catch (err) { toast('Não foi possível ler a imagem.'); }
+});
+$('#relLogoDel').onclick = () => { delete S.relatorio.logo; salvar(); renderRelatorio(); };
+
+// ---- revisões
+function renderRevisoes() {
+  const L = S.revisoes;
+  $('#revNome').placeholder = 'Rev ' + String(L.length + 1).padStart(2, '0');
+  $('#revLista').innerHTML = L.length ? '<div class="tbl"><table><thead><tr><th>Revisão</th><th>Data</th><th class="n">Área (m²)</th><th class="n">Insumos</th><th></th></tr></thead><tbody>' + L.map((v, i) => '<tr><td class="b">' + esc(v.nome) + '</td><td>' + esc(v.data) + '</td><td class="n">' + fmt(v.area, 1) + '</td><td class="n">' + v.consolidado.length + '</td><td><button class="x" data-delrev="' + i + '" title="Excluir">×</button></td></tr>').join('') + '</tbody></table></div>' : '<p class="small muted">Nenhuma revisão salva ainda.</p>';
+  const opts = '<option value="atual">Quantitativo atual</option>' + L.map((v, i) => '<option value="' + i + '">' + esc(v.nome) + '</option>').join('');
+  const a = $('#revA').value, b = $('#revB').value;
+  $('#revA').innerHTML = opts; $('#revB').innerHTML = opts;
+  $('#revA').value = a && (a === 'atual' || L[a]) ? a : (L.length ? String(L.length - 1) : 'atual'); $('#revB').value = b && (b === 'atual' || L[b]) ? b : 'atual';
+}
+$('#revSalvar').onclick = () => {
+  const nome = $('#revNome').value.trim() || $('#revNome').placeholder;
+  S.revisoes.push({ nome, data: new Date().toLocaleString('pt-BR'), area: R.resumo.areaConstruida, consolidado: R.consolidado.map((i) => ({ key: i.key, desc: i.desc, un: i.un, qtd: +i.qtd.toFixed(4) })) });
+  $('#revNome').value = ''; salvar(); renderRevisoes(); toast('Revisão “' + nome + '” salva.');
+};
+$('#revLista').addEventListener('click', (e) => { const b = e.target.closest('[data-delrev]'); if (!b) return; S.revisoes.splice(+b.dataset.delrev, 1); salvar(); renderRevisoes(); $('#revResultado').innerHTML = ''; });
+$('#revComparar').onclick = () => {
+  const pega = (v) => v === 'atual' ? { nome: 'Atual', consolidado: R.consolidado } : S.revisoes[+v];
+  const A = pega($('#revA').value), B = pega($('#revB').value);
+  if (!A || !B) return;
+  const d = E.comparar(A.consolidado, B.consolidado);
+  $('#revResultado').innerHTML = d.length ? '<div class="tbl" style="max-height:480px"><table><thead><tr><th>Insumo</th><th>Un</th><th class="n">' + esc(A.nome) + '</th><th class="n">' + esc(B.nome) + '</th><th class="n">Diferença</th><th class="n">%</th></tr></thead><tbody>' +
+    d.map((x) => '<tr><td>' + esc(x.desc) + '</td><td>' + x.un + '</td><td class="n">' + fmt(x.a, 2) + '</td><td class="n">' + fmt(x.b, 2) + '</td><td class="n b" style="color:' + (x.dif > 0 ? 'var(--danger)' : 'var(--ok)') + '">' + (x.dif > 0 ? '+' : '') + fmt(x.dif, 2) + '</td><td class="n">' + (x.pct == null ? 'novo' : (x.pct > 0 ? '+' : '') + fmt(x.pct, 1) + '%') + '</td></tr>').join('') + '</tbody></table></div>'
+    : '<p class="note ok">As duas versões têm exatamente os mesmos quantitativos.</p>';
+};
+
+$('#btnBackup').onclick = () => baixar('lang-casa-' + slug() + '.json', JSON.stringify(Object.assign({ app: 'lang-casa', versao: 2 }, S), null, 1), 'application/json');
 $('#restore').addEventListener('change', async (e) => {
   const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-  try { const o = JSON.parse(await f.text()); if (o.app !== 'lang-casa') throw new Error('arquivo não é um backup do Lang Casa'); S = Object.assign(novoEstado(), o); S.resp = Object.assign({}, E.RESPOSTAS_PADRAO, o.resp || {}); salvar(); painelMedidas(); toast('Backup restaurado. Reimporte a planta para ver o desenho sobre ela.'); irPara(4); }
-  catch (err) { toast('Não foi possível restaurar: ' + err.message); }
+  try {
+    const o = JSON.parse(await f.text()); if (o.app !== 'lang-casa') throw new Error('arquivo não é um backup do Lang Casa');
+    S = carregarEstado(o); IMG = null; CAMADA = null; salvar(); renderPavs(); painelMedidas(); toast('Backup restaurado. Reimporte as plantas para ver o desenho sobre elas.'); irPara(4);
+  } catch (err) { toast('Não foi possível restaurar: ' + err.message); }
 });
 
 // ------------------------------------------------------------------ início
-painelMedidas();
+renderPavs(); painelMedidas();
 recuperarImagem().finally(() => irPara(S.etapa || 1));
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('service-worker.js').catch(() => {});
 </script>

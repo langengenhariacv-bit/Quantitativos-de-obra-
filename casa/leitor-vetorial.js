@@ -87,6 +87,56 @@
     return 'sala';
   }
 
+  // ------------------------------------------------------------------ quadro de esquadrias
+  // Procura linhas de tabela como "P1 | 0,80 x 2,10" ou "J1  150  120  100" e devolve { P1: {l, a, p} }.
+  function lerQuadro(textos) {
+    const linhas = [];
+    for (const t of textos) {
+      const nx = -t.uy, ny = t.ux, v = t.x * nx + t.y * ny, u = t.x * t.ux + t.y * t.uy;
+      let L = linhas.find((l) => Math.abs(l.ux - t.ux) < 0.05 && Math.abs(l.uy - t.uy) < 0.05 && Math.abs(l.v - v) < Math.max(1.2, t.h * 0.5));
+      if (!L) { L = { ux: t.ux, uy: t.uy, v, itens: [] }; linhas.push(L); }
+      L.itens.push({ s: t.s, u, h: t.h || 2 });
+    }
+    // medida: "0,80" / "2,10" (metros com 2 casas) ou "80" / "210" (centímetros, 40 a 400)
+    const medida = (x) => {
+      if (/^\d[.,]\d{2}$/.test(x)) return num(x);
+      if (/^[1-9]\d{1,2}$/.test(x)) { const n = +x; return n >= 40 && n <= 400 ? n / 100 : null; }
+      return null;
+    };
+    const achados = [];
+    for (const L of linhas) {
+      L.itens.sort((a, b) => a.u - b.u);
+      L.itens.forEach((it, k) => {
+        if (!/^[PJ]\d+$/i.test(it.s)) return;
+        const lim = it.u + it.h * 40;
+        const prox = L.itens.slice(k + 1).filter((o) => o.u <= lim);
+        const ate = prox.findIndex((o) => /^[PJ]\d+$/i.test(o.s));
+        const toks = (ate >= 0 ? prox.slice(0, ate) : prox).map((o) => o.s);
+        let l = null, a = null, p = null;
+        const junto = toks.join(' ').replace(/[×X]/g, 'x');
+        const m = junto.match(/(?:^|\s)(\d[.,]\d{2}|[1-9]\d{1,2})\s*x\s*(\d[.,]\d{2}|[1-9]\d{1,2})(?:\s*(?:\/|x)\s*(\d[.,]\d{2}|[1-9]\d{1,2}))?/);
+        if (m) { l = medida(m[1]); a = medida(m[2]); if (m[3]) p = medida(m[3]); }
+        else {
+          const ns = toks.map(medida).filter((v) => v != null);
+          if (ns.length >= 2) { l = ns[0]; a = ns[1]; if (ns.length >= 3) p = ns[2]; }
+        }
+        if (!(l >= 0.3 && l <= 5 && a >= 0.3 && a <= 3.2)) return;
+        if (p != null && !(p >= 0 && p <= 2.5)) p = null;
+        achados.push({ rot: it.s.toUpperCase(), l, a, p, u: it.u, h: it.h, ux: L.ux, uy: L.uy, v: L.v });
+      });
+    }
+    // tabela de verdade: rótulos alinhados em coluna (mesma posição ao longo da linha), em linhas próximas
+    let melhor = [];
+    for (const x of achados) {
+      const col = achados.filter((y) => Math.abs(y.ux - x.ux) < 0.05 && Math.abs(y.u - x.u) < x.h * 3 && Math.abs(y.v - x.v) < x.h * 40);
+      if (new Set(col.map((y) => y.rot)).size > new Set(melhor.map((y) => y.rot)).size) melhor = col;
+    }
+    const res = {};
+    if (new Set(melhor.map((y) => y.rot)).size < 2) return res;
+    for (const y of melhor) if (!res[y.rot]) res[y.rot] = { l: y.l, a: y.a, p: y.p };
+    return res;
+  }
+
   // ------------------------------------------------------------------ análise
   function analisar(D, opt) {
     opt = opt || {};
@@ -422,10 +472,25 @@
     });
     const semRot = aberturas.filter((a) => !a.rotulo || a.rotulo.endsWith('*')).length;
     if (porRotulo && semRot) avisos.push(semRot + ' esquadria(s) sem rótulo em texto foram reconhecidas pelo desenho (vão com arco de porta ou caixilho).');
+    // quadro de esquadrias da prancha: vale mais que a medida no desenho
+    const quadro = lerQuadro(D.textos);
+    const qk = Object.keys(quadro);
+    if (qk.length) {
+      avisos.unshift('Quadro de esquadrias lido da prancha: ' + qk.sort().map((k) => k + ' ' + fmtN(quadro[k].l) + '×' + fmtN(quadro[k].a) + (quadro[k].p != null ? ' peitoril ' + fmtN(quadro[k].p) : '')).join('; ') + '.');
+      for (let i = avisos.length - 1; i >= 0; i--) if (/larguras diferentes/.test(avisos[i])) avisos.splice(i, 1);
+      const divergem = new Set();
+      for (const a of aberturas) {
+        const q = quadro[(a.rotulo || '').replace('*', '')]; if (!q) continue;
+        if (a.larguraMedida && Math.abs(a.larguraMedida - q.l) > 0.06) divergem.add(a.rotulo.replace('*', ''));
+        a.largura = q.l; a.alturaQuadro = q.a; if (q.p != null) a.peitorilQuadro = q.p;
+      }
+      if (divergem.size) avisos.push('No desenho, ' + [...divergem].join(', ') + ' não bate com a largura do quadro de esquadrias: valeu o quadro. Confira a planta.');
+    }
     for (const a of aberturas) {
       const L = a.largura;
       a.tipo = a.porta ? (a.externa ? (L >= 1.6 ? 'porta_correr' : 'porta_ext') : 'porta_int') : (L < 0.8 ? 'basculante' : 'janela');
-      a.altura = a.porta ? 2.10 : a.tipo === 'basculante' ? 0.60 : 1.20; a.peitoril = a.porta ? 0 : a.tipo === 'basculante' ? 1.60 : 1.00; a.qtd = 1;
+      a.altura = a.alturaQuadro || (a.porta ? 2.10 : a.tipo === 'basculante' ? 0.60 : 1.20);
+      a.peitoril = a.porta ? 0 : a.peitorilQuadro != null ? a.peitorilQuadro : a.tipo === 'basculante' ? 1.60 : 1.00; a.qtd = 1;
     }
 
     // multiunidades / pavimentos
@@ -495,7 +560,7 @@
         paredes: { externas: +Lext.toFixed(2), internas: +Lint.toFixed(2) },
         envelope, nos: 0
       },
-      detalhe: { ambientes, aberturas, vaos, fonteArea, totalRotulos: rotPJ.length, camadaParede: { cor: [camadaParede.r, camadaParede.g, camadaParede.b], w: camadaParede.w } },
+      detalhe: { ambientes, aberturas, vaos, fonteArea, quadro, totalRotulos: rotPJ.length, camadaParede: { cor: [camadaParede.r, camadaParede.g, camadaParede.b], w: camadaParede.w } },
       camada: { w: W, h: H, data: camada, x0: minx, y0: miny, k },
       avisos
     };
@@ -529,7 +594,8 @@
     return false;
   }
 
-  const API = { extrair, analisar, tipoPorNome };
+  const fmtN = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
+  const API = { extrair, analisar, tipoPorNome, lerQuadro };
   if (typeof module === 'object' && module.exports) module.exports = API;
   else root.LeitorVetorial = API;
 })(typeof self !== 'undefined' ? self : this);

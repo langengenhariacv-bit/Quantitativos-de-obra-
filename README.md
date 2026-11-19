@@ -142,7 +142,14 @@ App (PWA) que gera o quantitativo completo de **insumos** de uma casa térrea a 
 
 Concretos e argamassas são decompostos em cimento, cal, areia e brita (ou concreto usinado e argamassa industrializada, se escolhidos). O aço sai por bitola em kg e em barras. Estrutura e fundação seguem critérios paramétricos de pré-dimensionamento, como sapata 0,80×0,80 m, pilares 14×30 cm com 4Ø10 e baldrame e cinta com 4 barras: confira com o projeto estrutural. Os consumos e perdas ficam editáveis em *Coeficientes*.
 
-- Motor de cálculo: `casa/engine.js` (teste: `node tests/casa-engine.cjs`). Leitor de PDF vetorial: `casa/leitor-vetorial.js`.
-- Plantas com várias unidades ou pavimentos são calculadas como uma única casa térrea; o app avisa quando detecta isso (escada, várias cozinhas).
+- **Pavimentos e unidades:** cada pavimento tem a sua planta e o seu levantamento (botão *＋ Pavimento*, com opção de copiar outro) e pode se repetir (pavimento tipo). Lajes entre pavimentos, escada de concreto com revestimento e corrimão, prumadas de água e esgoto, telhado só sobre o último pavimento (e sobre o térreo descoberto), e um quadro de luz, medidor e cavalete por unidade.
+- **Acabamento por cômodo:** no passo 2, cada cômodo pode ter piso (cerâmica, porcelanato 60 ou 90, laminado, vinílico, cimentado), parede (sem cerâmica, faixa, 1,50 m ou até o teto) e teto (reboco, gesso, drywall, PVC) próprios. No passo 3 há os padrões Popular, Médio e Alto.
+- **Quadro de esquadrias:** se a prancha tem a tabela (ex.: “P1 0,80 x 2,10”, “J1 1,50 x 1,20 / 1,00”), a leitura automática usa largura, altura e peitoril dela.
+- **Fundação pelo solo:** escolha o solo numa lista do mais ao menos resistente, com tensões admissíveis presuntivas da NBR 6122:1996. A sapata é dimensionada pela carga por pilar (área de influência × pavimentos). Em solo mole, a sapata rasa é trocada por estacas, com aviso.
+- **Conferência:** indicadores com faixa usual (aço/m³, concreto/m², fôrma/m³, cimento/m², alvenaria/m², blocos/m², janelas ÷ piso e pontos elétricos/m²), mais a memória da fundação.
+- **Compras por fase:** lista de compras na ordem da obra (mobilização e fundação → estrutura → instalações embutidas → revestimentos → acabamentos → entrega), com prazos de encomenda (esquadrias sob medida, granito, laje, concreto usinado) e marcação do que já foi comprado.
+- **Revisões:** salve o quantitativo como revisão (ex.: “Rev 03”) e compare com outra ou com o atual.
+- **Excel e relatório:** planilha .xlsx com fórmulas (SOMASE no consolidado, ARREDONDAR.PARA.CIMA na compra e coluna de preço para preencher), compras por fase, levantamento e coeficientes. A impressão/PDF sai com logotipo, empresa, responsável técnico, ART e assinatura.
+- Motor de cálculo: `casa/engine.js` (teste: `node tests/casa-engine.cjs`). Leitor de PDF vetorial: `casa/leitor-vetorial.js` (teste: `node tests/casa-leitor.cjs`). Planilha: `casa/xlsx.js`.
 - Leitura por IA: rota `api/casa-planta.js` com Claude. Para ativar, cadastre a variável de ambiente `ANTHROPIC_API_KEY` no projeto Vercel. Sem a chave, o app funciona normalmente pelo desenho.
 - Os dados ficam no aparelho (localStorage e IndexedDB para a imagem da planta). Use o backup.
