@@ -258,7 +258,7 @@ function renderLock(){
   if(modo!=='local'){el.innerHTML=telaCompartilhada();return}
   if(ativando){el.innerHTML=telaAtivacao();return}
   const ativar='<div style="text-align:center;margin:18px"><button class="btn soft" onclick="ativando=true;renderLock()">Ativar estoque compartilhado</button></div>';
-  if(!ps.some(p=>p.admin)){el.innerHTML=setupHTML()+ativar;return}
+  if(!ps.some(p=>p.admin)){el.innerHTML=setupHTML(ativar);return}
   if(lockSel&&pessoaById(lockSel)){const p=pessoaById(lockSel);
     el.innerHTML=`<div class="lock"><div class="pinbox">
       <button class="link" style="color:#ff9a5f" onclick="lockSel=null;pinBuf='';renderLock()">‹ Trocar pessoa</button>
@@ -269,7 +269,7 @@ function renderLock(){
     </div></div>`;return}
   el.innerHTML=`<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>${esc((db.empresa||'Lang').split(' ')[0])} Estoque</b><small>Quem está usando? Toque na sua foto.</small></div></div>
     <div class="people">${ps.map(p=>`<button class="person" onclick="lockSel='${p.id}';pinBuf='';renderLock()">${avatar(p,88)}<span>${esc(p.nome)}</span>${p.admin?'<small>Administrador</small>':''}</button>`).join('')}</div></div>`;
-  el.insertAdjacentHTML('beforeend',ativar);
+  el.querySelector('.lock-h').insertAdjacentHTML('afterend',ativar);
 }
 function pinKey(k){
   if(Date.now()<bloqAte)return;
@@ -283,9 +283,9 @@ function pinKey(k){
   if(falhas>=5){bloqAte=Date.now()+30000;falhas=0;$('#pmsg').textContent='Muitas tentativas. Aguarde 30 segundos.';setTimeout(()=>{if($('#pmsg'))$('#pmsg').textContent='Digite seu PIN'},30000)}
   else $('#pmsg').textContent='PIN errado. Tente de novo.';
 }
-function setupHTML(){
+function setupHTML(ativar){
   return `<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>Primeiro acesso</b><small>Cadastre o administrador do estoque.</small></div></div>
-  <div class="card" style="max-width:460px;margin:0 auto;color:var(--ink)">
+  ${ativar}<div class="card" style="max-width:460px;margin:0 auto;color:var(--ink)">
     <p class="muted small" style="margin-top:0">O administrador cadastra as pessoas, corrige saldos e exclui lançamentos. Os outros só lançam entradas, saídas e devoluções.</p>
     <div class="f"><label>Seu nome</label><input id="sNome" autocomplete="off" placeholder="Ex.: Geovane Lang"></div>
     <div class="f"><label>Sua foto <span class="muted">(aparece na tela de login)</span></label>

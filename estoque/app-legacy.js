@@ -755,7 +755,7 @@ function renderLock() {
   if (!ps.some(function (p) {
     return p.admin;
   })) {
-    el.innerHTML = setupHTML() + ativar;
+    el.innerHTML = setupHTML(ativar);
     return;
   }
   if (lockSel && pessoaById(lockSel)) {
@@ -770,7 +770,7 @@ function renderLock() {
   el.innerHTML = "<div class=\"lock\"><div class=\"lock-h\"><span class=\"mk\">\uD83D\uDCE6</span><div><b>" + esc((db.empresa || 'Lang').split(' ')[0]) + " Estoque</b><small>Quem est\xE1 usando? Toque na sua foto.</small></div></div>\n    <div class=\"people\">" + ps.map(function (p) {
     return "<button class=\"person\" onclick=\"lockSel='" + p.id + "';pinBuf='';renderLock()\">" + avatar(p, 88) + "<span>" + esc(p.nome) + "</span>" + (p.admin ? '<small>Administrador</small>' : '') + "</button>";
   }).join('') + "</div></div>";
-  el.insertAdjacentHTML('beforeend', ativar);
+  el.querySelector('.lock-h').insertAdjacentHTML('afterend', ativar);
 }
 function pinKey(k) {
   if (Date.now() < bloqAte) return;
@@ -811,8 +811,8 @@ function pinKey(k) {
     }, 30000);
   } else $('#pmsg').textContent = 'PIN errado. Tente de novo.';
 }
-function setupHTML() {
-  return "<div class=\"lock\"><div class=\"lock-h\"><span class=\"mk\">\uD83D\uDCE6</span><div><b>Primeiro acesso</b><small>Cadastre o administrador do estoque.</small></div></div>\n  <div class=\"card\" style=\"max-width:460px;margin:0 auto;color:var(--ink)\">\n    <p class=\"muted small\" style=\"margin-top:0\">O administrador cadastra as pessoas, corrige saldos e exclui lan\xE7amentos. Os outros s\xF3 lan\xE7am entradas, sa\xEDdas e devolu\xE7\xF5es.</p>\n    <div class=\"f\"><label>Seu nome</label><input id=\"sNome\" autocomplete=\"off\" placeholder=\"Ex.: Geovane Lang\"></div>\n    <div class=\"f\"><label>Sua foto <span class=\"muted\">(aparece na tela de login)</span></label>\n      <div style=\"display:flex;gap:12px;align-items:center\"><span id=\"sPrev\">" + avatar({
+function setupHTML(ativar) {
+  return "<div class=\"lock\"><div class=\"lock-h\"><span class=\"mk\">\uD83D\uDCE6</span><div><b>Primeiro acesso</b><small>Cadastre o administrador do estoque.</small></div></div>\n  " + ativar + "<div class=\"card\" style=\"max-width:460px;margin:0 auto;color:var(--ink)\">\n    <p class=\"muted small\" style=\"margin-top:0\">O administrador cadastra as pessoas, corrige saldos e exclui lan\xE7amentos. Os outros s\xF3 lan\xE7am entradas, sa\xEDdas e devolu\xE7\xF5es.</p>\n    <div class=\"f\"><label>Seu nome</label><input id=\"sNome\" autocomplete=\"off\" placeholder=\"Ex.: Geovane Lang\"></div>\n    <div class=\"f\"><label>Sua foto <span class=\"muted\">(aparece na tela de login)</span></label>\n      <div style=\"display:flex;gap:12px;align-items:center\"><span id=\"sPrev\">" + avatar({
     nome: '?'
   }, 64) + "</span>\n      <label class=\"btn soft\" style=\"cursor:pointer\">\uD83D\uDCF7 Tirar foto<input type=\"file\" accept=\"image/*\" capture=\"user\" class=\"hidden\" onchange=\"pFotoSel(this,'sPrev')\"></label></div></div>\n    <div class=\"f2\"><div class=\"f\"><label>PIN (4 n\xFAmeros)</label><input id=\"sPin\" type=\"password\" inputmode=\"numeric\" pattern=\"[0-9]*\" maxlength=\"4\" autocomplete=\"off\"></div>\n    <div class=\"f\"><label>Repita o PIN</label><input id=\"sPin2\" type=\"password\" inputmode=\"numeric\" pattern=\"[0-9]*\" maxlength=\"4\" autocomplete=\"off\"></div></div>\n    <button class=\"btn primary lg full\" onclick=\"criarAdmin()\">Criar administrador e entrar</button>\n    <p class=\"muted small\" style=\"margin-bottom:0\">Guarde bem o PIN: sem ele n\xE3o d\xE1 para entrar como administrador.</p>\n  </div></div>";
 }
