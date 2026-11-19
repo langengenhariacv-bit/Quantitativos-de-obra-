@@ -264,7 +264,9 @@
       perimetro: Math.max(0, num(a.perimetro)) || (num(a.area) > 0 ? 4.1 * Math.sqrt(num(a.area)) : 0),
       piso: a.piso && a.piso !== 'auto' && PISOS[a.piso] ? a.piso : null,
       parede: a.parede && a.parede !== 'auto' ? a.parede : null,
-      teto: a.teto && a.teto !== 'auto' ? a.teto : null
+      teto: a.teto && a.teto !== 'auto' ? a.teto : null,
+      // comprimento das paredes que recebem cerâmica (m); vazio = padrão pelo tipo do cômodo
+      paredeCer: num(a.paredeCer) > 0 ? num(a.paredeCer) : null
     })).filter((a) => a.area > 0);
     const ab = [];
     for (const o of lev.aberturas || []) {
@@ -481,12 +483,21 @@
       if ((t === 'reboco' || t === 'gesso') && !lajeNoPav(f)) t = 'drywall';
       return t;
     }
+    // comprimento de parede com cerâmica: informado pelo usuário ou padrão (faixa = bancada típica; demais = perímetro todo)
+    function compCer(a) {
+      const p = paredeDe(a);
+      if (a.paredeCer) return Math.min(a.paredeCer, a.perimetro || a.paredeCer);
+      if (p === 'faixa') return a.tipo === 'cozinha' || a.tipo === 'conjugado' ? 2.40 : a.tipo === 'cozinha_servico' ? 3.60 : 1.20;
+      return a.perimetro;
+    }
     function azulejoDe(a) {
       const p = paredeDe(a);
       if (p === 'nenhum') return 0;
-      if (p === 'faixa') return 0.60 * (a.tipo === 'cozinha' || a.tipo === 'conjugado' ? 2.40 : a.tipo === 'cozinha_servico' ? 3.60 : 1.20);
+      const L = compCer(a);
+      if (p === 'faixa') return 0.60 * L;
       const alt = p === 'teto' ? h : 1.50;
-      return Math.max(0, a.perimetro * alt - (a.tipo === 'banheiro' || a.tipo === 'lavabo' ? 1.80 : 2.0));
+      const vaos = (a.tipo === 'banheiro' || a.tipo === 'lavabo' ? 1.80 : 2.0) * (a.perimetro > 0 ? Math.min(1, L / a.perimetro) : 1);
+      return Math.max(0, L * alt - vaos);
     }
 
     // ================================================================ 1 PRELIMINARES
@@ -933,9 +944,9 @@
       for (const a of amb) {
         const k = pisoDe(a); (porPiso[k] = porPiso[k] || { area: 0, rod: 0, nomes: [] }); porPiso[k].area += a.area; porPiso[k].nomes.push(a.nome);
         const p = paredeDe(a);
-        if (p === '1.50' || p === 'teto') continue;
-        const bancada = p === 'faixa' ? (a.tipo === 'cozinha' || a.tipo === 'conjugado' ? 2.40 : a.tipo === 'cozinha_servico' ? 3.60 : 1.20) : 0;
-        porPiso[k].rod += Math.max(0, a.perimetro * (1 - dedPorta) - bancada);
+        // paredes com cerâmica até o chão (1,50 m/teto) ou atrás da bancada (faixa) não levam rodapé
+        const semRod = p === 'nenhum' ? 0 : compCer(a);
+        porPiso[k].rod += Math.max(0, (a.perimetro - semRod) * (1 - dedPorta));
       }
       for (const k in porPiso) {
         const P = PISOS[k], o = porPiso[k], mem = fmt(o.area, 1) + ' m² (' + [...new Set(o.nomes)].slice(0, 6).join(', ') + (o.nomes.length > 6 ? '…' : '') + ')';
