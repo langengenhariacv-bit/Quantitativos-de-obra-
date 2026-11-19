@@ -36,7 +36,11 @@
   const BLOCOS = {
     ceramico14: { nome: 'Bloco cerâmico de vedação 14×19×29 cm', c: 0.29, a: 0.19, e: 0.14 },
     ceramico9: { nome: 'Bloco cerâmico de vedação 9×19×29 cm', c: 0.29, a: 0.19, e: 0.09 },
-    concreto14: { nome: 'Bloco de concreto de vedação 14×19×39 cm', c: 0.39, a: 0.19, e: 0.14 }
+    concreto14: { nome: 'Bloco de concreto de vedação 14×19×39 cm', c: 0.39, a: 0.19, e: 0.14 },
+    estrutural_ceramico14: { nome: 'Bloco cerâmico estrutural 14×19×29 cm', c: 0.29, a: 0.19, e: 0.14, estrutural: true,
+      meio: 'Meio-bloco cerâmico estrutural 14×19×14 cm', canaleta: 'Canaleta cerâmica estrutural 14×19×29 cm' },
+    estrutural_concreto14: { nome: 'Bloco de concreto estrutural 14×19×39 cm', c: 0.39, a: 0.19, e: 0.14, estrutural: true,
+      meio: 'Meio-bloco de concreto estrutural 14×19×19 cm', canaleta: 'Canaleta de concreto estrutural 14×19×39 cm' }
   };
 
   // pisos: peça (mm), espessura e junta (mm) para o rejunte, argamassa colante, perda, rodapé
@@ -159,6 +163,14 @@
     a14Areia: [1.08, 'm³/m³', 'Areia no contrapiso 1:4'],
     argIndustr: [1700, 'kg/m³', 'Argamassa industrializada (pó) por m³ aplicado'],
     acParede: [4.5, 'kg/m²', 'Argamassa colante em parede (AC-I)'],
+    grCimento: [380, 'kg/m³', 'Cimento no graute (fgk 20 MPa)'],
+    grCal: [20, 'kg/m³', 'Cal hidratada no graute'],
+    grAreia: [0.70, 'm³/m³', 'Areia no graute'],
+    grPedrisco: [0.55, 'm³/m³', 'Brita 0 (pedrisco) no graute'],
+    grCelula: [0.012, 'm³/m', 'Graute por metro de furo vertical ou de canaleta'],
+    aeCimento: [270, 'kg/m³', 'Cimento na argamassa estrutural 1:0,5:4,5'],
+    aeCal: [67, 'kg/m³', 'Cal na argamassa estrutural 1:0,5:4,5'],
+    aeAreia: [1.00, 'm³/m³', 'Areia na argamassa estrutural 1:0,5:4,5'],
     seladorInt: [0.10, 'L/m²', 'Selador acrílico interno (1 demão)'],
     massaCorrida: [0.65, 'kg/m²', 'Massa corrida PVA (2 demãos)'],
     massaAcrilica: [0.65, 'kg/m²', 'Massa acrílica (2 demãos)'],
@@ -357,6 +369,19 @@
       }
       cimento(v * C.a128Cimento, m + ' (traço 1:2:8)'); cal(v * C.a128Cal, m); areia(v * C.a128Areia, m);
     }
+    function graute(vol, mem) {
+      if (!(vol > 0)) return;
+      const v = vol * (1 + C.perdaConcreto), m = mem + ': ' + fmt(vol, 3) + ' m³ (graute fgk 20 MPa)';
+      T.graute = (T.graute || 0) + vol * MULT;
+      cimento(v * C.grCimento, m); cal(v * C.grCal, m); areia(v * C.grAreia, m);
+      add('brita0', 'Brita 0 (pedrisco)', 'm³', v * C.grPedrisco, m);
+    }
+    function argamassaEstrutural(vol, mem) {
+      if (!(vol > 0)) return;
+      const v = vol * (1 + C.perdaArgamassa), m = mem + ': ' + fmt(vol, 3) + ' m³ (traço 1:0,5:4,5)';
+      if (resp.argamassa === 'industrializada') { add('arg_estrutural', 'Argamassa industrializada de assentamento estrutural', 'kg', v * C.argIndustr, m, EMB.argInd); return; }
+      cimento(v * C.aeCimento, m); cal(v * C.aeCal, m); areia(v * C.aeAreia, m);
+    }
     function argamassa13(vol, mem) { const v = vol * (1 + C.perdaArgamassa), m = mem + ': ' + fmt(vol, 3) + ' m³ (traço 1:3)'; cimento(v * C.a13Cimento, m); areia(v * C.a13Areia, m); }
     function argamassa14(vol, mem) { const v = vol * (1 + C.perdaArgamassa), m = mem + ': ' + fmt(vol, 3) + ' m³ (traço 1:4)'; cimento(v * C.a14Cimento, m); areia(v * C.a14Areia, m); }
     const acoEtapa = {}, formaEtapa = {}, pecasEtapa = {};
@@ -394,6 +419,9 @@
     const lajeNoPav = (f) => f !== Ftop || temLajeTopo;
     const incl = resp.telha === 'ceramica' ? 0.35 : resp.telha === 'fibrocimento' ? 0.15 : 0.10;
     const bl = F0.g.bl, e = bl.e;
+    const EST = !!bl.estrutural;
+    if (EST) { porId.alvenaria.nome = 'Alvenaria estrutural'; porId.estrutura.nome = 'Estrutura (graute, armaduras, lajes e escada)'; }
+    if (EST) avisos.push('Alvenaria estrutural: não há pilares nem vigas de concreto; as paredes não podem ser removidas nem rasgadas (instalações pelos furos dos blocos ou por shafts). A resistência dos blocos (fbk) e o grauteamento devem seguir o projeto estrutural (NBR 16868).');
     const cont = (g, t) => g.amb.filter((a) => a.tipo === t).length;
     const contF = (g, pred) => g.amb.filter((a) => pred(TIPOS_AMBIENTE[a.tipo], a)).length;
     // totais do edifício (com repetições)
@@ -425,13 +453,14 @@
       let npil = g.nos > 0 ? Math.round(g.nos) : ceil(g.Lext / C.vaoPilar) + ceil(g.Lint / (C.vaoPilar * 1.4));
       npil = Math.max(4, npil);
       const oitao = f === Ftop && resp.telha !== 'metalica' ? 2 * 0.5 * g.Wc * (g.Wc / 2 * incl) : 0;
-      const hAlv = h - hC + 0.05;
-      const areaPilaresParede = npil * C.pilarLado * hAlv;
+      const hAlv = EST ? h : h - hC + 0.05;
+      const areaPilaresParede = EST ? 0 : npil * C.pilarLado * hAlv;
+      const pontosGraute = npil + 2 * nVergas; // cantos e encontros + bordas dos vãos
       const alvLiq = Math.max(0, g.Ltot * hAlv + oitao - abTotal - areaPilaresParede);
       const facesInt = Math.max(0, (2 * g.Lint + g.Lext) * h - 2 * abInt - abExt);
       const hExt = f === Ftop ? h + (lajeNoPav(f) ? 0.45 : 0.30) : hPiso;
       const facesExt = Math.max(0, (g.P + 4 * g.bl.e) * hExt + oitao - abExt);
-      return { abExt, abInt, abTotal, mVerga, mContra, nVergas, nJanelas, nPortas, larguraPortas, aJanPerm, npil, oitao, hAlv, areaPilaresParede, alvLiq, facesInt, hExt, facesExt };
+      return { abExt, abInt, abTotal, mVerga, mContra, nVergas, nJanelas, nPortas, larguraPortas, aJanPerm, npil, pontosGraute, oitao, hAlv, areaPilaresParede, alvLiq, facesInt, hExt, facesExt };
     }
     const G = new Map(F.map((f) => [f, geo(f)]));
 
@@ -507,7 +536,7 @@
       aco('8.0', F0.g.Lint * 4 * 1.10, 'engrossamento das paredes internas 4Ø8');
       aco('5.0', F0.g.Lint / 0.25 * (2 * (0.25 - 0.05 + hi - 0.05) + 0.10), 'estribos dos engrossamentos Ø5 c/25');
       forma(F0.g.P * hb);
-      aco('10.0', npil0 * 4 * 1.0, 'esperas dos pilares');
+      aco('10.0', (EST ? G0.pontosGraute : npil0 * 4) * 1.0, EST ? 'esperas dos grautes verticais' : 'esperas dos pilares');
       pecas(F0.g.P + F0.g.Lint);
       memFund.esp = esp;
       if (solo.kpa < 80) avisos.push('Radier sobre solo fraco: verifique recalques com projeto de fundação.');
@@ -515,21 +544,38 @@
       memFund.texto = 'Radier e=' + fmt(esp * 100, 0) + ' cm com borda e faixas sob as paredes engrossadas: pressão média ≈ ' + fmt(q, 0) + ' kPa para σadm ≈ ' + solo.kpa + ' kPa (' + (q <= solo.kpa * 0.9 ? 'atende' : 'no limite') + ').';
       if (q > solo.kpa * 0.9) avisos.push('A pressão do radier (' + fmt(q, 0) + ' kPa) se aproxima da resistência do solo (' + solo.kpa + ' kPa).');
     } else {
-      if (fundTipo === 'broca') {
+      if (EST && fundTipo === 'sapata') {
+        // alvenaria estrutural: carga distribuída nas paredes -> sapata corrida
+        const g = F0.g, qLin = F0.g.A * (C.cargaPav * nPav + C.cargaCob) * 1.05 / Math.max(1, g.Ltot);
+        const B = Math.max(0.40, Math.ceil(qLin / solo.kpa / 0.05 - 1e-9) * 0.05);
+        const hs = Math.max(0.20, Math.ceil(((B - e) / 3) / 0.05 - 1e-9) * 0.05);
+        sapataLado = B; sapataH = hs;
+        memFund.texto = 'Alvenaria estrutural: carga nas paredes ≈ ' + fmt(qLin, 1) + ' kN/m (' + fmt(F0.g.A, 1) + ' m² × ' + nPav + ' pav.); σadm ' + solo.kpa + ' kPa → sapata corrida ' + fmt(B, 2) + ' m de largura × ' + fmt(hs, 2) + ' m sob todas as paredes (' + fmt(g.Ltot, 1) + ' m).';
+        concreto(g.Ltot * (B + 0.10) * 0.05, 'magro', 'Lastro da sapata corrida 5 cm');
+        concreto(g.Ltot * B * hs, 'c25', 'Sapata corrida ' + fmt(B, 2) + ' × ' + fmt(hs, 2) + ' m em ' + fmt(g.Ltot, 1) + ' m');
+        aco('8.0', ceil(g.Ltot / 0.20) * (B - 0.10 + 0.20), 'sapata corrida: Ø8 c/20 transversal');
+        aco('8.0', 4 * g.Ltot * 1.10, 'sapata corrida: 4Ø8 longitudinal');
+        forma(2 * hs * g.Ltot);
+        pecas(g.Ltot);
+      } else if (fundTipo === 'broca') {
         // capacidade aproximada de estaca broca Ø25 cm: ~60 kN por estaca de 3 m em solo médio
         const capEst = solo.kpa < 80 ? 50 : 70, comp = solo.kpa < 80 ? 6 : 3;
-        const porPilar = Math.max(1, ceil(cargaPilar / capEst));
-        const nest = npil0 * porPilar;
+        const porPilar = EST ? 1 : Math.max(1, ceil(cargaPilar / capEst));
+        const espEst = EST ? Math.max(1.0, Math.min(2.5, capEst / (F0.g.A * (C.cargaPav * nPav + C.cargaCob) * 1.05 / Math.max(1, F0.g.Ltot)))) : 0;
+        const nest = EST ? Math.max(4, ceil(F0.g.Ltot / espEst)) : npil0 * porPilar;
         const vol = nest * Math.PI * 0.125 * 0.125 * comp;
         concreto(vol, 'c25', nest + ' estacas broca Ø25 cm × ' + comp + ' m (' + porPilar + ' por pilar)');
         aco('8.0', nest * 4 * 2.0, 'armadura de topo 4Ø8 × 2 m');
         aco('5.0', nest * 10 * 0.55, 'estribos Ø5 c/20');
-        const ladoBloco = porPilar > 1 ? 0.90 : 0.45;
-        concreto(npil0 * ladoBloco * 0.45 * 0.50, 'c25', npil0 + ' blocos de coroamento');
-        aco('10.0', npil0 * 8 * (ladoBloco + 0.3), 'blocos de coroamento');
-        forma(npil0 * 2 * (ladoBloco + 0.45) * 0.50);
+        if (!EST) {
+          const ladoBloco = porPilar > 1 ? 0.90 : 0.45;
+          concreto(npil0 * ladoBloco * 0.45 * 0.50, 'c25', npil0 + ' blocos de coroamento');
+          aco('10.0', npil0 * 8 * (ladoBloco + 0.3), 'blocos de coroamento');
+          forma(npil0 * 2 * (ladoBloco + 0.45) * 0.50);
+        }
         pecas(nest * 2);
-        memFund.texto = 'Carga por pilar ≈ ' + fmt(cargaPilar, 0) + ' kN → ' + porPilar + ' estaca(s) de ' + comp + ' m por pilar.';
+        memFund.texto = EST ? 'Alvenaria estrutural: ' + nest + ' estacas de ' + comp + ' m ao longo das paredes, a cada ' + fmt(espEst, 2) + ' m, ligadas pela viga baldrame.'
+          : 'Carga por pilar ≈ ' + fmt(cargaPilar, 0) + ' kN → ' + porPilar + ' estaca(s) de ' + comp + ' m por pilar.';
       } else {
         // sapata isolada: área = carga / σadm
         const area = cargaPilar / solo.kpa;
@@ -548,7 +594,8 @@
         pecas(npil0 * 2);
       }
       const hb = C.baldrameAltura, g = F0.g;
-      concreto(g.Ltot * (b + 0.10) * 0.05, 'magro', 'Lastro sob baldrame 5 cm');
+      if (EST) aco('10.0', G0.pontosGraute * 1.0, 'esperas dos grautes verticais (1Ø10 × 1 m por ponto)');
+      concreto(g.Ltot * (b + 0.10) * (EST && fundTipo === 'sapata' ? 0 : 0.05), 'magro', 'Lastro sob baldrame 5 cm');
       concreto(g.Ltot * b * hb, 'c25', 'Viga baldrame ' + fmt(b * 100, 0) + '×' + fmt(hb * 100, 0) + ' cm em ' + fmt(g.Ltot, 1) + ' m');
       aco('10.0', 4 * g.Ltot * 1.10, 'baldrame 4Ø10 (+10% ancoragens)');
       aco('5.0', ceil(g.Ltot / 0.20) * (2 * (b - 0.05 + hb - 0.05) + 0.10), 'estribos do baldrame Ø5 c/20');
@@ -565,6 +612,15 @@
       etapa('estrutura');
       const g = f.g, q = G.get(f);
       const hP = h - hC + 0.05;
+      if (EST) {
+        const mvc = q.mVerga + q.mContra;
+        graute(g.Ltot * C.grCelula, 'Cinta de respaldo em canaleta (' + fmt(g.Ltot, 1) + ' m)');
+        aco('10.0', 2 * g.Ltot * 1.10, 'cinta de respaldo 2Ø10');
+        if (mvc > 0) { graute(mvc * C.grCelula, 'Vergas (' + q.nVergas + ') e contravergas (' + q.nJanelas + ') em canaleta'); aco('8.0', mvc * 2, 'vergas/contravergas 2Ø8'); }
+        graute(q.pontosGraute * h * C.grCelula, q.pontosGraute + ' pontos de graute vertical (cantos, encontros e bordas dos vãos) × ' + fmt(h) + ' m');
+        aco('10.0', q.pontosGraute * (h + 0.60), 'graute vertical 1Ø10 por ponto (com transpasse)');
+        pecas(g.Ltot + mvc);
+      } else {
       concreto(q.npil * b * C.pilarLado * hP, 'c25', q.npil + ' pilares ' + fmt(b * 100, 0) + '×' + fmt(C.pilarLado * 100, 0) + ' cm × ' + fmt(hP) + ' m' + (g.nos > 0 ? ' (nós do desenho)' : ''));
       const compBarra = f === F0 ? h + C.profFundacao + 0.70 : hPiso + 0.60;
       aco(pilarBit, q.npil * 4 * compBarra, 'pilares 4Ø' + pilarBit.replace('.', ',') + (f === F0 ? ' (da sapata à cinta)' : ' (com transpasse)'));
@@ -584,6 +640,7 @@
         aco('8.0', mvc * 2, 'vergas/contravergas 2Ø8');
         forma(mvc * (2 * 0.10 + e));
         pecas(mvc);
+      }
       }
       if (lajeNoPav(f)) {
         const A = g.A, piso = f !== Ftop;
@@ -619,9 +676,20 @@
       etapa('alvenaria');
       const g = f.g, q = G.get(f), j = C.juntaBloco;
       const porM2 = 1 / ((bl.c + j) * (bl.a + j));
-      const memA = 'paredes ' + fmt(g.Ltot, 1) + ' m × ' + fmt(q.hAlv) + ' m' + (q.oitao ? ' + oitões ' + fmt(q.oitao, 1) + ' m²' : '') + ' − vãos ' + fmt(q.abTotal, 1) + ' m² − pilares ' + fmt(q.areaPilaresParede, 1) + ' m² = ' + fmt(q.alvLiq, 1) + ' m²';
-      add('bloco', bl.nome, 'un', ceil(q.alvLiq * porM2 * (1 + C.perdaBloco)), memA + '; ' + fmt(porM2, 1) + ' blocos/m²', EMB.milheiro);
+      const memA = 'paredes ' + fmt(g.Ltot, 1) + ' m × ' + fmt(q.hAlv) + ' m' + (q.oitao ? ' + oitões ' + fmt(q.oitao, 1) + ' m²' : '') + ' − vãos ' + fmt(q.abTotal, 1) + ' m²' + (EST ? '' : ' − pilares ' + fmt(q.areaPilaresParede, 1) + ' m²') + ' = ' + fmt(q.alvLiq, 1) + ' m²';
       const vJunta = ((1 / (bl.a + j)) * j * bl.e + porM2 * bl.a * j * bl.e) * 1.15;
+      if (EST) {
+        const mCan = g.Ltot + q.mVerga + q.mContra;
+        const aCan = mCan * (bl.a + j);
+        const equiv = Math.max(0, q.alvLiq - aCan) * porM2;
+        const meios = equiv * 0.10;
+        add('bloco', bl.nome, 'un', ceil((equiv - meios / 2) * (1 + C.perdaBloco)), memA + '; ' + fmt(porM2, 1) + ' blocos/m², menos canaletas e meios-blocos', EMB.milheiro);
+        add('meioBloco', bl.meio, 'un', ceil(meios * (1 + C.perdaBloco)), 'amarração nos cantos, encontros e vãos (~10%)', EMB.milheiro);
+        add('canaleta', bl.canaleta, 'un', ceil(mCan / (bl.c + j) * (1 + C.perdaBloco)), 'cinta de respaldo ' + fmt(g.Ltot, 1) + ' m + vergas e contravergas ' + fmt(q.mVerga + q.mContra, 1) + ' m');
+        argamassaEstrutural(q.alvLiq * vJunta, 'Assentamento estrutural (' + fmt(vJunta * 1000, 1) + ' L/m²)');
+        return;
+      }
+      add('bloco', bl.nome, 'un', ceil(q.alvLiq * porM2 * (1 + C.perdaBloco)), memA + '; ' + fmt(porM2, 1) + ' blocos/m²', EMB.milheiro);
       argamassa128(q.alvLiq * vJunta, 'Assentamento (' + fmt(vJunta * 1000, 1) + ' L/m²)', 'assent');
       add('telaAmarr', 'Tela galvanizada 15×50 cm para ligação alvenaria/pilar', 'un', q.npil * 2 * ceil(q.hAlv / 0.40), '2 faces por pilar, a cada 2 fiadas');
       add('pinoAco', 'Pino de aço com arruela para fixar tela', 'un', q.npil * 2 * ceil(q.hAlv / 0.40) * 2, '2 por tela');
@@ -835,7 +903,7 @@
       argamassa128(q.facesExt * C.rebocoExt, 'Reboco externo ' + fmt(q.facesExt, 1) + ' m² × ' + fmt(C.rebocoExt * 100, 1) + ' cm', 'rev');
       if (tetos.reboco) argamassa128(tetos.reboco * C.rebocoTeto, 'Reboco de teto ' + fmt(tetos.reboco, 1) + ' m²', 'rev');
       if (tetos.gesso) add('gessoLiso', 'Gesso em pó para revestimento (gesso liso)', 'kg', tetos.gesso * 6, 'teto ' + fmt(tetos.gesso, 1) + ' m², 6 kg/m²', EMB.gesso40);
-      add('telaReboco', 'Tela de aço galvanizada para reboco (ponte entre estrutura e alvenaria)', 'm', (q.npil * q.hAlv * 2 + g.Ltot * 2) * 0.5, 'faixas de 25 cm sobre pilares e cintas (face externa)');
+      if (!EST) add('telaReboco', 'Tela de aço galvanizada para reboco (ponte entre estrutura e alvenaria)', 'm', (q.npil * q.hAlv * 2 + g.Ltot * 2) * 0.5, 'faixas de 25 cm sobre pilares e cintas (face externa)');
       if (azulejo > 0) {
         const PR = PAREDES[resp.revParede] || PAREDES.retificado30x58;
         const kgPar = PR.colante === 'AC-I' ? C.acParede : PR.kg;
@@ -1278,9 +1346,9 @@
     const somaC = (re) => final.filter((e2) => e2.id !== 'externa').reduce((s, e2) => s + e2.itens.filter((i) => re.test(i.desc)).reduce((t, i) => t + i.qtd, 0), 0);
     T.concreto = Tcasa.concreto; T.aco = Tcasa.aco; T.forma = Tcasa.forma;
     const vals = {
-      acoConcreto: T.concreto ? T.aco / T.concreto : null,
+      acoConcreto: EST ? null : T.concreto ? T.aco / T.concreto : null,
       concretoArea: areaTotal ? T.concreto / areaTotal : null,
-      formaConcreto: T.concreto - T.formaLaje * C.capaLaje > 0 ? T.forma / (T.concreto - T.formaLaje * C.capaLaje) : null,
+      formaConcreto: EST ? null : T.concreto - T.formaLaje * C.capaLaje > 0 ? T.forma / (T.concreto - T.formaLaje * C.capaLaje) : null,
       cimentoArea: areaTotal ? somaC(/^Cimento Portland/) / 50 / areaTotal : null,
       alvenariaArea: areaTotal ? E.alvenaria / areaTotal : null,
       blocosParede: E.alvenaria ? somaC(/^Bloco/) / E.alvenaria : null,
@@ -1296,13 +1364,13 @@
 
     return {
       etapas: final, consolidado, compras, indicadores, avisos,
-      fundacao: Object.assign(memFund, { tipo: fundTipo, lado: sapataLado, altura: sapataH, pilares: npil0 }),
+      fundacao: Object.assign(memFund, { tipo: EST && fundTipo === 'sapata' ? 'corrida' : fundTipo, estrutural: EST, lado: sapataLado, altura: sapataH, pilares: EST ? 0 : npil0, pontosGraute: EST ? somaF((f) => G.get(f).pontosGraute) : 0 }),
       resumo: {
         areaConstruida: areaTotal, areaTerreo: F0.g.A, perimetro: F0.g.P, comprimento: F0.g.Lc, largura: F0.g.Wc,
         paredesExternas: somaF((f) => f.g.Lext), paredesInternas: somaF((f) => f.g.Lint), pilares: npil0,
         alvenaria: E.alvenaria, areaPiso: E.areaPiso, telhado: aInc, projecaoTelhado: proj,
         pessoas, unidades, pavimentos: nPav, ambientes: ambTot, aberturas: somaF((f) => f.g.ab.reduce((s, o) => s + o.qtd, 0)),
-        concreto: T.concreto, aco: T.aco
+        concreto: T.concreto, aco: T.aco, graute: T.graute || 0, estrutural: EST
       },
       respostas: resp
     };
