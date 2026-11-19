@@ -92,6 +92,8 @@
     pisoQuartos: '',         // '' = igual ao piso; ou chave de PISOS
     pisoEscada: 'granito',   // 'granito' ou chave de PISOS (cerâmicos)
     escadaLargura: 0,        // m; 0 = lida da planta ou 1,20 m
+    argEscada: 'auto',       // 'auto' | 'AC-I' | 'AC-II' | 'AC-III'
+    fitaEscada: true,        // fita antiderrapante nos degraus
     revBanheiro: 'teto',     // teto | 1.50
     revCozinha: 'faixa',     // faixa | 1.50 | teto
     revParede: 'retificado30x58', // peça da parede: chave de PAREDES
@@ -1189,22 +1191,23 @@
       MULT = n;
       let PE = resp.pisoEscada === 'granito' ? null : PISOS[resp.pisoEscada] || PISOS[resp.piso];
       if (PE && !PE.A) PE = null; // laminado/vinílico/cimentado: escada em granito
+      const acE = ['AC-I', 'AC-II', 'AC-III'].includes(resp.argEscada) ? resp.argEscada : PE ? PE.colante || 'AC-III' : 'AC-III';
       if (!PE) {
         add('granitoPisoEsc', 'Piso de degrau em granito ' + fmt(LE, 2) + ' × 0,30 m (2 cm, com boleado)', 'un', nPisos, mem);
         add('granitoEspelho', 'Espelho de degrau em granito ' + fmt(LE, 2) + ' × 0,175 m (2 cm)', 'un', degraus, mem);
         add('granitoPatamar', 'Patamar de escada em granito 2 cm', 'm²', aPat * 1.05, 'patamar ' + fmt(LE, 2) + '×' + fmt(2 * LE, 2) + ' m');
         add('granitoRodEsc', 'Rodapé de granito para escada h = 7 cm (recortado nos degraus)', 'm', rodEsc * 1.10, 'lateral da escada junto à parede + patamar');
-        add('colanteAC-III', 'Argamassa colante AC-III', 'kg', (aPiso + aEsp + aPat) * 7, 'granito da escada, 7 kg/m² (dupla colagem)', EMB.colante);
+        add('colante' + acE, 'Argamassa colante ' + acE, 'kg', (aPiso + aEsp + aPat) * 7, 'granito da escada, 7 kg/m² (dupla colagem)', EMB.colante);
         add('rejunteParede', 'Rejunte cimentício flexível', 'kg', (aPiso + aEsp + aPat) * 0.3, 'juntas do granito da escada', EMB.rejunte);
       } else {
         const aTot = aPiso + aEsp + aPat, perdaE = 0.20; // muitos recortes
         add('piso_escada', 'Revestimento da escada: ' + PE.nome + ' (pisos, espelhos e patamar)', 'm²', aTot * (1 + perdaE), mem + '; ' + fmt(aTot, 2) + ' m² + 20% de recortes', PE.caixa ? { nome: 'caixa ' + fmt(PE.caixa, 2) + ' m²', qtd: PE.caixa } : null);
-        add('colanteAC-III', 'Argamassa colante AC-III', 'kg', aTot * Math.max(PE.kg || 6, 6), 'escada (dupla colagem)', EMB.colante);
+        add('colante' + acE, 'Argamassa colante ' + acE, 'kg', aTot * Math.max(PE.kg || 6, 6), 'escada (dupla colagem)', EMB.colante);
         add('rejunteParede', 'Rejunte cimentício flexível', 'kg', aTot * rejunteKg(PE.A, PE.B, PE.esp, PE.junta) * 1.20, 'escada, junta ' + PE.junta + ' mm', EMB.rejunte);
         add('rodape_escada', 'Rodapé da escada (mesma peça, recortado nos degraus) h = 7 cm', 'm', rodEsc * 1.15, 'lateral da escada junto à parede + patamar');
         add('perfilDegrau', 'Perfil de alumínio para quina de degrau (barra 3 m)', 'un', ceil(nPisos / Math.floor(3 / LE)), 'acabamento da quina dos ' + nPisos + ' pisos');
       }
-      add('fitaAntiderrapante', 'Fita antiderrapante 50 mm (rolo 5 m)', 'un', ceil(nPisos * LE / 5), nPisos + ' degraus × ' + fmt(LE, 2) + ' m');
+      if (resp.fitaEscada !== false && resp.fitaEscada !== 'false') add('fitaAntiderrapante', 'Fita antiderrapante 50 mm (rolo 5 m)', 'un', ceil(nPisos * LE / 5), nPisos + ' degraus × ' + fmt(LE, 2) + ' m');
       MULT = 1;
     }
     etapa('pisos');
