@@ -8,6 +8,7 @@ on:
       - 'vistoria/**'
       - 'habite-se/**'
       - 'estoque/**'
+      - 'tools/estoque-legacy/**'
       - '.github/workflows/controle-tv-web.yml'
   workflow_dispatch:
 
@@ -28,6 +29,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Lang Estoque: gera a versão para aparelhos antigos (iPad com iOS 9) a partir de estoque/app.js
+      - name: Gerar estoque/app-legacy.js
+        run: cd tools/estoque-legacy && npm ci --no-audit --no-fund && node build.js
 
       # A tela é a mesma do app Android; no navegador a ponte tv-web.js substitui a nativa.
       - name: Montar site

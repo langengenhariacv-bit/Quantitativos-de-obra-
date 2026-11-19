@@ -1,7 +1,7 @@
 // Lista padrão de materiais da LANG: entra automaticamente no app (sem duplicar nomes já cadastrados).
 // Formato: [nome, categoria, unidade, ícone]. Ao mudar a lista, aumente CATALOGO_VERSAO e a versão do cache no service-worker.js.
-const CATALOGO_VERSAO=1;
-const CATALOGO=[
+var CATALOGO_VERSAO=1;
+var CATALOGO=[
   // Hidráulica — água fria (soldável e LR)
   ['Joelho sold. 25mm','Hidráulica','un','🚰'],
   ['Joelho LR 25x3/4 azul','Hidráulica','un','🚰'],
