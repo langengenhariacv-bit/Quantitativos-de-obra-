@@ -943,9 +943,10 @@ const PERG = [
   { k: 'laje', t: 'Laje do último pavimento', base: 1, d: 'Os pavimentos de baixo sempre têm laje.', o: [['trelicada', 'Laje treliçada (EPS)'], ['nenhuma', 'Sem laje']] },
   { k: 'teto', t: 'Acabamento do teto', base: 1, o: [['reboco', 'Reboco + pintura'], ['gesso', 'Gesso liso'], ['drywall', 'Forro de gesso (drywall)'], ['pvc', 'Forro de PVC']] },
   { k: 'telha', t: 'Telhado', base: 1, o: [['ceramica', 'Telha cerâmica'], ['fibrocimento', 'Fibrocimento'], ['metalica', 'Metálica termoacústica']] },
-  { k: 'piso', t: 'Piso interno (padrão)', base: 1, d: 'Cada cômodo pode ter outro piso no passo 2.', o: [['porcelanato', 'Porcelanato 60×60'], ['porcelanato_gg', 'Porcelanato 90×90'], ['ceramica', 'Cerâmica 45×45'], ['laminado', 'Laminado'], ['vinilico', 'Vinílico'], ['cimentado', 'Cimentado']] },
+  { k: 'piso', t: 'Piso interno (padrão)', base: 1, d: 'Cada cômodo pode ter outro piso no passo 2.', o: [['retificado59', 'Retificado 59×59'], ['porcelanato', 'Porcelanato 60×60'], ['porcelanato_gg', 'Porcelanato 90×90'], ['ceramica', 'Cerâmica 45×45'], ['laminado', 'Laminado'], ['vinilico', 'Vinílico'], ['cimentado', 'Cimentado']] },
   { k: 'pisoQuartos', t: 'Piso dos quartos', o: [['', 'Igual ao piso padrão'], ['laminado', 'Laminado'], ['vinilico', 'Vinílico'], ['porcelanato', 'Porcelanato'], ['ceramica', 'Cerâmica']] },
   { k: 'esgoto', t: 'Esgoto', base: 1, o: [['rede', 'Rede pública'], ['fossa', 'Fossa, filtro e sumidouro']] },
+  { k: 'revParede', t: 'Revestimento de parede (cozinha e banheiro)', d: 'Peça usada onde a parede leva cerâmica.', o: [['retificado30x58', 'Retificado 30×58'], ['ceramica32x57', 'Cerâmica 32×57']] },
   { k: 'revBanheiro', t: 'Azulejo do banheiro', o: [['teto', 'Até o teto'], ['1.50', 'Até 1,50 m']] },
   { k: 'revCozinha', t: 'Azulejo da cozinha e área', o: [['faixa', 'Faixa sobre a pia/tanque'], ['1.50', 'Até 1,50 m'], ['teto', 'Até o teto']] },
   { k: 'pinturaExterna', t: 'Fachada', o: [['textura', 'Textura acrílica'], ['acrilica', 'Massa + tinta acrílica']] },
@@ -1009,7 +1010,7 @@ document.addEventListener('click', (e) => {
   const b = e.target.closest('.q .opt button'); if (!b || !b.dataset.k) return;
   const p = PERG.find((x) => x.k === b.dataset.k); const v = p.o.find(([x]) => String(x) === b.dataset.v)[0];
   S.resp[p.k] = v; salvar(); $$('.opt button[data-k="' + p.k + '"]').forEach((x) => x.classList.toggle('on', x === b));
-  if (['fundacao', 'piso', 'pisoQuartos', 'teto', 'revBanheiro', 'revCozinha', 'janelas', 'portaExterna', 'pinturaExterna'].includes(p.k)) renderPerguntas();
+  if (['fundacao', 'piso', 'pisoQuartos', 'revParede', 'teto', 'revBanheiro', 'revCozinha', 'janelas', 'portaExterna', 'pinturaExterna'].includes(p.k)) renderPerguntas();
   if (p.k === 'vedacao' && S.levOrigem === 'desenho') { const l = desenhoParaLev(); if (l) S.lev = l; }
 });
 document.addEventListener('input', (e) => {

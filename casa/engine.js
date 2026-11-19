@@ -43,11 +43,18 @@
   const PISOS = {
     ceramica: { nome: 'Piso cerâmico 45×45 cm PEI-4', A: 450, B: 450, esp: 8, junta: 3, colante: 'AC-II', kg: 5.0, perda: 0.10, rodape: 'ceramico', caixa: 2.43 },
     porcelanato: { nome: 'Porcelanato 60×60 cm', A: 600, B: 600, esp: 9, junta: 2, colante: 'AC-III', kg: 6.0, perda: 0.10, rodape: 'porcelanato', nivelador: true, caixa: 1.44 },
+    retificado59: { nome: 'Piso retificado 59×59 cm', A: 590, B: 590, esp: 8, junta: 2, colante: 'AC-III', kg: 6.0, perda: 0.10, rodape: 'retificado', nivelador: true, caixa: 2.09 },
     porcelanato_gg: { nome: 'Porcelanato grande formato 90×90 cm', A: 900, B: 900, esp: 9, junta: 2, colante: 'AC-III', kg: 7.0, perda: 0.12, rodape: 'porcelanato', nivelador: true, caixa: 1.62 },
     laminado: { nome: 'Piso laminado 7 mm (clique)', perda: 0.08, rodape: 'mdf', manta: true, caixa: 2.26 },
     vinilico: { nome: 'Piso vinílico em réguas 2 mm (colado)', perda: 0.06, rodape: 'mdf', cola: 0.35, caixa: 3.34 },
     externo: { nome: 'Piso cerâmico antiderrapante 45×45 cm (externo)', A: 450, B: 450, esp: 8, junta: 4, colante: 'AC-III', kg: 5.0, perda: 0.10, rodape: 'ceramico', caixa: 2.43 },
     cimentado: { nome: 'Piso cimentado desempenado (sem revestimento)', perda: 0, rodape: null }
+  };
+
+  // revestimento de parede (cozinha, área de serviço e banheiros)
+  const PAREDES = {
+    retificado30x58: { nome: 'Revestimento de parede retificado 30×58 cm', A: 300, B: 580, esp: 8, junta: 2, colante: 'AC-II', kg: 5.0, caixa: 1.74 },
+    ceramica32x57: { nome: 'Revestimento cerâmico de parede 32×57 cm', A: 320, B: 570, esp: 8, junta: 2, colante: 'AC-I', kg: 4.5, caixa: 2.19 }
   };
 
   // tensões admissíveis presuntivas (NBR 6122:1996, tabela de valores básicos), do mais ao menos resistente
@@ -81,6 +88,7 @@
     pisoQuartos: '',         // '' = igual ao piso; ou chave de PISOS
     revBanheiro: 'teto',     // teto | 1.50
     revCozinha: 'faixa',     // faixa | 1.50 | teto
+    revParede: 'retificado30x58', // peça da parede: chave de PAREDES
     pinturaExterna: 'textura', // textura | acrilica
     janelas: 'aluminio',     // aluminio | pvc
     portaExterna: 'madeira', // madeira | aluminio
@@ -108,9 +116,9 @@
   };
 
   const PADROES_ACABAMENTO = {
-    popular: { nome: 'Popular', resp: { piso: 'ceramica', pisoQuartos: '', revBanheiro: '1.50', revCozinha: 'faixa', teto: 'pvc', pinturaExterna: 'acrilica', janelas: 'aluminio', portaExterna: 'madeira' } },
-    medio: { nome: 'Médio', resp: { piso: 'porcelanato', pisoQuartos: '', revBanheiro: 'teto', revCozinha: 'faixa', teto: 'reboco', pinturaExterna: 'textura', janelas: 'aluminio', portaExterna: 'madeira' } },
-    alto: { nome: 'Alto', resp: { piso: 'porcelanato_gg', pisoQuartos: 'vinilico', revBanheiro: 'teto', revCozinha: 'teto', teto: 'drywall', pinturaExterna: 'textura', janelas: 'pvc', portaExterna: 'aluminio' } }
+    popular: { nome: 'Popular', resp: { piso: 'ceramica', pisoQuartos: '', revParede: 'ceramica32x57', revBanheiro: '1.50', revCozinha: 'faixa', teto: 'pvc', pinturaExterna: 'acrilica', janelas: 'aluminio', portaExterna: 'madeira' } },
+    medio: { nome: 'Médio', resp: { piso: 'retificado59', pisoQuartos: '', revParede: 'retificado30x58', revBanheiro: 'teto', revCozinha: 'faixa', teto: 'reboco', pinturaExterna: 'textura', janelas: 'aluminio', portaExterna: 'madeira' } },
+    alto: { nome: 'Alto', resp: { piso: 'porcelanato_gg', pisoQuartos: 'vinilico', revParede: 'retificado30x58', revBanheiro: 'teto', revCozinha: 'teto', teto: 'drywall', pinturaExterna: 'textura', janelas: 'pvc', portaExterna: 'aluminio' } }
   };
 
   // coeficientes editáveis (consumos e perdas). valor, unidade, descrição.
@@ -201,7 +209,7 @@
     if (etapaId === 'hidraulica' && /^(caixaAgua|boia|flange|regEsfera40)/.test(k)) return 'f3';
     if (etapaId === 'pisos' && /^(porcelanato|ceramica|pisoExt|piso_|rodape|nivelador|soleira|peitoril|laminado|vinilico|manta|colaVinil|rodapeMdf)/.test(k)) return 'f5';
     if (etapaId === 'pisos' && /^(colante|rejunte)/.test(k)) return 'f5';
-    if (etapaId === 'revestimentos' && /^(azulejo|colanteAC1|rejunteParede|cantoneira)/.test(k)) return 'f5';
+    if (etapaId === 'revestimentos' && /^(azulejo|colante|rejunteParede|cantoneira)/.test(k)) return 'f5';
     if (etapaId === 'estrutura' && /^escada/.test(k)) return 'f2';
     return FASE_ETAPA[etapaId] || 'f5';
   }
@@ -818,9 +826,11 @@
       if (tetos.gesso) add('gessoLiso', 'Gesso em pó para revestimento (gesso liso)', 'kg', tetos.gesso * 6, 'teto ' + fmt(tetos.gesso, 1) + ' m², 6 kg/m²', EMB.gesso40);
       add('telaReboco', 'Tela de aço galvanizada para reboco (ponte entre estrutura e alvenaria)', 'm', (q.npil * q.hAlv * 2 + g.Ltot * 2) * 0.5, 'faixas de 25 cm sobre pilares e cintas (face externa)');
       if (azulejo > 0) {
-        add('azulejo', 'Revestimento cerâmico de parede 32×57 cm', 'm²', azulejo * (1 + C.perdaPiso), memAz.join('; '), { nome: 'caixa 2,19 m²', qtd: 2.19 });
-        add('colanteAC1', 'Argamassa colante AC-I (interna)', 'kg', azulejo * C.acParede, C.acParede + ' kg/m²', EMB.colante);
-        add('rejunteParede', 'Rejunte cimentício flexível', 'kg', azulejo * rejunteKg(320, 570, 8, 2) * 1.15, 'parede, junta 2 mm', EMB.rejunte);
+        const PR = PAREDES[resp.revParede] || PAREDES.retificado30x58;
+        const kgPar = PR.colante === 'AC-I' ? C.acParede : PR.kg;
+        add('azulejo_' + (PAREDES[resp.revParede] ? resp.revParede : 'retificado30x58'), PR.nome, 'm²', azulejo * (1 + C.perdaPiso), memAz.join('; '), { nome: 'caixa ' + fmt(PR.caixa, 2) + ' m²', qtd: PR.caixa });
+        add('colante' + PR.colante + 'parede', 'Argamassa colante ' + PR.colante + (PR.colante === 'AC-I' ? ' (interna)' : '') + ' — parede', 'kg', azulejo * kgPar, kgPar + ' kg/m²', EMB.colante);
+        add('rejunteParede', 'Rejunte cimentício flexível', 'kg', azulejo * rejunteKg(PR.A, PR.B, PR.esp, PR.junta) * 1.15, 'parede, junta ' + PR.junta + ' mm', EMB.rejunte);
         add('cantoneira', 'Cantoneira/perfil de acabamento para cantos de cerâmica', 'm', amb.filter((a) => paredeDe(a) !== 'nenhum').length * 2 * Math.min(h, 2.5), 'quinas vivas');
       }
 
@@ -834,7 +844,17 @@
       }
       if (areaTot > 0) argamassa14(areaTot * C.contrapiso, 'Contrapiso ' + fmt(C.contrapiso * 100, 0) + ' cm em ' + fmt(areaTot, 1) + ' m²');
       const porPiso = {};
-      for (const a of amb) { const k = pisoDe(a); (porPiso[k] = porPiso[k] || { area: 0, rod: 0, nomes: [] }); porPiso[k].area += a.area; porPiso[k].nomes.push(a.nome); const p = paredeDe(a); if ((p === 'nenhum' || p === 'faixa') && !TIPOS_AMBIENTE[a.tipo].externo) porPiso[k].rod += Math.max(0, a.perimetro - 0.85); }
+      // rodapé em todo o piso, exceto nas paredes com cerâmica até o chão (1,50 m ou teto) e atrás das bancadas (faixa)
+      const perimTot = amb.reduce((s2, a) => s2 + a.perimetro, 0);
+      let wPortas = 0; for (const o of g.ab) if (TIPOS_ABERTURA[o.tipo].porta) wPortas += o.largura * o.qtd * (o.externa ? 1 : 2);
+      const dedPorta = perimTot > 0 ? wPortas / perimTot : 0; // m de porta por m de perímetro
+      for (const a of amb) {
+        const k = pisoDe(a); (porPiso[k] = porPiso[k] || { area: 0, rod: 0, nomes: [] }); porPiso[k].area += a.area; porPiso[k].nomes.push(a.nome);
+        const p = paredeDe(a);
+        if (p === '1.50' || p === 'teto') continue;
+        const bancada = p === 'faixa' ? (a.tipo === 'cozinha' || a.tipo === 'conjugado' ? 2.40 : a.tipo === 'cozinha_servico' ? 3.60 : 1.20) : 0;
+        porPiso[k].rod += Math.max(0, a.perimetro * (1 - dedPorta) - bancada);
+      }
       for (const k in porPiso) {
         const P = PISOS[k], o = porPiso[k], mem = fmt(o.area, 1) + ' m² (' + [...new Set(o.nomes)].slice(0, 6).join(', ') + (o.nomes.length > 6 ? '…' : '') + ')';
         if (k === 'cimentado') { add('endurecedor', 'Endurecedor/selador para piso cimentado', 'L', o.area * 0.25, mem); continue; }
@@ -849,7 +869,7 @@
         if (P.cola) add('colaVinil', 'Cola acrílica para piso vinílico', 'kg', o.area * P.cola, P.cola + ' kg/m²', { nome: 'balde 4 kg', qtd: 4 });
         if (o.rod > 0 && P.rodape) {
           if (P.rodape === 'mdf') { add('rodapeMdf', 'Rodapé de poliestireno/MDF 7 cm', 'm', o.rod * 1.10, 'perímetro de ' + [...new Set(o.nomes)].length + ' cômodo(s) com ' + P.nome.toLowerCase()); add('colaRodape', 'Cola/adesivo para rodapé (tubo)', 'un', ceil(o.rod / 15), ''); }
-          else { add('rodape_' + P.rodape, P.rodape === 'porcelanato' ? 'Rodapé de porcelanato h = 7 cm' : 'Rodapé cerâmico h = 7 cm', 'm', o.rod * 1.10, 'perímetro dos cômodos sem revestimento de parede, menos portas'); add('colante' + (P.colante || 'AC-II'), 'Argamassa colante ' + (P.colante || 'AC-II'), 'kg', o.rod * 0.40, 'rodapé', EMB.colante); }
+          else { add('rodape_' + P.rodape, P.rodape === 'porcelanato' ? 'Rodapé de porcelanato h = 7 cm' : P.rodape === 'retificado' ? 'Rodapé do piso retificado 59 cm, h = 7 cm' : 'Rodapé cerâmico h = 7 cm', 'm', o.rod * 1.10, 'perímetro com piso, menos portas, bancadas e paredes com cerâmica até o chão'); add('colante' + (P.colante || 'AC-II'), 'Argamassa colante ' + (P.colante || 'AC-II'), 'kg', o.rod * 0.40, 'rodapé', EMB.colante); }
         }
       }
       if (q.nPortas) add('soleira', 'Soleira de granito 2 cm, largura ' + fmt((e + 0.05) * 100, 0) + ' cm', 'm', q.larguraPortas + q.nPortas * 0.04, q.nPortas + ' portas');
@@ -1286,7 +1306,7 @@
       .filter((x) => Math.abs(x.dif) > 1e-6).sort((x, y) => Math.abs(y.pct == null ? 1e9 : y.pct) - Math.abs(x.pct == null ? 1e9 : x.pct));
   }
 
-  const API = { calcular, normalizar, comparar, TIPOS_AMBIENTE, TIPOS_ABERTURA, BLOCOS, PISOS, SOLOS, PADROES_ACABAMENTO, RESPOSTAS_PADRAO, COEF, INDICADORES, FASES, ACO, fmt, r2 };
+  const API = { calcular, normalizar, comparar, TIPOS_AMBIENTE, TIPOS_ABERTURA, BLOCOS, PISOS, PAREDES, SOLOS, PADROES_ACABAMENTO, RESPOSTAS_PADRAO, COEF, INDICADORES, FASES, ACO, fmt, r2 };
   if (typeof module === 'object' && module.exports) module.exports = API;
   else root.CasaEngine = API;
 })(typeof self !== 'undefined' ? self : this);
