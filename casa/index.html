@@ -939,7 +939,7 @@ $('#addAb').onclick = () => { S.lev.aberturas.push({ tipo: 'janela', largura: 1.
 const PERG = [
   { k: 'peDireito', t: 'Pé-direito', d: 'Altura do piso ao teto (m).', num: true, base: 1 },
   { k: 'vedacao', t: 'Paredes', base: 1, o: [['ceramico14', 'Bloco cerâmico 14 cm'], ['ceramico9', 'Bloco cerâmico 9 cm'], ['concreto14', 'Bloco de concreto 14 cm']] },
-  { k: 'fundacao', t: 'Fundação', base: 1, d: 'A sapata é dimensionada pelo solo escolhido acima e pela carga dos pavimentos.', o: [['sapata', 'Sapata + baldrame'], ['broca', 'Estaca broca + baldrame'], ['radier', 'Radier']] },
+  { k: 'fundacao', t: 'Fundação', base: 1, d: 'Dimensionada pelo solo escolhido acima e pela carga dos pavimentos. Radier: placa de concreto armado sob toda a casa, com borda e faixas sob as paredes engrossadas.', o: [['sapata', 'Sapata + baldrame'], ['broca', 'Estaca broca + baldrame'], ['radier', 'Radier (laje no solo)']] },
   { k: 'laje', t: 'Laje do último pavimento', base: 1, d: 'Os pavimentos de baixo sempre têm laje.', o: [['trelicada', 'Laje treliçada (EPS)'], ['nenhuma', 'Sem laje']] },
   { k: 'teto', t: 'Acabamento do teto', base: 1, o: [['reboco', 'Reboco + pintura'], ['gesso', 'Gesso liso'], ['drywall', 'Forro de gesso (drywall)'], ['pvc', 'Forro de PVC']] },
   { k: 'telha', t: 'Telhado', base: 1, o: [['ceramica', 'Telha cerâmica'], ['fibrocimento', 'Fibrocimento'], ['metalica', 'Metálica termoacústica']] },
@@ -980,7 +980,7 @@ const PERG = [
   { k: 'aterroAltura', t: 'Aterro sob a casa: altura média (m)', d: 'Para nivelar o terreno. 0 = sem aterro.', num: true, grp: 'ext' },
   { k: 'terrenoArea', t: 'Área do terreno (m²)', d: 'Para a drenagem do quintal. 0 = não incluir.', num: true, grp: 'ext' },
   { k: 'pisoExtArea', t: 'Quintal / piso externo descoberto (m²)', d: 'Quintal, garagem descoberta, pátio, acesso.', num: true, grp: 'ext' },
-  { k: 'pisoExtTipo', t: 'Quintal / piso externo: tipo', grp: 'ext', o: [['concreto', 'Concreto 8 cm com tela'], ['paver', 'Paver (bloco intertravado)'], ['brita', 'Só brita (sobre manta)']] },
+  { k: 'pisoExtTipo', t: 'Quintal / piso externo: tipo', grp: 'ext', o: [['concreto', 'Concreto 8 cm com tela'], ['paver', 'Paver (bloco intertravado)'], ['brita', 'Só brita'], ['brita_manta', 'Brita sobre manta']] },
   { k: 'jardimArea', t: 'Jardim / grama (m²)', num: true, grp: 'ext' },
   { k: 'testada', t: 'Calçada pública: testada do lote (m)', d: 'Frente do terreno. 0 = sem calçada pública.', num: true, grp: 'ext' },
   { k: 'passeioLarg', t: 'Calçada pública: largura (m)', num: true, grp: 'ext' },

@@ -112,6 +112,12 @@ console.log('OK —', r.consolidado.length, 'insumos consolidados');
   assert(ex({ muroCapa: 'ceramica' }).itens.some((i) => /^Capa de muro cerâmica/.test(i.desc)));
   assert(!ex({ muroCapa: 'nenhuma' }).itens.some((i) => /^Capa de muro/.test(i.desc)));
   const br = ex({ muroComp: 0, pisoExtArea: 50, pisoExtTipo: 'brita' });
-  assert(br.itens.some((i) => /^Manta geotêxtil/.test(i.desc)) && kg(br, /^Brita 1/) > 2.5 && !br.itens.some((i) => /^Cimento/.test(i.desc)), 'quintal só brita');
+  assert(!br.itens.some((i) => /^Manta geotêxtil/.test(i.desc)) && kg(br, /^Brita 1/) > 2.5 && !br.itens.some((i) => /^Cimento/.test(i.desc)), 'quintal só brita, sem manta');
+  assert(ex({ muroComp: 0, pisoExtArea: 50, pisoExtTipo: 'brita_manta' }).itens.some((i) => /^Manta geotêxtil/.test(i.desc)), 'brita sobre manta');
+  const rad = E.calcular({ lev: casa.lev, resp: { fundacao: 'radier' } });
+  const fu = rad.etapas.find((e) => e.id === 'fundacao');
+  assert(rad.fundacao.tipo === 'radier' && fu.itens.some((i) => /^Tela soldada Q-138/.test(i.desc)) && fu.itens.some((i) => /^Brita graduada/.test(i.desc)), 'radier');
+  assert(!rad.etapas.find((e) => e.id === 'pisos').itens.some((i) => /lastro do piso/.test(i.mem.join(' '))), 'radier dispensa lastro do piso');
+  console.log('Radier:', rad.fundacao.texto);
   console.log('OK — muro lado a lado, capa e quintal em brita');
 }
