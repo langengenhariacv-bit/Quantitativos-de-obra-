@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "description": "Gera a versão do Lang Estoque para aparelhos antigos (iOS 9).",
+  "scripts": { "build": "node build.js" },
+  "devDependencies": {
+    "@babel/core": "7.26.0",
+    "@babel/preset-env": "7.26.0",
+    "regenerator-runtime": "0.14.1",
+    "acorn": "8.14.0"
+  }
+}
