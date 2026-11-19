@@ -83,3 +83,20 @@ console.log('OK —', r.consolidado.length, 'insumos consolidados');
   assert(cmp.length > 20);
   console.log('OK — pavimentos, solo, acabamentos, fases e indicadores');
 }
+
+// ---- área externa e embalagens reais
+{
+  const r = E.calcular({ lev: casa.lev, resp: { muroComp: 40, muroAlt: 2, portaoGaragem: 3, portaoSocial: 1, aterroAltura: 0.3, terrenoArea: 300, pisoExtArea: 40, pisoExtTipo: 'paver', jardimArea: 60, testada: 12, interfone: true, pisoDiagonal: true } });
+  const base = E.calcular(casa);
+  const ex = r.etapas.find((e) => e.id === 'externa');
+  assert(ex && ex.itens.length > 25, 'etapa área externa');
+  for (const re of [/muro\)$/, /^Portão de garagem/, /^Portão social/, /^Saibro/, /^Bloco intertravado/, /^Grama/, /^Piso podotátil/, /^Caixa de correio/, /^Kit porteiro/, /^Chapim/]) assert(ex.itens.some((i) => re.test(i.desc)), 'faltou ' + re);
+  assert(!base.etapas.some((e) => e.id === 'externa' && e.itens.some((i) => /Portão|Saibro|Grama|muro/.test(i.desc))), 'sem área externa por padrão');
+  assert(JSON.stringify(base.indicadores.map((i) => i.valor)) === JSON.stringify(r.indicadores.map((i) => i.valor)), 'indicadores só da casa');
+  assert(total(r, /^Porcelanato/) > total(base, /^Porcelanato/), 'diagonal aumenta perda');
+  const pc = r.consolidado.find((i) => /^Porcelanato/.test(i.desc)); assert(/caixas 1,44 m²$/.test(pc.compra), pc.compra);
+  const tl = r.consolidado.find((i) => /^Telha cerâmica/.test(i.desc)); assert(/milheiros?$/.test(tl.compra), tl.compra);
+  const ti = r.consolidado.find((i) => /^Tinta acrílica fosca/.test(i.desc)); assert(/lata|galão/.test(ti.compra), ti.compra);
+  assert(r.compras.some((f) => f.id === 'f55' && f.itens.length > 10));
+  console.log('OK — área externa e embalagens:', pc.compra, '|', tl.compra, '|', ti.compra);
+}

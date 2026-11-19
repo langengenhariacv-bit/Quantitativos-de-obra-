@@ -221,6 +221,8 @@ tr.feito td{opacity:.45;text-decoration:line-through}
     <div class="q" id="qEspecial" style="margin-bottom:14px"></div>
     <div class="q" id="qBase"></div>
     <details class="more"><summary>Acabamentos e detalhes (opcional)</summary><div class="q" id="qMais"></div></details>
+    <details class="more"><summary>Área externa: muro, portões, aterro, piso externo, jardim e calçada (opcional)</summary>
+      <p class="small muted">Deixe 0 no que a obra não tiver. Entram na etapa “Área externa, muros e ligações”.</p><div class="q" id="qExt"></div></details>
     <details class="more"><summary>Coeficientes de consumo e perdas (avançado)</summary>
       <p class="small muted">Valores de referência de mercado para pré-orçamento. Ajuste conforme o fornecedor ou o projeto.</p>
       <div class="row" style="margin-bottom:8px"><span class="sp"></span><button class="btn sm" id="coefReset">Restaurar padrões</button></div>
@@ -959,7 +961,25 @@ const PERG = [
   { k: 'unidades', t: 'Unidades (casas ou apartamentos)', d: '0 = automático (uma por cozinha). Define quadros de luz, medidores e cavaletes.', num: true },
   { k: 'moradores', t: 'Moradores', d: '0 = automático (2 por quarto). Dimensiona caixa d’água e fossa.', num: true },
   { k: 'distRede', t: 'Distância até a rua (m)', d: 'Para ligação de água, esgoto e energia.', num: true },
-  { k: 'canteiro', t: 'Barracão e placa de obra', o: [[true, 'Incluir'], [false, 'Não incluir']] }
+  { k: 'canteiro', t: 'Barracão e placa de obra', o: [[true, 'Incluir'], [false, 'Não incluir']] },
+  { k: 'pisoDiagonal', t: 'Assentamento do piso', d: 'Na diagonal a perda sobe 5%.', o: [[false, 'Reto'], [true, 'Diagonal']] },
+  // área externa
+  { k: 'muroComp', t: 'Muro de divisa: comprimento (m)', d: 'Soma das divisas a murar. 0 = sem muro.', num: true, grp: 'ext' },
+  { k: 'muroAlt', t: 'Muro: altura (m)', num: true, grp: 'ext' },
+  { k: 'muroBloco', t: 'Muro: bloco', grp: 'ext', o: [['concreto14', 'Concreto 14 cm'], ['ceramico14', 'Cerâmico 14 cm'], ['ceramico9', 'Cerâmico 9 cm']] },
+  { k: 'muroAcab', t: 'Muro: acabamento', grp: 'ext', o: [['reboco', 'Reboco + pintura nas 2 faces'], ['chapisco', 'Só chapisco'], ['aparente', 'Bloco aparente']] },
+  { k: 'portaoGaragem', t: 'Portão de garagem: largura (m)', d: '0 = sem portão de garagem.', num: true, grp: 'ext' },
+  { k: 'automatizar', t: 'Automatizar o portão de garagem', grp: 'ext', o: [[false, 'Não'], [true, 'Sim (motor)']] },
+  { k: 'portaoSocial', t: 'Portões sociais (pedestre)', d: 'Quantidade.', num: true, grp: 'ext' },
+  { k: 'aterroAltura', t: 'Aterro sob a casa: altura média (m)', d: 'Para nivelar o terreno. 0 = sem aterro.', num: true, grp: 'ext' },
+  { k: 'terrenoArea', t: 'Área do terreno (m²)', d: 'Para a drenagem do quintal. 0 = não incluir.', num: true, grp: 'ext' },
+  { k: 'pisoExtArea', t: 'Piso externo descoberto (m²)', d: 'Garagem descoberta, pátio, acesso.', num: true, grp: 'ext' },
+  { k: 'pisoExtTipo', t: 'Piso externo: tipo', grp: 'ext', o: [['concreto', 'Concreto 8 cm com tela'], ['paver', 'Paver (bloco intertravado)']] },
+  { k: 'jardimArea', t: 'Jardim / grama (m²)', num: true, grp: 'ext' },
+  { k: 'testada', t: 'Calçada pública: testada do lote (m)', d: 'Frente do terreno. 0 = sem calçada pública.', num: true, grp: 'ext' },
+  { k: 'passeioLarg', t: 'Calçada pública: largura (m)', num: true, grp: 'ext' },
+  { k: 'itensFachada', t: 'Caixa de correio, lixeira e número', grp: 'ext', o: [[true, 'Incluir'], [false, 'Não incluir']] },
+  { k: 'interfone', t: 'Interfone / porteiro eletrônico', grp: 'ext', o: [[false, 'Não'], [true, 'Sim']] }
 ];
 function renderPerguntas() {
   const html = (p) => '<div class="item"><div class="t">' + p.t + '</div>' + (p.d ? '<div class="d">' + p.d + '</div>' : '') +
@@ -979,7 +999,8 @@ function renderPerguntas() {
     '<div class="item wide"><div class="t">Tipo de solo da fundação</div><div class="d">Do mais resistente (1) para o menos resistente. Na dúvida, mantenha <b>argila média</b>, que fica a favor da segurança. Tensões admissíveis presuntivas (NBR 6122:1996): confirme com sondagem SPT.</div><div class="solos">' +
     E.SOLOS.map((so, i) => { const w = Math.max(6, Math.min(100, (Math.log(so.kpa) - lmin) / (lmax - lmin) * 100)); return '<button class="solo' + (S.resp.solo === so.id ? ' on' : '') + '" data-solo="' + so.id + '"><span class="rank">' + (i + 1) + '</span><span>' + esc(so.nome) + '<div class="barra" style="width:' + w + '%"></div></span><span class="kpa">≈ ' + fmt(so.kpa / 100, 1) + ' kgf/cm²<br><span class="muted small">' + so.kpa + ' kPa</span></span></button>'; }).join('') + '</div>' + prev + '</div>';
   $('#qBase').innerHTML = PERG.filter((p) => p.base).map(html).join('');
-  $('#qMais').innerHTML = PERG.filter((p) => !p.base).map(html).join('');
+  $('#qMais').innerHTML = PERG.filter((p) => !p.base && !p.grp).map(html).join('');
+  $('#qExt').innerHTML = PERG.filter((p) => p.grp === 'ext').map(html).join('');
   $('#tbCoef').innerHTML = Object.entries(E.COEF).map(([k, [v, u, d]]) => '<tr><td>' + d + '</td><td style="width:120px"><input type="number" step="any" data-c="' + k + '" value="' + (S.coef[k] != null ? S.coef[k] : v) + '"' + (S.coef[k] != null && S.coef[k] !== v ? ' style="border-color:var(--accent)"' : '') + '></td><td class="muted small">' + u + '</td></tr>').join('');
 }
 document.addEventListener('click', (e) => {
@@ -1091,9 +1112,9 @@ $('#btnCsv').onclick = () => {
 function planilhasExcel() {
   const rel = S.relatorio || {}, r = R.resumo, hoje = new Date().toLocaleDateString('pt-BR');
   const cab = (t) => ({ v: t, s: 'cab' });
-  const compraF = (row, colQ, colF, un) => un === 'm³' ? 'ROUNDUP(' + colQ + row + ',1)' : 'IF(' + colF + row + '>0,ROUNDUP(' + colQ + row + '/' + colF + row + ',0),ROUNDUP(' + colQ + row + ',0))';
-  const compraV = (i) => i.un === 'm³' ? Math.ceil(i.qtd * 10 - 1e-9) / 10 : i.emb && i.emb.qtd > 0 ? Math.ceil(i.qtd / i.emb.qtd - 1e-9) : Math.ceil(i.qtd - 1e-9);
-  const unCompra = (i) => i.emb && i.emb.qtd > 0 ? i.emb.nome : i.un;
+  const compraF = (row, colQ, colF, un, emb) => un === 'm³' ? 'ROUNDUP(' + colQ + row + ',1)' : emb && emb.frac ? 'ROUNDUP(' + colQ + row + '/' + colF + row + ',1)' : 'IF(' + colF + row + '>0,ROUNDUP(' + colQ + row + '/' + colF + row + ',0),ROUNDUP(' + colQ + row + ',0))';
+  const compraV = (i) => i.un === 'm³' ? Math.ceil(i.qtd * 10 - 1e-9) / 10 : i.emb && i.emb.frac ? Math.ceil(i.qtd / i.emb.qtd * 10 - 1e-9) / 10 : i.emb && i.emb.qtd > 0 ? Math.ceil(i.qtd / i.emb.qtd - 1e-9) : Math.ceil(i.qtd - 1e-9);
+  const unCompra = (i) => i.emb && i.emb.qtd > 0 ? i.emb.nome + (i.emb.combo ? ' (equivalente; app sugere latas + galões)' : '') : i.un;
   // 1. resumo
   const resumo = [[{ v: 'Quantitativo de insumos — ' + (S.nome || rel.obra || 'Obra'), s: 'tit' }], [],
     ['Empresa', rel.empresa || ''], ['Responsável técnico', rel.responsavel || ''], ['Registro (CREA/CAU)', rel.registro || ''], ['ART/RRT', rel.art || ''],
@@ -1104,14 +1125,14 @@ function planilhasExcel() {
   for (const i of R.indicadores) resumo.push([i.nome, i.valor == null ? '' : +i.valor.toFixed(3), i.min, i.max, i.un, { ok: 'ok', atencao: 'atenção', fora: 'fora da faixa', na: '—' }[i.estado]]);
   // 2. insumos por etapa
   const et = [[cab('Etapa'), cab('Código'), cab('Insumo'), cab('Un'), cab('Quantidade'), cab('Embalagem'), cab('Qtd por embalagem'), cab('Compra'), cab('Memória de cálculo')]];
-  R.etapas.forEach((e, k) => e.itens.forEach((i) => { const row = et.length + 1; et.push([(k + 1) + '. ' + e.nome, i.key, i.desc, i.un, +i.qtd.toFixed(4), unCompra(i), i.emb && i.emb.qtd > 0 ? +i.emb.qtd.toFixed(4) : 0, { f: compraF(row, 'E', 'G', i.un), v: compraV(i), s: 'int' }, { v: i.mem.join('; '), s: 'txt' }]); }));
+  R.etapas.forEach((e, k) => e.itens.forEach((i) => { const row = et.length + 1; et.push([(k + 1) + '. ' + e.nome, i.key, i.desc, i.un, +i.qtd.toFixed(4), unCompra(i), i.emb && i.emb.qtd > 0 ? +i.emb.qtd.toFixed(4) : 0, { f: compraF(row, 'E', 'G', i.un, i.emb), v: compraV(i), s: i.emb && i.emb.frac ? 'num' : 'int' }, { v: i.mem.join('; '), s: 'txt' }]); }));
   // 3. total consolidado com SOMASE e coluna de preço
   const tot = [[cab('Código'), cab('Insumo'), cab('Un'), cab('Quantidade'), cab('Embalagem'), cab('Qtd por embalagem'), cab('Compra'), cab('Preço por embalagem (R$)'), cab('Total (R$)')]];
-  R.consolidado.forEach((i) => { const row = tot.length + 1; tot.push([i.key, i.desc, i.un, { f: "SUMIF('Insumos por etapa'!B:B,A" + row + ",'Insumos por etapa'!E:E)", v: +i.qtd.toFixed(4) }, unCompra(i), i.emb && i.emb.qtd > 0 ? +i.emb.qtd.toFixed(4) : 0, { f: compraF(row, 'D', 'F', i.un), v: compraV(i), s: 'int' }, null, { f: 'IF(H' + row + '="","",G' + row + '*H' + row + ')' }]); });
+  R.consolidado.forEach((i) => { const row = tot.length + 1; tot.push([i.key, i.desc, i.un, { f: "SUMIF('Insumos por etapa'!B:B,A" + row + ",'Insumos por etapa'!E:E)", v: +i.qtd.toFixed(4) }, unCompra(i), i.emb && i.emb.qtd > 0 ? +i.emb.qtd.toFixed(4) : 0, { f: compraF(row, 'D', 'F', i.un, i.emb), v: compraV(i), s: i.emb && i.emb.frac ? 'num' : 'int' }, null, { f: 'IF(H' + row + '="","",G' + row + '*H' + row + ')' }]); });
   tot.push([null, { v: 'TOTAL', s: 'neg' }, null, null, null, null, null, null, { f: 'SUM(I2:I' + tot.length + ')', s: 'neg' }]);
   // 4. compras por fase
   const cp = [[cab('Fase'), cab('Quando'), cab('Insumo'), cab('Un'), cab('Quantidade'), cab('Embalagem'), cab('Qtd por embalagem'), cab('Compra'), cab('Observação'), cab('Comprado')]];
-  R.compras.forEach((fa) => fa.itens.forEach((i) => { const row = cp.length + 1; cp.push([fa.nome, fa.quando, i.desc, i.un, +i.qtd.toFixed(4), unCompra(i), i.emb && i.emb.qtd > 0 ? +i.emb.qtd.toFixed(4) : 0, { f: compraF(row, 'E', 'G', i.un), v: compraV(i), s: 'int' }, i.prazo || '', S.comprados[fa.id + '|' + i.key] ? 'sim' : '']); }));
+  R.compras.forEach((fa) => fa.itens.forEach((i) => { const row = cp.length + 1; cp.push([fa.nome, fa.quando, i.desc, i.un, +i.qtd.toFixed(4), unCompra(i), i.emb && i.emb.qtd > 0 ? +i.emb.qtd.toFixed(4) : 0, { f: compraF(row, 'E', 'G', i.un, i.emb), v: compraV(i), s: i.emb && i.emb.frac ? 'num' : 'int' }, i.prazo || '', S.comprados[fa.id + '|' + i.key] ? 'sim' : '']); }));
   // 5. levantamento
   const lev = [[cab('Pavimento'), cab('Repetições'), cab('Cômodo'), cab('Tipo'), cab('Área (m²)'), cab('Perímetro (m)'), cab('Piso'), cab('Parede'), cab('Teto')]];
   const nomeOp = (lista, v) => (lista.find(([k]) => k === (v || 'auto')) || ['', 'Padrão'])[1];

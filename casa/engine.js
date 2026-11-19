@@ -41,12 +41,12 @@
 
   // pisos: peça (mm), espessura e junta (mm) para o rejunte, argamassa colante, perda, rodapé
   const PISOS = {
-    ceramica: { nome: 'Piso cerâmico 45×45 cm PEI-4', A: 450, B: 450, esp: 8, junta: 3, colante: 'AC-II', kg: 5.0, perda: 0.10, rodape: 'ceramico' },
-    porcelanato: { nome: 'Porcelanato 60×60 cm', A: 600, B: 600, esp: 9, junta: 2, colante: 'AC-III', kg: 6.0, perda: 0.10, rodape: 'porcelanato', nivelador: true },
-    porcelanato_gg: { nome: 'Porcelanato grande formato 90×90 cm', A: 900, B: 900, esp: 9, junta: 2, colante: 'AC-III', kg: 7.0, perda: 0.12, rodape: 'porcelanato', nivelador: true },
-    laminado: { nome: 'Piso laminado 7 mm (clique)', perda: 0.08, rodape: 'mdf', manta: true },
-    vinilico: { nome: 'Piso vinílico em réguas 2 mm (colado)', perda: 0.06, rodape: 'mdf', cola: 0.35 },
-    externo: { nome: 'Piso cerâmico antiderrapante 45×45 cm (externo)', A: 450, B: 450, esp: 8, junta: 4, colante: 'AC-III', kg: 5.0, perda: 0.10, rodape: 'ceramico' },
+    ceramica: { nome: 'Piso cerâmico 45×45 cm PEI-4', A: 450, B: 450, esp: 8, junta: 3, colante: 'AC-II', kg: 5.0, perda: 0.10, rodape: 'ceramico', caixa: 2.43 },
+    porcelanato: { nome: 'Porcelanato 60×60 cm', A: 600, B: 600, esp: 9, junta: 2, colante: 'AC-III', kg: 6.0, perda: 0.10, rodape: 'porcelanato', nivelador: true, caixa: 1.44 },
+    porcelanato_gg: { nome: 'Porcelanato grande formato 90×90 cm', A: 900, B: 900, esp: 9, junta: 2, colante: 'AC-III', kg: 7.0, perda: 0.12, rodape: 'porcelanato', nivelador: true, caixa: 1.62 },
+    laminado: { nome: 'Piso laminado 7 mm (clique)', perda: 0.08, rodape: 'mdf', manta: true, caixa: 2.26 },
+    vinilico: { nome: 'Piso vinílico em réguas 2 mm (colado)', perda: 0.06, rodape: 'mdf', cola: 0.35, caixa: 3.34 },
+    externo: { nome: 'Piso cerâmico antiderrapante 45×45 cm (externo)', A: 450, B: 450, esp: 8, junta: 4, colante: 'AC-III', kg: 5.0, perda: 0.10, rodape: 'ceramico', caixa: 2.43 },
     cimentado: { nome: 'Piso cimentado desempenado (sem revestimento)', perda: 0, rodape: null }
   };
 
@@ -92,7 +92,19 @@
     unidades: 0,             // 0 = automático (uma por cozinha)
     moradores: 0,            // 0 = automático (2 por quarto)
     distRede: 10,
-    canteiro: true
+    canteiro: true,
+    pisoDiagonal: false,     // assentamento na diagonal: +5% de perda
+    // área externa (0 = não incluir)
+    muroComp: 0, muroAlt: 2.0, muroBloco: 'concreto14', muroAcab: 'reboco',
+    portaoGaragem: 0,        // largura do portão de garagem (m)
+    portaoSocial: 0,         // quantidade de portões de pedestre
+    automatizar: false,
+    aterroAltura: 0,         // altura média de aterro sob a casa (m)
+    terrenoArea: 0,          // área do terreno (m²), para drenagem do quintal
+    pisoExtArea: 0, pisoExtTipo: 'concreto',
+    jardimArea: 0,
+    testada: 0, passeioLarg: 2.0, // calçada pública
+    itensFachada: true, interfone: false
   };
 
   const PADROES_ACABAMENTO = {
@@ -178,9 +190,10 @@
     { id: 'f3', nome: '3. Cobertura e instalações embutidas', quando: 'durante a alvenaria (tubos e eletrodutos entram antes do reboco)' },
     { id: 'f4', nome: '4. Impermeabilização e revestimentos', quando: 'ao fechar a cobertura' },
     { id: 'f5', nome: '5. Acabamentos', quando: 'após o reboco e o contrapiso' },
-    { id: 'f6', nome: '6. Entrega e limpeza', quando: 'na última semana' }
+    { id: 'f55', nome: '6. Área externa e ligações', quando: 'em paralelo aos acabamentos (muro e aterro podem vir antes)' },
+    { id: 'f6', nome: '7. Entrega e limpeza', quando: 'na última semana' }
   ];
-  const FASE_ETAPA = { preliminares: 'f1', fundacao: 'f1', estrutura: 'f2', alvenaria: 'f2', cobertura: 'f3', hidraulica: 'f3', esgoto: 'f3', eletrica: 'f3', impermeabilizacao: 'f4', revestimentos: 'f4', pisos: 'f4', forro: 'f5', esquadrias: 'f5', loucas: 'f5', pintura: 'f5', limpeza: 'f6' };
+  const FASE_ETAPA = { preliminares: 'f1', fundacao: 'f1', estrutura: 'f2', alvenaria: 'f2', cobertura: 'f3', hidraulica: 'f3', esgoto: 'f3', eletrica: 'f3', impermeabilizacao: 'f4', revestimentos: 'f4', pisos: 'f4', forro: 'f5', esquadrias: 'f5', loucas: 'f5', pintura: 'f5', externa: 'f55', limpeza: 'f6' };
   // itens que mudam de fase ou pedem encomenda antecipada
   function faseDoItem(etapaId, key) {
     const k = key.split('|')[0];
@@ -194,7 +207,7 @@
   }
   function prazoDoItem(etapaId, key) {
     const k = key.split('|')[0];
-    if (/^(porta_|portaAl_|portaCorrer_|portao_|janela_|basc_)/.test(k)) return 'sob medida: medir os vãos prontos e encomendar com 30–45 dias de antecedência';
+    if (/^(porta_|portaAl_|portaCorrer_|portao_|portaoGar|portaoSoc|janela_|basc_)/.test(k)) return 'sob medida: medir os vãos prontos e encomendar com 30–45 dias de antecedência';
     if (/^(box|bancada)/.test(k)) return 'medir na obra após o revestimento; 15–20 dias de fabricação';
     if (/^(vigota|eps|telaQ)/.test(k)) return 'encomendar com 7–10 dias de antecedência';
     if (/^concretoUsinado/.test(k)) return 'agendar com a concreteira 2–3 dias antes de cada concretagem';
@@ -283,7 +296,7 @@
     const avisos = [];
 
     // ---- etapas em ordem fixa
-    const ORDEM = [['preliminares', 'Serviços preliminares e canteiro'], ['fundacao', 'Fundação'], ['estrutura', 'Estrutura (pilares, vigas, vergas, lajes e escada)'], ['alvenaria', 'Alvenaria de vedação'], ['cobertura', 'Cobertura e águas pluviais'], ['hidraulica', 'Instalações hidráulicas (água fria)'], ['esgoto', 'Instalações sanitárias (esgoto)'], ['eletrica', 'Instalações elétricas'], ['impermeabilizacao', 'Impermeabilização'], ['revestimentos', 'Revestimento de paredes e tetos'], ['pisos', 'Pisos, rodapés, soleiras e calçada'], ['forro', 'Forro'], ['esquadrias', 'Esquadrias, portas e ferragens'], ['loucas', 'Louças, metais e bancadas'], ['pintura', 'Pintura'], ['limpeza', 'Limpeza final']];
+    const ORDEM = [['preliminares', 'Serviços preliminares e canteiro'], ['fundacao', 'Fundação'], ['estrutura', 'Estrutura (pilares, vigas, vergas, lajes e escada)'], ['alvenaria', 'Alvenaria de vedação'], ['cobertura', 'Cobertura e águas pluviais'], ['hidraulica', 'Instalações hidráulicas (água fria)'], ['esgoto', 'Instalações sanitárias (esgoto)'], ['eletrica', 'Instalações elétricas'], ['impermeabilizacao', 'Impermeabilização'], ['revestimentos', 'Revestimento de paredes e tetos'], ['pisos', 'Pisos, rodapés, soleiras e calçada'], ['forro', 'Forro'], ['esquadrias', 'Esquadrias, portas e ferragens'], ['loucas', 'Louças, metais e bancadas'], ['pintura', 'Pintura'], ['externa', 'Área externa, muros e ligações'], ['limpeza', 'Limpeza final']];
     const etapas = ORDEM.map(([id, nome]) => ({ id, nome, itens: [], mapa: {} }));
     const porId = Object.fromEntries(etapas.map((e) => [e.id, e]));
     let atual = null, MULT = 1, PREF = '';
@@ -303,7 +316,7 @@
 
     const EMB = {
       cimento: { nome: 'saco 50 kg', qtd: 50 }, cal: { nome: 'saco 20 kg', qtd: 20 }, argInd: { nome: 'saco 20 kg', qtd: 20 },
-      colante: { nome: 'saco 20 kg', qtd: 20 }, rejunte: { nome: 'saco 1 kg', qtd: 1 }, lata18: { nome: 'lata 18 L', qtd: 18 },
+      colante: { nome: 'saco 20 kg', qtd: 20 }, rejunte: { nome: 'saco 1 kg', qtd: 1 }, lata18: { nome: 'lata 18 L', qtd: 18, combo: true }, milheiro: { nome: 'milheiro', qtd: 1000, frac: true },
       galao: { nome: 'galão 3,6 L', qtd: 3.6 }, massa: { nome: 'lata 25 kg', qtd: 25 }, textura: { nome: 'balde 25 kg', qtd: 25 },
       rolo100: { nome: 'rolo 100 m', qtd: 100 }, rolo50: { nome: 'rolo 50 m', qtd: 50 }, barra6: { nome: 'barra 6 m', qtd: 6 },
       barra3: { nome: 'barra 3 m', qtd: 3 }, gesso40: { nome: 'saco 40 kg', qtd: 40 }, polimerica: { nome: 'caixa 18 kg', qtd: 18 }
@@ -588,7 +601,7 @@
       const g = f.g, q = G.get(f), j = C.juntaBloco;
       const porM2 = 1 / ((bl.c + j) * (bl.a + j));
       const memA = 'paredes ' + fmt(g.Ltot, 1) + ' m × ' + fmt(q.hAlv) + ' m' + (q.oitao ? ' + oitões ' + fmt(q.oitao, 1) + ' m²' : '') + ' − vãos ' + fmt(q.abTotal, 1) + ' m² − pilares ' + fmt(q.areaPilaresParede, 1) + ' m² = ' + fmt(q.alvLiq, 1) + ' m²';
-      add('bloco', bl.nome, 'un', ceil(q.alvLiq * porM2 * (1 + C.perdaBloco)), memA + '; ' + fmt(porM2, 1) + ' blocos/m²');
+      add('bloco', bl.nome, 'un', ceil(q.alvLiq * porM2 * (1 + C.perdaBloco)), memA + '; ' + fmt(porM2, 1) + ' blocos/m²', EMB.milheiro);
       const vJunta = ((1 / (bl.a + j)) * j * bl.e + porM2 * bl.a * j * bl.e) * 1.15;
       argamassa128(q.alvLiq * vJunta, 'Assentamento (' + fmt(vJunta * 1000, 1) + ' L/m²)', 'assent');
       add('telaAmarr', 'Tela galvanizada 15×50 cm para ligação alvenaria/pilar', 'un', q.npil * 2 * ceil(q.hAlv / 0.40), '2 faces por pilar, a cada 2 fiadas');
@@ -608,7 +621,7 @@
     {
       const memT = 'projeção ' + fmt(proj, 1) + ' m² (beiral ' + fmt(bei) + ' m' + (descoberto ? ', inclui ' + fmt(descoberto, 1) + ' m² do térreo sem pavimento acima' : '') + '), inclinação ' + fmt(incl * 100, 0) + '% → ' + fmt(aInc, 1) + ' m² de telhado';
       if (resp.telha === 'ceramica') {
-        add('telhaCer', 'Telha cerâmica (tipo romana/portuguesa)', 'un', ceil(aInc * C.telhaCeramica * 1.05), memT + '; ' + C.telhaCeramica + ' un/m² + 5%');
+        add('telhaCer', 'Telha cerâmica (tipo romana/portuguesa)', 'un', ceil(aInc * C.telhaCeramica * 1.05), memT + '; ' + C.telhaCeramica + ' un/m² + 5%', EMB.milheiro);
         add('cumeeiraCer', 'Cumeeira cerâmica', 'un', ceil(cumeeira * 3 * 1.05), 'cumeeira ' + fmt(cumeeira, 1) + ' m, 3 peças/m');
         argamassa128(cumeeira * 0.012, 'Emboçamento da cumeeira', 'assent');
         add('terca', 'Viga de madeira 6×12 cm (terças)', 'm', aInc * C.terca, memT);
@@ -805,7 +818,7 @@
       if (tetos.gesso) add('gessoLiso', 'Gesso em pó para revestimento (gesso liso)', 'kg', tetos.gesso * 6, 'teto ' + fmt(tetos.gesso, 1) + ' m², 6 kg/m²', EMB.gesso40);
       add('telaReboco', 'Tela de aço galvanizada para reboco (ponte entre estrutura e alvenaria)', 'm', (q.npil * q.hAlv * 2 + g.Ltot * 2) * 0.5, 'faixas de 25 cm sobre pilares e cintas (face externa)');
       if (azulejo > 0) {
-        add('azulejo', 'Revestimento cerâmico de parede 32×57 cm', 'm²', azulejo * (1 + C.perdaPiso), memAz.join('; '));
+        add('azulejo', 'Revestimento cerâmico de parede 32×57 cm', 'm²', azulejo * (1 + C.perdaPiso), memAz.join('; '), { nome: 'caixa 2,19 m²', qtd: 2.19 });
         add('colanteAC1', 'Argamassa colante AC-I (interna)', 'kg', azulejo * C.acParede, C.acParede + ' kg/m²', EMB.colante);
         add('rejunteParede', 'Rejunte cimentício flexível', 'kg', azulejo * rejunteKg(320, 570, 8, 2) * 1.15, 'parede, junta 2 mm', EMB.rejunte);
         add('cantoneira', 'Cantoneira/perfil de acabamento para cantos de cerâmica', 'm', amb.filter((a) => paredeDe(a) !== 'nenhum').length * 2 * Math.min(h, 2.5), 'quinas vivas');
@@ -825,7 +838,8 @@
       for (const k in porPiso) {
         const P = PISOS[k], o = porPiso[k], mem = fmt(o.area, 1) + ' m² (' + [...new Set(o.nomes)].slice(0, 6).join(', ') + (o.nomes.length > 6 ? '…' : '') + ')';
         if (k === 'cimentado') { add('endurecedor', 'Endurecedor/selador para piso cimentado', 'L', o.area * 0.25, mem); continue; }
-        add('piso_' + k, P.nome, 'm²', o.area * (1 + P.perda), mem + ' + ' + fmt(P.perda * 100, 0) + '%');
+        const perda = P.perda + (resp.pisoDiagonal && P.A ? 0.05 : 0);
+        add('piso_' + k, P.nome, 'm²', o.area * (1 + perda), mem + ' + ' + fmt(perda * 100, 0) + '% de perda' + (resp.pisoDiagonal && P.A ? ' (diagonal)' : ''), P.caixa ? { nome: 'caixa ' + fmt(P.caixa, 2) + ' m²', qtd: P.caixa } : null);
         if (P.colante) {
           add('colante' + P.colante, 'Argamassa colante ' + P.colante, 'kg', o.area * P.kg, P.kg + ' kg/m²', EMB.colante);
           add('rejunte', 'Rejunte cimentício flexível', 'kg', o.area * rejunteKg(P.A, P.B, P.esp, P.junta) * 1.15, 'junta ' + P.junta + ' mm', EMB.rejunte);
@@ -1036,6 +1050,8 @@
       }
       add('fitaIsol', 'Fita isolante 19 mm × 20 m', 'un', ceil(E.pontos / 20) + 1, '');
       add('fitaAuto', 'Fita de autofusão 19 mm × 10 m', 'un', 1 + (unidades > 1 ? 1 : 0), 'emendas do ramal');
+      add('caixaTelecom', 'Caixa de entrada de telefonia/internet (padrão da operadora)', 'un', 1, 'entrada subterrânea de telecomunicações');
+      add('eletrodutoTelecom', 'Eletroduto corrugado reforçado 1" (32 mm) — entrada de telecom', 'm', (num(resp.distRede, 10) + 5) * 1.10, 'da rua até a caixa de distribuição', EMB.rolo50);
     }
     etapa('loucas');
     add('torneiraJardim', 'Torneira de jardim 1/2" com bico', 'un', 2, 'frente e fundos');
@@ -1061,6 +1077,121 @@
     }
     etapa('pintura');
     if (resp.telha !== 'metalica') add('stain', 'Stain/verniz para madeiramento aparente do beiral', 'L', gT.P * bei * 1.5 * 0.15 * (1 + C.perdaPintura), 'beiral', EMB.galao);
+    // ================================================================ ÁREA EXTERNA, MUROS E LIGAÇÕES
+    const Tcasa = Object.assign({}, T);
+    etapa('externa');
+    {
+      const dr = num(resp.distRede, 10);
+      // muro de divisa
+      const Lm = num(resp.muroComp), Hm = num(resp.muroAlt, 2);
+      if (Lm > 0 && Hm > 0) {
+        const n = ceil(Lm / 3) + 1;
+        concreto(n * Math.PI * 0.10 * 0.10 * 2.0, 'c25', 'Muro: ' + n + ' brocas Ø20 cm × 2 m (a cada 3 m)');
+        aco('8.0', n * 4 * 1.5, 'muro: arranque das brocas 4Ø8');
+        concreto(Lm * 0.24 * 0.05, 'magro', 'Muro: lastro da viga baldrame');
+        concreto(Lm * 0.14 * 0.25, 'c25', 'Muro: viga baldrame 14×25 cm em ' + fmt(Lm, 1) + ' m');
+        aco('8.0', 4 * Lm * 1.10, 'muro: baldrame 4Ø8');
+        aco('5.0', ceil(Lm / 0.20) * 0.70, 'muro: estribos do baldrame Ø5 c/20');
+        forma(2 * 0.25 * Lm);
+        concreto(n * 0.14 * 0.14 * Hm, 'c25', 'Muro: ' + n + ' pilaretes 14×14 cm × ' + fmt(Hm) + ' m');
+        aco('8.0', n * 4 * (Hm + 0.5), 'muro: pilaretes 4Ø8');
+        aco('5.0', n * ceil(Hm / 0.20) * 0.55, 'muro: estribos dos pilaretes Ø5 c/20');
+        forma(n * 4 * 0.14 * Hm);
+        concreto(Lm * 0.14 * 0.15, 'c25', 'Muro: cinta superior 14×15 cm');
+        aco('8.0', 2 * Lm * 1.10, 'muro: cinta 2Ø8');
+        forma(2 * 0.15 * Lm);
+        pecas(Lm * 2 + n * Hm);
+        const blm = BLOCOS[resp.muroBloco] || BLOCOS.concreto14, j = C.juntaBloco;
+        const aMuro = Math.max(0, Lm * (Hm - 0.15) - n * 0.14 * Hm);
+        const porM2 = 1 / ((blm.c + j) * (blm.a + j));
+        add('blocoMuro', blm.nome + ' (muro)', 'un', ceil(aMuro * porM2 * (1 + C.perdaBloco)), 'muro ' + fmt(Lm, 1) + ' × ' + fmt(Hm, 2) + ' m = ' + fmt(aMuro, 1) + ' m² de alvenaria', EMB.milheiro);
+        const vJ = ((1 / (blm.a + j)) * j * blm.e + porM2 * blm.a * j * blm.e) * 1.15;
+        argamassa128(aMuro * vJ, 'Muro: assentamento', 'assent');
+        add('impermBaldrame', 'Emulsão asfáltica para fundações (balde 18 L)', 'L', Lm * (0.14 + 0.30) * 0.8, 'muro: topo e laterais do baldrame', { nome: 'balde 18 L', qtd: 18 });
+        const faces = 2 * Lm * Hm;
+        if (resp.muroAcab !== 'aparente') argamassa13(faces * C.chapisco, 'Muro: chapisco nas 2 faces (' + fmt(faces, 1) + ' m²)');
+        if (resp.muroAcab === 'reboco') {
+          argamassa128(faces * C.rebocoExt, 'Muro: reboco nas 2 faces', 'rev');
+          add('seladorExt', 'Fundo selador acrílico (externo)', 'L', faces * C.seladorExt * (1 + C.perdaPintura), 'muro ' + fmt(faces, 1) + ' m²', EMB.lata18);
+          add('tintaExt', 'Tinta acrílica premium externa', 'L', faces * C.tintaExt * (1 + C.perdaPintura), 'muro', EMB.lata18);
+        }
+        add('chapim', 'Chapim/pingadeira pré-moldada de concreto para muro', 'm', Lm * 1.05, 'topo do muro');
+      }
+      // portões
+      const Lp = num(resp.portaoGaragem);
+      if (Lp > 0) {
+        add('portaoGar', 'Portão de garagem em aço (basculante ou de correr) ' + fmt(Lp, 2) + '×2,20 m com ferragens', 'un', 1, '');
+        if (resp.automatizar) add('motorPortao', 'Automatizador de portão (motor, cremalheira/braço e 2 controles)', 'un', 1, '');
+      }
+      const nps = Math.round(num(resp.portaoSocial));
+      if (nps > 0) add('portaoSoc', 'Portão social de aço 1,00×2,10 m com fechadura', 'un', nps, 'acesso de pedestres');
+      // aterro sob a casa
+      const ha = num(resp.aterroAltura);
+      if (ha > 0) {
+        const aA = F0.g.A + F0.g.P * 1.0;
+        add('aterro', 'Saibro/terra para aterro (medido solto)', 'm³', aA * ha * 1.30, 'área ' + fmt(aA, 1) + ' m² (casa + 1 m de cada lado) × ' + fmt(ha, 2) + ' m + 30% de empolamento e compactação');
+      }
+      // drenagem do quintal
+      const aLivre = Math.max(0, num(resp.terrenoArea) - F0.g.A);
+      if (aLivre > 0) {
+        const ncx = Math.max(1, ceil(aLivre / 60));
+        add('caixaAreia', 'Caixa de areia/passagem pluvial 40×40 cm com grelha', 'un', ncx, 'drenagem do quintal: 1 a cada 60 m² livres');
+        add('tubo100p', 'Tubo PVC esgoto/pluvial 100 mm', 'm', (2 * Math.sqrt(aLivre) + dr) * 1.10, 'drenagem do quintal até a sarjeta', EMB.barra6);
+        add('joelho100p', 'Joelho 90° PVC 100 mm (pluvial)', 'un', ncx + 2, '');
+      }
+      // piso externo
+      const ape = num(resp.pisoExtArea);
+      if (ape > 0) {
+        if (resp.pisoExtTipo === 'paver') {
+          add('paver', 'Bloco intertravado (paver) de concreto 6 cm, 35 MPa', 'm²', ape * 1.05, fmt(ape, 1) + ' m² de piso externo');
+          add('britaGrad', 'Brita graduada para base (10 cm)', 'm³', ape * 0.10 * 1.10, 'base compactada');
+          areia(ape * 0.05 * 1.10, 'colchão de areia do paver 5 cm');
+          add('poPedra', 'Pó de pedra / areia fina para rejunte do paver', 'm³', ape * 0.005, '');
+          add('meioFio', 'Guia/meio-fio de concreto para contenção', 'm', 4 * Math.sqrt(ape) * 1.05, 'contorno do piso');
+        } else {
+          concreto(ape * 0.08, 'c20', 'Piso externo de concreto 8 cm (' + fmt(ape, 1) + ' m²)');
+          add('telaQ92', 'Tela soldada Q-92 (Ø 4,2 c/15) painel 2,0×3,0 m', 'un', ceil(ape * 1.15 / 6), 'piso externo');
+          add('lona', 'Lona plástica preta 150 µm', 'm²', ape * 1.10, 'sob o piso externo');
+          add('sarrafo', 'Sarrafo de pinus 2,5×7 cm', 'm', ape / 1.5 + 4 * Math.sqrt(ape), 'juntas e guias');
+        }
+      }
+      // jardim
+      const aj = num(resp.jardimArea);
+      if (aj > 0) {
+        add('grama', 'Grama esmeralda em placas', 'm²', aj * 1.05, fmt(aj, 1) + ' m² de jardim');
+        add('terraVeg', 'Terra vegetal', 'm³', aj * 0.10, 'camada de 10 cm');
+        add('adubo', 'Adubo orgânico', 'kg', aj * 3, '3 kg/m²');
+        add('mudas', 'Muda de arbusto / forração', 'un', ceil(aj / 5), '1 a cada 5 m²');
+      }
+      // calçada pública (passeio)
+      const ts = num(resp.testada), lpas = num(resp.passeioLarg, 2);
+      if (ts > 0 && lpas > 0) {
+        const ap = ts * lpas;
+        concreto(ap * 0.07, 'c20', 'Calçada pública ' + fmt(ts, 1) + ' × ' + fmt(lpas, 2) + ' m, 7 cm (' + fmt(ap, 1) + ' m²)');
+        add('lona', 'Lona plástica preta 150 µm', 'm²', ap * 1.10, 'sob a calçada pública');
+        add('podotatil', 'Piso podotátil de concreto 25×25 cm (direcional e alerta)', 'm²', ts * 0.25 + 0.5, 'faixa direcional na testada + alertas (NBR 9050; confira a lei municipal)');
+        add('sarrafo', 'Sarrafo de pinus 2,5×7 cm', 'm', ts * 2 + ts / 1.5 * lpas, 'guias e juntas');
+      }
+      // itens de fachada e acesso
+      if (resp.itensFachada) {
+        add('caixaCorreio', unidades > 1 ? 'Caixa de correio coletiva (' + unidades + ' portas)' : 'Caixa de correio', 'un', 1, '');
+        add('lixeira', 'Lixeira de calçada (suporte metálico)', 'un', 1, '');
+        add('numero', 'Número/placa de identificação do imóvel', 'un', 1, '');
+      }
+      if (resp.interfone) {
+        if (unidades > 1) {
+          add('porteiro', 'Porteiro eletrônico coletivo (painel externo)', 'un', 1, '');
+          add('interfone', 'Interfone de parede (unidade interna)', 'un', unidades, '1 por unidade');
+          add('caboInterfone', 'Cabo CCI/telefônico 2 pares', 'm', E.alimentadores ? E.alimentadores * 1.1 : unidades * 15, 'portão → unidades');
+        } else {
+          add('porteiro', 'Kit porteiro eletrônico residencial', 'un', 1, '');
+          add('caboInterfone', 'Cabo CCI/telefônico 2 pares', 'm', dr + 10, 'portão → casa');
+        }
+        add('fechElet', 'Fechadura elétrica para portão social', 'un', Math.max(1, nps), '');
+      }
+    }
+    fecharEtapaEstrutural('externa', 'área externa');
+
     etapa('limpeza');
     {
       const ap = E.areaPiso;
@@ -1093,7 +1224,8 @@
     const compras = fases.filter((f) => f.itens.length);
 
     // indicadores
-    const somaC = (re) => consolidado.filter((i) => re.test(i.desc)).reduce((s, i) => s + i.qtd, 0);
+    const somaC = (re) => final.filter((e2) => e2.id !== 'externa').reduce((s, e2) => s + e2.itens.filter((i) => re.test(i.desc)).reduce((t, i) => t + i.qtd, 0), 0);
+    T.concreto = Tcasa.concreto; T.aco = Tcasa.aco; T.forma = Tcasa.forma;
     const vals = {
       acoConcreto: T.concreto ? T.aco / T.concreto : null,
       concretoArea: areaTotal ? T.concreto / areaTotal : null,
@@ -1126,6 +1258,15 @@
   }
 
   function compra(i) {
+    if (i.emb && i.emb.frac) { const v = Math.ceil(i.qtd / i.emb.qtd * 10 - 1e-9) / 10; return fmt(v, 1) + ' ' + (v > 1 ? i.emb.nome + 's' : i.emb.nome); }
+    if (i.emb && i.emb.combo) {
+      let n18 = Math.floor(i.qtd / 18 + 1e-9); const rem = i.qtd - 18 * n18; let ng = 0;
+      if (rem > 10.8) n18++; else if (rem > 1e-6) ng = ceil(rem / 3.6);
+      const partes = [];
+      if (n18) partes.push(n18 + ' ' + (n18 > 1 ? 'latas' : 'lata') + ' 18 L');
+      if (ng) partes.push(ng + ' ' + (ng > 1 ? 'galões' : 'galão') + ' 3,6 L');
+      return partes.join(' + ') || '0';
+    }
     if (i.emb && i.emb.qtd > 0) { const n = ceil(i.qtd / i.emb.qtd); return n + ' ' + (n === 1 ? i.emb.nome : plural(i.emb.nome)); }
     if (i.un === 'un' || i.un === 'folha') return ceil(i.qtd) + ' ' + i.un;
     if (i.un === 'm³') return fmt(Math.ceil(i.qtd * 10 - 1e-9) / 10, 1) + ' m³';
