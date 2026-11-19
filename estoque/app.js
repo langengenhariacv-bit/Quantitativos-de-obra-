@@ -229,9 +229,29 @@ const daysAgo=n=>{const d=new Date();d.setDate(d.getDate()-n);d.setMinutes(d.get
 const num=v=>{if(typeof v==='number')return v;const s=String(v||'').trim().replace(/\s/g,'');if(!s)return 0;const n=s.includes(',')?s.replace(/\./g,'').replace(',','.'):s;const x=parseFloat(n);return isFinite(x)?x:0};
 const matById=id=>db.materiais.find(m=>m.id===id);
 const obraById=id=>db.obras.find(o=>o.id===id);
-const catIcon=c=>CAT_ICON[c]||'📦';
-function guessIcon(nome,cat){const n=norm(nome);for(const [e,k] of ICONS)if(k&&k.split(' ').some(w=>n.includes(w)))return e;return catIcon(cat)}
-function matIcon(m,mostrarFoto=true){if(!m)return '📦';if(m.foto&&mostrarFoto)return `<img class="mi" src="${esc(m.foto)}" alt="">`;return m.ic||guessIcon(m.nome,m.cat)}
+/* Ícones das categorias desenhados em SVG: aparecem iguais em qualquer aparelho (inclusive iPad com iOS 9, que não tem os emojis novos). */
+const CAT_NOME={'Agregados':'Areia, brita e pedra','Aço e ferragens':'Ferragens e fixação','Alvenaria':'Blocos e tijolos','Hidráulica':'Hidráulica e louças',
+  'Revestimento':'Pisos e revestimentos','Pintura':'Pintura e acabamento','Ferramentas':'Ferramentas e máquinas','EPI':'EPI e segurança','Outros':'Diversos'};
+const catNome=c=>CAT_NOME[c||'Outros']||c||'Diversos';
+const CAT_SVG={
+  'Cimento e argamassa':'<path d="M11 9h26l3 7v21a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V16z" fill="#a7adb3"/><path d="M8 16h32" stroke="#7d848b" stroke-width="2.5"/><rect x="14" y="22" width="20" height="11" rx="2" fill="#fff"/><path d="M17 26h14M17 29.5h9" stroke="#7d848b" stroke-width="2" stroke-linecap="round"/>',
+  'Agregados':'<path d="M3 40c4-11 10-19 19-19 4 0 6 2 8 4 2-2 4-3 7-3 5 0 8 8 8 18z" fill="#e0b04a"/><path d="M10 33l2 1M18 28l2 1M26 33l2 1M34 30l2 1M22 37l2 1" stroke="#b88720" stroke-width="2" stroke-linecap="round"/><circle cx="36" cy="38" r="3.5" fill="#8b9096"/><circle cx="42" cy="36" r="2.5" fill="#6f757b"/>',
+  'Aço e ferragens':'<path d="M17 6h14l5 8-5 8H17l-5-8z" fill="#5d6b78"/><circle cx="24" cy="14" r="3.5" fill="#d7dde2"/><rect x="20" y="22" width="8" height="21" rx="2" fill="#7b8a97"/><path d="M20 27l8-2M20 32l8-2M20 37l8-2" stroke="#4a5763" stroke-width="2"/>',
+  'Alvenaria':'<rect x="4" y="9" width="40" height="31" rx="3" fill="#e9e1d8"/><path d="M6 11h17v8H6zM25 11h17v8H25zM6 21h8v8H6zM16 21h17v8H16zM35 21h7v8h-7zM6 31h17v7H6zM25 31h17v7H25z" fill="#c9573f"/>',
+  'Hidráulica':'<path d="M6 16h20a8 8 0 0 1 8 8v4" fill="none" stroke="#2d6bd6" stroke-width="7" stroke-linecap="round"/><rect x="4" y="11" width="6" height="10" rx="1.5" fill="#1f4fa3"/><rect x="29" y="26" width="10" height="5" rx="1.5" fill="#1f4fa3"/><path d="M34 34c0 0-4 5-4 7.5a4 4 0 0 0 8 0C38 39 34 34 34 34z" fill="#45a3ff"/>',
+  'Elétrica':'<path d="M27 3L10 27h11l-4 18 20-26H25z" fill="#f5b800" stroke="#c98d00" stroke-width="2" stroke-linejoin="round"/>',
+  'Madeira e fôrmas':'<rect x="5" y="9" width="38" height="9" rx="2" fill="#c98a4b"/><rect x="5" y="20" width="38" height="9" rx="2" fill="#b5763a"/><rect x="5" y="31" width="38" height="9" rx="2" fill="#c98a4b"/><path d="M11 13.5c6-2 12 2 20 0M14 24.5c6-2 10 2 18 0M10 35.5c7-2 12 2 22 0" fill="none" stroke="#8a5424" stroke-width="1.6" stroke-linecap="round"/>',
+  'Revestimento':'<rect x="5" y="5" width="18" height="18" rx="2.5" fill="#1d9b8f"/><rect x="25" y="5" width="18" height="18" rx="2.5" fill="#7fd1c7"/><rect x="5" y="25" width="18" height="18" rx="2.5" fill="#7fd1c7"/><rect x="25" y="25" width="18" height="18" rx="2.5" fill="#1d9b8f"/>',
+  'Pintura':'<rect x="6" y="6" width="30" height="13" rx="4" fill="#ff5a00"/><path d="M36 12h4v12H24v6" fill="none" stroke="#5b5b5b" stroke-width="3" stroke-linejoin="round"/><rect x="20.5" y="30" width="7" height="14" rx="2.5" fill="#3c3c3c"/><path d="M12 19v4" stroke="#ff5a00" stroke-width="3" stroke-linecap="round"/>',
+  'Ferramentas':'<path d="M9 13l9-7 6 6-3 3 19 19-4 4-19-19-3 3z" fill="#7a5bd1"/><path d="M33 6a7 7 0 0 0-6 9L8 34a3.5 3.5 0 0 0 5 5l19-19a7 7 0 0 0 9-6l-4 4-4-1-1-4z" fill="#6b7480"/>',
+  'EPI':'<path d="M8 32a16 16 0 0 1 32 0z" fill="#ffc107"/><path d="M20 17v-3a4 4 0 0 1 8 0v3" fill="#ffc107" stroke="#e0a400" stroke-width="2"/><path d="M24 16v16" stroke="#e0a400" stroke-width="2.5"/><rect x="4" y="31" width="40" height="6" rx="3" fill="#f0a500"/>',
+  'Outros':'<path d="M24 5l18 9v20l-18 9-18-9V14z" fill="#c4935e"/><path d="M6 14l18 9 18-9M24 23v20" fill="none" stroke="#9a6c3c" stroke-width="2.5"/><path d="M15 9.5l18 9" stroke="#e6c49c" stroke-width="3"/>'};
+const catIcon=c=>`<svg class="cat-svg" viewBox="0 0 48 48" aria-hidden="true">${CAT_SVG[c]||CAT_SVG['Outros']}</svg>`;
+// Emojis que o iOS 9 não conhece (aparecem em branco nele): no iPad antigo usa o desenho da categoria.
+const EMOJI_NOVOS='🪣🧱🪵🧰🦺🧤🥾🥽🪚🪛🪜🧪🧴🧵🧽🛞🪨🧷🪟🧹🛒🟢🟡⏚🧯';
+const emojiOk=e=>!aparelhoAntigo||!e||EMOJI_NOVOS.indexOf(String(e).replace('️',''))<0;
+function guessIcon(nome,cat){const n=norm(nome);for(const [e,k] of ICONS)if(k&&k.split(' ').some(w=>n.includes(w)))return emojiOk(e)?e:catIcon(cat);return catIcon(cat)}
+function matIcon(m,mostrarFoto=true){if(!m)return '📦';if(m.foto&&mostrarFoto)return `<img class="mi" src="${esc(m.foto)}" alt="">`;return m.ic?(emojiOk(m.ic)?m.ic:catIcon(m.cat)):guessIcon(m.nome,m.cat)}
 function toast(msg){document.querySelectorAll('.toast').forEach(x=>x.remove());const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 function sortedMovs(){
   if(!movimentosOrdenados)movimentosOrdenados=db.movs.slice().sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.criado||0)-(a.criado||0));
@@ -535,13 +555,14 @@ function movRow(mv,C){
    <span class="r">${q1}</span></button>`;
 }
 
-function seletorCategorias(materiais,selecionada,acao){
-  if(selecionada)return `<div class="categorias-leve"><button class="btn soft" onclick="${acao}('')">‹ Categorias</button> <b>${esc(selecionada)}</b></div>`;
+function seletorCategorias(materiais,selecionada,acao,envolver){
+  if(selecionada)return `<div class="categorias-leve cat-atual"><button class="btn soft" onclick="${acao}('')">‹ Categorias</button><span class="cat-atual-ic">${catIcon(selecionada)}</span><b>${esc(catNome(selecionada))}</b></div>`;
   const grupos=Object.create(null);
   materiais.forEach(m=>{const cat=m.cat||'Outros';grupos[cat]=(grupos[cat]||0)+1});
-  const botoes=Object.keys(grupos).sort((a,b)=>a.localeCompare(b,'pt-BR')).map(cat=>
-    `<button class="row" data-cat="${esc(cat)}" onclick="${acao}(this.dataset.cat)"><span class="ic">${catIcon(cat)}</span><b class="tx">${esc(cat)}</b><span>${grupos[cat]} ›</span></button>`);
-  return botoes.length?`<div class="list categorias-leve">${botoes.join('')}</div>`:'';
+  const botoes=Object.keys(grupos).sort((a,b)=>catNome(a).localeCompare(catNome(b),'pt-BR')).map(cat=>
+    `<button class="tile cat-tile" data-cat="${esc(cat)}" onclick="${acao}(this.dataset.cat)"><span class="ti">${catIcon(cat)}</span><span class="tn">${esc(catNome(cat))}</span><span class="ts">${grupos[cat]} ${grupos[cat]===1?'material':'materiais'} ›</span></button>`);
+  if(!botoes.length)return '';
+  return envolver?`<div class="tiles">${botoes.join('')}</div>`:botoes.join('');
 }
 
 function categoriaEstoque(cat){state.fCat=cat;render()}
@@ -560,9 +581,9 @@ function vEstoque(C){
   <div class="chips">
     <button class="chip ${!state.fCat&&!state.fStatus?'on':''}" onclick="state.fCat='';state.fStatus='';render()">${aparelhoAntigo?'Categorias':'Todos'}</button>
     <button class="chip ${state.fStatus==='baixo'?'on':''}" onclick="state.fStatus=state.fStatus==='baixo'?'':'baixo';render()">⚠️ Comprar (${nLow})</button>
-    ${aparelhoAntigo?'':cats.map(c=>`<button class="chip ${state.fCat===c?'on':''}" data-c="${esc(c)}" onclick="state.fCat=state.fCat===this.dataset.c?'':this.dataset.c;render()">${catIcon(c)} ${esc(c)}</button>`).join('')}
+    ${aparelhoAntigo?'':cats.map(c=>`<button class="chip ${state.fCat===c?'on':''}" data-c="${esc(c)}" onclick="state.fCat=state.fCat===this.dataset.c?'':this.dataset.c;render()">${catIcon(c)} ${esc(catNome(c))}</button>`).join('')}
   </div>
-  ${aparelhoAntigo?seletorCategorias(ms,state.fCat,'categoriaEstoque'):''}
+  ${aparelhoAntigo?seletorCategorias(ms,state.fCat,'categoriaEstoque',true):''}
   <div class="list">${ms.length?(aparelhoAntigo&&!state.fCat?'':ms.map(m=>matRow(m,C)).join('')):'<div class="card muted small">Nada encontrado.</div>'}</div>`;
 }
 
@@ -575,7 +596,7 @@ function vMat(C,id){
   return `<a class="link" href="#estoque">‹ Estoque</a>
   <div class="card mt" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
     <div class="ic" style="width:64px;height:64px;border-radius:18px;background:#f3f0ec;display:grid;place-items:center;font-size:34px">${matIcon(m)}</div>
-    <div style="flex:1;min-width:180px"><h1 style="font-size:21px">${esc(m.nome)}</h1><div class="muted small" style="margin-top:4px">${esc(m.cat)}${m.local?' · 📍 '+esc(m.local):''}</div>
+    <div style="flex:1;min-width:180px"><h1 style="font-size:21px">${esc(m.nome)}</h1><div class="muted small" style="margin-top:4px">${catIcon(m.cat)} ${esc(catNome(m.cat))}${m.local?' · 📍 '+esc(m.local):''}</div>
       <div style="margin-top:8px"><span class="pill ${st.k}">${st.t}</span></div></div>
     <div style="text-align:right"><div class="muted small b">No depósito</div><div class="big-saldo" style="color:${st.c}">${fq(s)}</div><div class="muted b">${esc(m.un)}</div></div>
   </div>
@@ -641,8 +662,8 @@ function vObra(C,id){
     </div>
   </div>
   ${catArr.length>1?`<div class="card mt"><div class="muted small b" style="margin-bottom:8px">Divisão por tipo ${temV?'(valor)':''}</div>
-    <div style="display:flex;height:16px;border-radius:9px;overflow:hidden">${catArr.map(([c,v],i)=>`<span title="${esc(c)}" style="width:${v/totCat*100}%;background:${COLORS[i%COLORS.length]}"></span>`).join('')}</div>
-    <div class="legend" style="flex-wrap:wrap;gap:6px 14px">${catArr.map(([c,v],i)=>`<span><i class="dot" style="background:${COLORS[i%COLORS.length]}"></i>${catIcon(c)} ${esc(c)} ${Math.round(v/totCat*100)}%</span>`).join('')}</div></div>`:''}
+    <div style="display:flex;height:16px;border-radius:9px;overflow:hidden">${catArr.map(([c,v],i)=>`<span title="${esc(catNome(c))}" style="width:${v/totCat*100}%;background:${COLORS[i%COLORS.length]}"></span>`).join('')}</div>
+    <div class="legend" style="flex-wrap:wrap;gap:6px 14px">${catArr.map(([c,v],i)=>`<span><i class="dot" style="background:${COLORS[i%COLORS.length]}"></i>${catIcon(c)} ${esc(catNome(c))} ${Math.round(v/totCat*100)}%</span>`).join('')}</div></div>`:''}
   <div class="sec"><h2>Material na obra</h2><span class="muted small">enviado − devolvido</span></div>
   <div class="card" style="padding:6px 12px">${linhas.length?`<table class="tbl"><thead><tr><th>Material</th><th class="n">Qtd.</th>${temV?'<th class="n">Valor</th>':''}</tr></thead><tbody>
     ${linhas.map(x=>`<tr onclick="location.hash='#mat/${x.m.id}'" style="cursor:pointer"><td><div style="display:flex;align-items:center;gap:8px"><span>${matIcon(x.m)}</span><div style="flex:1;min-width:0"><div class="b">${esc(x.m.nome)}</div>${temV?`<div class="lvl" style="margin-top:4px"><i style="width:${Math.max(0,x.v/mxv*100)}%;background:${o.cor}"></i></div>`:''}</div></div></td>
@@ -725,7 +746,7 @@ function vMov(C){
   ${t==='entrada'&&F.obra?'<div class="small muted" style="margin:-2px 0 10px">Compra entregue direto na obra: conta para a obra e não muda o saldo do depósito.</div>':''}
   <div class="stepper-label"><span class="n">2</span>${aparelhoAntigo?'Escolha uma categoria e depois o material':'Toque no material e digite a quantidade'}</div>
   <div class="search"><input id="mvQ" type="search" placeholder="🔎 Buscar material…" value="${esc(F.q)}" oninput="F.q=this.value;drawTiles()"></div>
-  ${!aparelhoAntigo&&cats.length>1?`<div class="chips"><button class="chip ${!F.cat?'on':''}" onclick="F.cat='';drawMovPage()">Todos</button>${cats.map(c=>`<button class="chip ${F.cat===c?'on':''}" data-c="${esc(c)}" onclick="F.cat=F.cat===this.dataset.c?'':this.dataset.c;drawMovPage()">${catIcon(c)} ${esc(c)}</button>`).join('')}</div>`:''}
+  ${!aparelhoAntigo&&cats.length>1?`<div class="chips"><button class="chip ${!F.cat?'on':''}" onclick="F.cat='';drawMovPage()">Todos</button>${cats.map(c=>`<button class="chip ${F.cat===c?'on':''}" data-c="${esc(c)}" onclick="F.cat=F.cat===this.dataset.c?'':this.dataset.c;drawMovPage()">${catIcon(c)} ${esc(catNome(c))}</button>`).join('')}</div>`:''}
   <div class="tiles" id="tiles">${tilesHTML(C)}</div>
   <button class="add-item mt" onclick="formMaterial(null,id=>{drawMovPage();openKey(id)})">＋ Cadastrar material novo</button>
   <div class="mv-bar" id="mvBar">${barHTML()}</div>`;
@@ -916,7 +937,7 @@ function formMaterial(id,cb){
     <label class="btn soft" style="cursor:pointer">📷 Tirar/escolher foto<input type="file" accept="image/*" id="mFoto" class="hidden"></label>
     <button type="button" class="btn soft ${m.foto?'':'hidden'}" id="mFotoDel">✕ Foto</button></div>
     <div class="icons" id="mIcons">${ICONS.map(([e])=>`<button type="button" data-v="${e}" class="${(m.ic||guessIcon(m.nome,m.cat))===e&&!m.foto?'on':''}">${e}</button>`).join('')}</div></div>
-   <div class="f"><label>Categoria</label><div class="chips" style="flex-wrap:wrap" id="mCat">${CATS.map(([c,i])=>`<button type="button" class="chip ${m.cat===c?'on':''}" data-v="${esc(c)}" onclick="this.parentNode.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));this.classList.add('on')">${i} ${esc(c)}</button>`).join('')}</div></div>
+   <div class="f"><label>Categoria</label><div class="chips" style="flex-wrap:wrap" id="mCat">${CATS.map(([c,i])=>`<button type="button" class="chip ${m.cat===c?'on':''}" data-v="${esc(c)}" onclick="this.parentNode.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));this.classList.add('on')">${catIcon(c)} ${esc(catNome(c))}</button>`).join('')}</div></div>
    <div class="f2"><div class="f"><label>Unidade</label><select id="mUn">${UNITS.map(u=>`<option ${m.un===u?'selected':''}>${u}</option>`).join('')}${!UNITS.includes(m.un)?`<option selected>${esc(m.un)}</option>`:''}</select></div>
    <div class="f"><label>Estoque mínimo</label><input id="mMin" inputmode="decimal" value="${m.min!==''&&m.min!=null?String(m.min).replace('.',','):''}" placeholder="Avisa quando baixar"></div></div>
    <div class="f2"><div class="f"><label>Preço de referência (R$)</label><input id="mPreco" inputmode="decimal" value="${m.preco?String(m.preco).replace('.',','):''}" placeholder="opcional"></div>
@@ -1016,12 +1037,12 @@ function exportCSV(){
   const C=calc(),q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
   const rows=[['Data','Nº','Tipo','Obra','Material','Categoria','Quantidade','Unidade','Valor unitário','Valor total','Fornecedor','Documento','Responsável','Observação','Lançado por']];
   for(const mv of sortedMovs().reverse())for(const it of mv.itens||[]){const m=matById(it.m)||{},o=obraById(mv.obra),pu=(mv.tipo==='entrada'&&it.v)?it.v:(C.custo[it.m]||0);
-    rows.push([fdate(mv.data),mv.n||'',TIPOS[mv.tipo].nome,o?o.nome:(mv.tipo==='entrada'?'Depósito':''),m.nome||'',m.cat||'',nf.format(it.q),m.un||'',pu?nf.format(pu):'',pu?nf.format(pu*it.q):'',mv.forn||'',mv.doc||'',mv.resp||'',mv.obs||'',mv.porNome||''])}
+    rows.push([fdate(mv.data),mv.n||'',TIPOS[mv.tipo].nome,o?o.nome:(mv.tipo==='entrada'?'Depósito':''),m.nome||'',m.cat?catNome(m.cat):'',nf.format(it.q),m.un||'',pu?nf.format(pu):'',pu?nf.format(pu*it.q):'',mv.forn||'',mv.doc||'',mv.resp||'',mv.obs||'',mv.porNome||''])}
   download(`movimentacoes-estoque-${today()}.csv`,'﻿'+rows.map(r=>r.map(q).join(';')).join('\r\n'),'text/csv;charset=utf-8');
 }
 function exportEstoqueCSV(){
   const C=calc(),q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
-  const rows=[['Material','Categoria','Unidade','Saldo no depósito','Estoque mínimo','Situação','Custo médio','Valor em estoque','Local'],...db.materiais.map(m=>{const s=C.saldo[m.id]||0;return [m.nome,m.cat,m.un,nf.format(s),m.min?nf.format(m.min):'',status(m,s).t,C.custo[m.id]?nf.format(C.custo[m.id]):'',C.custo[m.id]&&s>0?nf.format(s*C.custo[m.id]):'',m.local||'']})];
+  const rows=[['Material','Categoria','Unidade','Saldo no depósito','Estoque mínimo','Situação','Custo médio','Valor em estoque','Local'],...db.materiais.map(m=>{const s=C.saldo[m.id]||0;return [m.nome,catNome(m.cat),m.un,nf.format(s),m.min?nf.format(m.min):'',status(m,s).t,C.custo[m.id]?nf.format(C.custo[m.id]):'',C.custo[m.id]&&s>0?nf.format(s*C.custo[m.id]):'',m.local||'']})];
   download(`estoque-${today()}.csv`,'﻿'+rows.map(r=>r.map(q).join(';')).join('\r\n'),'text/csv;charset=utf-8');
 }
 function config(){

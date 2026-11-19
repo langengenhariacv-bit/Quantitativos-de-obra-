@@ -1,5 +1,5 @@
-const CACHE='lang-estoque-v11';
-const APP_SHELL=['./','./manifest.json','./catalogo.js','./compartilhado.js?v=1','./delta.js?v=1','./app.js?v=11','./app-legacy.js?v=11','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png'];
+const CACHE='lang-estoque-v12';
+const APP_SHELL=['./','./manifest.json','./catalogo.js','./compartilhado.js?v=1','./delta.js?v=1','./app.js?v=12','./app-legacy.js?v=12','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP_SHELL)))});
 self.addEventListener('activate',e=>{e.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('lang-estoque-')&&k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()]))});
 self.addEventListener('fetch',e=>{const req=e.request,url=new URL(req.url);if(req.method!=='GET'||url.origin!==self.location.origin)return;
