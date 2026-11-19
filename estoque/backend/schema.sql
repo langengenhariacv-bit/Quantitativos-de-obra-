@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS estoque (
 
 CREATE TABLE IF NOT EXISTS credenciais (
   pessoa text PRIMARY KEY,
-  senha text NOT NULL
+  senha text NOT NULL,
+  tipo text NOT NULL DEFAULT 'senha' CHECK (tipo IN ('senha', 'pin'))
 );
 
 CREATE TABLE IF NOT EXISTS sessoes (

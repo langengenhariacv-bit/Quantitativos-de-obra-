@@ -80,11 +80,13 @@ function save() {
 var uid = function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 };
+var aparelhoAntigo = document.documentElement.classList.contains('legacy');
 var modo = 'consultando',
   versao = 0,
   confirmado = '',
   ocupada = false,
-  ativando = false;
+  ativando = false,
+  perfis = [];
 var nuvem = function nuvem() {
   return modo === 'online';
 };
@@ -251,6 +253,7 @@ function _abrirEstoque() {
         case 1:
           resposta = _context8.v;
           modo = resposta.ativo ? 'online' : 'local';
+          perfis = resposta.pessoas || [];
           db = nuvem() ? blank() : load();
           if (!nuvem() && (db.catalogo || 0) < CATALOGO_VERSAO) {
             aplicaCatalogo();
@@ -275,15 +278,66 @@ function telaCompartilhada() {
   if (modo === 'consultando' || modo === 'indisponivel') {
     return '<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>Lang Estoque</b><small>' + (modo === 'consultando' ? 'Conectando ao estoque…' : 'O estoque está indisponível. Confira sua conexão.') + '</small></div></div>' + (modo === 'indisponivel' ? '<button class="btn primary" onclick="abrirEstoque()">Tentar novamente</button>' : '') + '</div>';
   }
-  return '<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>Lang Estoque</b><small>Entre com seu nome e sua senha.</small></div></div>' + '<form class="card" style="max-width:460px;margin:0 auto;color:var(--ink)" onsubmit="return entrarCompartilhado(event)">' + '<div class="f"><label for="cLogin">Nome conforme o cadastro</label><input id="cLogin" autocomplete="username" required></div>' + '<div class="f"><label for="cSenha">Senha</label><input id="cSenha" type="password" autocomplete="current-password" required maxlength="128"></div>' + '<button class="btn primary lg full" type="submit">Entrar</button></form></div>';
+  var pessoa = perfis.find(function (p) {
+    return p.id === lockSel;
+  });
+  if (pessoa) {
+    var pin = pessoa.tipo === 'pin';
+    return "<div class=\"lock\"><div class=\"pinbox\">\n      <button class=\"link\" style=\"color:#ff9a5f\" onclick=\"lockSel=null;renderLock()\">\u2039 Trocar pessoa</button>\n      <div class=\"mt2\">" + avatar(pessoa, 96) + "</div><h2 class=\"mt\">" + esc(pessoa.nome) + "</h2>\n      <form class=\"card mt2\" style=\"color:var(--ink);text-align:left\" onsubmit=\"return entrarCompartilhado(event)\">\n        <div class=\"f\"><label for=\"cSenha\">" + (pin ? 'PIN de 4 dígitos' : 'Senha') + "</label>\n        <input id=\"cSenha\" type=\"password\" autocomplete=\"current-password\" required " + (pin ? 'inputmode="numeric" pattern="[0-9]{4}" maxlength="4"' : 'maxlength="128"') + "></div>\n        <button class=\"btn primary lg full\" type=\"submit\">Entrar</button>\n      </form></div></div>";
+  }
+  return "<div class=\"lock\"><div class=\"lock-h\"><span class=\"mk\">\uD83D\uDCE6</span><div><b>Lang Estoque</b><small>Toque na sua foto para entrar.</small></div></div>\n    <div class=\"people\">" + perfis.map(function (p) {
+    return "<button class=\"person\" data-id=\"" + esc(p.id) + "\" onclick=\"selecionarPerfil(this.dataset.id)\">" + avatar(p, 88) + "<span>" + esc(p.nome) + "</span>" + (p.admin ? '<small>Administrador</small>' : '') + "</button>";
+  }).join('') + "</div>\n    <button class=\"link mt2\" style=\"color:#ff9a5f\" onclick=\"atualizarPerfis()\">Atualizar pessoas</button></div>";
+}
+function selecionarPerfil(id) {
+  lockSel = id;
+  renderLock();
+  var input = $('#cSenha');
+  if (input) input.focus();
+}
+function atualizarPerfis() {
+  return _atualizarPerfis.apply(this, arguments);
+}
+function _atualizarPerfis() {
+  _atualizarPerfis = _asyncToGenerator(_regenerator().m(function _callee9() {
+    var resposta, _t9;
+    return _regenerator().w(function (_context9) {
+      while (1) switch (_context9.p = _context9.n) {
+        case 0:
+          _context9.p = 0;
+          _context9.n = 1;
+          return EstoqueCompartilhado.enviar('estado');
+        case 1:
+          resposta = _context9.v;
+          if (!(!nuvem() || U)) {
+            _context9.n = 2;
+            break;
+          }
+          return _context9.a(2);
+        case 2:
+          perfis = resposta.pessoas || [];
+          if (!lockSel || !perfis.some(function (p) {
+            return p.id === lockSel;
+          })) renderLock();
+          _context9.n = 4;
+          break;
+        case 3:
+          _context9.p = 3;
+          _t9 = _context9.v;
+          if (!U) toast(_t9.message);
+        case 4:
+          return _context9.a(2);
+      }
+    }, _callee9, null, [[0, 3]]);
+  }));
+  return _atualizarPerfis.apply(this, arguments);
 }
 function entrarCompartilhado(evento) {
   evento.preventDefault();
   if (ocupada) return false;
-  var nome = $('#cLogin').value.trim(),
-    senha = $('#cSenha').value;
+  var senha = $('#cSenha').value;
   iniciarSessao('entrar', {
-    nome: nome,
+    pessoa: lockSel,
     senha: senha
   });
   return false;
@@ -292,27 +346,27 @@ function iniciarSessao(_x3, _x4) {
   return _iniciarSessao.apply(this, arguments);
 }
 function _iniciarSessao() {
-  _iniciarSessao = _asyncToGenerator(_regenerator().m(function _callee9(acao, payload) {
-    var fotos, ids, resposta, _t9;
-    return _regenerator().w(function (_context9) {
-      while (1) switch (_context9.p = _context9.n) {
+  _iniciarSessao = _asyncToGenerator(_regenerator().m(function _callee0(acao, payload) {
+    var fotos, ids, resposta, _t0;
+    return _regenerator().w(function (_context0) {
+      while (1) switch (_context0.p = _context0.n) {
         case 0:
           if (!ocupada) {
-            _context9.n = 1;
+            _context0.n = 1;
             break;
           }
-          return _context9.a(2);
+          return _context0.a(2);
         case 1:
           bloquearRede(true);
-          _context9.p = 2;
+          _context0.p = 2;
           if (!(acao === 'ativar')) {
-            _context9.n = 4;
+            _context0.n = 4;
             break;
           }
-          _context9.n = 3;
+          _context0.n = 3;
           return fotoTodas();
         case 3:
-          fotos = _context9.v;
+          fotos = _context0.v;
           ids = new Set(payload.dados.movs.filter(function (mov) {
             return mov.foto;
           }).map(function (mov) {
@@ -325,10 +379,10 @@ function _iniciarSessao() {
             payload.fotos[id] = fotos[id];
           });
         case 4:
-          _context9.n = 5;
+          _context0.n = 5;
           return EstoqueCompartilhado.enviar(acao, payload);
         case 5:
-          resposta = _context9.v;
+          resposta = _context0.v;
           modo = 'online';
           ativando = false;
           usarEstoque(resposta);
@@ -339,28 +393,28 @@ function _iniciarSessao() {
           closeSheet();
           render();
           toast(acao === 'ativar' ? 'Estoque compartilhado ativado' : 'Olá, ' + U.nome.split(' ')[0] + '!');
-          _context9.n = 8;
+          _context0.n = 8;
           break;
         case 6:
-          _context9.p = 6;
-          _t9 = _context9.v;
-          if (!(acao === 'ativar' && _t9.status === 409)) {
-            _context9.n = 7;
+          _context0.p = 6;
+          _t0 = _context0.v;
+          if (!(acao === 'ativar' && _t0.status === 409)) {
+            _context0.n = 7;
             break;
           }
           ativando = false;
-          _context9.n = 7;
+          _context0.n = 7;
           return abrirEstoque();
         case 7:
-          toast(_t9.message);
+          toast(_t0.message);
         case 8:
-          _context9.p = 8;
+          _context0.p = 8;
           bloquearRede(false);
-          return _context9.f(8);
+          return _context0.f(8);
         case 9:
-          return _context9.a(2);
+          return _context0.a(2);
       }
-    }, _callee9, null, [[2, 6, 8, 9]]);
+    }, _callee0, null, [[2, 6, 8, 9]]);
   }));
   return _iniciarSessao.apply(this, arguments);
 }
@@ -530,9 +584,12 @@ function guessIcon(nome, cat) {
   }
   return catIcon(cat);
 }
-function matIcon(m) {
+function matIcon(m, mostrarFoto) {
+  if (mostrarFoto === void 0) {
+    mostrarFoto = true;
+  }
   if (!m) return '📦';
-  if (m.foto) return "<img class=\"mi\" src=\"" + esc(m.foto) + "\" alt=\"\">";
+  if (m.foto && mostrarFoto) return "<img class=\"mi\" src=\"" + esc(m.foto) + "\" alt=\"\">";
   return m.ic || guessIcon(m.nome, m.cat);
 }
 function toast(msg) {
@@ -726,6 +783,7 @@ function logout(msg) {
   closeSheet();
   if (location.hash && location.hash !== '#inicio') location.hash = '#inicio';
   render();
+  if (nuvem()) atualizarPerfis();
   if (msg) toast(msg);
 }
 ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) {
@@ -821,35 +879,35 @@ function pFotoSel(_x5, _x6) {
   return _pFotoSel.apply(this, arguments);
 }
 function _pFotoSel() {
-  _pFotoSel = _asyncToGenerator(_regenerator().m(function _callee0(inp, prev) {
-    var f, _t0;
-    return _regenerator().w(function (_context0) {
-      while (1) switch (_context0.p = _context0.n) {
+  _pFotoSel = _asyncToGenerator(_regenerator().m(function _callee1(inp, prev) {
+    var f, _t1;
+    return _regenerator().w(function (_context1) {
+      while (1) switch (_context1.p = _context1.n) {
         case 0:
           f = inp.files[0];
           inp.value = '';
           if (f) {
-            _context0.n = 1;
+            _context1.n = 1;
             break;
           }
-          return _context0.a(2);
+          return _context1.a(2);
         case 1:
-          _context0.p = 1;
-          _context0.n = 2;
+          _context1.p = 1;
+          _context1.n = 2;
           return fotoReduzida(f);
         case 2:
-          pFotoTmp = _context0.v;
+          pFotoTmp = _context1.v;
           $('#' + prev).innerHTML = "<img class=\"av\" src=\"" + pFotoTmp + "\" style=\"width:64px;height:64px\">";
-          _context0.n = 4;
+          _context1.n = 4;
           break;
         case 3:
-          _context0.p = 3;
-          _t0 = _context0.v;
+          _context1.p = 3;
+          _t1 = _context1.v;
           toast('Não foi possível ler a foto');
         case 4:
-          return _context0.a(2);
+          return _context1.a(2);
       }
-    }, _callee0, null, [[1, 3]]);
+    }, _callee1, null, [[1, 3]]);
   }));
   return _pFotoSel.apply(this, arguments);
 }
@@ -897,39 +955,50 @@ function formPessoa(id) {
     ativo: true
   };
   pFotoTmp = p.foto || '';
-  var campoSenha = nuvem() ? "<div class=\"f\"><label>" + (id ? 'Nova senha (em branco, mantém a atual)' : 'Senha (mínimo de 10 caracteres)') + "</label><input id=\"pPin\" type=\"password\" maxlength=\"128\" autocomplete=\"new-password\"></div>" : "<div class=\"f\"><label>" + (id ? 'Novo PIN (deixe em branco para manter)' : 'PIN (4 números)') + "</label><input id=\"pPin\" type=\"password\" inputmode=\"numeric\" pattern=\"[0-9]*\" maxlength=\"4\" autocomplete=\"off\"></div>";
-  sheet(id ? '✏️ Editar pessoa' : '👤 Nova pessoa', "\n   <div class=\"f\"><label>Nome</label><input id=\"pNome\" value=\"" + esc(p.nome) + "\" autocomplete=\"off\" placeholder=\"Ex.: Carlos (mestre de obras)\"></div>\n   <div class=\"f\"><label>Foto</label><div style=\"display:flex;gap:12px;align-items:center\"><span id=\"pPrev\">" + avatar(p, 64) + "</span>\n     <label class=\"btn soft\" style=\"cursor:pointer\">\uD83D\uDCF7 Tirar foto<input type=\"file\" accept=\"image/*\" capture=\"user\" class=\"hidden\" onchange=\"pFotoSel(this,'pPrev')\"></label></div></div>\n   " + campoSenha + "\n   <label class=\"chk\"><input type=\"checkbox\" id=\"pAdm\" " + (p.admin ? 'checked' : '') + "> <span><b>Administrador</b><br><span class=\"muted small\">Pode excluir lan\xE7amentos, corrigir saldo, cadastrar pessoas e mexer nas configura\xE7\xF5es.</span></span></label>\n   " + (id ? "<label class=\"chk\"><input type=\"checkbox\" id=\"pAtv\" " + (p.ativo !== false ? 'checked' : '') + "> <span><b>Ativo</b><br><span class=\"muted small\">Desative quem saiu da empresa: some da tela de login, mas o hist\xF3rico continua.</span></span></label>\n   " + (U && U.id !== id ? "<button class=\"btn danger full\" onclick=\"delPessoa('" + id + "')\">\uD83D\uDDD1\uFE0F Excluir pessoa</button><div class=\"small muted mt\">Os lan\xE7amentos que ela fez continuam no hist\xF3rico com o nome dela.</div>" : '<div class="small muted">Você não pode excluir a si mesmo.</div>') : ''), "<button class=\"btn primary lg full\" onclick=\"salvarPessoa('" + (id || '') + "')\">Salvar</button>");
+  var campoSenha = '<div class="f"><label id="pAcesso" for="pPin"></label><input id="pPin" type="password" autocomplete="new-password"></div>';
+  sheet(id ? '✏️ Editar pessoa' : '👤 Nova pessoa', "\n   <div class=\"f\"><label>Nome</label><input id=\"pNome\" value=\"" + esc(p.nome) + "\" autocomplete=\"off\" placeholder=\"Ex.: Carlos (mestre de obras)\"></div>\n   <div class=\"f\"><label>Foto</label><div style=\"display:flex;gap:12px;align-items:center\"><span id=\"pPrev\">" + avatar(p, 64) + "</span>\n     <label class=\"btn soft\" style=\"cursor:pointer\">\uD83D\uDCF7 Tirar foto<input type=\"file\" accept=\"image/*\" capture=\"user\" class=\"hidden\" onchange=\"pFotoSel(this,'pPrev')\"></label></div></div>\n   <label class=\"chk\"><input type=\"checkbox\" id=\"pAdm\" " + (p.admin ? 'checked' : '') + " onchange=\"atualizarCampoAcesso('" + (id || '') + "',true)\"> <span><b>Administrador</b><br><span class=\"muted small\">Pode excluir lan\xE7amentos, corrigir saldo, cadastrar pessoas e mexer nas configura\xE7\xF5es.</span></span></label>\n   " + campoSenha + "\n   " + (id ? "<label class=\"chk\"><input type=\"checkbox\" id=\"pAtv\" " + (p.ativo !== false ? 'checked' : '') + "> <span><b>Ativo</b><br><span class=\"muted small\">Desative quem saiu da empresa: some da tela de login, mas o hist\xF3rico continua.</span></span></label>\n   " + (U && U.id !== id ? "<button class=\"btn danger full\" onclick=\"delPessoa('" + id + "')\">\uD83D\uDDD1\uFE0F Excluir pessoa</button><div class=\"small muted mt\">Os lan\xE7amentos que ela fez continuam no hist\xF3rico com o nome dela.</div>" : '<div class="small muted">Você não pode excluir a si mesmo.</div>') : ''), "<button class=\"btn primary lg full\" onclick=\"salvarPessoa('" + (id || '') + "')\">Salvar</button>");
+  atualizarCampoAcesso(id, false);
+}
+function atualizarCampoAcesso(id, limpar) {
+  var admin = nuvem() && $('#pAdm').checked;
+  var mudou = nuvem() && id && pessoaById(id).admin !== admin;
+  var input = $('#pPin');
+  if (limpar) input.value = '';
+  input.maxLength = admin ? 128 : 4;
+  input.setAttribute('inputmode', admin ? 'text' : 'numeric');
+  $('#pAcesso').textContent = (admin ? 'Senha (mínimo de 10 caracteres)' : 'PIN de 4 dígitos') + (id && !mudou ? ' · em branco mantém o acesso atual' : '');
 }
 function salvarPessoa(_x7) {
   return _salvarPessoa.apply(this, arguments);
 }
 function _salvarPessoa() {
-  _salvarPessoa = _asyncToGenerator(_regenerator().m(function _callee1(id) {
-    var nome, pin, adm, atv, outrosAdm, pid, p;
-    return _regenerator().w(function (_context1) {
-      while (1) switch (_context1.n) {
+  _salvarPessoa = _asyncToGenerator(_regenerator().m(function _callee10(id) {
+    var nome, pin, adm, atv, senhaAdmin, mudou, outrosAdm, pid, p;
+    return _regenerator().w(function (_context10) {
+      while (1) switch (_context10.n) {
         case 0:
           nome = $('#pNome').value.trim(), pin = $('#pPin').value, adm = $('#pAdm').checked, atv = id ? $('#pAtv').checked : true;
           if (nome) {
-            _context1.n = 1;
+            _context10.n = 1;
             break;
           }
-          return _context1.a(2, toast('Informe o nome'));
+          return _context10.a(2, toast('Informe o nome'));
         case 1:
-          if (!((!id || pin) && !(nuvem() ? senhaOk(pin) : pinOk(pin)))) {
-            _context1.n = 2;
+          senhaAdmin = nuvem() && adm, mudou = nuvem() && id && pessoaById(id).admin !== adm;
+          if (!((!id || pin || mudou) && !(senhaAdmin ? senhaOk(pin) : pinOk(pin)))) {
+            _context10.n = 2;
             break;
           }
-          return _context1.a(2, toast(nuvem() ? 'A senha precisa ter entre 10 e 128 caracteres.' : 'O PIN precisa ter 4 números'));
+          return _context10.a(2, toast(senhaAdmin ? 'A senha precisa ter entre 10 e 128 caracteres.' : 'O PIN precisa ter 4 dígitos.'));
         case 2:
           outrosAdm = (db.pessoas || []).filter(function (x) {
             return x.id !== id && x.admin && x.ativo !== false;
           }).length;
           if (!(id && (!adm || !atv) && !outrosAdm)) {
-            _context1.n = 3;
+            _context10.n = 3;
             break;
           }
-          return _context1.a(2, toast('Precisa existir pelo menos um administrador ativo'));
+          return _context10.a(2, toast('Precisa existir pelo menos um administrador ativo'));
         case 3:
           pid = id || uid();
           p = id ? pessoaById(id) : {
@@ -944,7 +1013,7 @@ function _salvarPessoa() {
           });
           if (!nuvem() && pin) p.pin = hpin(pid, pin);
           if (!id) db.pessoas.push(p);
-          _context1.n = 4;
+          _context10.n = 4;
           return persistir(nuvem() && pin ? {
             credencial: {
               id: pid,
@@ -952,11 +1021,11 @@ function _salvarPessoa() {
             }
           } : undefined);
         case 4:
-          if (_context1.v) {
-            _context1.n = 5;
+          if (_context10.v) {
+            _context10.n = 5;
             break;
           }
-          return _context1.a(2);
+          return _context10.a(2);
         case 5:
           if (!nuvem() && U && U.id === id) U = p;
           pFotoTmp = '';
@@ -964,9 +1033,9 @@ function _salvarPessoa() {
           toast('Pessoa salva');
           if (U && !U.admin) logout();
         case 6:
-          return _context1.a(2);
+          return _context10.a(2);
       }
-    }, _callee1);
+    }, _callee10);
   }));
   return _salvarPessoa.apply(this, arguments);
 }
@@ -974,43 +1043,43 @@ function delPessoa(_x8) {
   return _delPessoa.apply(this, arguments);
 }
 function _delPessoa() {
-  _delPessoa = _asyncToGenerator(_regenerator().m(function _callee10(id) {
+  _delPessoa = _asyncToGenerator(_regenerator().m(function _callee11(id) {
     var p;
-    return _regenerator().w(function (_context10) {
-      while (1) switch (_context10.n) {
+    return _regenerator().w(function (_context11) {
+      while (1) switch (_context11.n) {
         case 0:
           if (soAdmin()) {
-            _context10.n = 1;
+            _context11.n = 1;
             break;
           }
-          return _context10.a(2);
+          return _context11.a(2);
         case 1:
           p = pessoaById(id);
           if (p) {
-            _context10.n = 2;
+            _context11.n = 2;
             break;
           }
-          return _context10.a(2);
+          return _context11.a(2);
         case 2:
           if (!(U && U.id === id)) {
-            _context10.n = 3;
+            _context11.n = 3;
             break;
           }
-          return _context10.a(2, toast('Você não pode excluir a si mesmo'));
+          return _context11.a(2, toast('Você não pode excluir a si mesmo'));
         case 3:
           if (!(p.admin && !(db.pessoas || []).some(function (x) {
             return x.id !== id && x.admin && x.ativo !== false;
           }))) {
-            _context10.n = 4;
+            _context11.n = 4;
             break;
           }
-          return _context10.a(2, toast('Precisa existir pelo menos um administrador ativo'));
+          return _context11.a(2, toast('Precisa existir pelo menos um administrador ativo'));
         case 4:
           if (confirm("Excluir " + p.nome + "? Ela n\xE3o poder\xE1 mais entrar no app. Os lan\xE7amentos dela continuam no hist\xF3rico.")) {
-            _context10.n = 5;
+            _context11.n = 5;
             break;
           }
-          return _context10.a(2);
+          return _context11.a(2);
         case 5:
           db.movs.forEach(function (mv) {
             if (mv.por === id && !mv.porNome) mv.porNome = p.nome;
@@ -1018,21 +1087,21 @@ function _delPessoa() {
           db.pessoas = db.pessoas.filter(function (x) {
             return x.id !== id;
           });
-          _context10.n = 6;
+          _context11.n = 6;
           return persistir();
         case 6:
-          if (_context10.v) {
-            _context10.n = 7;
+          if (_context11.v) {
+            _context11.n = 7;
             break;
           }
-          return _context10.a(2);
+          return _context11.a(2);
         case 7:
           config();
           toast('Pessoa excluída');
         case 8:
-          return _context10.a(2);
+          return _context11.a(2);
       }
-    }, _callee10);
+    }, _callee11);
   }));
   return _delPessoa.apply(this, arguments);
 }
@@ -1393,7 +1462,7 @@ function matRow(m, C) {
   var s = C.saldo[m.id] || 0,
     st = status(m, s),
     ref = Math.max(+m.min * 3 || 0, s, 1);
-  return "<a class=\"row\" href=\"#mat/" + m.id + "\"><span class=\"ic\">" + matIcon(m) + "</span>\n   <span class=\"tx\"><div class=\"t\">" + esc(m.nome) + "</div><div class=\"s\"><span class=\"pill " + st.k + "\">" + st.t + "</span> " + (+m.min ? '· mín. ' + fq(m.min) : '') + (m.local ? ' · ' + esc(m.local) : '') + "</div>\n   <div class=\"lvl\"><i style=\"width:" + Math.max(0, Math.min(100, s / ref * 100)) + "%;background:" + st.c + "\"></i></div></span>\n   <span class=\"r\"><div class=\"q\" style=\"color:" + (s <= 0 ? 'var(--danger)' : 'inherit') + "\">" + fq(s) + "</div><div class=\"u\">" + esc(m.un) + "</div></span></a>";
+  return "<a class=\"row\" href=\"#mat/" + m.id + "\"><span class=\"ic\">" + matIcon(m, !aparelhoAntigo) + "</span>\n   <span class=\"tx\"><div class=\"t\">" + esc(m.nome) + "</div><div class=\"s\"><span class=\"pill " + st.k + "\">" + st.t + "</span> " + (+m.min ? '· mín. ' + fq(m.min) : '') + (m.local ? ' · ' + esc(m.local) : '') + "</div>\n   <div class=\"lvl\"><i style=\"width:" + Math.max(0, Math.min(100, s / ref * 100)) + "%;background:" + st.c + "\"></i></div></span>\n   <span class=\"r\"><div class=\"q\" style=\"color:" + (s <= 0 ? 'var(--danger)' : 'inherit') + "\">" + fq(s) + "</div><div class=\"u\">" + esc(m.un) + "</div></span></a>";
 }
 function movRow(mv, C) {
   var t = TIPOS[mv.tipo] || TIPOS.ajuste,
@@ -1410,18 +1479,40 @@ function movRow(mv, C) {
   }() : "<div class=\"q\">" + its.length + "</div><div class=\"u\">itens</div>";
   return "<button class=\"row\" onclick=\"verMov('" + mv.id + "')\"><span class=\"ic " + t.cls + "\">" + t.ic + "</span>\n   <span class=\"tx\"><div class=\"t\">" + (esc(nomes) || '—') + "</div><div class=\"s\">" + (o ? "<span class=\"dot\" style=\"background:" + o.cor + ";width:8px;height:8px\"></span> " : '') + esc(dest) + " \xB7 " + fdateS(mv.data) + (mv.porNome ? ' · 👤 ' + esc(mv.porNome.split(' ')[0]) : '') + "</div></span>\n   <span class=\"r\">" + q1 + "</span></button>";
 }
+function seletorCategorias(materiais, selecionada, acao) {
+  if (selecionada) return "<div class=\"categorias-leve\"><button class=\"btn soft\" onclick=\"" + acao + "('')\">\u2039 Categorias</button> <b>" + esc(selecionada) + "</b></div>";
+  var grupos = Object.create(null);
+  materiais.forEach(function (m) {
+    var cat = m.cat || 'Outros';
+    grupos[cat] = (grupos[cat] || 0) + 1;
+  });
+  var botoes = Object.keys(grupos).sort(function (a, b) {
+    return a.localeCompare(b, 'pt-BR');
+  }).map(function (cat) {
+    return "<button class=\"row\" data-cat=\"" + esc(cat) + "\" onclick=\"" + acao + "(this.dataset.cat)\"><span class=\"ic\">" + catIcon(cat) + "</span><b class=\"tx\">" + esc(cat) + "</b><span>" + grupos[cat] + " \u203A</span></button>";
+  });
+  return botoes.length ? "<div class=\"list categorias-leve\">" + botoes.join('') + "</div>" : '';
+}
+function categoriaEstoque(cat) {
+  state.fCat = cat;
+  render();
+}
+function categoriaMov(cat) {
+  F.cat = cat;
+  drawTiles();
+}
 function vEstoque(C) {
   if (!db.materiais.length) return "<div class=\"card empty\"><div class=\"i\">\uD83D\uDCE6</div><h3>Nenhum material cadastrado</h3><p>Cadastre cimento, areia, a\xE7o, tijolos\u2026 com unidade e estoque m\xEDnimo.</p><button class=\"btn primary lg\" onclick=\"formMaterial()\">\uFF0B Novo material</button></div>";
   var ws = norm(state.fEst).split(/\s+/).filter(Boolean);
   var ms = db.materiais.filter(function (m) {
-    return ws.every(function (w) {
+    return (!state.fCat || (m.cat || 'Outros') === state.fCat) && (!ws.length || ws.every(function (w) {
       return norm(m.nome + ' ' + (m.local || '') + ' ' + m.cat).includes(w);
-    }) && (!state.fCat || m.cat === state.fCat);
+    }));
   });
   if (state.fStatus === 'baixo') ms = ms.filter(function (m) {
     return alerta(status(m, C.saldo[m.id]).k);
   });
-  ms.sort(function (a, b) {
+  if (!aparelhoAntigo || state.fCat) ms.sort(function (a, b) {
     return a.nome.localeCompare(b.nome, 'pt-BR');
   });
   var cats = [].concat(new Set(db.materiais.map(function (m) {
@@ -1430,9 +1521,9 @@ function vEstoque(C) {
   var nLow = db.materiais.filter(function (m) {
     return alerta(status(m, C.saldo[m.id]).k);
   }).length;
-  return "<div class=\"sec\" style=\"margin-top:4px\"><h2 style=\"font-size:22px\">Estoque</h2><span class=\"sp\"></span><button class=\"btn primary\" onclick=\"formMaterial()\">\uFF0B Material</button></div>\n  <div class=\"search\"><input id=\"qEst\" placeholder=\"\uD83D\uDD0E Buscar material\u2026\" value=\"" + esc(state.fEst) + "\" oninput=\"state.fEst=this.value;clearTimeout(window._t);window._t=setTimeout(()=>{render();const i=$('#qEst');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)\"></div>\n  <div class=\"chips\">\n    <button class=\"chip " + (!state.fCat && !state.fStatus ? 'on' : '') + "\" onclick=\"state.fCat='';state.fStatus='';render()\">Todos</button>\n    <button class=\"chip " + (state.fStatus === 'baixo' ? 'on' : '') + "\" onclick=\"state.fStatus=state.fStatus==='baixo'?'':'baixo';render()\">\u26A0\uFE0F Comprar (" + nLow + ")</button>\n    " + cats.map(function (c) {
+  return "<div class=\"sec\" style=\"margin-top:4px\"><h2 style=\"font-size:22px\">Estoque</h2><span class=\"sp\"></span><button class=\"btn primary\" onclick=\"formMaterial()\">\uFF0B Material</button></div>\n  <div class=\"search\"><input id=\"qEst\" placeholder=\"\uD83D\uDD0E Buscar material\u2026\" value=\"" + esc(state.fEst) + "\" oninput=\"state.fEst=this.value;clearTimeout(window._t);window._t=setTimeout(()=>{render();const i=$('#qEst');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)\"></div>\n  <div class=\"chips\">\n    <button class=\"chip " + (!state.fCat && !state.fStatus ? 'on' : '') + "\" onclick=\"state.fCat='';state.fStatus='';render()\">" + (aparelhoAntigo ? 'Categorias' : 'Todos') + "</button>\n    <button class=\"chip " + (state.fStatus === 'baixo' ? 'on' : '') + "\" onclick=\"state.fStatus=state.fStatus==='baixo'?'':'baixo';render()\">\u26A0\uFE0F Comprar (" + nLow + ")</button>\n    " + (aparelhoAntigo ? '' : cats.map(function (c) {
     return "<button class=\"chip " + (state.fCat === c ? 'on' : '') + "\" data-c=\"" + esc(c) + "\" onclick=\"state.fCat=state.fCat===this.dataset.c?'':this.dataset.c;render()\">" + catIcon(c) + " " + esc(c) + "</button>";
-  }).join('') + "\n  </div>\n  <div class=\"list\">" + (ms.length ? ms.map(function (m) {
+  }).join('')) + "\n  </div>\n  " + (aparelhoAntigo ? seletorCategorias(ms, state.fCat, 'categoriaEstoque') : '') + "\n  <div class=\"list\">" + (ms.length ? aparelhoAntigo && !state.fCat ? '' : ms.map(function (m) {
     return matRow(m, C);
   }).join('') : '<div class="card muted small">Nada encontrado.</div>') + "</div>";
 }
@@ -1711,7 +1802,7 @@ function vMov(C) {
     })));
   return "<div style=\"display:flex;align-items:center;gap:10px;margin-bottom:12px\"><button class=\"link\" style=\"font-size:15px\" onclick=\"sairMov()\">\u2039 Voltar</button><span class=\"sp\" style=\"flex:1\"></span><span class=\"muted small b\">" + fdate(F.data) + "</span></div>\n  <div class=\"seg big\">" + ['entrada', 'saida', 'devolucao'].map(function (k) {
     return "<button class=\"" + TIPOS[k].cls + " " + (t === k ? 'on' : '') + "\" onclick=\"trocaTipo('" + k + "')\"><span class=\"i\">" + TIPOS[k].ic + "</span>" + TIPOS[k].nome + "</button>";
-  }).join('') + "</div>\n  <div class=\"stepper-label\"><span class=\"n\">1</span>" + (t === 'saida' ? 'Para qual obra vai?' : t === 'devolucao' ? 'De qual obra voltou?' : 'Onde o material foi entregue?') + "</div>\n  <div class=\"obras-strip\">" + obraCards() + "</div>\n  " + (t === 'entrada' && F.obra ? '<div class="small muted" style="margin:-2px 0 10px">Compra entregue direto na obra: conta para a obra e não muda o saldo do depósito.</div>' : '') + "\n  <div class=\"stepper-label\"><span class=\"n\">2</span>Toque no material e digite a quantidade</div>\n  <div class=\"search\"><input id=\"mvQ\" type=\"search\" placeholder=\"\uD83D\uDD0E Buscar material\u2026\" value=\"" + esc(F.q) + "\" oninput=\"F.q=this.value;drawTiles()\"></div>\n  " + (cats.length > 1 ? "<div class=\"chips\"><button class=\"chip " + (!F.cat ? 'on' : '') + "\" onclick=\"F.cat='';drawMovPage()\">Todos</button>" + cats.map(function (c) {
+  }).join('') + "</div>\n  <div class=\"stepper-label\"><span class=\"n\">1</span>" + (t === 'saida' ? 'Para qual obra vai?' : t === 'devolucao' ? 'De qual obra voltou?' : 'Onde o material foi entregue?') + "</div>\n  <div class=\"obras-strip\">" + obraCards() + "</div>\n  " + (t === 'entrada' && F.obra ? '<div class="small muted" style="margin:-2px 0 10px">Compra entregue direto na obra: conta para a obra e não muda o saldo do depósito.</div>' : '') + "\n  <div class=\"stepper-label\"><span class=\"n\">2</span>" + (aparelhoAntigo ? 'Escolha uma categoria e depois o material' : 'Toque no material e digite a quantidade') + "</div>\n  <div class=\"search\"><input id=\"mvQ\" type=\"search\" placeholder=\"\uD83D\uDD0E Buscar material\u2026\" value=\"" + esc(F.q) + "\" oninput=\"F.q=this.value;drawTiles()\"></div>\n  " + (!aparelhoAntigo && cats.length > 1 ? "<div class=\"chips\"><button class=\"chip " + (!F.cat ? 'on' : '') + "\" onclick=\"F.cat='';drawMovPage()\">Todos</button>" + cats.map(function (c) {
     return "<button class=\"chip " + (F.cat === c ? 'on' : '') + "\" data-c=\"" + esc(c) + "\" onclick=\"F.cat=F.cat===this.dataset.c?'':this.dataset.c;drawMovPage()\">" + catIcon(c) + " " + esc(c) + "</button>";
   }).join('') + "</div>" : '') + "\n  <div class=\"tiles\" id=\"tiles\">" + tilesHTML(C) + "</div>\n  <button class=\"add-item mt\" onclick=\"formMaterial(null,id=>{drawMovPage();openKey(id)})\">\uFF0B Cadastrar material novo</button>\n  <div class=\"mv-bar\" id=\"mvBar\">" + barHTML() + "</div>";
 }
@@ -1778,18 +1869,20 @@ function tilesHTML(C) {
     oq = F.obra ? C.obraQ[F.obra] || {} : {};
   var ws = q.split(/\s+/).filter(Boolean);
   var ms = db.materiais.filter(function (m) {
-    var h = norm(m.nome + ' ' + m.cat + ' ' + (m.local || ''));
-    return ws.every(function (w) {
-      return h.includes(w);
-    }) && (!F.cat || m.cat === F.cat);
+    return (!F.cat || (m.cat || 'Outros') === F.cat) && (!ws.length || ws.every(function (w) {
+      return norm(m.nome + ' ' + m.cat + ' ' + (m.local || '')).includes(w);
+    }));
   });
   if (t === 'devolucao') {
     if (!F.obra) return '<div class="card muted small" style="grid-column:1/-1">Escolha acima a obra de onde o material voltou.</div>';
     ms = ms.filter(function (m) {
       return (oq[m.id] || 0) > 0;
     });
-    if (!ms.length) return '<div class="card muted small" style="grid-column:1/-1">Esta obra não tem material para devolver.</div>';
+    if (!ms.length && !aparelhoAntigo) return '<div class="card muted small" style="grid-column:1/-1">Esta obra não tem material para devolver.</div>';
   }
+  var categorias = aparelhoAntigo ? seletorCategorias(ms, F.cat, 'categoriaMov') : '';
+  if (!ms.length) return categorias + ("<div class=\"card muted small\" style=\"grid-column:1/-1\">" + (t === 'devolucao' && !F.cat && !ws.length ? 'Esta obra não tem material para devolver.' : 'Nenhum material encontrado.') + "</div>");
+  if (aparelhoAntigo && !F.cat) return categorias;
   var freq = {};
   db.movs.forEach(function (mv) {
     return (mv.itens || []).forEach(function (it) {
@@ -1802,14 +1895,13 @@ function tilesHTML(C) {
   ms.sort(function (a, b) {
     return tem(b) - tem(a) || (freq[b.id] || 0) - (freq[a.id] || 0) || a.nome.localeCompare(b.nome, 'pt-BR');
   });
-  if (!ms.length) return '<div class="card muted small" style="grid-column:1/-1">Nenhum material encontrado.</div>';
-  return ms.map(function (m) {
+  return categorias + ms.map(function (m) {
     var s = C.saldo[m.id] || 0,
       st = status(m, s),
       sel = F.itens[m.id],
       dim = t === 'saida' && s <= 0 && !sel;
     var info = t === 'devolucao' ? "na obra: " + fq(oq[m.id]) + " " + esc(m.un) : fq(s) + " " + esc(m.un);
-    return "<button class=\"tile " + (sel ? 'sel' : '') + " " + (dim ? 'dim' : '') + "\" style=\"--tc:" + corTipo(t) + "\" onclick=\"openKey('" + m.id + "')\">" + (sel ? "<span class=\"badge\">" + fq(num(sel.q)) + " " + esc(m.un) + "</span>" : '') + "\n      <span class=\"ti\">" + matIcon(m) + "</span><span class=\"tn\">" + esc(m.nome) + "</span><span class=\"ts " + (t === 'devolucao' ? '' : st.k) + "\">" + info + "</span></button>";
+    return "<button class=\"tile " + (sel ? 'sel' : '') + " " + (dim ? 'dim' : '') + "\" style=\"--tc:" + corTipo(t) + "\" onclick=\"openKey('" + m.id + "')\">" + (sel ? "<span class=\"badge\">" + fq(num(sel.q)) + " " + esc(m.un) + "</span>" : '') + "\n      <span class=\"ti\">" + matIcon(m, !aparelhoAntigo) + "</span><span class=\"tn\">" + esc(m.nome) + "</span><span class=\"ts " + (t === 'devolucao' ? '' : st.k) + "\">" + info + "</span></button>";
   }).join('');
 }
 function movErros() {
@@ -1961,35 +2053,35 @@ function salvarMov() {
   return _salvarMov.apply(this, arguments);
 }
 function _salvarMov() {
-  _salvarMov = _asyncToGenerator(_regenerator().m(function _callee11() {
+  _salvarMov = _asyncToGenerator(_regenerator().m(function _callee12() {
     var _fotos;
     var foto, itens, mv, t, o;
-    return _regenerator().w(function (_context11) {
-      while (1) switch (_context11.n) {
+    return _regenerator().w(function (_context12) {
+      while (1) switch (_context12.n) {
         case 0:
           if (!movErros().length) {
-            _context11.n = 1;
+            _context12.n = 1;
             break;
           }
-          return _context11.a(2);
+          return _context12.a(2);
         case 1:
-          _context11.n = 2;
+          _context12.n = 2;
           return selfie();
         case 2:
-          foto = _context11.v;
+          foto = _context12.v;
           if (!(foto === undefined)) {
-            _context11.n = 3;
+            _context12.n = 3;
             break;
           }
           drawMovPage();
           toast('Lançamento cancelado');
-          return _context11.a(2);
+          return _context12.a(2);
         case 3:
           if (!(!F || movErros().length)) {
-            _context11.n = 4;
+            _context12.n = 4;
             break;
           }
-          return _context11.a(2);
+          return _context12.a(2);
         case 4:
           itens = itensArr().map(function (it) {
             var x = {
@@ -2018,17 +2110,17 @@ function _salvarMov() {
           };
           db.movs.push(mv);
           if (mv.resp) db.ultimoResp = mv.resp;
-          _context11.n = 5;
+          _context12.n = 5;
           return persistir(nuvem() && foto ? {
             fotos: (_fotos = {}, _fotos[mv.id] = foto, _fotos)
           } : undefined);
         case 5:
-          if (_context11.v) {
-            _context11.n = 6;
+          if (_context12.v) {
+            _context12.n = 6;
             break;
           }
           if (!nuvem() && db.movs[db.movs.length - 1] === mv) db.movs.pop();
-          return _context11.a(2);
+          return _context12.a(2);
         case 6:
           if (!nuvem() && foto) fotoPut(mv.id, foto).catch(function () {
             return toast('⚠️ A foto não pôde ser salva');
@@ -2043,9 +2135,9 @@ function _salvarMov() {
           t = TIPOS[mv.tipo], o = obraById(mv.obra);
           sheet(t.ic + " " + t.nome + " registrada", "<div style=\"text-align:center;padding:6px 0 4px\"><div style=\"font-size:58px\">\u2705</div>\n    <p style=\"font-size:16px;margin:8px 0 4px\" class=\"b\">" + itens.length + " " + (itens.length === 1 ? 'item' : 'itens') + (o ? (mv.tipo === 'saida' ? ' para ' : mv.tipo === 'devolucao' ? ' de ' : ' em ') + esc(o.nome) : '') + "</p>\n    <p class=\"muted\" style=\"margin:0\">Movimenta\xE7\xE3o n\xBA <b>" + mv.n + "</b> salva." + (mv.tipo === 'saida' ? '<br>Imprima a guia e peça a assinatura de quem recebeu.' : '') + "</p></div>", "<div style=\"display:flex;gap:8px;flex-wrap:wrap\"><button class=\"btn soft lg\" style=\"flex:1\" onclick=\"printGuia('" + mv.id + "')\">\uD83D\uDDA8\uFE0F " + (mv.tipo === 'saida' ? 'Guia' : 'Comprovante') + "</button>\n     <button class=\"btn soft lg\" style=\"flex:1\" onclick=\"closeSheet()\">\uFF0B Nova</button>\n     <button class=\"btn dark lg\" style=\"flex:1\" onclick=\"logout('At\xE9 logo!')\">\u2713 Concluir e sair</button></div>");
         case 7:
-          return _context11.a(2);
+          return _context12.a(2);
       }
-    }, _callee11);
+    }, _callee12);
   }));
   return _salvarMov.apply(this, arguments);
 }
@@ -2081,42 +2173,42 @@ function delMov(_x0) {
   return _delMov.apply(this, arguments);
 }
 function _delMov() {
-  _delMov = _asyncToGenerator(_regenerator().m(function _callee12(id) {
-    return _regenerator().w(function (_context12) {
-      while (1) switch (_context12.n) {
+  _delMov = _asyncToGenerator(_regenerator().m(function _callee13(id) {
+    return _regenerator().w(function (_context13) {
+      while (1) switch (_context13.n) {
         case 0:
           if (soAdmin()) {
-            _context12.n = 1;
+            _context13.n = 1;
             break;
           }
-          return _context12.a(2);
+          return _context13.a(2);
         case 1:
           if (confirm('Excluir esta movimentação? O saldo do estoque será recalculado.')) {
-            _context12.n = 2;
+            _context13.n = 2;
             break;
           }
-          return _context12.a(2);
+          return _context13.a(2);
         case 2:
           db.movs = db.movs.filter(function (m) {
             return m.id !== id;
           });
-          _context12.n = 3;
+          _context13.n = 3;
           return persistir();
         case 3:
-          if (_context12.v) {
-            _context12.n = 4;
+          if (_context13.v) {
+            _context13.n = 4;
             break;
           }
-          return _context12.a(2);
+          return _context13.a(2);
         case 4:
           if (!nuvem()) fotoDel(id).catch(function () {});
           closeSheet();
           render();
           toast('Movimentação excluída');
         case 5:
-          return _context12.a(2);
+          return _context13.a(2);
       }
-    }, _callee12);
+    }, _callee13);
   }));
   return _delMov.apply(this, arguments);
 }
@@ -2130,33 +2222,33 @@ function salvarAjuste(_x1, _x10) {
   return _salvarAjuste.apply(this, arguments);
 }
 function _salvarAjuste() {
-  _salvarAjuste = _asyncToGenerator(_regenerator().m(function _callee13(mid, s) {
+  _salvarAjuste = _asyncToGenerator(_regenerator().m(function _callee14(mid, s) {
     var v, d;
-    return _regenerator().w(function (_context13) {
-      while (1) switch (_context13.n) {
+    return _regenerator().w(function (_context14) {
+      while (1) switch (_context14.n) {
         case 0:
           if (soAdmin()) {
-            _context13.n = 1;
+            _context14.n = 1;
             break;
           }
-          return _context13.a(2);
+          return _context14.a(2);
         case 1:
           v = $('#ajQ').value.trim();
           if (!(v === '')) {
-            _context13.n = 2;
+            _context14.n = 2;
             break;
           }
           toast('Informe a quantidade contada');
-          return _context13.a(2);
+          return _context14.a(2);
         case 2:
           d = Math.round((num(v) - s) * 1000) / 1000;
           if (d) {
-            _context13.n = 3;
+            _context14.n = 3;
             break;
           }
           closeSheet();
           toast('Saldo já está correto');
-          return _context13.a(2);
+          return _context14.a(2);
         case 3:
           db.seq = (db.seq || 0) + 1;
           db.movs.push({
@@ -2177,22 +2269,22 @@ function _salvarAjuste() {
             por: U.id,
             porNome: U.nome
           });
-          _context13.n = 4;
+          _context14.n = 4;
           return persistir();
         case 4:
-          if (_context13.v) {
-            _context13.n = 5;
+          if (_context14.v) {
+            _context14.n = 5;
             break;
           }
-          return _context13.a(2);
+          return _context14.a(2);
         case 5:
           closeSheet();
           render();
           toast("Saldo corrigido (" + (d > 0 ? '+' : '') + fq(d) + ")");
         case 6:
-          return _context13.a(2);
+          return _context14.a(2);
       }
-    }, _callee13);
+    }, _callee14);
   }));
   return _salvarAjuste.apply(this, arguments);
 }
@@ -2393,23 +2485,23 @@ function delMaterial(_x12) {
   return _delMaterial.apply(this, arguments);
 }
 function _delMaterial() {
-  _delMaterial = _asyncToGenerator(_regenerator().m(function _callee14(id) {
+  _delMaterial = _asyncToGenerator(_regenerator().m(function _callee15(id) {
     var m;
-    return _regenerator().w(function (_context14) {
-      while (1) switch (_context14.n) {
+    return _regenerator().w(function (_context15) {
+      while (1) switch (_context15.n) {
         case 0:
           if (soAdmin()) {
-            _context14.n = 1;
+            _context15.n = 1;
             break;
           }
-          return _context14.a(2);
+          return _context15.a(2);
         case 1:
           m = matById(id);
           if (confirm("Excluir \"" + m.nome + "\"? As movimenta\xE7\xF5es deste material tamb\xE9m ser\xE3o apagadas.")) {
-            _context14.n = 2;
+            _context15.n = 2;
             break;
           }
-          return _context14.a(2);
+          return _context15.a(2);
         case 2:
           db.materiais = db.materiais.filter(function (x) {
             return x.id !== id;
@@ -2423,23 +2515,23 @@ function _delMaterial() {
           }).filter(function (mv) {
             return mv.itens.length;
           });
-          _context14.n = 3;
+          _context15.n = 3;
           return persistir();
         case 3:
-          if (_context14.v) {
-            _context14.n = 4;
+          if (_context15.v) {
+            _context15.n = 4;
             break;
           }
-          return _context14.a(2);
+          return _context15.a(2);
         case 4:
           closeSheet();
           location.hash = '#estoque';
           render();
           toast('Material excluído');
         case 5:
-          return _context14.a(2);
+          return _context15.a(2);
       }
-    }, _callee14);
+    }, _callee15);
   }));
   return _delMaterial.apply(this, arguments);
 }
@@ -2516,52 +2608,52 @@ function delObra(_x13) {
   return _delObra.apply(this, arguments);
 }
 function _delObra() {
-  _delObra = _asyncToGenerator(_regenerator().m(function _callee15(id) {
+  _delObra = _asyncToGenerator(_regenerator().m(function _callee16(id) {
     var n;
-    return _regenerator().w(function (_context15) {
-      while (1) switch (_context15.n) {
+    return _regenerator().w(function (_context16) {
+      while (1) switch (_context16.n) {
         case 0:
           if (soAdmin()) {
-            _context15.n = 1;
+            _context16.n = 1;
             break;
           }
-          return _context15.a(2);
+          return _context16.a(2);
         case 1:
           n = db.movs.filter(function (m) {
             return m.obra === id;
           }).length;
           if (!n) {
-            _context15.n = 2;
+            _context16.n = 2;
             break;
           }
           alert("Esta obra tem " + n + " movimenta\xE7\xE3o(\xF5es). Para manter o hist\xF3rico, marque-a como \"Conclu\xEDda\" em vez de excluir.");
-          return _context15.a(2);
+          return _context16.a(2);
         case 2:
           if (confirm('Excluir esta obra?')) {
-            _context15.n = 3;
+            _context16.n = 3;
             break;
           }
-          return _context15.a(2);
+          return _context16.a(2);
         case 3:
           db.obras = db.obras.filter(function (o) {
             return o.id !== id;
           });
-          _context15.n = 4;
+          _context16.n = 4;
           return persistir();
         case 4:
-          if (_context15.v) {
-            _context15.n = 5;
+          if (_context16.v) {
+            _context16.n = 5;
             break;
           }
-          return _context15.a(2);
+          return _context16.a(2);
         case 5:
           closeSheet();
           location.hash = '#obras';
           render();
         case 6:
-          return _context15.a(2);
+          return _context16.a(2);
       }
-    }, _callee15);
+    }, _callee16);
   }));
   return _delObra.apply(this, arguments);
 }
@@ -2675,37 +2767,11 @@ function salvarEmpresa() {
   return _salvarEmpresa.apply(this, arguments);
 }
 function _salvarEmpresa() {
-  _salvarEmpresa = _asyncToGenerator(_regenerator().m(function _callee16() {
-    return _regenerator().w(function (_context16) {
-      while (1) switch (_context16.n) {
-        case 0:
-          db.empresa = $('#cEmp').value.trim();
-          _context16.n = 1;
-          return persistir();
-        case 1:
-          if (!_context16.v) {
-            _context16.n = 2;
-            break;
-          }
-          render();
-          toast('Nome salvo');
-        case 2:
-          return _context16.a(2);
-      }
-    }, _callee16);
-  }));
-  return _salvarEmpresa.apply(this, arguments);
-}
-function recolocarCatalogo() {
-  return _recolocarCatalogo.apply(this, arguments);
-}
-function _recolocarCatalogo() {
-  _recolocarCatalogo = _asyncToGenerator(_regenerator().m(function _callee17() {
-    var n;
+  _salvarEmpresa = _asyncToGenerator(_regenerator().m(function _callee17() {
     return _regenerator().w(function (_context17) {
       while (1) switch (_context17.n) {
         case 0:
-          n = aplicaCatalogo(true);
+          db.empresa = $('#cEmp').value.trim();
           _context17.n = 1;
           return persistir();
         case 1:
@@ -2714,11 +2780,37 @@ function _recolocarCatalogo() {
             break;
           }
           render();
-          toast(n ? n + ' materiais adicionados' : 'A lista padrão já está completa');
+          toast('Nome salvo');
         case 2:
           return _context17.a(2);
       }
     }, _callee17);
+  }));
+  return _salvarEmpresa.apply(this, arguments);
+}
+function recolocarCatalogo() {
+  return _recolocarCatalogo.apply(this, arguments);
+}
+function _recolocarCatalogo() {
+  _recolocarCatalogo = _asyncToGenerator(_regenerator().m(function _callee18() {
+    var n;
+    return _regenerator().w(function (_context18) {
+      while (1) switch (_context18.n) {
+        case 0:
+          n = aplicaCatalogo(true);
+          _context18.n = 1;
+          return persistir();
+        case 1:
+          if (!_context18.v) {
+            _context18.n = 2;
+            break;
+          }
+          render();
+          toast(n ? n + ' materiais adicionados' : 'A lista padrão já está completa');
+        case 2:
+          return _context18.a(2);
+      }
+    }, _callee18);
   }));
   return _recolocarCatalogo.apply(this, arguments);
 }
@@ -2743,41 +2835,41 @@ function fazerBackup() {
   return _fazerBackup.apply(this, arguments);
 }
 function _fazerBackup() {
-  _fazerBackup = _asyncToGenerator(_regenerator().m(function _callee18() {
-    var copia, _t1, _t10;
-    return _regenerator().w(function (_context18) {
-      while (1) switch (_context18.p = _context18.n) {
+  _fazerBackup = _asyncToGenerator(_regenerator().m(function _callee19() {
+    var copia, _t10, _t11;
+    return _regenerator().w(function (_context19) {
+      while (1) switch (_context19.p = _context19.n) {
         case 0:
           copia = JSON.parse(JSON.stringify(db));
-          _context18.p = 1;
+          _context19.p = 1;
           if (!nuvem()) {
-            _context18.n = 3;
+            _context19.n = 3;
             break;
           }
-          _context18.n = 2;
+          _context19.n = 2;
           return EstoqueCompartilhado.enviar('backup');
         case 2:
-          _t1 = _context18.v;
-          _context18.n = 5;
+          _t10 = _context19.v;
+          _context19.n = 5;
           break;
         case 3:
-          _context18.n = 4;
+          _context19.n = 4;
           return fotoTodas();
         case 4:
-          _t1 = _context18.v;
+          _t10 = _context19.v;
         case 5:
-          copia._fotos = _t1;
+          copia._fotos = _t10;
           download("backup-estoque-" + today() + ".json", JSON.stringify(copia), 'application/json');
-          _context18.n = 7;
+          _context19.n = 7;
           break;
         case 6:
-          _context18.p = 6;
-          _t10 = _context18.v;
-          toast(_t10.message);
+          _context19.p = 6;
+          _t11 = _context19.v;
+          toast(_t11.message);
         case 7:
-          return _context18.a(2);
+          return _context19.a(2);
       }
-    }, _callee18, null, [[1, 6]]);
+    }, _callee19, null, [[1, 6]]);
   }));
   return _fazerBackup.apply(this, arguments);
 }

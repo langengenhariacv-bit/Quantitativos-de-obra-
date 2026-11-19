@@ -15,9 +15,10 @@ function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&Array.is
 let db=load();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){toast('⚠️ Não foi possível salvar no aparelho. Exporte um backup.');return false}}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const aparelhoAntigo=document.documentElement.classList.contains('legacy');
 
 /* ============ Estoque compartilhado ============ */
-let modo='consultando', versao=0, confirmado='', ocupada=false, ativando=false;
+let modo='consultando', versao=0, confirmado='', ocupada=false, ativando=false, perfis=[];
 const nuvem=()=>modo==='online';
 const senhaOk=senha=>senha.length>=10&&senha.length<=128;
 
@@ -82,6 +83,7 @@ async function abrirEstoque(){
   try{
     const resposta=await EstoqueCompartilhado.enviar('estado');
     modo=resposta.ativo?'online':'local';
+    perfis=resposta.pessoas||[];
     db=nuvem()?blank():load();
     if(!nuvem()&&(db.catalogo||0)<CATALOGO_VERSAO){aplicaCatalogo();save()}
   }catch(err){modo='indisponivel'}
@@ -94,18 +96,44 @@ function telaCompartilhada(){
       (modo==='consultando'?'Conectando ao estoque…':'O estoque está indisponível. Confira sua conexão.')+
       '</small></div></div>'+(modo==='indisponivel'?'<button class="btn primary" onclick="abrirEstoque()">Tentar novamente</button>':'')+'</div>';
   }
-  return '<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>Lang Estoque</b><small>Entre com seu nome e sua senha.</small></div></div>'+
-    '<form class="card" style="max-width:460px;margin:0 auto;color:var(--ink)" onsubmit="return entrarCompartilhado(event)">'+
-    '<div class="f"><label for="cLogin">Nome conforme o cadastro</label><input id="cLogin" autocomplete="username" required></div>'+
-    '<div class="f"><label for="cSenha">Senha</label><input id="cSenha" type="password" autocomplete="current-password" required maxlength="128"></div>'+
-    '<button class="btn primary lg full" type="submit">Entrar</button></form></div>';
+  const pessoa=perfis.find(p=>p.id===lockSel);
+  if(pessoa){
+    const pin=pessoa.tipo==='pin';
+    return `<div class="lock"><div class="pinbox">
+      <button class="link" style="color:#ff9a5f" onclick="lockSel=null;renderLock()">‹ Trocar pessoa</button>
+      <div class="mt2">${avatar(pessoa,96)}</div><h2 class="mt">${esc(pessoa.nome)}</h2>
+      <form class="card mt2" style="color:var(--ink);text-align:left" onsubmit="return entrarCompartilhado(event)">
+        <div class="f"><label for="cSenha">${pin?'PIN de 4 dígitos':'Senha'}</label>
+        <input id="cSenha" type="password" autocomplete="current-password" required ${pin?'inputmode="numeric" pattern="[0-9]{4}" maxlength="4"':'maxlength="128"'}></div>
+        <button class="btn primary lg full" type="submit">Entrar</button>
+      </form></div></div>`;
+  }
+  return `<div class="lock"><div class="lock-h"><span class="mk">📦</span><div><b>Lang Estoque</b><small>Toque na sua foto para entrar.</small></div></div>
+    <div class="people">${perfis.map(p=>`<button class="person" data-id="${esc(p.id)}" onclick="selecionarPerfil(this.dataset.id)">${avatar(p,88)}<span>${esc(p.nome)}</span>${p.admin?'<small>Administrador</small>':''}</button>`).join('')}</div>
+    <button class="link mt2" style="color:#ff9a5f" onclick="atualizarPerfis()">Atualizar pessoas</button></div>`;
+}
+
+function selecionarPerfil(id){
+  lockSel=id;
+  renderLock();
+  const input=$('#cSenha');
+  if(input)input.focus();
+}
+
+async function atualizarPerfis(){
+  try{
+    const resposta=await EstoqueCompartilhado.enviar('estado');
+    if(!nuvem()||U)return;
+    perfis=resposta.pessoas||[];
+    if(!lockSel||!perfis.some(p=>p.id===lockSel))renderLock();
+  }catch(err){if(!U)toast(err.message)}
 }
 
 function entrarCompartilhado(evento){
   evento.preventDefault();
   if(ocupada)return false;
-  const nome=$('#cLogin').value.trim(),senha=$('#cSenha').value;
-  iniciarSessao('entrar',{nome,senha});
+  const senha=$('#cSenha').value;
+  iniciarSessao('entrar',{pessoa:lockSel,senha});
   return false;
 }
 
@@ -194,7 +222,7 @@ const matById=id=>db.materiais.find(m=>m.id===id);
 const obraById=id=>db.obras.find(o=>o.id===id);
 const catIcon=c=>CAT_ICON[c]||'📦';
 function guessIcon(nome,cat){const n=norm(nome);for(const [e,k] of ICONS)if(k&&k.split(' ').some(w=>n.includes(w)))return e;return catIcon(cat)}
-function matIcon(m){if(!m)return '📦';if(m.foto)return `<img class="mi" src="${esc(m.foto)}" alt="">`;return m.ic||guessIcon(m.nome,m.cat)}
+function matIcon(m,mostrarFoto=true){if(!m)return '📦';if(m.foto&&mostrarFoto)return `<img class="mi" src="${esc(m.foto)}" alt="">`;return m.ic||guessIcon(m.nome,m.cat)}
 function toast(msg){document.querySelectorAll('.toast').forEach(x=>x.remove());const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 function sortedMovs(){return db.movs.slice().sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.criado||0)-(a.criado||0))}
 
@@ -249,7 +277,7 @@ function avatar(p,size){size=size||40;const st=`width:${size}px;height:${size}px
   let h=0;for(let i=0;i<nm.length;i++)h=(h*31+nm.charCodeAt(i))>>>0;
   return `<span class="av" style="${st};background:${AVCOR[h%AVCOR.length]}">${esc(ini)}</span>`}
 function soAdmin(){if(isAdmin())return true;toast('🔒 Só o administrador pode fazer isso');return false}
-function logout(msg){if(nuvem()){EstoqueCompartilhado.sair();db=blank();confirmado='';versao=0}U=null;lockSel=null;pinBuf='';F=null;window._onClose=null;closeSheet();if(location.hash&&location.hash!=='#inicio')location.hash='#inicio';render();if(msg)toast(msg)}
+function logout(msg){if(nuvem()){EstoqueCompartilhado.sair();db=blank();confirmado='';versao=0}U=null;lockSel=null;pinBuf='';F=null;window._onClose=null;closeSheet();if(location.hash&&location.hash!=='#inicio')location.hash='#inicio';render();if(nuvem())atualizarPerfis();if(msg)toast(msg)}
 ['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
 setInterval(()=>{if(U&&!ocupada&&!camAtiva&&Date.now()-lastAct>INATIVO_MS)logout('Sessão encerrada por inatividade')},15000);
 
@@ -314,23 +342,32 @@ function pessoasSec(){
 function formPessoa(id){
   if(!soAdmin())return;
   const p=id?pessoaById(id):{nome:'',foto:'',admin:false,ativo:true};pFotoTmp=p.foto||'';
-  const campoSenha=nuvem()
-    ? `<div class="f"><label>${id?'Nova senha (em branco, mantém a atual)':'Senha (mínimo de 10 caracteres)'}</label><input id="pPin" type="password" maxlength="128" autocomplete="new-password"></div>`
-    : `<div class="f"><label>${id?'Novo PIN (deixe em branco para manter)':'PIN (4 números)'}</label><input id="pPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"></div>`;
+  const campoSenha='<div class="f"><label id="pAcesso" for="pPin"></label><input id="pPin" type="password" autocomplete="new-password"></div>';
   sheet(id?'✏️ Editar pessoa':'👤 Nova pessoa',`
    <div class="f"><label>Nome</label><input id="pNome" value="${esc(p.nome)}" autocomplete="off" placeholder="Ex.: Carlos (mestre de obras)"></div>
    <div class="f"><label>Foto</label><div style="display:flex;gap:12px;align-items:center"><span id="pPrev">${avatar(p,64)}</span>
      <label class="btn soft" style="cursor:pointer">📷 Tirar foto<input type="file" accept="image/*" capture="user" class="hidden" onchange="pFotoSel(this,'pPrev')"></label></div></div>
+   <label class="chk"><input type="checkbox" id="pAdm" ${p.admin?'checked':''} onchange="atualizarCampoAcesso('${id||''}',true)"> <span><b>Administrador</b><br><span class="muted small">Pode excluir lançamentos, corrigir saldo, cadastrar pessoas e mexer nas configurações.</span></span></label>
    ${campoSenha}
-   <label class="chk"><input type="checkbox" id="pAdm" ${p.admin?'checked':''}> <span><b>Administrador</b><br><span class="muted small">Pode excluir lançamentos, corrigir saldo, cadastrar pessoas e mexer nas configurações.</span></span></label>
    ${id?`<label class="chk"><input type="checkbox" id="pAtv" ${p.ativo!==false?'checked':''}> <span><b>Ativo</b><br><span class="muted small">Desative quem saiu da empresa: some da tela de login, mas o histórico continua.</span></span></label>
    ${U&&U.id!==id?`<button class="btn danger full" onclick="delPessoa('${id}')">🗑️ Excluir pessoa</button><div class="small muted mt">Os lançamentos que ela fez continuam no histórico com o nome dela.</div>`:'<div class="small muted">Você não pode excluir a si mesmo.</div>'}`:''}`,
    `<button class="btn primary lg full" onclick="salvarPessoa('${id||''}')">Salvar</button>`);
+  atualizarCampoAcesso(id,false);
+}
+function atualizarCampoAcesso(id,limpar){
+  const admin=nuvem()&&$('#pAdm').checked;
+  const mudou=nuvem()&&id&&pessoaById(id).admin!==admin;
+  const input=$('#pPin');
+  if(limpar)input.value='';
+  input.maxLength=admin?128:4;
+  input.setAttribute('inputmode',admin?'text':'numeric');
+  $('#pAcesso').textContent=(admin?'Senha (mínimo de 10 caracteres)':'PIN de 4 dígitos')+(id&&!mudou?' · em branco mantém o acesso atual':'');
 }
 async function salvarPessoa(id){
   const nome=$('#pNome').value.trim(),pin=$('#pPin').value,adm=$('#pAdm').checked,atv=id?$('#pAtv').checked:true;
   if(!nome)return toast('Informe o nome');
-  if((!id||pin)&&!(nuvem()?senhaOk(pin):pinOk(pin)))return toast(nuvem()?'A senha precisa ter entre 10 e 128 caracteres.':'O PIN precisa ter 4 números');
+  const senhaAdmin=nuvem()&&adm,mudou=nuvem()&&id&&pessoaById(id).admin!==adm;
+  if((!id||pin||mudou)&&!(senhaAdmin?senhaOk(pin):pinOk(pin)))return toast(senhaAdmin?'A senha precisa ter entre 10 e 128 caracteres.':'O PIN precisa ter 4 dígitos.');
   const outrosAdm=(db.pessoas||[]).filter(x=>x.id!==id&&x.admin&&x.ativo!==false).length;
   if(id&&(!adm||!atv)&&!outrosAdm)return toast('Precisa existir pelo menos um administrador ativo');
   const pid=id||uid();
@@ -463,7 +500,7 @@ function vInicio(C){
 
 function matRow(m,C){
   const s=C.saldo[m.id]||0,st=status(m,s),ref=Math.max(+m.min*3||0,s,1);
-  return `<a class="row" href="#mat/${m.id}"><span class="ic">${matIcon(m)}</span>
+  return `<a class="row" href="#mat/${m.id}"><span class="ic">${matIcon(m,!aparelhoAntigo)}</span>
    <span class="tx"><div class="t">${esc(m.nome)}</div><div class="s"><span class="pill ${st.k}">${st.t}</span> ${+m.min?'· mín. '+fq(m.min):''}${m.local?' · '+esc(m.local):''}</div>
    <div class="lvl"><i style="width:${Math.max(0,Math.min(100,s/ref*100))}%;background:${st.c}"></i></div></span>
    <span class="r"><div class="q" style="color:${s<=0?'var(--danger)':'inherit'}">${fq(s)}</div><div class="u">${esc(m.un)}</div></span></a>`;
@@ -478,22 +515,35 @@ function movRow(mv,C){
    <span class="r">${q1}</span></button>`;
 }
 
+function seletorCategorias(materiais,selecionada,acao){
+  if(selecionada)return `<div class="categorias-leve"><button class="btn soft" onclick="${acao}('')">‹ Categorias</button> <b>${esc(selecionada)}</b></div>`;
+  const grupos=Object.create(null);
+  materiais.forEach(m=>{const cat=m.cat||'Outros';grupos[cat]=(grupos[cat]||0)+1});
+  const botoes=Object.keys(grupos).sort((a,b)=>a.localeCompare(b,'pt-BR')).map(cat=>
+    `<button class="row" data-cat="${esc(cat)}" onclick="${acao}(this.dataset.cat)"><span class="ic">${catIcon(cat)}</span><b class="tx">${esc(cat)}</b><span>${grupos[cat]} ›</span></button>`);
+  return botoes.length?`<div class="list categorias-leve">${botoes.join('')}</div>`:'';
+}
+
+function categoriaEstoque(cat){state.fCat=cat;render()}
+function categoriaMov(cat){F.cat=cat;drawTiles()}
+
 function vEstoque(C){
   if(!db.materiais.length)return `<div class="card empty"><div class="i">📦</div><h3>Nenhum material cadastrado</h3><p>Cadastre cimento, areia, aço, tijolos… com unidade e estoque mínimo.</p><button class="btn primary lg" onclick="formMaterial()">＋ Novo material</button></div>`;
   const ws=norm(state.fEst).split(/\s+/).filter(Boolean);
-  let ms=db.materiais.filter(m=>(ws.every(w=>norm(m.nome+' '+(m.local||'')+' '+m.cat).includes(w)))&&(!state.fCat||m.cat===state.fCat));
+  let ms=db.materiais.filter(m=>(!state.fCat||(m.cat||'Outros')===state.fCat)&&(!ws.length||ws.every(w=>norm(m.nome+' '+(m.local||'')+' '+m.cat).includes(w))));
   if(state.fStatus==='baixo')ms=ms.filter(m=>alerta(status(m,C.saldo[m.id]).k));
-  ms.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  if(!aparelhoAntigo||state.fCat)ms.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
   const cats=[...new Set(db.materiais.map(m=>m.cat))];
   const nLow=db.materiais.filter(m=>alerta(status(m,C.saldo[m.id]).k)).length;
   return `<div class="sec" style="margin-top:4px"><h2 style="font-size:22px">Estoque</h2><span class="sp"></span><button class="btn primary" onclick="formMaterial()">＋ Material</button></div>
   <div class="search"><input id="qEst" placeholder="🔎 Buscar material…" value="${esc(state.fEst)}" oninput="state.fEst=this.value;clearTimeout(window._t);window._t=setTimeout(()=>{render();const i=$('#qEst');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)"></div>
   <div class="chips">
-    <button class="chip ${!state.fCat&&!state.fStatus?'on':''}" onclick="state.fCat='';state.fStatus='';render()">Todos</button>
+    <button class="chip ${!state.fCat&&!state.fStatus?'on':''}" onclick="state.fCat='';state.fStatus='';render()">${aparelhoAntigo?'Categorias':'Todos'}</button>
     <button class="chip ${state.fStatus==='baixo'?'on':''}" onclick="state.fStatus=state.fStatus==='baixo'?'':'baixo';render()">⚠️ Comprar (${nLow})</button>
-    ${cats.map(c=>`<button class="chip ${state.fCat===c?'on':''}" data-c="${esc(c)}" onclick="state.fCat=state.fCat===this.dataset.c?'':this.dataset.c;render()">${catIcon(c)} ${esc(c)}</button>`).join('')}
+    ${aparelhoAntigo?'':cats.map(c=>`<button class="chip ${state.fCat===c?'on':''}" data-c="${esc(c)}" onclick="state.fCat=state.fCat===this.dataset.c?'':this.dataset.c;render()">${catIcon(c)} ${esc(c)}</button>`).join('')}
   </div>
-  <div class="list">${ms.length?ms.map(m=>matRow(m,C)).join(''):'<div class="card muted small">Nada encontrado.</div>'}</div>`;
+  ${aparelhoAntigo?seletorCategorias(ms,state.fCat,'categoriaEstoque'):''}
+  <div class="list">${ms.length?(aparelhoAntigo&&!state.fCat?'':ms.map(m=>matRow(m,C)).join('')):'<div class="card muted small">Nada encontrado.</div>'}</div>`;
 }
 
 function vMat(C,id){
@@ -639,9 +689,9 @@ function vMov(C){
   <div class="stepper-label"><span class="n">1</span>${t==='saida'?'Para qual obra vai?':t==='devolucao'?'De qual obra voltou?':'Onde o material foi entregue?'}</div>
   <div class="obras-strip">${obraCards()}</div>
   ${t==='entrada'&&F.obra?'<div class="small muted" style="margin:-2px 0 10px">Compra entregue direto na obra: conta para a obra e não muda o saldo do depósito.</div>':''}
-  <div class="stepper-label"><span class="n">2</span>Toque no material e digite a quantidade</div>
+  <div class="stepper-label"><span class="n">2</span>${aparelhoAntigo?'Escolha uma categoria e depois o material':'Toque no material e digite a quantidade'}</div>
   <div class="search"><input id="mvQ" type="search" placeholder="🔎 Buscar material…" value="${esc(F.q)}" oninput="F.q=this.value;drawTiles()"></div>
-  ${cats.length>1?`<div class="chips"><button class="chip ${!F.cat?'on':''}" onclick="F.cat='';drawMovPage()">Todos</button>${cats.map(c=>`<button class="chip ${F.cat===c?'on':''}" data-c="${esc(c)}" onclick="F.cat=F.cat===this.dataset.c?'':this.dataset.c;drawMovPage()">${catIcon(c)} ${esc(c)}</button>`).join('')}</div>`:''}
+  ${!aparelhoAntigo&&cats.length>1?`<div class="chips"><button class="chip ${!F.cat?'on':''}" onclick="F.cat='';drawMovPage()">Todos</button>${cats.map(c=>`<button class="chip ${F.cat===c?'on':''}" data-c="${esc(c)}" onclick="F.cat=F.cat===this.dataset.c?'':this.dataset.c;drawMovPage()">${catIcon(c)} ${esc(c)}</button>`).join('')}</div>`:''}
   <div class="tiles" id="tiles">${tilesHTML(C)}</div>
   <button class="add-item mt" onclick="formMaterial(null,id=>{drawMovPage();openKey(id)})">＋ Cadastrar material novo</button>
   <div class="mv-bar" id="mvBar">${barHTML()}</div>`;
@@ -660,20 +710,24 @@ const ACENTOS={'á':'a','à':'a','â':'a','ã':'a','ä':'a','é':'e','ê':'e','�
 const norm=s=>String(s||'').toLowerCase().replace(/[áàâãäéêèëíîìïóôõòöúûùüçñ]/g,c=>ACENTOS[c]);
 function tilesHTML(C){
   const t=F.tipo,q=norm(F.q),oq=F.obra?(C.obraQ[F.obra]||{}):{};
-  const ws=q.split(/\s+/).filter(Boolean);let ms=db.materiais.filter(m=>{const h=norm(m.nome+' '+m.cat+' '+(m.local||''));return ws.every(w=>h.includes(w))&&(!F.cat||m.cat===F.cat)});
+  const ws=q.split(/\s+/).filter(Boolean);
+  let ms=db.materiais.filter(m=>(!F.cat||(m.cat||'Outros')===F.cat)&&
+    (!ws.length||ws.every(w=>norm(m.nome+' '+m.cat+' '+(m.local||'')).includes(w))));
   if(t==='devolucao'){
     if(!F.obra)return '<div class="card muted small" style="grid-column:1/-1">Escolha acima a obra de onde o material voltou.</div>';
     ms=ms.filter(m=>(oq[m.id]||0)>0);
-    if(!ms.length)return '<div class="card muted small" style="grid-column:1/-1">Esta obra não tem material para devolver.</div>';
+    if(!ms.length&&!aparelhoAntigo)return '<div class="card muted small" style="grid-column:1/-1">Esta obra não tem material para devolver.</div>';
   }
+  const categorias=aparelhoAntigo?seletorCategorias(ms,F.cat,'categoriaMov'):'';
+  if(!ms.length)return categorias+`<div class="card muted small" style="grid-column:1/-1">${t==='devolucao'&&!F.cat&&!ws.length?'Esta obra não tem material para devolver.':'Nenhum material encontrado.'}</div>`;
+  if(aparelhoAntigo&&!F.cat)return categorias;
   const freq={};db.movs.forEach(mv=>(mv.itens||[]).forEach(it=>{freq[it.m]=(freq[it.m]||0)+1}));
   const tem=m=>t==='saida'&&(C.saldo[m.id]||0)>0?1:0;
   ms.sort((a,b)=>tem(b)-tem(a)||(freq[b.id]||0)-(freq[a.id]||0)||a.nome.localeCompare(b.nome,'pt-BR'));
-  if(!ms.length)return '<div class="card muted small" style="grid-column:1/-1">Nenhum material encontrado.</div>';
-  return ms.map(m=>{const s=C.saldo[m.id]||0,st=status(m,s),sel=F.itens[m.id],dim=t==='saida'&&s<=0&&!sel;
+  return categorias+ms.map(m=>{const s=C.saldo[m.id]||0,st=status(m,s),sel=F.itens[m.id],dim=t==='saida'&&s<=0&&!sel;
     const info=t==='devolucao'?`na obra: ${fq(oq[m.id])} ${esc(m.un)}`:`${fq(s)} ${esc(m.un)}`;
     return `<button class="tile ${sel?'sel':''} ${dim?'dim':''}" style="--tc:${corTipo(t)}" onclick="openKey('${m.id}')">${sel?`<span class="badge">${fq(num(sel.q))} ${esc(m.un)}</span>`:''}
-      <span class="ti">${matIcon(m)}</span><span class="tn">${esc(m.nome)}</span><span class="ts ${t==='devolucao'?'':st.k}">${info}</span></button>`}).join('');
+      <span class="ti">${matIcon(m,!aparelhoAntigo)}</span><span class="tn">${esc(m.nome)}</span><span class="ts ${t==='devolucao'?'':st.k}">${info}</span></button>`}).join('');
 }
 function movErros(){
   const C=calc(),e=[],its=itensArr();

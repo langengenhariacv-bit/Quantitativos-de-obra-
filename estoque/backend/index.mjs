@@ -29,8 +29,12 @@ function validarSenha(senha) {
     'A senha precisa ter entre 10 e 128 caracteres.');
 }
 
-async function protegerSenha(senha) {
-  validarSenha(senha);
+async function protegerSenha(senha, tipo = 'senha') {
+  if (tipo === 'pin') {
+    exigir(typeof senha === 'string' && /^\d{4}$/.test(senha), 'O PIN precisa ter 4 dígitos.');
+  } else {
+    validarSenha(senha);
+  }
   const sal = randomBytes(16).toString('hex');
   const valor = await derivar(senha, sal, 64);
   return sal + ':' + valor.toString('hex');
@@ -175,14 +179,14 @@ async function carregar(db, token, bloquear = false) {
   return { ...registro, pessoa };
 }
 
-async function limitar(chave, maximo) {
+async function limitar(chave, maximo, janela = '10 minutes') {
   const { rows: [row] } = await pool.query(`
     INSERT INTO tentativas VALUES ($1, 1, now())
     ON CONFLICT (chave) DO UPDATE SET
-      total = CASE WHEN tentativas.janela < now() - interval '10 minutes' THEN 1 ELSE tentativas.total + 1 END,
-      janela = CASE WHEN tentativas.janela < now() - interval '10 minutes' THEN now() ELSE tentativas.janela END
-    RETURNING total`, [chave]);
-  exigir(row.total <= maximo, 'Muitas tentativas. Aguarde alguns minutos.', 429);
+      total = CASE WHEN tentativas.janela < now() - $2::interval THEN 1 ELSE tentativas.total + 1 END,
+      janela = CASE WHEN tentativas.janela < now() - $2::interval THEN now() ELSE tentativas.janela END
+    RETURNING total`, [chave, janela]);
+  exigir(row.total <= maximo, 'Limite de tentativas atingido. Aguarde ou peça ao administrador para redefinir o acesso.', 429);
 }
 
 async function guardarFotos(db, fotos, dados) {
@@ -199,8 +203,14 @@ async function guardarFotos(db, fotos, dados) {
 async function atender(body) {
   exigir(body && typeof body === 'object');
   if (body.acao === 'estado') {
-    const { rowCount } = await pool.query('SELECT 1 FROM estoque');
-    return { ativo: rowCount > 0 };
+    const { rows: [registro] } = await pool.query("SELECT dados->'pessoas' AS pessoas FROM estoque");
+    if (!registro) return { ativo: false };
+    const { rows } = await pool.query('SELECT pessoa, tipo FROM credenciais');
+    const tipos = new Map(rows.map(row => [row.pessoa, row.tipo]));
+    const pessoas = registro.pessoas.filter(p => p.ativo !== false && tipos.has(p.id)).map(p => ({
+      id: p.id, nome: p.nome, foto: p.foto, admin: p.admin, tipo: tipos.get(p.id)
+    }));
+    return { ativo: true, pessoas };
   }
   if (body.acao === 'ativar') {
     const esperado = process.env.ESTOQUE_SETUP_SHA;
@@ -222,21 +232,25 @@ async function atender(body) {
     });
   }
   if (body.acao === 'entrar') {
-    exigir(typeof body.nome === 'string' && body.nome.length <= 120 && typeof body.senha === 'string' &&
-      body.senha.length <= 128, 'Nome ou senha incorretos.', 401);
+    const porPerfil = typeof body.pessoa === 'string' && chaveId.test(body.pessoa);
+    exigir((porPerfil || (typeof body.nome === 'string' && body.nome.length <= 120)) &&
+      typeof body.senha === 'string' && body.senha.length <= 128, 'Acesso incorreto.', 401);
     const { rows: [registro] } = await pool.query('SELECT versao, dados FROM estoque');
-    const pessoa = registro?.dados.pessoas.find(p => nomeLogin(p.nome) === nomeLogin(body.nome) && p.ativo !== false);
-    await limitar(pessoa ? 'p:' + pessoa.id : 'desconhecido', pessoa ? 10 : 25);
+    const mesmoPerfil = p => p.ativo !== false && (porPerfil ? p.id === body.pessoa : nomeLogin(p.nome) === nomeLogin(body.nome));
+    const pessoa = registro?.dados.pessoas.find(mesmoPerfil);
     const { rows: [cred] } = pessoa ?
-      await pool.query('SELECT senha FROM credenciais WHERE pessoa=$1', [pessoa.id]) : { rows: [] };
-    exigir(await compararSenha(body.senha, cred?.senha), 'Nome ou senha incorretos.', 401);
+      await pool.query('SELECT senha, tipo FROM credenciais WHERE pessoa=$1', [pessoa.id]) : { rows: [] };
+    const chave = pessoa ? 'p:' + pessoa.id : 'desconhecido';
+    const pin = cred?.tipo === 'pin';
+    await limitar(chave, pin ? 5 : pessoa ? 10 : 25, pin ? '15 minutes' : '10 minutes');
+    if (pin) await limitar('dia:' + pessoa.id, 10, '1 day');
+    exigir(await compararSenha(body.senha, cred?.senha), 'Senha ou PIN incorreto.', 401);
     return transacao(async db => {
       const { rows: [atual] } = await db.query('SELECT versao, dados FROM estoque FOR UPDATE');
-      const perfil = atual.dados.pessoas.find(p => p.id === pessoa.id && p.ativo !== false &&
-        nomeLogin(p.nome) === nomeLogin(body.nome));
+      const perfil = atual.dados.pessoas.find(p => p.id === pessoa.id && mesmoPerfil(p));
       const { rows: [credAtual] } = await db.query('SELECT senha FROM credenciais WHERE pessoa=$1', [pessoa.id]);
-      exigir(perfil && credAtual?.senha === cred.senha, 'Nome ou senha incorretos.', 401);
-      await db.query('DELETE FROM tentativas WHERE chave=$1', ['p:' + pessoa.id]);
+      exigir(perfil && credAtual?.senha === cred.senha, 'Senha ou PIN incorreto.', 401);
+      await db.query('DELETE FROM tentativas WHERE chave=ANY($1::text[])', [[chave, 'dia:' + pessoa.id]]);
       return { ...atual, pessoa: perfil, token: await criarSessao(db, pessoa.id) };
     });
   }
@@ -248,14 +262,24 @@ async function atender(body) {
       verificarAlteracoes(registro.dados, body.dados, registro.pessoa, body.restaurar === true);
       const perfil = body.dados.pessoas.find(p => p.id === registro.pessoa.id && p.ativo !== false);
       exigir(perfil, 'Mantenha sua conta ativa ao salvar.');
+      const anteriores = mapear(registro.dados.pessoas);
+      for (const pessoa of body.dados.pessoas) {
+        const anterior = anteriores.get(pessoa.id);
+        if (anterior && anterior.admin !== pessoa.admin) {
+          exigir(body.credencial?.id === pessoa.id, 'Defina uma nova senha ou PIN ao mudar o tipo de acesso.');
+        }
+      }
       if (body.credencial) {
         exigir(registro.pessoa.admin, 'Acesso restrito ao administrador.', 403);
         const alvo = body.credencial.id;
-        exigir(body.dados.pessoas.some(p => p.id === alvo));
-        const senha = await protegerSenha(body.credencial.senha);
-        await db.query(`INSERT INTO credenciais VALUES ($1, $2)
-          ON CONFLICT (pessoa) DO UPDATE SET senha=EXCLUDED.senha`, [alvo, senha]);
+        const conta = body.dados.pessoas.find(p => p.id === alvo);
+        exigir(conta);
+        const tipo = conta.admin ? 'senha' : 'pin';
+        const senha = await protegerSenha(body.credencial.senha, tipo);
+        await db.query(`INSERT INTO credenciais (pessoa, senha, tipo) VALUES ($1, $2, $3)
+          ON CONFLICT (pessoa) DO UPDATE SET senha=EXCLUDED.senha, tipo=EXCLUDED.tipo`, [alvo, senha, tipo]);
         await db.query('DELETE FROM sessoes WHERE pessoa=$1 AND token<>$2', [alvo, hash(body.token)]);
+        await db.query('DELETE FROM tentativas WHERE chave=ANY($1::text[])', [['p:' + alvo, 'dia:' + alvo]]);
       }
       const pessoas = body.dados.pessoas.filter(p => p.ativo !== false).map(p => p.id);
       await db.query('DELETE FROM sessoes WHERE NOT (pessoa=ANY($1::text[]))', [pessoas]);
