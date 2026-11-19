@@ -23,7 +23,7 @@ const casa = {
   resp: {}
 };
 function total(r, re) { return r.consolidado.filter((i) => re.test(i.desc)).reduce((s, i) => s + i.qtd, 0); }
-const variantes = [{}, { fundacao: 'radier', laje: 'nenhuma', teto: 'pvc', telha: 'fibrocimento', esgoto: 'fossa', argamassa: 'industrializada', concreto: 'usinado' },
+const variantes = [{}, { fundacao: 'radier', laje: 'nenhuma', teto: 'pvc', telha: 'fibrocimento', esgoto: 'fossa', concreto: 'usinado' },
   { fundacao: 'broca', telha: 'metalica', teto: 'drywall', piso: 'ceramica', revCozinha: 'teto', pinturaExterna: 'acrilica', vedacao: 'concreto14' }];
 for (const v of variantes) {
   const r = E.calcular({ lev: casa.lev, resp: v });
@@ -107,7 +107,7 @@ console.log('OK —', r.consolidado.length, 'insumos consolidados');
   const ex = (resp) => E.calcular({ lev: casa.lev, resp: Object.assign({}, base, resp) }).etapas.find((e) => e.id === 'externa');
   const kg = (et, re) => et.itens.filter((i) => re.test(i.desc)).reduce((s, i) => s + i.qtd, 0);
   const dois = ex({}), umLado = ex({ muroLado2: 'chapisco', muroPint2: false });
-  assert(kg(umLado, /^Cal hidratada/) < kg(dois, /^Cal hidratada/), 'reboco só de um lado usa menos cal');
+  assert(kg(umLado, /^Areia fina/) < kg(dois, /^Areia fina/) * 0.6, 'reboco só de um lado usa metade da areia fina');
   assert(kg(umLado, /^Tinta acrílica/) < kg(dois, /^Tinta acrílica/) * 0.6, 'pintura só de um lado');
   assert(ex({ muroCapa: 'ceramica' }).itens.some((i) => /^Capa de muro cerâmica/.test(i.desc)));
   assert(!ex({ muroCapa: 'nenhuma' }).itens.some((i) => /^Capa de muro/.test(i.desc)));
@@ -144,4 +144,16 @@ console.log('OK —', r.consolidado.length, 'insumos consolidados');
   const sob = E.calcular({ pavimentos: [{ nome: 'T', lev: casa.lev }, { nome: 'S', lev: casa.lev }], resp: { vedacao: 'estrutural_ceramico14' } });
   assert(sob.etapas.find((e) => e.id === 'estrutura').itens.some((i) => /^Vigota/.test(i.desc)), 'laje mantida');
   console.log('OK — alvenaria estrutural');
+}
+
+// ---- reboco sempre de cimento + areia fina; argamassa industrializada só no piso
+{
+  const r = E.calcular({ lev: casa.lev, resp: { argamassa: 'industrializada', muroComp: 20 } });
+  assert(!r.consolidado.some((i) => /industrializada/i.test(i.desc)), 'sem argamassa industrializada');
+  const rev = r.etapas.find((e) => e.id === 'revestimentos');
+  assert(rev.itens.some((i) => /^Areia fina/.test(i.desc)) && rev.itens.some((i) => /^Cimento/.test(i.desc) && /areia fina/.test(i.mem.join(' '))), 'reboco cimento + areia fina');
+  assert(!rev.itens.some((i) => /^Cal hidratada/.test(i.desc)), 'reboco sem cal');
+  assert(r.etapas.find((e) => e.id === 'externa').itens.some((i) => /^Areia fina/.test(i.desc)), 'reboco do muro');
+  assert(r.consolidado.some((i) => /^Argamassa colante/.test(i.desc)), 'colante no piso');
+  console.log('OK — reboco de cimento e areia fina');
 }
