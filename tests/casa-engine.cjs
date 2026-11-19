@@ -90,7 +90,7 @@ console.log('OK —', r.consolidado.length, 'insumos consolidados');
   const base = E.calcular(casa);
   const ex = r.etapas.find((e) => e.id === 'externa');
   assert(ex && ex.itens.length > 25, 'etapa área externa');
-  for (const re of [/muro\)$/, /^Portão de garagem/, /^Portão social/, /^Saibro/, /^Bloco intertravado/, /^Grama/, /^Piso podotátil/, /^Caixa de correio/, /^Kit porteiro/, /^Chapim/]) assert(ex.itens.some((i) => re.test(i.desc)), 'faltou ' + re);
+  for (const re of [/muro\)$/, /^Portão de garagem/, /^Portão social/, /^Saibro/, /^Bloco intertravado/, /^Grama/, /^Piso podotátil/, /^Caixa de correio/, /^Kit porteiro/, /^Capa de muro/]) assert(ex.itens.some((i) => re.test(i.desc)), 'faltou ' + re);
   assert(!base.etapas.some((e) => e.id === 'externa' && e.itens.some((i) => /Portão|Saibro|Grama|muro/.test(i.desc))), 'sem área externa por padrão');
   assert(JSON.stringify(base.indicadores.map((i) => i.valor)) === JSON.stringify(r.indicadores.map((i) => i.valor)), 'indicadores só da casa');
   assert(total(r, /^Porcelanato/) > total(base, /^Porcelanato/), 'diagonal aumenta perda');
@@ -99,4 +99,19 @@ console.log('OK —', r.consolidado.length, 'insumos consolidados');
   const ti = r.consolidado.find((i) => /^Tinta acrílica fosca/.test(i.desc)); assert(/lata|galão/.test(ti.compra), ti.compra);
   assert(r.compras.some((f) => f.id === 'f55' && f.itens.length > 10));
   console.log('OK — área externa e embalagens:', pc.compra, '|', tl.compra, '|', ti.compra);
+}
+
+// ---- muro lado a lado, capa e quintal em brita
+{
+  const base = { muroComp: 30, muroAlt: 2 };
+  const ex = (resp) => E.calcular({ lev: casa.lev, resp: Object.assign({}, base, resp) }).etapas.find((e) => e.id === 'externa');
+  const kg = (et, re) => et.itens.filter((i) => re.test(i.desc)).reduce((s, i) => s + i.qtd, 0);
+  const dois = ex({}), umLado = ex({ muroLado2: 'chapisco', muroPint2: false });
+  assert(kg(umLado, /^Cal hidratada/) < kg(dois, /^Cal hidratada/), 'reboco só de um lado usa menos cal');
+  assert(kg(umLado, /^Tinta acrílica/) < kg(dois, /^Tinta acrílica/) * 0.6, 'pintura só de um lado');
+  assert(ex({ muroCapa: 'ceramica' }).itens.some((i) => /^Capa de muro cerâmica/.test(i.desc)));
+  assert(!ex({ muroCapa: 'nenhuma' }).itens.some((i) => /^Capa de muro/.test(i.desc)));
+  const br = ex({ muroComp: 0, pisoExtArea: 50, pisoExtTipo: 'brita' });
+  assert(br.itens.some((i) => /^Manta geotêxtil/.test(i.desc)) && kg(br, /^Brita 1/) > 2.5 && !br.itens.some((i) => /^Cimento/.test(i.desc)), 'quintal só brita');
+  console.log('OK — muro lado a lado, capa e quintal em brita');
 }

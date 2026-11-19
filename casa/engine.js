@@ -104,7 +104,10 @@
     canteiro: true,
     pisoDiagonal: false,     // assentamento na diagonal: +5% de perda
     // área externa (0 = não incluir)
-    muroComp: 0, muroAlt: 2.0, muroBloco: 'concreto14', muroAcab: 'reboco',
+    muroComp: 0, muroAlt: 2.0, muroBloco: 'concreto14',
+    muroLado1: 'reboco', muroPint1: true,   // lado de dentro: reboco | chapisco | aparente
+    muroLado2: 'reboco', muroPint2: true,   // lado de fora (vizinho/rua)
+    muroCapa: 'concreto',                   // concreto | ceramica | nenhuma
     portaoGaragem: 0,        // largura do portão de garagem (m)
     portaoSocial: 0,         // quantidade de portões de pedestre
     automatizar: false,
@@ -1134,14 +1137,26 @@
         const vJ = ((1 / (blm.a + j)) * j * blm.e + porM2 * blm.a * j * blm.e) * 1.15;
         argamassa128(aMuro * vJ, 'Muro: assentamento', 'assent');
         add('impermBaldrame', 'Emulsão asfáltica para fundações (balde 18 L)', 'L', Lm * (0.14 + 0.30) * 0.8, 'muro: topo e laterais do baldrame', { nome: 'balde 18 L', qtd: 18 });
-        const faces = 2 * Lm * Hm;
-        if (resp.muroAcab !== 'aparente') argamassa13(faces * C.chapisco, 'Muro: chapisco nas 2 faces (' + fmt(faces, 1) + ' m²)');
-        if (resp.muroAcab === 'reboco') {
-          argamassa128(faces * C.rebocoExt, 'Muro: reboco nas 2 faces', 'rev');
-          add('seladorExt', 'Fundo selador acrílico (externo)', 'L', faces * C.seladorExt * (1 + C.perdaPintura), 'muro ' + fmt(faces, 1) + ' m²', EMB.lata18);
-          add('tintaExt', 'Tinta acrílica premium externa', 'L', faces * C.tintaExt * (1 + C.perdaPintura), 'muro', EMB.lata18);
+        // acabamento lado a lado (compatível com a resposta antiga muroAcab)
+        const antigo = resp.muroAcab;
+        const lados = [
+          { nome: 'lado de dentro', rev: antigo && !projeto.resp.muroLado1 ? antigo : resp.muroLado1, pint: antigo && projeto.resp.muroPint1 == null ? antigo === 'reboco' : !!resp.muroPint1 },
+          { nome: 'lado de fora', rev: antigo && !projeto.resp.muroLado2 ? antigo : resp.muroLado2, pint: antigo && projeto.resp.muroPint2 == null ? antigo === 'reboco' : !!resp.muroPint2 }
+        ];
+        const face = Lm * Hm;
+        for (const l of lados) {
+          if (l.rev === 'reboco' || l.rev === 'chapisco') argamassa13(face * C.chapisco, 'Muro, ' + l.nome + ': chapisco (' + fmt(face, 1) + ' m²)');
+          if (l.rev === 'reboco') argamassa128(face * C.rebocoExt, 'Muro, ' + l.nome + ': reboco', 'rev');
+          if (l.pint) {
+            const fator = l.rev === 'reboco' ? 1 : 1.3; // chapisco e bloco aparente absorvem mais tinta
+            add('seladorExt', 'Fundo selador acrílico (externo)', 'L', face * C.seladorExt * fator * (1 + C.perdaPintura), 'muro, ' + l.nome + ' ' + fmt(face, 1) + ' m²' + (fator > 1 ? ' (+30% sobre ' + (l.rev === 'chapisco' ? 'chapisco' : 'bloco') + ')' : ''), EMB.lata18);
+            add('tintaExt', 'Tinta acrílica premium externa', 'L', face * C.tintaExt * fator * (1 + C.perdaPintura), 'muro, ' + l.nome, EMB.lata18);
+          }
         }
-        add('chapim', 'Chapim/pingadeira pré-moldada de concreto para muro', 'm', Lm * 1.05, 'topo do muro');
+        if (resp.muroCapa === 'ceramica') {
+          add('capaMuroCer', 'Capa de muro cerâmica (peça de ~33 cm)', 'un', ceil(Lm / 0.33 * 1.05), 'topo do muro, ' + fmt(Lm, 1) + ' m');
+          argamassa128(Lm * 0.006, 'Muro: assentamento da capa cerâmica', 'assent');
+        } else if (resp.muroCapa !== 'nenhuma') add('chapim', 'Capa de muro (chapim/pingadeira) pré-moldada de concreto', 'm', Lm * 1.05, 'topo do muro');
       }
       // portões
       const Lp = num(resp.portaoGaragem);
@@ -1168,7 +1183,11 @@
       // piso externo
       const ape = num(resp.pisoExtArea);
       if (ape > 0) {
-        if (resp.pisoExtTipo === 'paver') {
+        if (resp.pisoExtTipo === 'brita') {
+          add('brita1', 'Brita 1', 'm³', ape * 0.05 * 1.10, 'quintal em brita, camada de 5 cm (' + fmt(ape, 1) + ' m²)');
+          add('mantaGeo', 'Manta geotêxtil não tecida (bidim) sob a brita', 'm²', ape * 1.10, 'evita mato e mistura com a terra');
+          add('meioFio', 'Guia/meio-fio de concreto para contenção', 'm', 4 * Math.sqrt(ape) * 1.05, 'contorno da brita');
+        } else if (resp.pisoExtTipo === 'paver') {
           add('paver', 'Bloco intertravado (paver) de concreto 6 cm, 35 MPa', 'm²', ape * 1.05, fmt(ape, 1) + ' m² de piso externo');
           add('britaGrad', 'Brita graduada para base (10 cm)', 'm³', ape * 0.10 * 1.10, 'base compactada');
           areia(ape * 0.05 * 1.10, 'colchão de areia do paver 5 cm');
