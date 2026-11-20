@@ -251,7 +251,11 @@ const catIcon=c=>`<svg class="cat-svg" viewBox="0 0 48 48" aria-hidden="true">${
 const EMOJI_NOVOS='🪣🧱🪵🧰🦺🧤🥾🥽🪚🪛🪜🧪🧴🧵🧽🛞🪨🧷🪟🧹🛒🟢🟡⏚🧯';
 const emojiOk=e=>!aparelhoAntigo||!e||EMOJI_NOVOS.indexOf(String(e).replace('️',''))<0;
 function guessIcon(nome,cat){const n=norm(nome);for(const [e,k] of ICONS)if(k&&k.split(' ').some(w=>n.includes(w)))return emojiOk(e)?e:catIcon(cat);return catIcon(cat)}
-function matIcon(m,mostrarFoto=true){if(!m)return '📦';if(m.foto&&mostrarFoto)return `<img class="mi" src="${esc(m.foto)}" alt="">`;return m.ic?(emojiOk(m.ic)?m.ic:catIcon(m.cat)):guessIcon(m.nome,m.cat)}
+// Foto padrão do material (arquivo em fotos/, fora dos dados do estoque): escolhida pelas palavras do nome.
+function fotoPadrao(m){if(typeof FOTOS_REGRAS==='undefined'||!m||m.semFoto)return '';const n=norm(m.nome)+' ';
+  for(let i=0;i<FOTOS_REGRAS.length;i++)if(n.indexOf(FOTOS_REGRAS[i][0])>=0)return FOTOS_REGRAS[i][1];return ''}
+function matIcon(m,mostrarFoto=true){if(!m)return '📦';if(m.foto&&mostrarFoto)return `<img class="mi" src="${esc(m.foto)}" alt="">`;
+  const fp=mostrarFoto?fotoPadrao(m):'';if(fp)return `<img class="mi" src="fotos/${fp}.jpg" alt="" onerror="this.parentNode&&(this.parentNode.innerHTML='${esc(catIcon(m.cat)).replace(/'/g,'&#39;')}')">`;return m.ic?(emojiOk(m.ic)?m.ic:catIcon(m.cat)):guessIcon(m.nome,m.cat)}
 function toast(msg){document.querySelectorAll('.toast').forEach(x=>x.remove());const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 function sortedMovs(){
   if(!movimentosOrdenados)movimentosOrdenados=db.movs.slice().sort((a,b)=>(b.data||'').localeCompare(a.data||'')||(b.criado||0)-(a.criado||0));
@@ -540,7 +544,7 @@ function resumoInicio(C){
 
 function matRow(m,C){
   const s=C.saldo[m.id]||0,st=status(m,s),ref=Math.max(+m.min*3||0,s,1);
-  return `<a class="row" href="#mat/${m.id}"><span class="ic">${matIcon(m,!aparelhoAntigo)}</span>
+  return `<a class="row" href="#mat/${m.id}"><span class="ic">${matIcon(m)}</span>
    <span class="tx"><div class="t">${esc(m.nome)}</div><div class="s"><span class="pill ${st.k}">${st.t}</span> ${+m.min?'· mín. '+fq(m.min):''}${m.local?' · '+esc(m.local):''}</div>
    <div class="lvl"><i style="width:${Math.max(0,Math.min(100,s/ref*100))}%;background:${st.c}"></i></div></span>
    <span class="r"><div class="q" style="color:${s<=0?'var(--danger)':'inherit'}">${fq(s)}</div><div class="u">${esc(m.un)}</div></span></a>`;
@@ -782,7 +786,7 @@ function tilesHTML(C){
   return categorias+ms.map(m=>{const s=C.saldo[m.id]||0,st=status(m,s),sel=F.itens[m.id],dim=t==='saida'&&s<=0&&!sel;
     const info=t==='devolucao'?`na obra: ${fq(oq[m.id])} ${esc(m.un)}`:`${fq(s)} ${esc(m.un)}`;
     return `<button class="tile ${sel?'sel':''} ${dim?'dim':''}" style="--tc:${corTipo(t)}" onclick="openKey('${m.id}')">${sel?`<span class="badge">${fq(num(sel.q))} ${esc(m.un)}</span>`:''}
-      <span class="ti">${matIcon(m,!aparelhoAntigo)}</span><span class="tn">${esc(m.nome)}</span><span class="ts ${t==='devolucao'?'':st.k}">${info}</span></button>`}).join('');
+      <span class="ti">${matIcon(m)}</span><span class="tn">${esc(m.nome)}</span><span class="ts ${t==='devolucao'?'':st.k}">${info}</span></button>`}).join('');
 }
 function movErros(){
   const C=calc(),e=[],its=itensArr();
@@ -946,18 +950,18 @@ function formMaterial(id,cb){
    ${id&&isAdmin()?`<button class="btn danger full" onclick="delMaterial('${id}')">🗑️ Excluir material</button>${used?'<div class="small muted mt">Este material tem movimentações; ao excluir, elas também serão apagadas.</div>':''}`:''}`,
    `<button class="btn primary lg full" id="mSave">Salvar</button>`);
   setTimeout(()=>{if(!id)$('#mNome').focus()},60);
-  const mf={ic:m.ic||'',foto:m.foto||''};
-  const prev=()=>{const cur=mf.ic||guessIcon($('#mNome').value,(($('#mCat .chip.on')||{dataset:{}}).dataset.v));$('#mPrev').innerHTML=mf.foto?`<img class="mi" src="${mf.foto}" alt="">`:cur;
-    document.querySelectorAll('#mIcons button').forEach(b=>b.classList.toggle('on',!mf.foto&&b.dataset.v===cur));$('#mFotoDel').classList.toggle('hidden',!mf.foto)};
+  const mf={ic:m.ic||'',foto:m.foto||'',semFoto:!!m.semFoto};
+  const prev=()=>{const cur=mf.ic||guessIcon($('#mNome').value,(($('#mCat .chip.on')||{dataset:{}}).dataset.v));const fp=!mf.foto&&!mf.semFoto?fotoPadrao({nome:$('#mNome').value}):'';$('#mPrev').innerHTML=mf.foto?`<img class="mi" src="${mf.foto}" alt="">`:fp?`<img class="mi" src="fotos/${fp}.jpg" alt="">`:cur;
+    document.querySelectorAll('#mIcons button').forEach(b=>b.classList.toggle('on',!mf.foto&&!fp&&b.dataset.v===cur));$('#mFotoDel').classList.toggle('hidden',!mf.foto)};
   $('#mNome').addEventListener('input',prev);$('#mCat').addEventListener('click',()=>setTimeout(prev));
-  $('#mIcons').onclick=e=>{const b=e.target.closest('button');if(!b)return;mf.ic=b.dataset.v;mf.foto='';prev()};
+  $('#mIcons').onclick=e=>{const b=e.target.closest('button');if(!b)return;mf.ic=b.dataset.v;mf.foto='';mf.semFoto=true;prev()};
   $('#mFotoDel').onclick=()=>{mf.foto='';prev()};
-  $('#mFoto').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{mf.foto=await fotoReduzida(f);prev()}catch(err){toast('Não foi possível ler a foto')}};
+  $('#mFoto').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{mf.foto=await fotoReduzida(f,160,.7);mf.semFoto=false;prev()}catch(err){toast('Não foi possível ler a foto')}};
   $('#mSave').onclick=async()=>{
     const nome=$('#mNome').value.trim();if(!nome){toast('Informe o nome do material');$('#mNome').focus();return}
     if(db.materiais.some(x=>x.id!==id&&x.nome.toLowerCase()===nome.toLowerCase())){toast('Já existe um material com esse nome');return}
     const cat=(($('#mCat .chip.on')||{dataset:{}}).dataset.v)||'Outros';
-    const data={nome,cat,un:$('#mUn').value,min:num($('#mMin').value),preco:num($('#mPreco').value),local:$('#mLocal').value.trim(),ic:mf.ic||guessIcon(nome,cat),foto:mf.foto};
+    const data={nome,cat,un:$('#mUn').value,min:num($('#mMin').value),preco:num($('#mPreco').value),local:$('#mLocal').value.trim(),ic:mf.ic||guessIcon(nome,cat),foto:mf.foto,semFoto:mf.semFoto&&!mf.foto};
     let mid=id;
     if(id)db.materiais=db.materiais.map(atual=>atual.id===id?{...atual,...data}:atual);
     else{mid=uid();db.materiais.push({id:mid,...data,criado:Date.now()});const ini=$('#mIni')?num($('#mIni').value):0;
@@ -966,7 +970,7 @@ function formMaterial(id,cb){
     if(cb)cb(mid);else{render();toast(id?'Material atualizado':'Material cadastrado')}
   };
 }
-function fotoReduzida(file){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{const S=240,c=document.createElement('canvas');c.width=c.height=S;const k=Math.min(img.width,img.height);c.getContext('2d').drawImage(img,(img.width-k)/2,(img.height-k)/2,k,k,0,0,S,S);URL.revokeObjectURL(img.src);res(c.toDataURL('image/jpeg',.75))};img.onerror=rej;img.src=URL.createObjectURL(file)})}
+function fotoReduzida(file,S=240,q=.75){return new Promise((res,rej)=>{const img=new Image();img.onload=()=>{c=document.createElement('canvas');c.width=c.height=S;const k=Math.min(img.width,img.height);c.getContext('2d').drawImage(img,(img.width-k)/2,(img.height-k)/2,k,k,0,0,S,S);URL.revokeObjectURL(img.src);res(c.toDataURL('image/jpeg',q))};img.onerror=rej;img.src=URL.createObjectURL(file)})}
 async function delMaterial(id){
   if(!soAdmin())return;
   const m=matById(id);if(!confirm(`Excluir "${m.nome}"? As movimentações deste material também serão apagadas.`))return;
@@ -1060,6 +1064,7 @@ function config(){
    <div class="sec"><h2>Outros</h2></div>
    ${nuvem()?'':'<div class="grid g2"><button class="btn soft" onclick="loadDemoConfirmado()">Dados de exemplo</button><button class="btn danger" onclick="apagarEstoqueLocal()">Apagar tudo</button></div>'}
    <button class="btn soft full mt" onclick="recolocarCatalogo()">📋 Recolocar materiais da lista padrão</button>
+   <a class="btn soft full mt" href="fotos/creditos.html" target="_blank">📷 Créditos das fotos dos materiais</a>
    <p class="muted small mt2">${db.materiais.length} materiais · ${db.obras.length} obras · ${db.movs.length} movimentações</p>`);
 }
 async function salvarEmpresa(){
