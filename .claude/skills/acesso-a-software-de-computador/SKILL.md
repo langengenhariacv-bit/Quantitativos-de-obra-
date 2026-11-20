@@ -1,9 +1,9 @@
 ---
-name: cli-hub
-description: Usa o CLI-Hub (projeto CLI-Anything) para instalar e operar programas de desktop (FreeCAD, LibreOffice, Blender, GIMP, etc.) por linha de comando. Use quando uma tarefa de quantitativos de obra, orçamento, BIM/CAD ou planilhas precisar operar um programa externo, ou quando o usuário pedir "cli-hub", "CLI-Anything" ou "instalar um CLI".
+name: acesso-a-software-de-computador
+description: Usa o CLI-Hub (projeto CLI-Anything) para instalar e operar programas de desktop (FreeCAD, LibreOffice, Blender, GIMP, etc.) por linha de comando. Use quando uma tarefa de quantitativos de obra, orçamento, BIM/CAD ou planilhas precisar operar um programa externo, ou quando o usuário pedir "acesso a software de computador", "cli-hub", "CLI-Anything" ou "instalar um CLI".
 ---
 
-# CLI-Hub (CLI-Anything)
+# Acesso a software de computador (CLI-Hub / CLI-Anything)
 
 O CLI-Anything cria "pontes" de linha de comando para programas feitos para mouse e tela,
 para que um agente de IA consiga operá-los com comandos de texto e respostas em JSON.
