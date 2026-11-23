@@ -557,11 +557,36 @@ function renderDashboard(){
  $('#quickBudget').onclick=()=>budgetModal();$('#allProjects').onclick=()=>{currentSection='projects';render()};$('#allTasks').onclick=()=>{currentSection='tasks';render()};
  const gs=$('#globalSearch'),gr=$('#globalResults');gs.oninput=()=>{const hits=globalSearchMatches(gs.value);gr.innerHTML=gs.value.trim()?`<div class="list" style="margin-top:12px">${hits.length?hits.map((h,i)=>`<button class="list-item search-hit" style="width:100%;text-align:left;border:0;background:transparent" data-hit="${i}"><div style="flex:1"><b>${esc(h.title)}</b><div class="sub">${esc(h.kind)}${h.sub?' · '+esc(h.sub):''}</div></div></button>`).join(''):'<div class="empty">Nenhum resultado.</div>'}</div>`:'';document.querySelectorAll('.search-hit').forEach(btn=>btn.onclick=()=>{const h=hits[Number(btn.dataset.hit)];if(h.projectId){currentProjectId=h.projectId;currentSection='projects';projectTab='overview'}else{currentProjectId=null;currentSection=h.section}render()})};
 }
+function budgetPricing(b){
+ const originalCents=Math.max(0,Math.round(Number(b.value||0)*100));
+ const amount=Number(b.discountAmount||0);
+ const discountCents=b.discountType==='percent'?Math.round(originalCents*amount/100)
+   :b.discountType==='fixed'?Math.round(amount*100):0;
+ const boundedDiscountCents=Math.min(originalCents,Math.max(0,discountCents));
+ return {
+   original:originalCents/100,
+   discount:boundedDiscountCents/100,
+   total:(originalCents-boundedDiscountCents)/100,
+   cashOnly:boundedDiscountCents>0&&b.discountCondition==='cash',
+   installments:Math.max(1,Number(b.installments||1))
+ };
+}
+function budgetPayment(b,cash=false){
+ const pricing=budgetPricing(b);
+ return {
+   total:pricing.cashOnly&&!cash?pricing.original:pricing.total,
+   installments:cash?1:pricing.installments,
+   cash,
+   firstDueDate:b.firstDueDate||'',
+   discount:pricing.cashOnly&&!cash?0:pricing.discount,
+   original:pricing.original
+ };
+}
 function renderBudgets(){
  const all=state.budgets.slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
  const groups={open:all.filter(b=>!['Aceito','Recusado'].includes(b.status)),accepted:all.filter(b=>b.status==='Aceito'),refused:all.filter(b=>b.status==='Recusado')};
  let showing='open';
- const card=b=>{const p=state.projects.find(p=>p.sourceBudgetId===b.id),desc=budgetServiceDescription(b);return `<article class="budget-card"><div class="row-between"><div><h4>${esc(b.title)}</h4><div class="meta">${esc(clientName(b.clientId))}<br><b>${esc(b.service||'Serviço')}</b></div></div><span class="pill ${b.status==='Aceito'?'good':b.status==='Rascunho'?'gray':b.status==='Recusado'?'warn':''}">${esc(b.status)}</span></div><div class="meta" style="margin-top:10px">${esc(desc.length>150?desc.slice(0,147)+'...':desc)}</div><div class="project-foot"><span>${b.deadline?'Prazo '+fmtDate(b.deadline):'Sem prazo'}</span><b>${brl(b.value)}</b></div><div class="meta" style="margin-top:8px">${Number(b.installments||1)} parcela${Number(b.installments||1)===1?'':'s'}${b.firstDueDate?' · 1º venc. '+fmtDate(b.firstDueDate):''}</div><div class="actions" style="margin-top:10px"><button class="btn primary sm pdf-budget" data-id="${b.id}">Baixar PDF</button><button class="btn soft sm edit-budget" data-id="${b.id}">Editar</button>${!['Aceito','Recusado'].includes(b.status)?`<button class="btn good sm accept-budget" data-id="${b.id}">Aceitar e criar projeto</button>`:''}${b.status==='Aceito'?`<button class="btn soft sm contract-budget" data-id="${b.id}">Contrato</button>${p?`<button class="btn soft sm open-budget-project" data-id="${p.id}">Ver projeto</button>`:''}`:''}</div></article>`};
+ const card=b=>{const p=state.projects.find(p=>p.sourceBudgetId===b.id),desc=budgetServiceDescription(b),price=budgetPricing(b),accepted=b.acceptedPayment,payment=accepted||budgetPayment(b);return `<article class="budget-card"><div class="row-between"><div><h4>${esc(b.title)}</h4><div class="meta">${esc(clientName(b.clientId))}<br><b>${esc(b.service||'Serviço')}</b></div></div><span class="pill ${b.status==='Aceito'?'good':b.status==='Rascunho'?'gray':b.status==='Recusado'?'warn':''}">${esc(b.status)}</span></div><div class="meta" style="margin-top:10px">${esc(desc.length>150?desc.slice(0,147)+'...':desc)}</div><div class="project-foot"><span>${b.deadline?'Prazo '+fmtDate(b.deadline):'Sem prazo'}</span><b>${brl(payment.total)}</b></div><div class="meta" style="margin-top:8px">${payment.cash?'À vista':payment.installments+' parcela'+(payment.installments===1?'':'s')}${payment.firstDueDate?' · 1º venc. '+fmtDate(payment.firstDueDate):''}</div>${!accepted&&price.cashOnly?`<div class="meta"><b>À vista por ${brl(price.total)}</b> · desconto de ${brl(price.discount)}</div>`:payment.discount?`<div class="meta">Desconto de ${brl(payment.discount)} sobre ${brl(payment.original)}</div>`:''}<div class="actions" style="margin-top:10px"><button class="btn primary sm pdf-budget" data-id="${b.id}">Baixar PDF</button><button class="btn soft sm edit-budget" data-id="${b.id}">Editar</button>${!['Aceito','Recusado'].includes(b.status)?`<button class="btn good sm accept-budget" data-id="${b.id}">Aceitar e criar projeto</button>`:''}${b.status==='Aceito'?`<button class="btn soft sm contract-budget" data-id="${b.id}">Contrato</button>${p?`<button class="btn soft sm open-budget-project" data-id="${p.id}">Ver projeto</button>`:''}`:''}</div></article>`};
  $('#main').innerHTML=`${pageHead('Orçamentos','Do primeiro contato à aprovação.','<button class="btn primary" id="newBudget">+ Novo orçamento</button>')}<div class="tabs"><button class="tab active" data-btab="open">Em aberto (${groups.open.length})</button><button class="tab" data-btab="accepted">Aceitos (${groups.accepted.length})</button><button class="tab" data-btab="refused">Recusados (${groups.refused.length})</button></div><div id="budgetGrid" class="grid-3"></div>`;
  const draw=()=>{document.querySelectorAll('[data-btab]').forEach(x=>x.classList.toggle('active',x.dataset.btab===showing));const rows=groups[showing];$('#budgetGrid').innerHTML=rows.map(card).join('')||'<div class="empty">Nenhum orçamento nesta categoria.</div>';document.querySelectorAll('.pdf-budget').forEach(b=>b.onclick=()=>downloadBudgetPdf(b.dataset.id));document.querySelectorAll('.edit-budget').forEach(b=>b.onclick=()=>budgetModal(b.dataset.id));document.querySelectorAll('.accept-budget').forEach(b=>b.onclick=()=>acceptBudget(b.dataset.id));document.querySelectorAll('.contract-budget').forEach(b=>b.onclick=()=>contractModal(b.dataset.id));document.querySelectorAll('.open-budget-project').forEach(b=>b.onclick=()=>{currentSection='projects';currentProjectId=b.dataset.id;projectTab='overview';render()})};
  document.querySelectorAll('[data-btab]').forEach(b=>b.onclick=()=>{showing=b.dataset.btab;draw()});$('#newBudget').onclick=()=>budgetModal();draw();
@@ -694,7 +719,7 @@ async function downloadBudgetPdf(id){
  try{
    const jsPDF=window.jspdf.jsPDF,doc=new jsPDF({unit:'mm',format:'a4'}),client=state.clients.find(c=>c.id===b.clientId)||{};
    const W=210,H=297,M=14,G=7,LEFT=116,RIGHT=W-(M*2)-G-LEFT,C={ink:[24,24,24],muted:[104,104,104],orange:[242,91,33],soft:[248,247,245],line:[226,222,217],white:[255,255,255]};
-   const logo=await budgetLogoPng(),desc=budgetServiceDescription(b),scope=budgetServiceScope(b),n=Math.max(1,Number(b.installments||1)),validity=Math.max(1,Number(b.validityDays||15));
+   const logo=await budgetLogoPng(),desc=budgetServiceDescription(b),scope=budgetServiceScope(b),price=budgetPricing(b),n=price.installments,validity=Math.max(1,Number(b.validityDays||15));
    const created=b.createdAt?new Date(b.createdAt):new Date(),year=Number.isFinite(created.getTime())?created.getFullYear():new Date().getFullYear();
    const tail=String(b.id||'0000').replace(/[^a-zA-Z0-9]/g,'').slice(-5).toUpperCase()||'00000',proposalNo='LANG-'+year+'-'+tail;
    const setColor=a=>doc.setTextColor(a[0],a[1],a[2]);
@@ -742,14 +767,24 @@ async function downloadBudgetPdf(id){
    y=Math.max(my+3,y+20);
 
    // Faixa de investimento compacta
-   fillColor(C.soft);lineColor(C.line);doc.roundedRect(M,y,W-2*M,22,2.5,2.5,'FD');
-   smallLabel('Investimento',M+6,y+7);
-   doc.setFont('helvetica','bold');doc.setFontSize(18);setColor(C.ink);doc.text(brl(b.value),M+6,y+17);
+   const priceHeight=price.discount?30:22;
+   fillColor(C.soft);lineColor(C.line);doc.roundedRect(M,y,W-2*M,priceHeight,2.5,2.5,'FD');
+   smallLabel(price.discount&&!price.cashOnly?'Investimento com desconto':'Investimento',M+6,y+7);
+   doc.setFont('helvetica','bold');doc.setFontSize(18);setColor(C.ink);
+   doc.text(brl(price.cashOnly?price.original:price.total),M+6,y+17);
    doc.setFont('helvetica','normal');doc.setFontSize(7.4);setColor(C.muted);
    doc.text(n===1?'Pagamento em 1 parcela':'Pagamento em '+n+' parcelas',W-M-6,y+8,{align:'right'});
    doc.text('Validade: '+validity+' dias',W-M-6,y+13,{align:'right'});
    if(b.firstDueDate)doc.text('1º vencimento: '+fmtDate(b.firstDueDate),W-M-6,y+18,{align:'right'});
-   y+=30;
+   if(price.discount){
+     const discountText='Desconto de '+brl(price.discount);
+     doc.text(price.cashOnly?discountText+' somente à vista':discountText+' sobre '+brl(price.original),M+6,y+24);
+     if(price.cashOnly){
+       doc.setFont('helvetica','bold');doc.setFontSize(10);setColor(C.ink);
+       doc.text('À vista: '+brl(price.total),W-M-6,y+24,{align:'right'});
+     }
+   }
+   y+=priceHeight+8;
 
    // Colunas para caber em uma única página
    const xL=M,xR=M+LEFT+G,topCols=y;
@@ -825,7 +860,17 @@ function budgetModal(id=null){
  <div class="field"><label>Serviço *</label><input id="bService" list="serviceList" required placeholder="Ex.: Projeto residencial unifamiliar" value="${esc(b?.service||'')}"><datalist id="serviceList">${serviceOptions}</datalist></div>
  <div class="field"><div class="row-between"><label>Descrição do serviço</label><button type="button" class="btn soft sm" id="suggestService">Usar descrição sugerida</button></div><textarea id="bServiceDescription" rows="4" placeholder="A descrição aparecerá no PDF da proposta.">${esc(b?.serviceDescription||initialInfo.description||'')}</textarea></div>
  <div class="field"><label>Escopo previsto — um item por linha</label><textarea id="bServiceScope" rows="5" placeholder="O que está incluído no serviço.">${esc(b?.serviceScope||initialInfo.scope.join('\n'))}</textarea></div>
- <div class="two"><div class="field"><label>Valor total (R$)</label><input id="bValue" type="number" min="0" step="0.01" value="${b?.value||''}"></div><div class="field"><label>Prazo / retorno</label><input id="bDeadline" type="date" value="${b?.deadline||''}"></div></div>
+ <div class="two"><div class="field"><label for="bValue">Valor do orçamento (R$)</label><input id="bValue" type="number" min="0" step="0.01" value="${b?.value||''}"></div><div class="field"><label>Prazo / retorno</label><input id="bDeadline" type="date" value="${b?.deadline||''}"></div></div>
+ <div class="field"><label for="bDiscountType">Desconto</label><select id="bDiscountType">
+   <option value="">Sem desconto</option><option value="fixed" ${b?.discountType==='fixed'?'selected':''}>Valor em reais (R$)</option><option value="percent" ${b?.discountType==='percent'?'selected':''}>Percentual (%)</option>
+ </select></div>
+ <div id="bDiscountFields" class="hidden">
+   <div class="two">
+     <div class="field"><label id="bDiscountLabel" for="bDiscountAmount">Valor do desconto</label><input id="bDiscountAmount" type="number" step="0.01" min="0.01" value="${esc(b?.discountAmount||'')}"></div>
+     <div class="field"><label for="bDiscountCondition">Condição do desconto</label><select id="bDiscountCondition"><option value="cash">Somente à vista</option><option value="any" ${b?.discountCondition==='any'?'selected':''}>Qualquer forma de pagamento</option></select></div>
+   </div>
+   <div id="bDiscountSummary" class="meta" role="status" style="margin-bottom:13px"></div>
+ </div>
  <div class="two"><div class="field"><label>Número de parcelas</label><input id="bInstallments" type="number" min="1" max="36" step="1" value="${Number(b?.installments||1)}"></div><div class="field"><label>Primeiro vencimento</label><input id="bFirstDue" type="date" value="${b?.firstDueDate||''}"></div></div>
  <div class="two"><div class="field"><label>Validade da proposta (dias)</label><input id="bValidity" type="number" min="1" max="180" value="${Number(b?.validityDays||15)}"></div><div class="field"><label>Status</label><select id="bStatus">${['Rascunho','Enviado','Em negociação','Aceito','Recusado'].map(x=>`<option ${b?.status===x?'selected':''}>${x}</option>`).join('')}</select></div></div>
  <div class="field"><label>Observações</label><textarea id="bNotes" rows="3">${esc(b?.notes||'')}</textarea></div>
@@ -836,6 +881,29 @@ function budgetModal(id=null){
  $('#cancel').onclick=closeModal;
  const toggleNewClient=()=>{const on=$('#bNewClient').checked;$('#bNewClientFields').classList.toggle('hidden',!on);$('#bClient').disabled=on;if(on)$('#bClient').value='';};
  $('#bNewClient').onchange=toggleNewClient;toggleNewClient();
+ const discountType=$('#bDiscountType'),discountAmount=$('#bDiscountAmount'),discountCondition=$('#bDiscountCondition'),budgetValue=$('#bValue');
+ const discountFields=()=>({
+   discountType:discountType.value,
+   discountAmount:discountType.value?Number(discountAmount.value):0,
+   discountCondition:discountType.value?discountCondition.value:''
+ });
+ const updateDiscount=()=>{
+   const fields=discountFields(),enabled=!!fields.discountType,percent=fields.discountType==='percent';
+   $('#bDiscountFields').classList.toggle('hidden',!enabled);
+   discountAmount.disabled=discountCondition.disabled=!enabled;
+   discountAmount.required=enabled;
+   discountAmount.max=percent?'100':budgetValue.value||'0';
+   $('#bDiscountLabel').textContent=percent?'Desconto (%)':'Desconto (R$)';
+   const price=budgetPricing({value:budgetValue.value,...fields});
+   const error=enabled&&fields.discountAmount>Number(discountAmount.max)
+     ?(percent?'Informe um percentual de até 100%.':'O desconto deve ser igual ou menor que o valor do orçamento.'):'';
+   discountAmount.setCustomValidity(error);
+   $('#bDiscountSummary').textContent=error||(price.discount
+     ?(price.cashOnly?'À vista: '+brl(price.total)+' · Valor sem desconto: '+brl(price.original)
+       :'Total com desconto: '+brl(price.total)):'');
+ };
+ discountType.onchange=discountCondition.onchange=discountAmount.oninput=budgetValue.oninput=updateDiscount;
+ updateDiscount();
  const applySuggestion=()=>{const info=serviceInfo($('#bService').value);$('#bServiceDescription').value=info.description;$('#bServiceScope').value=info.scope.join('\n')};
  $('#suggestService').onclick=applySuggestion;
  let lastService=b?.service||'';
@@ -847,8 +915,11 @@ function budgetModal(id=null){
    let selectedClientId=$('#bClient').value;
    if(createNew&&!newClient.name)return alert('Informe o nome do novo cliente.');
    if(!createNew&&!selectedClientId)return alert('Selecione um cliente ou marque "Cadastrar novo cliente".');
-   const baseObj={title:$('#bTitle').value.trim(),service:$('#bService').value.trim(),serviceDescription:$('#bServiceDescription').value.trim(),serviceScope:$('#bServiceScope').value.trim(),value:Number($('#bValue').value||0),deadline:$('#bDeadline').value,installments:Math.max(1,Number($('#bInstallments').value||1)),firstDueDate:$('#bFirstDue').value,validityDays:Math.max(1,Number($('#bValidity').value||15)),status:$('#bStatus').value,notes:$('#bNotes').value.trim()};
+   const baseObj={title:$('#bTitle').value.trim(),service:$('#bService').value.trim(),serviceDescription:$('#bServiceDescription').value.trim(),serviceScope:$('#bServiceScope').value.trim(),value:Number(budgetValue.value||0),...discountFields(),deadline:$('#bDeadline').value,installments:Math.max(1,Number($('#bInstallments').value||1)),firstDueDate:$('#bFirstDue').value,validityDays:Math.max(1,Number($('#bValidity').value||15)),status:$('#bStatus').value,notes:$('#bNotes').value.trim()};
    if(!baseObj.title||!baseObj.service)return alert('Informe o título e o serviço.');
+   if(baseObj.status==='Aceito'&&b?.status!=='Aceito'&&budgetPricing(baseObj).discount){
+     return alert('Salve o orçamento em aberto e use “Aceitar e criar projeto” para registrar a condição de pagamento.');
+   }
    closeModal();
    await mutate(d=>{
      let clientId=selectedClientId;
@@ -868,12 +939,63 @@ function budgetModal(id=null){
 }
 function addMonthsDate(dateStr,months){if(!dateStr)return '';const d=new Date(dateStr+'T12:00:00');d.setMonth(d.getMonth()+months);return d.toISOString().slice(0,10)}
 function acceptBudget(id){
- const b=state.budgets.find(x=>x.id===id);if(!b)return;if(!confirm('Marcar como aceito, criar o projeto e gerar as parcelas no Financeiro?'))return;
- mutate(d=>{const bb=d.budgets.find(x=>x.id===id);bb.status='Aceito';if(!d.projects.some(p=>p.sourceBudgetId===id)){const pid=uid();const project={id:pid,sourceBudgetId:id,name:bb.title,clientId:bb.clientId,service:bb.service||'Projeto',status:'Planejamento',archived:false,createdAt:new Date().toISOString(),notes:bb.notes||'',stages:makeStages(pid,bb.service),documents:[],approvals:[],history:[{id:uid(),at:new Date().toISOString(),message:'Projeto criado a partir do orçamento aceito'}]};d.projects.push(project);bb.sourceProjectId=pid;const n=Math.max(1,Number(bb.installments||1));const cents=Math.round(Number(bb.value||0)*100),base=Math.floor(cents/n),rest=cents-base*n;for(let i=0;i<n;i++){const value=(base+(i<rest?1:0))/100;if(value<=0)continue;d.finance.push({id:uid(),projectId:pid,clientId:bb.clientId,type:'A receber',description:n>1?`Parcela ${i+1}/${n} - Honorários do projeto`:'Honorários do projeto',value,date:today(),dueDate:addMonthsDate(bb.firstDueDate||'',i),notes:'Gerado a partir do orçamento aceito',reimbursed:false,voided:false})}}});
+ const b=state.budgets.find(x=>x.id===id);if(!b)return;
+ const price=budgetPricing(b);
+ if(price.cashOnly){
+   modal('Aceitar orçamento',`<form id="acceptBudgetForm">
+     <div class="field"><label for="acceptedBudgetPayment">Condição aceita pelo cliente</label><select id="acceptedBudgetPayment" required>
+       <option value="">Selecione</option>
+       <option value="cash">À vista com desconto · ${brl(price.total)}</option>
+       <option value="regular">${price.installments===1?'1 parcela':price.installments+' parcelas'} sem desconto · ${brl(price.original)}</option>
+     </select></div>
+     <div class="modal-foot"><button type="button" class="btn soft" id="cancel">Cancelar</button><button class="btn primary">Aceitar e criar projeto</button></div>
+   </form>`);
+   $('#cancel').onclick=closeModal;
+   $('#acceptBudgetForm').onsubmit=e=>{
+     e.preventDefault();
+     const cash=$('#acceptedBudgetPayment').value==='cash';
+     closeModal();
+     createProjectFromBudget(id,cash);
+   };
+   return;
+ }
+ const message=price.discount?`Aceitar o orçamento por ${brl(price.total)}, criar o projeto e registrar o valor no Financeiro?`
+   :'Marcar como aceito, criar o projeto e gerar as parcelas no Financeiro?';
+ if(confirm(message))createProjectFromBudget(id);
+}
+function createProjectFromBudget(id,cash=false){
+ mutate(d=>{
+   const b=d.budgets.find(x=>x.id===id);
+   if(!b)return;
+   b.status='Aceito';
+   if(d.projects.some(p=>p.sourceBudgetId===id))return;
+   const pid=uid(),payment=budgetPayment(b,cash),n=payment.installments;
+   b.sourceProjectId=pid;
+   if(budgetPricing(b).discount)b.acceptedPayment=payment;
+   d.projects.push({
+     id:pid,sourceBudgetId:id,name:b.title,clientId:b.clientId,service:b.service||'Projeto',
+     status:'Planejamento',archived:false,createdAt:new Date().toISOString(),notes:b.notes||'',
+     stages:makeStages(pid,b.service),documents:[],approvals:[],
+     history:[{id:uid(),at:new Date().toISOString(),message:'Projeto criado a partir do orçamento aceito'}]
+   });
+   const cents=Math.round(payment.total*100),base=Math.floor(cents/n),rest=cents-base*n;
+   for(let i=0;i<n;i++){
+     const value=(base+(i<rest?1:0))/100;if(value<=0)continue;
+     d.finance.push({
+       id:uid(),projectId:pid,clientId:b.clientId,type:'A receber',
+       description:n>1?`Parcela ${i+1}/${n} - Honorários do projeto`:'Honorários do projeto',
+       value,date:today(),dueDate:addMonthsDate(payment.firstDueDate,i),
+       notes:'Gerado a partir do orçamento aceito',reimbursed:false,voided:false
+     });
+   }
+ });
 }
 function contractModal(id){
- const b=state.budgets.find(x=>x.id===id);if(!b)return;const client=clientName(b.clientId),n=Math.max(1,Number(b.installments||1));const payment=n===1?`pagamento no valor de ${brl(b.value)}`:`pagamento em ${n} parcelas, totalizando ${brl(b.value)}`;
- const defaultText=`CONTRATO DE PRESTAÇÃO DE SERVIÇOS\n\nCONTRATANTE: ${client}.\nCONTRATADA: LANG Engenharia.\n\nOBJETO\nPrestação dos serviços de ${b.service||b.title}.\n\nVALOR E PAGAMENTO\nO valor ajustado é de ${brl(b.value)}, com ${payment}${b.firstDueDate?`, iniciando em ${fmtDate(b.firstDueDate)}`:''}.\n\nPRAZO\n${b.deadline?`Prazo previsto: ${fmtDate(b.deadline)}.`:'Prazo conforme andamento técnico e aprovações necessárias.'}\n\nOBSERVAÇÕES\n${b.notes||'Sem observações adicionais.'}\n\nBrusque/SC, ____ de __________________ de ______.\n\n________________________________\nCONTRATANTE\n\n________________________________\nLANG Engenharia`;
+ const b=state.budgets.find(x=>x.id===id);if(!b)return;
+ const client=clientName(b.clientId),terms=b.acceptedPayment||budgetPayment(b),n=terms.installments;
+ const payment=terms.cash?'pagamento à vista':n===1?`pagamento no valor de ${brl(terms.total)}`:`pagamento em ${n} parcelas, totalizando ${brl(terms.total)}`;
+ const discount=terms.discount?`, já incluído o desconto de ${brl(terms.discount)} sobre ${brl(terms.original)}`:'';
+ const defaultText=`CONTRATO DE PRESTAÇÃO DE SERVIÇOS\n\nCONTRATANTE: ${client}.\nCONTRATADA: LANG Engenharia.\n\nOBJETO\nPrestação dos serviços de ${b.service||b.title}.\n\nVALOR E PAGAMENTO\nO valor ajustado é de ${brl(terms.total)}${discount}, com ${payment}${terms.firstDueDate?`, com vencimento ${n>1?'inicial ':''}em ${fmtDate(terms.firstDueDate)}`:''}.\n\nPRAZO\n${b.deadline?`Prazo previsto: ${fmtDate(b.deadline)}.`:'Prazo conforme andamento técnico e aprovações necessárias.'}\n\nOBSERVAÇÕES\n${b.notes||'Sem observações adicionais.'}\n\nBrusque/SC, ____ de __________________ de ______.\n\n________________________________\nCONTRATANTE\n\n________________________________\nLANG Engenharia`;
  modal('Contrato do orçamento',`<div class="field"><label>Revise e edite antes de gerar</label><textarea id="contractText" rows="20">${esc(b.contractText||defaultText)}</textarea></div><div class="modal-foot"><button type="button" class="btn soft" id="cancel">Fechar</button><button type="button" class="btn soft" id="saveContract">Salvar texto</button><button type="button" class="btn primary" id="printContract">Imprimir / salvar PDF</button></div>`);
  $('#cancel').onclick=closeModal;$('#saveContract').onclick=()=>{const t=$('#contractText').value;mutate(d=>{const bb=d.budgets.find(x=>x.id===id);if(bb)bb.contractText=t});closeModal()};$('#printContract').onclick=()=>{const t=$('#contractText').value,logo=new URL('assets/lang-logo.svg',location.href).href,w=window.open('','_blank');if(!w)return alert('Permita pop-ups para gerar o contrato.');const html=`<!doctype html><html><head><meta charset="utf-8"><title>Contrato - LANG Engenharia</title><style>body{font-family:Arial,sans-serif;padding:45px;color:#222;line-height:1.55}header{border-bottom:3px solid #ff5a00;margin-bottom:30px;padding-bottom:18px}img{max-width:220px}pre{white-space:pre-wrap;font-family:Arial,sans-serif;font-size:14px}</style></head><body><header><img src="${logo}"></header><pre>${esc(t)}</pre><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`;w.document.open();w.document.write(html);w.document.close()};
 }
@@ -951,7 +1073,7 @@ function normalize(s){
     p.address=p.address||'';p.responsible=p.responsible||'';p.startDate=p.startDate||'';p.deadline=p.deadline||'';p.nextAction=p.nextAction||'';p.nextActionDate=p.nextActionDate||'';p.enterprise=p.enterprise||'';p.scope=p.scope||'';p.conditions=p.conditions||'';p.municipality=p.municipality||'';p.agency=p.agency||'';p.portalUrl=p.portalUrl||portalForMunicipality(p.municipality);
   });
   s.budgets.forEach(b=>{
-    b.items=Array.isArray(b.items)?b.items:[];b.installments=Array.isArray(b.installments)?b.installments:[];b.scope=b.scope||'';b.conditions=b.conditions||'';b.enterprise=b.enterprise||'';b.discount=Number(b.discount||0);b.grossValue=Number(b.grossValue||b.value||0);b.value=Number(b.value||Math.max(0,b.grossValue-b.discount));b.validUntil=b.validUntil||'';b.paymentPlan=b.paymentPlan||'';b.notes=b.notes||'';b.status=b.status||'Rascunho';
+    b.items=Array.isArray(b.items)?b.items:[];b.installments=Math.max(1,Math.trunc(Array.isArray(b.installments)?b.installments.length:Number(b.installments)||1));b.scope=b.scope||'';b.conditions=b.conditions||'';b.enterprise=b.enterprise||'';b.discount=Number(b.discount||0);b.grossValue=Number(b.grossValue||b.value||0);b.value=Number(b.value||Math.max(0,b.grossValue-b.discount));b.validUntil=b.validUntil||'';b.paymentPlan=b.paymentPlan||'';b.notes=b.notes||'';b.status=b.status||'Rascunho';
   });
   s.processes.forEach(p=>{p.projectId=p.projectId||'';p.responsible=p.responsible||'';p.notes=p.notes||'';p.status=p.status||'Em aberto';p.due=p.due||'';p.municipality=p.municipality||'';p.portalUrl=p.portalUrl||portalForMunicipality(p.municipality);p.lastCheckedAt=p.lastCheckedAt||'';p.lastStatusRaw=p.lastStatusRaw||''});
   s.tasks.forEach(t=>{t.projectId=t.projectId||'';t.notes=t.notes||'';t.status=t.status||'Pendente';t.due=t.due||''});
@@ -1661,9 +1783,9 @@ const mountDash3D=(()=>{
         goLabel:'Abrir Processos',go:'processes'};
     }
     if(kind==='kpi'&&arg==='budgets'){
-      const list=state.budgets.filter(b=>!['Aceito','Recusado'].includes(b.status)).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')),sum=list.reduce((a,b)=>a+Number(b.value||0),0);
+      const list=state.budgets.filter(b=>!['Aceito','Recusado'].includes(b.status)).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')),sum=list.reduce((a,b)=>a+budgetPayment(b).total,0);
       return {eyebrow:'Visão geral',title:'Orçamentos em aberto',intro:'Propostas que ainda não foram aceitas nem recusadas pelo cliente. O total é o valor que pode virar contrato.',
-        body:list.length?list.map(b=>pRow(b.title||'Orçamento',brl(b.value),{note:dot([b.clientId&&clientName(b.clientId),b.status])})).join('')+pTotal('Em negociação',brl(sum)):pEmpty('Nenhum orçamento em aberto.'),
+        body:list.length?list.map(b=>pRow(b.title||'Orçamento',brl(budgetPayment(b).total),{note:dot([b.clientId&&clientName(b.clientId),b.status])})).join('')+pTotal('Em negociação',brl(sum)):pEmpty('Nenhum orçamento em aberto.'),
         goLabel:'Abrir Orçamentos',go:'budgets'};
     }
     if(kind==='kpi'&&arg==='overdue'||kind==='zone'){
@@ -2107,7 +2229,7 @@ function clientTimeline(id){
   const fin=financeActiveRows().filter(x=>x.clientId===id||pids.has(x.projectId));
   const received=fin.filter(x=>x.type==='Recebimento').reduce((a,x)=>a+Number(x.value||0),0);let due=0;try{due=financePendingRows().filter(x=>x.clientId===id||pids.has(x.projectId)).reduce((a,x)=>a+x.remaining,0)}catch(e){}
   const ev=[],d10=v=>String(v||'').slice(0,10);
-  buds.forEach(b=>ev.push({d:d10(b.createdAt),k:'Orçamento',t:b.title,s:[b.status,brl(b.value)].join(' · '),tone:STATUS_TONE[b.status]||''}));
+  buds.forEach(b=>ev.push({d:d10(b.createdAt),k:'Orçamento',t:b.title,s:[b.status,brl((b.acceptedPayment||budgetPayment(b)).total)].join(' · '),tone:STATUS_TONE[b.status]||''}));
   projs.forEach(p=>ev.push({d:d10(p.createdAt||p.startDate),k:'Projeto',t:p.name,s:[p.archived?'Concluído':p.status,progress(p)+'% das etapas'].join(' · '),tone:p.archived?'good':'',open:p.id}));
   fin.forEach(x=>ev.push({d:d10(x.type==='Recebimento'?(x.date||x.createdAt):(x.dueDate||x.date||x.createdAt)),k:x.type,t:x.description||x.type,s:brl(x.value)+(x.projectId?' · '+projectName(x.projectId):''),tone:x.type==='Recebimento'?'good':x.type==='A receber'?'later':'gray'}));
   state.processes.filter(x=>x.clientId===id||pids.has(x.projectId)).forEach(x=>ev.push({d:d10(x.due||x.createdAt),k:'Processo',t:x.title,s:[x.agency,x.protocol&&'protocolo '+x.protocol,x.status].filter(Boolean).join(' · '),tone:STATUS_TONE[x.status]||''}));
